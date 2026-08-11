@@ -214,8 +214,11 @@ async function recentCommits(cwd, limit = 8) {
  */
 async function graphLog(cwd, limit = 40) {
   const count = Math.max(1, Math.min(200, Number(limit) || 40));
+  // The leading %x09 matters: git prints the graph rails immediately before the
+  // format output, so without it the first tab lands AFTER the hash and every
+  // field shifts by one (hash swallowed by the rails, date parsed as the hash).
   const res = await execGit(
-    ["log", "--graph", "--decorate=short", "--all", `-${count}`, "--date=short", "--format=%h%x09%ad%x09%an%x09%s"],
+    ["log", "--graph", "--decorate=short", "--all", `-${count}`, "--date=short", "--format=%x09%h%x09%ad%x09%an%x09%s"],
     cwd,
     { timeout: 20000 }
   );
