@@ -61,6 +61,18 @@ export type GitAutoCommitResult = {
   error?: string;
 };
 
+export type GitAutoPushResult = {
+  ok: boolean;
+  pushed: boolean;
+  /** nothing-to-push, behind, detached, push-failed, not-a-repo, error */
+  reason?: string;
+  commits?: number;
+  branch?: string;
+  behind?: number;
+  output?: string;
+  error?: string;
+};
+
 export type GitBranch = { name: string; current: boolean };
 export type GitChangedFile = { code: string; staged: boolean; path: string };
 export type GitCommit = { hash: string; subject: string; author: string; when: string };
