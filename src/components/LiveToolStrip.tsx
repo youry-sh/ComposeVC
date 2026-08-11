@@ -60,15 +60,11 @@ const LiveToolStrip: React.FC<Props> = ({ count, open, onToggle, statusLabel, ru
         {running ? SPINNER[tick] : "·"}
       </span>
 
-      {/* Two stacked copies: the base text plus a gradient clipped to the
-          glyphs, which is what makes the highlight travel across it. */}
-      <span className="tool-strip-text" key={text}>
-        <span className="tool-strip-text-base">{text}</span>
-        {running && (
-          <span className="tool-strip-text-shine" aria-hidden>
-            {text}
-          </span>
-        )}
+      {/* ONE text node. The highlight is a moving gradient clipped to the
+          glyphs of this very element — an overlaid second copy would show the
+          phrase twice for anything reading the DOM (and when selected). */}
+      <span className={`tool-strip-text${running ? " is-shining" : ""}`} key={text}>
+        {text}
       </span>
 
       <span className="tool-strip-count" title={`${count} tool calls`}>
