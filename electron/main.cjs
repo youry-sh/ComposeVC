@@ -1340,6 +1340,7 @@ ipcMain.handle("system:getMetrics", async () => {
       external: mem.external || 0,
       workingSetBytes: workingSet > 0 ? workingSet * 1024 : mem.rss || 0,
       uptimeSec: Math.floor(process.uptime()),
+      totalRuntimeSec: currentTotalRuntimeSec(),
     };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : String(error) };
@@ -3565,8 +3566,68 @@ ipcMain.handle("path:move", async (_event, sourcePath, targetFolderPath) => {
 
 let quitSavePromise = null;
 
+// ── Cumulative app runtime ─────────────────────────────────────────────
+// Total time the app has been running across ALL sessions, persisted to
+// runtime.json in userData on quit and on a periodic checkpoint. Never
+// capped — the counter just keeps accumulating ("до бесконечности").
+const RUNTIME_PERSIST_MS = 60 * 1000;
+let runtimeBaseSec = 0;
+let runtimeSessions = 0;
+let runtimeSessionStartMs = Date.now();
+let runtimeSaveTimer = null;
+let runtimeQuitSaved = false;
+
+function runtimeFilePath() {
+  return path.join(app.getPath("userData"), "runtime.json");
+}
+
+function loadRuntimeFile() {
+  try {
+    const raw = fs.readFileSync(runtimeFilePath(), "utf8");
+    const data = JSON.parse(raw);
+    runtimeBaseSec = Math.max(0, Math.floor(Number(data?.totalSec) || 0));
+    runtimeSessions = Math.max(0, Math.floor(Number(data?.sessions) || 0));
+  } catch {
+    runtimeBaseSec = 0;
+    runtimeSessions = 0;
+  }
+}
+
+function currentTotalRuntimeSec() {
+  return runtimeBaseSec + Math.max(0, Math.floor((Date.now() - runtimeSessionStartMs) / 1000));
+}
+
+function saveRuntimeFile({ incrementSession = false } = {}) {
+  try {
+    if (incrementSession) runtimeSessions += 1;
+    const payload = {
+      totalSec: currentTotalRuntimeSec(),
+      sessions: runtimeSessions,
+      lastSavedAt: new Date().toISOString(),
+    };
+    fs.mkdirSync(path.dirname(runtimeFilePath()), { recursive: true });
+    fs.writeFileSync(runtimeFilePath(), JSON.stringify(payload, null, 2), "utf8");
+  } catch (error) {
+    console.error("[runtime] save failed:", error?.message || error);
+  }
+}
+
+
 app.on("before-quit", (event) => {
   if (!quitSavePromise) {
+    // First pass — persist cumulative runtime before the final quit cycle.
+    try {
+      if (!runtimeQuitSaved) {
+        saveRuntimeFile({ incrementSession: true });
+        runtimeQuitSaved = true;
+      }
+    } catch {
+      /* ignore */
+    }
+    if (runtimeSaveTimer) {
+      clearInterval(runtimeSaveTimer);
+      runtimeSaveTimer = null;
+    }
     event.preventDefault();
     quitSavePromise = memory
       .flushAllPendingSaves(app)
@@ -3620,6 +3681,21 @@ app.on("before-quit", (event) => {
 app.whenReady().then(async () => {
   app.commandLine.appendSwitch("disable-gpu-shader-disk-cache");
   app.commandLine.appendSwitch("disk-cache-dir", path.join(app.getPath("userData"), "cache"));
+
+  // Cumulative runtime: load the stored base, then checkpoint every minute so
+  // a hard kill loses at most ~1 minute of the current session.
+  try {
+    loadRuntimeFile();
+  } catch {
+    /* ignore */
+  }
+  runtimeSaveTimer = setInterval(() => {
+    try {
+      saveRuntimeFile();
+    } catch {
+      /* ignore */
+    }
+  }, RUNTIME_PERSIST_MS);
 
   // Start per-slot Telegram bots from telegram_slots.json (migrate global once if needed).
   try {

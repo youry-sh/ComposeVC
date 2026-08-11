@@ -49,8 +49,12 @@ module.exports = async function afterPack(context) {
   try {
     await flipFuses(electronBinary, {
       version: FuseVersion.V1,
-      // Prevent ELECTRON_RUN_AS_NODE=1 dumping main process as plain node
-      [FuseV1Options.RunAsNode]: false,
+      // MUST stay enabled: the proxy gateway runs as a managed child spawned
+      // with ELECTRON_RUN_AS_NODE=1 (electron/proxy/processManager.cjs). With
+      // this fuse OFF the packaged exe cannot start its own proxy, so every API
+      // request to 127.0.0.1:8787 fails. Reliability of the bundled proxy wins
+      // over the marginal anti-tamper value of blocking RunAsNode.
+      [FuseV1Options.RunAsNode]: true,
       // Encrypt cookies at rest (extra OS-level friction)
       [FuseV1Options.EnableCookieEncryption]: true,
       // Block NODE_OPTIONS injection
