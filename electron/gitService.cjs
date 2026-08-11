@@ -208,6 +208,27 @@ async function recentCommits(cwd, limit = 8) {
     });
 }
 
+/**
+ * `git log --graph` across every branch — the ASCII graph is exactly what the
+ * shell's right column renders, so no client-side layout of the DAG is needed.
+ */
+async function graphLog(cwd, limit = 40) {
+  const count = Math.max(1, Math.min(200, Number(limit) || 40));
+  const res = await execGit(
+    ["log", "--graph", "--decorate=short", "--all", `-${count}`, "--date=short", "--format=%h%x09%ad%x09%an%x09%s"],
+    cwd,
+    { timeout: 20000 }
+  );
+  if (!res.ok) return [];
+  return res.stdout.split("\n").filter((line) => line.length > 0);
+}
+
+/** Total commits reachable from HEAD — the "history is bigger than this" number. */
+async function commitCount(cwd) {
+  const res = await execGit(["rev-list", "--count", "HEAD"], cwd, { timeout: 8000 });
+  return res.ok ? Number(res.stdout) || 0 : 0;
+}
+
 function findDestructive(args) {
   const list = Array.isArray(args) ? args.map(String) : [];
   if (list.length && DESTRUCTIVE_SUBCOMMANDS.has(list[0])) return list[0];
@@ -222,6 +243,8 @@ module.exports = {
   listBranches,
   listChangedFiles,
   recentCommits,
+  graphLog,
+  commitCount,
   repoNameFromRemote,
   findDestructive,
 };
