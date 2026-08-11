@@ -3706,6 +3706,8 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   const [lightbox, setLightbox] = useState<{ images: ChatImageAttachment[]; index: number } | null>(
     null
   );
+  /** Live tool cards stay folded behind the status strip until asked for. */
+  const [liveToolsOpen, setLiveToolsOpen] = useState(false);
   const [showModelMenu, setShowModelMenu] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [chatBookmarksModalOpen, setChatBookmarksModalOpen] = useState(false);
