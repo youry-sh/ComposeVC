@@ -1,0 +1,49 @@
+{
+  "manifest_version": 3,
+  "name": "ANTI FP Inject",
+  "version": "1.4.0",
+  "description": "Coherent screen/DPR/mem/cores, optional audio noise (off by default), speech, hygiene.",
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "exclude_matches": [
+        "*://challenges.cloudflare.com/*",
+        "*://*.challenges.cloudflare.com/*",
+        "*://*.hcaptcha.com/*",
+        "*://hcaptcha.com/*",
+        "*://*.newassets.hcaptcha.com/*",
+        "*://www.google.com/recaptcha/*",
+        "*://www.recaptcha.net/*",
+        "*://recaptcha.net/*",
+        "*://*.recaptcha.net/*",
+        "*://www.gstatic.com/recaptcha/*",
+        "*://*.stripe.com/*",
+        "*://stripe.com/*",
+        "*://*.stripe.network/*",
+        "*://*.stripecdn.com/*",
+        "*://*.paypal.com/*",
+        "*://*.paypalobjects.com/*",
+        "*://*.braintreegateway.com/*",
+        "*://*.braintree-api.com/*",
+        "*://*.adyen.com/*",
+        "*://*.adyenpayments.com/*",
+        "*://pay.google.com/*",
+        "*://*.payments.google.com/*",
+        "*://*.squareup.com/*",
+        "*://*.squarecdn.com/*",
+        "*://*.klarna.com/*",
+        "*://*.klarnacdn.net/*",
+        "*://*.checkout.com/*",
+        "*://*.cardinalcommerce.com/*",
+        "*://*.3ds.mastercard.com/*",
+        "*://*.secure.checkout.visa.com/*",
+        "*://*.acs.visa.com/*"
+      ],
+      "js": ["config.js", "inject.js"],
+      "run_at": "document_start",
+      "all_frames": true,
+      "world": "MAIN",
+      "match_about_blank": true
+    }
+  ]
+}

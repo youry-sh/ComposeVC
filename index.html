@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="./logo/app-icon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <title>ComposeVC</title>
+    <!-- Apply theme before paint to avoid flash -->
+    <script>
+      (function () {
+        var allowed = { ink: 1, "signal-black": 1, ember: 1 };
+        var light = {};
+        try {
+          var t = localStorage.getItem("lopster-theme");
+          if (!allowed[t]) t = "ink";
+          document.documentElement.setAttribute("data-theme", t);
+          document.documentElement.style.colorScheme = light[t] ? "light" : "dark";
+        } catch (e) {
+          document.documentElement.setAttribute("data-theme", "ink");
+          document.documentElement.style.colorScheme = "dark";
+        }
+      })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

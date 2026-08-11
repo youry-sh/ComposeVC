@@ -1,0 +1,39 @@
+
+# MemCapsule private index (policy/context.md may be shared)
+.agent-memory/events.jsonl
+.agent-memory/packets.json
+.agent-memory/*.sqlite
+
+# Build / packaging artifacts
+node_modules/
+dist/
+release/
+release-assets/
+.backup/
+*.log
+build-log.txt
+build-error.txt
+start-log.txt
+start-error.txt
+start-runtime-log.txt
+start-runtime-error.txt
+start-web-ide-log.txt
+start-web-ide-error.txt
+desktop.ini
+Thumbs.db
+.DS_Store
+
+# ANTI local runtime data (never ship profiles)
+anti/profiles/data/
+anti/.agent-memory/
+anti/.backup/
+
+# ANTI: generated account profiles (fingerprints, data dirs)
+anti/profiles/*.json
+
+# ANTI: bundled Chromium engine + compiled binaries (build artifacts)
+anti/engine/
+anti/bin/
+
+# Sensitive research dumps — contain real API keys / credentials, never commit
+docs/litellm-hunt/

@@ -1,0 +1,25 @@
+{
+  "enabled": true,
+  "auto_solve": true,
+  "autoSolve": true,
+  "timeout_sec": 120,
+  "turnstile_mode": "local",
+  "local_url": "http://127.0.0.1:8000",
+  "auto_start_local": true,
+  "types": [
+    "turnstile",
+    "recaptcha_v2",
+    "recaptcha_v2_enterprise",
+    "recaptcha_v3",
+    "recaptcha_v3_enterprise",
+    "hcaptcha",
+    "funcaptcha",
+    "geetest",
+    "geetest_v4",
+    "aws_waf",
+    "mtcaptcha",
+    "datadome",
+    "cloudflare_challenge",
+    "image_to_text"
+  ]
+}

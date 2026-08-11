@@ -1,0 +1,238 @@
+const { contextBridge, ipcRenderer } = require("electron");
+
+contextBridge.exposeInMainWorld("lopster", {
+  // Git for the chat shell: status badge, popover details, safe actions.
+  gitStatus: (rootPath) => ipcRenderer.invoke("git:status", rootPath || null),
+  gitDetails: (rootPath) => ipcRenderer.invoke("git:details", rootPath || null),
+  gitAction: (rootPath, action, payload) =>
+    ipcRenderer.invoke("git:action", rootPath || null, action, payload || {}),
+  readProviderConfig: () => ipcRenderer.invoke("config:read"),
+  writeProviderConfig: (config) => ipcRenderer.invoke("config:write", config),
+  listRunners: () => ipcRenderer.invoke("runner:list"),
+  getRunner: (id) => ipcRenderer.invoke("runner:get", id),
+  createRunner: (input) => ipcRenderer.invoke("runner:create", input || {}),
+  updateRunner: (id, patch) => ipcRenderer.invoke("runner:update", id, patch || {}),
+  deleteRunner: (id) => ipcRenderer.invoke("runner:delete", id),
+  runRunner: (id, opts) => ipcRenderer.invoke("runner:run", id, opts || {}),
+  stopRunner: (id) => ipcRenderer.invoke("runner:stop", id),
+  listRunnerReports: (opts) => ipcRenderer.invoke("runner:reports:list", opts || {}),
+  getRunnerReport: (runnerId, reportId) =>
+    ipcRenderer.invoke("runner:reports:get", runnerId, reportId),
+  deleteRunnerReport: (runnerId, reportId) =>
+    ipcRenderer.invoke("runner:reports:delete", runnerId, reportId),
+  onRunnersChanged: (callback) => {
+    const listener = (_event, payload) => callback(payload);
+    ipcRenderer.on("runner:changed", listener);
+    return () => ipcRenderer.removeListener("runner:changed", listener);
+  },
+  onRunnerReportChanged: (callback) => {
+    const listener = (_event, payload) => callback(payload);
+    ipcRenderer.on("runner:report-changed", listener);
+    return () => ipcRenderer.removeListener("runner:report-changed", listener);
+  },
+  onRunnerStatus: (callback) => {
+    const listener = (_event, payload) => callback(payload);
+    ipcRenderer.on("runner:status", listener);
+    return () => ipcRenderer.removeListener("runner:status", listener);
+  },
+  onRunnerProgress: (callback) => {
+    const listener = (_event, payload) => callback(payload);
+    ipcRenderer.on("runner:progress", listener);
+    return () => ipcRenderer.removeListener("runner:progress", listener);
+  },
+  onRunnerOpenSendModal: (callback) => {
+    const listener = (_event, payload) => callback(payload || {});
+    ipcRenderer.on("runner:open-send", listener);
+    return () => ipcRenderer.removeListener("runner:open-send", listener);
+  },
+  updateTelegramRuntimeContext: (context) => ipcRenderer.invoke("telegram:runtimeContext", context),
+  getTelegramStatus: (slotId) => ipcRenderer.invoke("telegram:status", slotId),
+  getTelegramSlotStatus: (slotId) => ipcRenderer.invoke("telegram:slotStatus", slotId),
+  getTelegramSlotConfig: (slotId) => ipcRenderer.invoke("telegram:slotConfig", slotId),
+  configureTelegramSlot: (slotId, config) => ipcRenderer.invoke("telegram:configureSlot", slotId, config),
+  listTelegramSlots: () => ipcRenderer.invoke("telegram:listSlots"),
+  newWindow: () => ipcRenderer.invoke("window:new"),
+  openProxySubview: (view) => ipcRenderer.invoke("proxy:openSubview", view),
+  sendChatRequest: (request) => ipcRenderer.invoke("chat:send", request),
+  getModelLimits: (modelId) => ipcRenderer.invoke("model:limits", modelId),
+  stopGeneration: (sessionId) => ipcRenderer.invoke("chat:stop", sessionId || null),
+  listRunningChatSessions: () => ipcRenderer.invoke("chat:runningSessions"),
+  answerUser: (payload) => ipcRenderer.invoke("agent:answerUser", payload),
+  notifyAgentComplete: (payload) => ipcRenderer.invoke("agent:notifyComplete", payload),
+  compactChat: (request) => ipcRenderer.invoke("chat:compact", request),
+  loadChatSession: (rootPath, sessionId) => ipcRenderer.invoke("memory:loadSession", rootPath, sessionId),
+  listChatSessions: (rootPath) => ipcRenderer.invoke("memory:listSessions", rootPath),
+  listChatSessionsPage: (rootPath, options) =>
+    ipcRenderer.invoke("memory:listSessionsPage", rootPath, options || {}),
+  createChatSession: (rootPath) => ipcRenderer.invoke("memory:createSession", rootPath),
+  listChatBookmarks: () => ipcRenderer.invoke("memory:listChatBookmarks"),
+  saveChatBookmark: (bookmark) => ipcRenderer.invoke("memory:saveChatBookmark", bookmark),
+  deleteChatBookmark: (bookmarkId) => ipcRenderer.invoke("memory:deleteChatBookmark", bookmarkId),
+  copyChatSession: (rootPath, sessionId) => ipcRenderer.invoke("memory:copySession", rootPath, sessionId),
+  pasteChatSession: (rootPath) => ipcRenderer.invoke("memory:pasteSession", rootPath),
+  deleteChatSession: (rootPath, sessionId) => ipcRenderer.invoke("memory:deleteSession", rootPath, sessionId),
+  updateChatSessionMeta: (rootPath, sessionId, patch) =>
+    ipcRenderer.invoke("memory:updateSessionMeta", rootPath, sessionId, patch || {}),
+  clearChatSessionTranscript: (rootPath, sessionId, options) =>
+    ipcRenderer.invoke("memory:clearSessionTranscript", rootPath, sessionId, options || {}),
+
+		  estimateContextTokens: (rootPath, projectName) => ipcRenderer.invoke("context:estimateTokens", rootPath, projectName),
+
+			  listMcpServers: () => ipcRenderer.invoke("mcp:list"),
+  addMcpServer: (input) => ipcRenderer.invoke("mcp:add", input || {}),
+  updateMcpServer: (id, patch) => ipcRenderer.invoke("mcp:update", id, patch || {}),
+  removeMcpServer: (id) => ipcRenderer.invoke("mcp:remove", id),
+  connectMcpServer: (id) => ipcRenderer.invoke("mcp:connect", id),
+  disconnectMcpServer: (id) => ipcRenderer.invoke("mcp:disconnect", id),
+  refreshMcpServer: (id) => ipcRenderer.invoke("mcp:refresh", id),
+  inspectMcpServer: (id) => ipcRenderer.invoke("mcp:inspect", id),
+  importMcpConfig: (config, options) => ipcRenderer.invoke("mcp:import", config, options || {}),
+  onMcpChanged: (callback) => {
+    const listener = (_event, payload) => callback(payload);
+    ipcRenderer.on("mcp:changed", listener);
+    return () => ipcRenderer.removeListener("mcp:changed", listener);
+  },
+
+			  readCustomTools: () => ipcRenderer.invoke("customTools:read"),  addCustomTool: (toolData) => ipcRenderer.invoke("customTools:add", toolData),
+  updateCustomTool: (toolId, toolData) => ipcRenderer.invoke("customTools:update", toolId, toolData),
+  readCustomToolFile: (toolId) => ipcRenderer.invoke("customTools:readFile", toolId),
+  removeCustomTool: (toolId) => ipcRenderer.invoke("customTools:remove", toolId),
+  exportCustomTools: (options) => ipcRenderer.invoke("customTools:export", options || {}),
+  previewCustomToolsImport: (payload) => ipcRenderer.invoke("customTools:importPreview", payload || {}),
+  importCustomTools: (payload) => ipcRenderer.invoke("customTools:import", payload || {}),
+  onCustomToolsChanged: (callback) => {
+    const listener = (_event, payload) => callback(payload);
+    ipcRenderer.on("customTools:changed", listener);
+    return () => ipcRenderer.removeListener("customTools:changed", listener);
+  },
+  readInstructions: (rootPath) => ipcRenderer.invoke("instructions:read", rootPath),
+  saveGlobalInstructions: (content) => ipcRenderer.invoke("instructions:saveGlobal", content),
+  saveProjectInstructions: (rootPath, content) => ipcRenderer.invoke("instructions:saveProject", rootPath, content),
+
+  readAutoInsertStore: () => ipcRenderer.invoke("autoInsert:read"),
+  saveAutoInsert: (data) => ipcRenderer.invoke("autoInsert:save", data),
+
+  onAgentProgress: (callback) => {
+    const listener = (_event, progress) => callback(progress);
+    ipcRenderer.on("agent:progress", listener);
+    return () => ipcRenderer.removeListener("agent:progress", listener);
+  },
+  onAgentRunState: (callback) => {
+    const listener = (_event, state) => callback(state);
+    ipcRenderer.on("agent:run-state", listener);
+    return () => ipcRenderer.removeListener("agent:run-state", listener);
+  },
+  onPlayAgentCompleteSound: (callback) => {
+    const listener = (_event, soundUrl) => callback(soundUrl);
+    ipcRenderer.on("agent:playCompleteSound", listener);
+    return () => ipcRenderer.removeListener("agent:playCompleteSound", listener);
+  },
+  openFolder: () => ipcRenderer.invoke("folder:open"),
+  readFolder: (rootPath) => ipcRenderer.invoke("folder:read", rootPath),
+  searchProject: (rootPath, query) => ipcRenderer.invoke("project:search", rootPath, query),
+  readTasks: (rootPath) => ipcRenderer.invoke("tasks:read", rootPath),
+  saveTasks: (rootPath, tasks) => ipcRenderer.invoke("tasks:save", rootPath, tasks),
+  readFile: (filePath) => ipcRenderer.invoke("file:read", filePath),
+  readMediaFile: (filePath) => ipcRenderer.invoke("file:readMedia", filePath),
+  writeFile: (filePath, content) => ipcRenderer.invoke("file:write", filePath, content),
+  createFile: (parentPath, name) => ipcRenderer.invoke("file:create", parentPath, name),
+  createFolder: (parentPath, name) => ipcRenderer.invoke("folder:create", parentPath, name),
+  deletePath: (targetPath) => ipcRenderer.invoke("path:delete", targetPath),
+  movePath: (sourcePath, targetFolderPath) => ipcRenderer.invoke("path:move", sourcePath, targetFolderPath),
+  proxyGetConfig: () => ipcRenderer.invoke("proxy:getConfig"),
+  proxySaveConfig: (patch) => ipcRenderer.invoke("proxy:saveConfig", patch),
+  proxyStart: (opts) => ipcRenderer.invoke("proxy:start", opts || {}),
+  proxyStop: () => ipcRenderer.invoke("proxy:stop"),
+  proxyStatus: () => ipcRenderer.invoke("proxy:status"),
+  proxyNgrokStatus: () => ipcRenderer.invoke("proxy:ngrokStatus"),
+  proxyNgrokRestart: () => ipcRenderer.invoke("proxy:ngrokRestart"),
+  proxyCreateKey: (label) => ipcRenderer.invoke("proxy:createKey", label),
+  proxyDeleteKey: (keyId) => ipcRenderer.invoke("proxy:deleteKey", keyId),
+  proxyToggleKey: (keyId, enabled) => ipcRenderer.invoke("proxy:toggleKey", keyId, enabled),
+  proxyListProviders: () => ipcRenderer.invoke("proxy:listProviders"),
+  proxyAddCustomProvider: (input) => ipcRenderer.invoke("proxy:addCustomProvider", input || {}),
+  proxyUpdateCustomProvider: (input) =>
+    ipcRenderer.invoke("proxy:updateCustomProvider", input || {}),
+  proxyDeleteCustomProvider: (providerId) =>
+    ipcRenderer.invoke("proxy:deleteCustomProvider", providerId),
+  proxyUpsertConnection: (input) => ipcRenderer.invoke("proxy:upsertConnection", input),
+  proxyDeleteConnection: (id) => ipcRenderer.invoke("proxy:deleteConnection", id),
+  proxyAddApiKeyAccount: (input) => ipcRenderer.invoke("proxy:addApiKeyAccount", input),
+  proxyDeleteAccount: (id) => ipcRenderer.invoke("proxy:deleteAccount", id),
+  proxyRefreshUsage: (accountId) => ipcRenderer.invoke("proxy:refreshUsage", accountId || null),
+  proxyGetUsageStats: () => ipcRenderer.invoke("proxy:getUsageStats"),
+  proxyResetUsageStats: () => ipcRenderer.invoke("proxy:resetUsageStats"),
+  proxyClearAccountQuota: (accountId) => ipcRenderer.invoke("proxy:clearAccountQuota", accountId),
+  proxyListModels: (opts) => ipcRenderer.invoke("proxy:listModels", opts || {}),
+  proxyAddModel: (input) => ipcRenderer.invoke("proxy:addModel", input || {}),
+  proxyRemoveModel: (input) => ipcRenderer.invoke("proxy:removeModel", input || {}),
+  proxyImportGrokCli: () => ipcRenderer.invoke("proxy:importGrokCli"),
+  proxyImportGrokTxt: (input) => ipcRenderer.invoke("proxy:importGrokTxt", input || {}),
+  proxyImportGrokTxtFile: () => ipcRenderer.invoke("proxy:importGrokTxtFile"),
+  proxyImportGeminiCli: () => ipcRenderer.invoke("proxy:importGeminiCli"),
+  proxySetGeminiCliProject: (input) =>
+    ipcRenderer.invoke("proxy:setGeminiCliProject", input || {}),
+  proxyGrokOauthStart: () => ipcRenderer.invoke("proxy:grokOauthStart"),
+  proxyAntigravityOauthStart: () => ipcRenderer.invoke("proxy:antigravityOauthStart"),
+  proxyGeminiCliOauthStart: () => ipcRenderer.invoke("proxy:geminiCliOauthStart"),
+  proxyClaudeCodeOauthStart: () => ipcRenderer.invoke("proxy:claudeCodeOauthStart"),
+  proxyClaudeCodeOauthComplete: (input) =>
+    ipcRenderer.invoke("proxy:claudeCodeOauthComplete", input || {}),
+  proxyImportClaudeCodeCli: () => ipcRenderer.invoke("proxy:importClaudeCodeCli"),
+  proxyImportClaudeCodeJson: (text) => ipcRenderer.invoke("proxy:importClaudeCodeJson", text || ""),
+  proxyKiroOauthStart: (opts) => ipcRenderer.invoke("proxy:kiroOauthStart", opts || {}),
+  proxyImportKiroToken: (input) => ipcRenderer.invoke("proxy:importKiroToken", input || {}),
+  proxyImportKiroCli: () => ipcRenderer.invoke("proxy:importKiroCli"),
+  proxyImportOauthToken: (input) => ipcRenderer.invoke("proxy:importOauthToken", input || {}),
+  proxyImportOauthTokens: (input) => ipcRenderer.invoke("proxy:importOauthTokens", input || {}),
+  proxyImportOauthTokensFile: (input) => ipcRenderer.invoke("proxy:importOauthTokensFile", input || {}),
+  proxyOauthStart: (providerId) => ipcRenderer.invoke("proxy:oauthStart", providerId || "openai"),
+  proxyOauthStatus: (sessionId) => ipcRenderer.invoke("proxy:oauthStatus", sessionId),
+  proxyOauthCancel: (sessionId) => ipcRenderer.invoke("proxy:oauthCancel", sessionId),
+  proxySetRoute: (model, route) => ipcRenderer.invoke("proxy:setRoute", model, route),
+  onProxyLog: (callback) => {
+    // Main process batches high-frequency proxy logs (proxy:log/batch). A single
+    // log arrives as {entry}, a batch as {entries}. Callback receives the batch
+    // array when present, else the single entry — renderer decides what to append.
+    const listener = (_event, payload) => {
+      if (payload && Array.isArray(payload.entries)) callback({ batch: payload.entries });
+      else callback(payload && "entry" in payload ? payload.entry : payload);
+    };
+    ipcRenderer.on("proxy:log", listener);
+    ipcRenderer.on("proxy:log/batch", listener);
+    return () => {
+      ipcRenderer.removeListener("proxy:log", listener);
+      ipcRenderer.removeListener("proxy:log/batch", listener);
+    };
+  },
+  onProxyOauth: (callback) => {
+    const listener = (_event, payload) => callback(payload);
+    ipcRenderer.on("proxy:oauth", listener);
+    return () => ipcRenderer.removeListener("proxy:oauth", listener);
+  },
+  onProxyConfig: (callback) => {
+    const listener = (_event, payload) => callback(payload);
+    ipcRenderer.on("proxy:config", listener);
+    return () => ipcRenderer.removeListener("proxy:config", listener);
+  },
+  onProxyUsage: (callback) => {
+    const listener = (_event, payload) => callback(payload);
+    ipcRenderer.on("proxy:usage", listener);
+    return () => ipcRenderer.removeListener("proxy:usage", listener);
+  },
+
+  openExternal: (url) => ipcRenderer.invoke("shell:openExternal", url),
+  minimize: () => ipcRenderer.invoke("window:minimize"),
+  toggleMaximize: () => ipcRenderer.invoke("window:toggleMaximize"),
+  close: () => ipcRenderer.invoke("window:close"),
+  getSystemMetrics: () => ipcRenderer.invoke("system:getMetrics"),
+  getWorkerPoolStats: () => ipcRenderer.invoke("workerPool:stats"),
+  sizeworkoutSnapshot: (workspaceId) => ipcRenderer.invoke("sizeworkout:snapshot", workspaceId || null),
+  sizeworkoutUpdate: (input) => ipcRenderer.invoke("sizeworkout:update", input || {}),
+  sizeworkoutReset: (workspaceId) => ipcRenderer.invoke("sizeworkout:reset", workspaceId || "default"),
+  onSizeworkoutChanged: (callback) => {
+    const listener = (_event, payload) => callback(payload);
+    ipcRenderer.on("sizeworkout:changed", listener);
+    return () => ipcRenderer.removeListener("sizeworkout:changed", listener);
+  },
+});

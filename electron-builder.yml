@@ -1,0 +1,107 @@
+# ComposeVC — hardened Windows NSIS installer
+# - App code: obfuscated electron/*.cjs inside app.asar (no src/, no runtime-app)
+# - ANTI: resources/anti (stripped binary + chromium; NO Go source, NO profiles)
+# - Fuses: afterPack flips RunAsNode/inspect/OnlyLoadAppFromAsar
+
+appId: com.composevc.app
+productName: ComposeVC
+copyright: Copyright © ComposeVC
+
+directories:
+  output: release
+  buildResources: build-assets
+
+# Pack HARDENED main process (release-assets/electron-hard from scripts/harden-electron.mjs)
+files:
+  - package.json
+  - from: release-assets/electron-hard
+    to: electron
+    filter:
+      - "**/*"
+      - "!.hardened"
+  - dist/**/*
+  - public/**/*
+  - logo/**/*
+  # Hard excludes
+  - "!electron/runtimeApp.cjs"
+  - "!electron/runtimeMain.cjs"
+  - "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}"
+  - "!**/node_modules/*/{test,tests,__tests__,docs}/**"
+  - "!**/*.{map,ts,tsx,md}"
+  - "!**/.git/**"
+  - "!**/.backup/**"
+  - "!**/.agent-memory/**"
+  - "!src/**"
+  - "!runtime-app/**"
+  - "!web-ide/**"
+  - "!tests/**"
+  - "!docs/**"
+  - "!scripts/**"
+  - "!anti/**"
+  - "!go-capyoury/**"
+  - "!release/**"
+  - "!release-assets/**"
+  - "!Build.bat"
+  - "!Bulit.bat"
+  - "!start*.bat"
+  - "!*.md"
+  - "!**/*.md"
+  - "!**/*.markdown"
+  - "!**/*.mdx"
+  - "!**/*.{md,markdown,mdx}"
+  - "!build-*.txt"
+  - "!start-*.txt"
+
+asar: true
+asarUnpack:
+  - "**/*.node"
+  - "**/@vscode/ripgrep/**"
+  - "**/@ngrok/ngrok/**"
+
+npmRebuild: false
+nodeGypRebuild: false
+buildDependenciesFromSource: false
+
+
+# Flip Electron security fuses after pack
+afterPack: scripts/after-pack.cjs
+
+extraResources:
+  - from: release-assets/anti
+    to: anti
+    filter:
+      - "**/*"
+      - "!**/*.{md,markdown,mdx}"
+      - "!**/*.md"
+  - from: public/logo
+    to: public/logo
+    filter:
+      - "**/*"
+      - "!**/*.{md,markdown,mdx}"
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: public/logo/app-icon.ico
+  artifactName: ComposeVC-Setup-${version}-${arch}.${ext}
+  verifyUpdateCodeSignature: false
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: ComposeVC
+  installerIcon: public/logo/app-icon.ico
+  uninstallerIcon: public/logo/app-icon.ico
+  deleteAppDataOnUninstall: false
+  differentialPackage: false
+
+electronLanguages:
+  - en-US
+  - ru
+
+# maximum = slower pack, smaller installer
+compression: maximum

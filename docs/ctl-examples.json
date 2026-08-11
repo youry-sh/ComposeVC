@@ -1,0 +1,162 @@
+{
+  "format": "lopster-custom-tools",
+  "version": 1,
+  "count": 4,
+  "tools": [
+    {
+      "name": "http_get_json",
+      "title": "HTTP GET JSON",
+      "description": "GET url and return parsed JSON body",
+      "tags": ["http", "json", "example"],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": { "type": "string", "description": "https API URL" },
+          "headers": { "type": "object", "description": "optional headers" }
+        },
+        "required": ["url"]
+      },
+      "body": {
+        "kind": "pipeline",
+        "steps": [
+          {
+            "id": "api",
+            "tool": "http",
+            "input": {
+              "url": "$args.url",
+              "method": "GET",
+              "headers": "$args.headers",
+              "timeout_ms": 30000
+            }
+          },
+          {
+            "id": "data",
+            "op": "json",
+            "value": "$steps.api.text"
+          }
+        ],
+        "return": "$steps.data"
+      }
+    },
+    {
+      "name": "merge_two_apis",
+      "title": "Merge two JSON APIs",
+      "description": "GET urlA + urlB, parse JSON, deep-merge objects",
+      "tags": ["http", "merge", "example"],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "urlA": { "type": "string" },
+          "urlB": { "type": "string" }
+        },
+        "required": ["urlA", "urlB"]
+      },
+      "body": {
+        "kind": "script",
+        "body": [
+          { "op": "http", "as": "a", "url": "$args.urlA", "method": "GET" },
+          { "op": "http", "as": "b", "url": "$args.urlB", "method": "GET" },
+          { "op": "json", "as": "ja", "value": "$vars.a.text" },
+          { "op": "json", "as": "jb", "value": "$vars.b.text" },
+          {
+            "op": "merge",
+            "as": "out",
+            "a": "$vars.ja",
+            "b": "$vars.jb",
+            "deep": true
+          },
+          { "op": "return", "value": "$vars.out" }
+        ]
+      }
+    },
+    {
+      "name": "http_with_fallback",
+      "title": "HTTP with try/catch fallback",
+      "description": "GET url; on failure return {ok:false,error}",
+      "tags": ["http", "try", "example"],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": { "type": "string" }
+        },
+        "required": ["url"]
+      },
+      "body": {
+        "kind": "script",
+        "body": [
+          {
+            "op": "try",
+            "as": "err",
+            "try": [
+              {
+                "op": "http",
+                "as": "res",
+                "url": "$args.url",
+                "throw_http": true
+              },
+              { "op": "json", "as": "data", "value": "$vars.res.text" },
+              {
+                "op": "return",
+                "value": { "ok": true, "data": "$vars.data" }
+              }
+            ],
+            "catch": [
+              {
+                "op": "return",
+                "value": { "ok": false, "error": "$vars.err.message" }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "pluck_api_field",
+      "title": "Pluck field list from API array",
+      "description": "GET JSON array (or object.path array), pluck path from each item",
+      "tags": ["http", "pluck", "example"],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": { "type": "string" },
+          "listPath": {
+            "type": "string",
+            "description": "optional path to array inside JSON (empty = root array)"
+          },
+          "field": {
+            "type": "string",
+            "description": "field path to pluck from each item"
+          }
+        },
+        "required": ["url", "field"]
+      },
+      "body": {
+        "kind": "script",
+        "body": [
+          { "op": "http", "as": "res", "url": "$args.url" },
+          { "op": "json", "as": "data", "value": "$vars.res.text" },
+          {
+            "op": "if",
+            "when": { "$expr": "$args.listPath" },
+            "then": [
+              {
+                "op": "get",
+                "as": "list",
+                "from": "$vars.data",
+                "path": "$args.listPath"
+              }
+            ],
+            "else": [{ "op": "set", "as": "list", "value": "$vars.data" }]
+          },
+          {
+            "op": "pluck",
+            "as": "values",
+            "from": "$vars.list",
+            "path": "$args.field"
+          },
+          { "op": "return", "value": "$vars.values" }
+        ]
+      }
+    }
+  ]
+}

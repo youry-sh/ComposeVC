@@ -1,0 +1,12 @@
+bin/
+anti.exe
+profiles/data/
+engine/chromium/
+engine/CHROME_DIR.txt
+engine/extracted/
+engine/*.zip
+*.log
+# MemCapsule private index (policy/context.md may be shared)
+.agent-memory/events.jsonl
+.agent-memory/packets.json
+.agent-memory/*.sqlite

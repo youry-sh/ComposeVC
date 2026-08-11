@@ -1,0 +1,49 @@
+# ANTI draft patch — NOT applied to prebuilt binary 148 yet.
+# Apply when rebuilding Chromium (see docs/BUILD_FROM_SOURCE.md).
+#
+# Goal: when --fingerprint + --lang=en-US, speechSynthesis.getVoices()
+# must not expose only OS ru-RU voices (Microsoft Irina).
+#
+# Target (Blink):
+#   third_party/blink/renderer/modules/speech/speech_synthesis.cc
+#   (GetVoices / OnSetVoiceList path)
+#
+# Strategy:
+# 1) Read switches::kFingerprint and --lang / Accept-Languages
+# 2) Filter voice list to voices matching lang prefix (en, en-US, en-GB…)
+# 3) If none match, leave empty list OR inject a single synthetic voice
+#    with lang=en-US name="Microsoft Zira - English (United States)"
+#    (Windows-realistic; better than empty on some detectors)
+#
+# Pseudocode for OnSetVoiceList / getVoices:
+#
+#   if (command_line->HasSwitch(switches::kFingerprint)) {
+#     std::string want = command_line->GetSwitchValueASCII("lang"); // en-US
+#     if (want.empty()) want = "en-US";
+#     std::string prefix = want.substr(0, 2); // en
+#     HeapVector<Member<SpeechSynthesisVoice>> filtered;
+#     for (auto* v : voices) {
+#       if (String(v->lang()).StartsWithIgnoringASCIICase(prefix))
+#         filtered.push_back(v);
+#     }
+#     if (!filtered.empty())
+#       voices_ = filtered;
+#     else {
+#       // optional: synthesize platform-default en voice metadata
+#       voices_.clear();
+#     }
+#   }
+#
+# Also propagate --lang already done via chrome CLI; this only fixes
+# speechSynthesis enumeration (OS-level voice pack leak).
+#
+# Status: DRAFT — runtime mitigation: extensions/speech-locale (MV3)
+# until this patch is compiled into engine/chromium.
+#
+# Related CreepJS fail: Speech lang ru-RU while Intl/lang en-US.
+diff --git a/third_party/blink/renderer/modules/speech/speech_synthesis.cc b/third_party/blink/renderer/modules/speech/speech_synthesis.cc
+--- a/third_party/blink/renderer/modules/speech/speech_synthesis.cc
++++ b/third_party/blink/renderer/modules/speech/speech_synthesis.cc
+@@
+ // PLACEHOLDER: real unified diff requires Chromium checkout matching major 148.
+ // Keep this file as the engineering contract for the next engine rebuild.

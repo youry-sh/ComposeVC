@@ -1,0 +1,28 @@
+{
+  "version": 2,
+  "note": "Lopster Guard IOC blocklist",
+  "domains": [
+    "awstore.cloud",
+    "api.awstore.cloud",
+    "kiro.cheap"
+  ],
+  "ips": [
+    "2.27.43.246"
+  ],
+  "paths": [
+    "SngCache",
+    "Microsoft\\Windows\\Maintenance\\StartupOptimizer",
+    "Microsoft\\Windows\\Maintenance\\CodeAssist",
+    "StartupOptimizer",
+    "CodeAssist"
+  ],
+  "task_names": [
+    "StartupOptimizer",
+    "CodeAssist"
+  ],
+  "process_names": [
+    "awproxy.exe",
+    "proxy.exe"
+  ],
+  "hashes": []
+}

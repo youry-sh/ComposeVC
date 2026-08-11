@@ -1,0 +1,9 @@
+const crypto = require("crypto");
+const auth = require("./codebuddyAuth.cjs");
+const sessions = new Map();
+function id() { return `codebuddy_oauth_${Date.now().toString(16)}_${crypto.randomBytes(5).toString("hex")}`; }
+function startSession(options = {}) { const sessionId = id(); const session = { id: sessionId, providerId: "codebuddy", status: "starting", state: null, authorizeUrl: null, result: null, error: null, cancelled: false, startedAt: Date.now(), ...options }; sessions.set(sessionId, session); return sessionId; }
+function getSession(sessionId) { return sessions.get(sessionId) || null; }
+function cancelSession(sessionId) { const session = sessions.get(sessionId); if (session) { session.cancelled = true; session.status = "cancelled"; } sessions.delete(sessionId); }
+async function runBrowserOauth(sessionId, { openExternal, intervalMs = auth.POLL_INTERVAL_MS, maxPolls = auth.MAX_POLLS } = {}) { const session = sessions.get(sessionId); if (!session) throw new Error("CodeBuddy OAuth session not found"); try { const started = await auth.startDeviceAuth(); Object.assign(session, started, { status: "waiting_user" }); if (typeof openExternal === "function") await Promise.resolve(openExternal(started.authorizeUrl)); const tokens = await auth.pollDeviceAuth(started.state, { intervalMs, maxPolls }); if (session.cancelled) throw new Error("cancelled"); session.result = await auth.buildAccountPayload(tokens, { state: started.state, source: "codebuddy_browser_oauth" }); session.status = "done"; return session.result; } catch (error) { session.status = session.cancelled ? "cancelled" : "error"; session.error = error.message || String(error); throw error; } }
+module.exports = { startSession, getSession, cancelSession, runBrowserOauth, runDeviceOauth: runBrowserOauth, buildAuthUrl: (state) => `${auth.API_ENDPOINT}/login?state=${encodeURIComponent(state || "")}` };

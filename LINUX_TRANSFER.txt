@@ -1,0 +1,27 @@
+Linux transfer source copy
+Created: 2026-08-03T12:34:39.4806499+03:00
+Source: C:\Users\youry\Desktop\Lopster1-4
+Excluded directories:
+- node_modules
+- release
+- release-assets
+- dist
+- .git
+- .backup
+- .lopster
+- .agent-memory
+- anti\engine
+- anti\bin
+- anti\profiles\data
+Excluded files:
+- anti.exe
+- *.exe
+- *.exe~
+- *.dll
+- *.pak
+- *.bin
+- *.log
+- crash.log
+- start-log.txt
+- start-error.txt
+- _t2.cjs
