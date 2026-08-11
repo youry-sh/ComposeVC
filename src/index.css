@@ -8682,12 +8682,13 @@
   flex: 1 1 auto;
   min-height: 90px;
   max-height: 260px;
-  overflow-y: auto;
-  overflow-x: hidden;
   font-family: var(--terminal-font);
   font-size: 9px;
   line-height: 1.5;
 }
+/* The rail sits inside the panel padding rather than over the commit text. */
+.git-panel-graph .chat-mono-scroll-rail,
+.git-panel-files .chat-mono-scroll-rail { right: 0; }
 .git-graph-row {
   display: flex;
   align-items: baseline;
