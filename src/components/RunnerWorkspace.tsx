@@ -317,8 +317,8 @@ const RunnerWorkspace: React.FC<Props> = ({
   const totalErrors = runners.reduce((sum, r) => sum + (r.stats?.totalErrors || 0), 0);
 
   return (
-    <div className="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden">
-      <header className="flex shrink-0 flex-col border-b border-ink-200">
+    <div className="runner-workspace flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden">
+      <header className="runner-header flex shrink-0 flex-col border-b border-ink-200">
         <div className="flex h-12 items-center justify-between px-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2 text-[13px] font-medium text-ink-950">
@@ -406,7 +406,7 @@ const RunnerWorkspace: React.FC<Props> = ({
         </div>
       )}
 
-      <div className="flex-1 min-h-0 overflow-auto scrollbar-thin">
+      <div className="runner-content flex-1 min-h-0 overflow-auto scrollbar-thin">
         {loading ? (
           <div className="flex items-center justify-center gap-2 p-8 text-[12px] text-ink-500">
             <Loader2 className="h-4 w-4 animate-spin" /> Загрузка…
@@ -432,7 +432,7 @@ const RunnerWorkspace: React.FC<Props> = ({
               </button>
             </div>
           ) : (
-            <table className="w-full border-collapse text-left">
+            <table className="runner-table w-full border-collapse text-left">
               <thead className="sticky top-0 z-10 bg-ink-100">
                 <tr className="border-b border-ink-200 text-[10px] uppercase tracking-wide text-ink-500">
                   <th className="px-4 py-2 font-medium">Ранер</th>
@@ -633,7 +633,7 @@ const RunnerWorkspace: React.FC<Props> = ({
             </table>
           )
         ) : (
-          <div className="flex h-full min-h-0 flex-col">
+          <div className="runner-reports flex h-full min-h-0 flex-col">
             <div className="flex items-center gap-2 border-b border-ink-200 px-4 py-2">
               <button
                 type="button"
@@ -889,12 +889,12 @@ const RunnerEditorModal: React.FC<EditorModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-[80] flex items-start justify-center theme-scrim p-6 animate-fade-in"
+      className="runner-editor-scrim fixed inset-0 z-[80] flex items-start justify-center theme-scrim p-6 animate-fade-in"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <div className="theme-panel mt-10 flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl shadow-modal">
+      <div className="runner-editor theme-panel mt-10 flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl shadow-modal">
         <div className="flex items-center justify-between border-b border-ink-200 px-4 py-3">
           <div className="flex items-center gap-2 text-[13px] font-medium text-ink-950">
             <Satellite className="h-4 w-4 text-accent" />

@@ -111,13 +111,13 @@ const RunnerSendModal: React.FC<Props> = ({ open, onClose, initialRunnerId, onOp
 
   return (
     <div
-      className="fixed inset-0 z-[90] flex items-start justify-center theme-scrim p-6 animate-fade-in"
+      className="runner-editor-scrim fixed inset-0 z-[90] flex items-start justify-center theme-scrim p-6 animate-fade-in"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
     >
       <div
-        className="theme-panel mt-16 w-full max-w-lg overflow-hidden rounded-xl shadow-modal"
+        className="runner-editor runner-send-modal theme-panel mt-16 w-full max-w-lg overflow-hidden rounded-xl shadow-modal"
         onKeyDown={handleKeyDown}
       >
         <div className="flex items-center justify-between border-b border-ink-200 px-4 py-3">

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from "react"
 import { createPortal } from "react-dom";
 import AsciiLogo from "./AsciiLogo";
 import LiveToolStrip from "./LiveToolStrip";
+import SubagentBar from "./SubagentBar";
 import {
   Bookmark,
   BrainCircuit,
@@ -3716,6 +3717,35 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
     }
     return null;
   }, [liveTimeline]);
+  const hasLiveTimelineText = lastLiveTextId !== null;
+
+  /** Live sub-agent tally for the compact bar above the composer. */
+  const subagentLive = useMemo(() => {
+    let running = 0;
+    let done = 0;
+    let total = 0;
+    for (const step of toolActivity) {
+      if (step.name !== "spawn_subagent" && step.name !== "spawn_subagent_batch") continue;
+      const units = step.units && step.units.length ? step.units : null;
+      if (units) {
+        for (const unit of units) {
+          total += 1;
+          const s = String(unit.status || "").toLowerCase();
+          if (s === "done" || s === "stopped" || s === "error") done += 1;
+          else running += 1;
+        }
+      } else {
+        total += 1;
+        const s = String(step.status || "").toLowerCase();
+        if (s === "done" || s === "stopped" || s === "error") done += 1;
+        else running += 1;
+      }
+    }
+    return { running, done, total };
+  }, [toolActivity]);
+  const latestAssistantDraft = assistantDrafts.length > 0
+    ? assistantDrafts[assistantDrafts.length - 1]
+    : "";
   const [showModelMenu, setShowModelMenu] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [chatBookmarksModalOpen, setChatBookmarksModalOpen] = useState(false);
@@ -4381,26 +4411,31 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                 open or closed. The commentary between tool calls is dropped
                 rather than repeated, and expanding reveals tool cards only. */}
             {liveTimeline.length > 0 ? (
-              liveTimeline.map((item) => {
-                if (item.kind === "text") {
-                  if (item.id !== lastLiveTextId) return null;
-                  return <MarkdownContent key={item.id} content={item.text} />;
-                }
-                if (!liveToolsOpen) return null;
-                const step = toolActivity.find((s) => s.toolCallId === item.toolCallId);
-                if (!step) return null;
-                return (
-                  <ToolActivityList
-                    key={item.id}
-                    steps={[step]}
-                    more={labels.more}
-                    moreCount={labels.moreCount}
-                    collapse={labels.collapse}
-                    collapseUnits={labels.collapseUnits}
-                    allUnitsCount={labels.allUnitsCount}
-                  />
-                );
-              })
+              <>
+                {liveTimeline.map((item) => {
+                  if (item.kind === "text") {
+                    if (item.id !== lastLiveTextId) return null;
+                    return <MarkdownContent key={item.id} content={item.text} />;
+                  }
+                  if (!liveToolsOpen) return null;
+                  const step = toolActivity.find((s) => s.toolCallId === item.toolCallId);
+                  if (!step) return null;
+                  return (
+                    <ToolActivityList
+                      key={item.id}
+                      steps={[step]}
+                      more={labels.more}
+                      moreCount={labels.moreCount}
+                      collapse={labels.collapse}
+                      collapseUnits={labels.collapseUnits}
+                      allUnitsCount={labels.allUnitsCount}
+                    />
+                  );
+                })}
+                {!hasLiveTimelineText && latestAssistantDraft.trim() && (
+                  <MarkdownContent content={latestAssistantDraft} />
+                )}
+              </>
             ) : (
               <>
                 {toolActivity.length > 0 && liveToolsOpen && (
@@ -4446,6 +4481,12 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
 
       {/* Input */}
       <div className="relative px-3 pb-3 pt-1.5 min-w-0 z-[1]">
+        {/* Sub-agents surface as one compact line here, not as live rows in chat. */}
+        <SubagentBar
+          running={subagentLive.running}
+          done={subagentLive.done}
+          total={subagentLive.total}
+        />
         {messageQueue.length > 0 && (
           <div className="chat-queue mb-2">
             <div className="chat-queue-head">

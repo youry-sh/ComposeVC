@@ -8088,6 +8088,179 @@
   background: transparent;
 }
 
+/* ── Runner workspace: same dense terminal language as the rest of the IDE ── */
+.runner-workspace {
+  background: var(--bg);
+  color: var(--ink-800);
+  font-family: "Inter", system-ui, sans-serif;
+}
+.runner-header {
+  background: color-mix(in srgb, var(--panel-header-bg) 88%, var(--bg));
+  border-color: var(--border) !important;
+  box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--ink-950) 3%, transparent);
+}
+.runner-header > div:first-child { height: 46px; padding-inline: 12px; }
+.runner-header > div:first-child > div:first-child > div:first-child {
+  font-family: var(--terminal-font);
+  font-size: 11px;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+.runner-header > div:first-child > div:first-child > div:last-child {
+  margin-top: 2px;
+  font-family: var(--terminal-font);
+  font-size: 9px;
+  opacity: .72;
+}
+.runner-header button,
+.runner-content button,
+.runner-editor button {
+  border-radius: 1px !important;
+  font-family: var(--terminal-font);
+  letter-spacing: .02em;
+}
+.runner-header button:focus-visible,
+.runner-content button:focus-visible,
+.runner-editor button:focus-visible,
+.runner-workspace select:focus-visible,
+.runner-editor :is(input, select, textarea):focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+.runner-header > div:last-child {
+  height: 31px;
+  padding-inline: 8px;
+  border-color: var(--border) !important;
+  background: color-mix(in srgb, var(--sidebar-tint) 68%, transparent);
+}
+.runner-header > div:last-child button {
+  position: relative;
+  height: 30px;
+  border: 0 !important;
+  border-radius: 0 !important;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.runner-header > div:last-child button[class*="border-accent"]::after {
+  position: absolute;
+  right: 8px;
+  bottom: -1px;
+  left: 8px;
+  height: 1px;
+  background: var(--accent);
+  content: "";
+}
+.runner-content { background: var(--bg); }
+.runner-content > .p-10 { font-family: var(--terminal-font); }
+.runner-table { min-width: 970px; font-variant-numeric: tabular-nums; }
+.runner-table thead { background: var(--panel-header-bg) !important; }
+.runner-table thead tr { border-color: var(--border) !important; }
+.runner-table th {
+  height: 29px;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  font: 600 9px/1 var(--terminal-font);
+  letter-spacing: .1em;
+  color: var(--ink-500);
+}
+.runner-table tbody tr {
+  border-color: var(--border) !important;
+  background: transparent;
+}
+.runner-table tbody tr:hover { background: var(--hover-bg) !important; }
+.runner-table td { padding-top: 8px !important; padding-bottom: 8px !important; }
+.runner-table td:not(:first-child) { font-family: var(--terminal-font); }
+.runner-table tbody button { border: 1px solid transparent; }
+.runner-table tbody button:hover { border-color: var(--border); background: var(--active-bg) !important; }
+.runner-table tbody td:last-child > div {
+  padding-left: 5px;
+  border-left: 1px solid var(--border);
+}
+.runner-reports > div:first-child {
+  min-height: 37px;
+  background: var(--panel-header-bg);
+  border-color: var(--border) !important;
+}
+.runner-workspace select,
+.runner-editor select {
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--ink-500) 50%),
+    linear-gradient(135deg, var(--ink-500) 50%, transparent 50%);
+  background-position: calc(100% - 12px) 50%, calc(100% - 8px) 50%;
+  background-size: 4px 4px, 4px 4px;
+  background-repeat: no-repeat;
+  padding-right: 24px !important;
+  font-family: var(--terminal-font);
+}
+.runner-reports > .flex-1 > div:first-child { background: var(--sidebar-tint); }
+.runner-reports > .flex-1 > div:first-child button {
+  border-color: var(--border) !important;
+  font-family: var(--terminal-font);
+}
+.runner-reports > .flex-1 > div:first-child button:hover { background: var(--hover-bg) !important; }
+.runner-reports > .flex-1 > div:first-child button[class*="bg-accent-muted"] {
+  background: var(--active-bg) !important;
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.runner-reports pre {
+  border-radius: 1px !important;
+  border-color: var(--border-strong) !important;
+  background: color-mix(in srgb, var(--bg) 74%, #000) !important;
+  tab-size: 2;
+}
+.runner-reports [class*="rounded-md"] { border-radius: 1px !important; }
+.runner-editor-scrim {
+  align-items: center !important;
+  padding: 18px !important;
+  background: color-mix(in srgb, var(--scrim) 96%, #000) !important;
+  backdrop-filter: none !important;
+}
+.runner-editor {
+  width: min(760px, calc(100vw - 36px)) !important;
+  max-width: none !important;
+  margin-top: 0 !important;
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border-strong));
+  border-radius: 2px !important;
+  background: var(--surface);
+  box-shadow: 0 20px 70px rgba(0, 0, 0, .64), inset 0 1px 0 color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.runner-editor.runner-send-modal { width: min(520px, calc(100vw - 36px)) !important; }
+.runner-editor > div:first-child {
+  min-height: 39px;
+  padding: 0 12px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent-muted) 30%, var(--panel-header-bg)), var(--panel-header-bg));
+  border-color: var(--border) !important;
+  font-family: var(--terminal-font);
+  letter-spacing: .04em;
+}
+.runner-editor > div:nth-child(2) { padding: 14px; }
+.runner-editor label {
+  font-family: var(--terminal-font);
+  font-size: 9px !important;
+  letter-spacing: .09em;
+}
+.runner-editor :is(input:not([type="checkbox"]), select, textarea) {
+  border-radius: 1px !important;
+  border-color: var(--border-strong);
+  background: var(--input-bg);
+  font-family: var(--terminal-font);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .12);
+}
+.runner-editor textarea { min-height: 132px; line-height: 1.55; }
+.runner-editor input[type="checkbox"] { border-radius: 1px; }
+.runner-editor > div:last-child {
+  min-height: 46px;
+  padding: 7px 12px;
+  background: var(--panel-header-bg);
+  border-color: var(--border) !important;
+}
+@media (max-width: 800px) {
+  .runner-header > div:first-child > div:first-child > div:last-child { display: none; }
+  .runner-header > div:first-child { height: 42px; }
+  .runner-editor > div:nth-child(2) > .grid { grid-template-columns: 1fr 1fr; }
+}
+
 /* ── Right column: compact stats on top, runner table underneath ── */
 .chat-aside {
   min-width: 0;
@@ -8348,6 +8521,13 @@
   line-height: 1;
   color: var(--ink-600);
 }
+.tool-strip-spin.is-running {
+  animation: tool-strip-spin .72s steps(10, end) infinite;
+  transform-origin: 50% 50%;
+}
+@keyframes tool-strip-spin {
+  to { transform: rotate(360deg); }
+}
 .tool-strip-text {
   flex: 1 1 auto;
   min-width: 0;
@@ -8395,11 +8575,66 @@
 .tool-strip-chevron { flex: none; font-size: 9px; color: var(--ink-500); }
 
 @media (prefers-reduced-motion: reduce) {
+  .tool-strip-spin.is-running,
   .tool-strip-text.is-shining {
     animation: none;
+  }
+  .tool-strip-text.is-shining {
     color: var(--ink-700);
     -webkit-text-fill-color: var(--ink-700);
   }
+}
+
+/* ══ Sub-agent bar (above the composer) ════════════════════════════════════
+   One quiet line while sub-agents run — spinner, label, progress count.
+   The full per-agent detail stays folded in the live tool strip. */
+.subagent-bar {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 8px;
+  padding: 7px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  animation: thinking-label-swap .25s ease-out;
+}
+.subagent-bar-spin {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--ink-300);
+  border-top-color: var(--ink-950);
+  animation: subagent-spin .7s linear infinite;
+}
+@keyframes subagent-spin {
+  to { transform: rotate(360deg); }
+}
+.subagent-bar-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--terminal-font);
+  font-size: 12px;
+  letter-spacing: .02em;
+  color: var(--ink-800);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.subagent-bar-count {
+  flex: none;
+  padding: 1px 8px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface);
+  font-family: var(--terminal-font);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-600);
+}
+@media (prefers-reduced-motion: reduce) {
+  .subagent-bar-spin { animation: none; }
 }
 
 /* ══ Git ═══════════════════════════════════════════════════════════════════

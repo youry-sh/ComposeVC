@@ -17,9 +17,6 @@ const PHRASES = [
 ] as const;
 const PHRASE_MS = 2600;
 
-const SPINNER = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"] as const;
-const SPINNER_MS = 90;
-
 type Props = {
   /** How many tool calls this turn has made so far. */
   count: number;
@@ -33,19 +30,12 @@ type Props = {
 
 const LiveToolStrip: React.FC<Props> = ({ count, open, onToggle, statusLabel, running = true }) => {
   const [phraseIndex, setPhraseIndex] = useState(0);
-  const [tick, setTick] = useState(0);
 
   useEffect(() => {
     if (!running || statusLabel) return;
     const id = window.setInterval(() => setPhraseIndex((i) => (i + 1) % PHRASES.length), PHRASE_MS);
     return () => window.clearInterval(id);
   }, [running, statusLabel]);
-
-  useEffect(() => {
-    if (!running) return;
-    const id = window.setInterval(() => setTick((t) => (t + 1) % SPINNER.length), SPINNER_MS);
-    return () => window.clearInterval(id);
-  }, [running]);
 
   const text = statusLabel || PHRASES[phraseIndex];
 
@@ -56,8 +46,8 @@ const LiveToolStrip: React.FC<Props> = ({ count, open, onToggle, statusLabel, ru
       onClick={onToggle}
       title={open ? "Hide tool calls" : "Show tool calls"}
     >
-      <span className="tool-strip-spin" aria-hidden>
-        {running ? SPINNER[tick] : "·"}
+      <span className={`tool-strip-spin${running ? " is-running" : ""}`} aria-hidden>
+        {running ? "⠋" : "·"}
       </span>
 
       {/* ONE text node, and deliberately NO key: keying it by the phrase made
