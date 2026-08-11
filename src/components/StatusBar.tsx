@@ -53,6 +53,17 @@ export function formatUptime(sec: number): string {
   return `${h}:${m}:${r}`;
 }
 
+/** Cumulative app runtime — days + hours (unbounded). Under a day: hours + minutes. */
+export function formatTotalRuntime(sec: number): string {
+  const s = Math.max(0, Math.floor(sec));
+  const d = Math.floor(s / 86400);
+  const h = Math.floor((s % 86400) / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  if (d > 0) return `${d}d ${h}h`;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
 const StatusBar: React.FC<{ label?: string }> = ({ label = "MultiIDE" }) => {
   const [uptime, setUptime] = useState("00:00:00");
   const uptimeSecRef = useRef(0);

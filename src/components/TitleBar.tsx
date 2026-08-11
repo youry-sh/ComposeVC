@@ -13,6 +13,7 @@ import {
   ContextMetricsDetail,
   formatBytes,
   formatTokenCount,
+  formatTotalRuntime,
   formatUptime,
 } from "./StatusBar";
 
@@ -61,6 +62,7 @@ const TitleBar: React.FC<TitleBarProps> = ({
   const [uptime, setUptime] = useState("00:00:00");
   const uptimeSecRef = useRef(0);
   const uptimeSyncAtRef = useRef(Date.now());
+  const [totalRuntime, setTotalRuntime] = useState("0m");
   const [memoryLabel, setMemoryLabel] = useState("—");
   const [memoryRatio, setMemoryRatio] = useState(0);
   const [tokensLabel, setTokensLabel] = useState("0");
@@ -109,6 +111,9 @@ const TitleBar: React.FC<TitleBarProps> = ({
           uptimeSecRef.current = sys.uptimeSec;
           uptimeSyncAtRef.current = Date.now();
           setUptime(formatUptime(sys.uptimeSec));
+        }
+        if (typeof sys.totalRuntimeSec === "number") {
+          setTotalRuntime(formatTotalRuntime(sys.totalRuntimeSec));
         }
       } catch {
         /* ignore */
@@ -225,7 +230,7 @@ const TitleBar: React.FC<TitleBarProps> = ({
         <div className="topbar-clock" title="Uptime">
           <span className="topbar-clock-time">{clock}</span>
           <span className="topbar-clock-date">
-            {dateStr} · up {uptime}
+            {dateStr} · up {uptime} · total {totalRuntime}
           </span>
         </div>
       </div>
