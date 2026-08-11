@@ -27,7 +27,6 @@ import {
   MouseSnippetsConfig,
   saveMouseSnippets,
 } from "../utils/mouseSnippets";
-import { THEMES, applyTheme, getStoredTheme, type ThemeId } from "../themes";
 
 export interface SettingsModalProps {
   open: boolean;
@@ -322,7 +321,6 @@ const UiSelect: React.FC<{
 const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, labels, language, onLanguageChange, onChange }) => {
   const [state, dispatch] = useReducer(fsmReducer, { status: "idle", draft: config, errorMsg: null, tx: 0 });
   const [activeTab, setActiveTab] = useState<NavTab>("appearance");
-  const [themeId, setThemeId] = useState<ThemeId>(() => getStoredTheme());
   const [mouseSnippets, setMouseSnippets] = useState<MouseSnippetsConfig>(() =>
     typeof window !== "undefined" ? loadMouseSnippets() : { ...DEFAULT_MOUSE_SNIPPETS }
   );
@@ -405,7 +403,7 @@ const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, 
               active={activeTab === "appearance"}
               icon={<Palette className="h-4 w-4" />}
               label={labels.appearance}
-              hint={labels.theme}
+              hint={labels.languages}
               onClick={() => setActiveTab("appearance")}
             />
             <NavItem
