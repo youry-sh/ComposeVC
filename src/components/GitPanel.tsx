@@ -235,7 +235,7 @@ const GitPanel: React.FC<Props> = ({ rootPath }) => {
             </div>
           );
         })}
-      </div>
+      </ChatMonoScroll>
     </section>
   );
 };
