@@ -98,7 +98,7 @@ const GitBadge: React.FC<Props> = ({ rootPath }) => {
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ text: string; error: boolean } | null>(null);
   const [anchor, setAnchor] = useState<{ top: number; left: number } | null>(null);
-  const [autoCommit, setAutoCommit] = useState(false);
+  const [auto, setAuto] = useState<AutoPrefs>({ commit: false, push: false });
   const buttonRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   /** Identity of this badge, used to claim auto-commit for a folder. */
@@ -106,6 +106,9 @@ const GitBadge: React.FC<Props> = ({ rootPath }) => {
   /** Last seen dirty signature — a commit only fires once it stops changing. */
   const lastSignatureRef = useRef<string | null>(null);
   const committingRef = useRef(false);
+  const pushingRef = useRef(false);
+  /** Back off after a rejected push instead of retrying on every poll. */
+  const pushCooldownRef = useRef(0);
 
   const refreshStatus = useCallback(async () => {
     if (!rootPath) {
