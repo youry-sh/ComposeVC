@@ -222,7 +222,7 @@ const GitPanel: React.FC<Props> = ({ rootPath }) => {
           {Math.min(details.graph.length, GRAPH_LIMIT)} / {details.totalCommits}
         </span>
       </div>
-      <div className="git-panel-graph">
+      <ChatMonoScroll className="git-panel-graph">
         {details.graph.length === 0 && <span className="aside-empty">no commits</span>}
         {details.graph.map((line, index) => {
           const row = splitGraphLine(line);
