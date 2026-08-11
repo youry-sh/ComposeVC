@@ -153,10 +153,10 @@ const GitBadge: React.FC<Props> = ({ rootPath }) => {
   // Claim (or release) auto-commit ownership of this folder.
   useEffect(() => {
     if (!rootPath) {
-      setAutoCommit(false);
+      setAuto({ commit: false, push: false });
       return;
     }
-    setAutoCommit(Boolean(loadAutoCommitPrefs()[rootPath]));
+    setAuto(loadAutoPrefs()[rootPath] || { commit: false, push: false });
     const owner = ownerRef.current;
     if (!autoCommitOwners.has(rootPath)) autoCommitOwners.set(rootPath, owner);
     return () => {
@@ -167,7 +167,7 @@ const GitBadge: React.FC<Props> = ({ rootPath }) => {
   // Commit once the working tree has been dirty AND unchanged for a full poll —
   // committing on the first sighting would catch half-written files mid-save.
   useEffect(() => {
-    if (!autoCommit || !rootPath || !status?.isRepo) return;
+    if (!auto.commit || !rootPath || !status?.isRepo) return;
     if (autoCommitOwners.get(rootPath) !== ownerRef.current) return;
     if (committingRef.current) return;
 
