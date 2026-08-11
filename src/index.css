@@ -8349,42 +8349,35 @@
   color: var(--ink-600);
 }
 .tool-strip-text {
-  position: relative;
   flex: 1 1 auto;
   min-width: 0;
   font-size: 12px;
   line-height: 1.4;
   white-space: nowrap;
   overflow: hidden;
-  animation: thinking-label-swap .28s ease-out;
-}
-.tool-strip-text-base {
-  display: block;
-  overflow: hidden;
   text-overflow: ellipsis;
   color: var(--ink-700);
+  animation: thinking-label-swap .28s ease-out;
 }
-/* The travelling highlight: a gradient clipped to the glyphs themselves. */
-.tool-strip-text-shine {
-  position: absolute;
-  inset: 0;
-  white-space: nowrap;
+/* The highlight travels across the glyphs of this same node: the gradient
+   carries the base colour everywhere and a brighter band in the middle, so no
+   second copy of the text is needed to paint it. */
+.tool-strip-text.is-shining {
   color: transparent;
   -webkit-text-fill-color: transparent;
   background-image: linear-gradient(
     90deg,
-    transparent 0%,
-    transparent 35%,
+    var(--ink-700) 0%,
+    var(--ink-700) 38%,
     var(--ink-950) 50%,
-    transparent 65%,
-    transparent 100%
+    var(--ink-700) 62%,
+    var(--ink-700) 100%
   );
-  background-size: 220% 100%;
+  background-size: 260% 100%;
   background-repeat: no-repeat;
   -webkit-background-clip: text;
   background-clip: text;
-  animation: loading-shimmer 2.4s ease-in-out infinite;
-  pointer-events: none;
+  animation: thinking-label-swap .28s ease-out, loading-shimmer 2.4s ease-in-out infinite;
 }
 .tool-strip-count {
   flex: none;
@@ -8402,7 +8395,11 @@
 .tool-strip-chevron { flex: none; font-size: 9px; color: var(--ink-500); }
 
 @media (prefers-reduced-motion: reduce) {
-  .tool-strip-text-shine { animation: none; }
+  .tool-strip-text.is-shining {
+    animation: none;
+    color: var(--ink-700);
+    -webkit-text-fill-color: var(--ink-700);
+  }
 }
 
 /* ══ Git ═══════════════════════════════════════════════════════════════════
