@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
+import ChatMonoScroll from "./ChatMonoScroll";
 import { AUTO_DEFAULT, AutoPrefs, loadAutoPrefs, saveAutoPrefs } from "./GitBadge";
 import type { GitBranch, GitChangedFile, GitStatus } from "../global";
 
