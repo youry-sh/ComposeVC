@@ -248,7 +248,6 @@ const RunnerWorkspace: React.FC<Props> = ({
   };
 
   const handleDelete = async (runner: RunnerJob) => {
-    if (!window.confirm(`Удалить ранера «${runner.name}»? Отчёты будут сохранены.`)) return;
     try {
       await window.lopster?.deleteRunner(runner.id);
       if (selectedRunnerId === runner.id) {
@@ -407,7 +406,7 @@ const RunnerWorkspace: React.FC<Props> = ({
         </div>
       )}
 
-      <div className="flex-1 min-h-0 overflow-auto">
+      <div className="flex-1 min-h-0 overflow-auto scrollbar-thin">
         {loading ? (
           <div className="flex items-center justify-center gap-2 p-8 text-[12px] text-ink-500">
             <Loader2 className="h-4 w-4 animate-spin" /> Загрузка…
@@ -684,7 +683,7 @@ const RunnerWorkspace: React.FC<Props> = ({
               </div>
             ) : (
               <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-                <div className="min-h-0 flex-1 overflow-auto border-r border-ink-200 lg:max-w-[46%]">
+                <div className="min-h-0 flex-1 overflow-auto border-r border-ink-200 lg:max-w-[46%] scrollbar-thin">
                   {reports.map((report) => (
                     <button
                       key={report.id}
@@ -727,7 +726,7 @@ const RunnerWorkspace: React.FC<Props> = ({
                     </button>
                   ))}
                 </div>
-                <div className="min-h-0 flex-1 overflow-auto">
+                <div className="min-h-0 flex-1 overflow-auto scrollbar-thin">
                   {selectedReport ? (
                     <div className="p-4">
                       <div className="flex items-center justify-between gap-2">
@@ -799,7 +798,7 @@ const RunnerWorkspace: React.FC<Props> = ({
                         <button
                           type="button"
                           onClick={() => {
-                            if (selectedReport && window.confirm("Удалить этот отчёт?")) {
+                            if (selectedReport) {
                               void window.lopster?.deleteRunnerReport(
                                 selectedReport.runnerId,
                                 selectedReport.id
@@ -911,7 +910,7 @@ const RunnerEditorModal: React.FC<EditorModalProps> = ({
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 space-y-3 overflow-auto px-4 py-4">
+        <div className="min-h-0 flex-1 space-y-3 overflow-auto px-4 py-4 scrollbar-thin">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1">
               <label className="text-[10px] font-medium uppercase tracking-wide text-ink-500">
