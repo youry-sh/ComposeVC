@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import AsciiWar from "./AsciiWar";
+import GitPanel from "./GitPanel";
 import { RunnerJob } from "../types";
 import {
   CONTEXT_METRICS_EVENT,
@@ -22,6 +23,8 @@ type Props = {
   chatCount: number;
   /** How many panels are streaming right now. */
   runningPanels: number;
+  /** Folder of the panel currently on screen — drives the Git section. */
+  activeRootPath: string | null;
   onOpenRunners?: () => void;
 };
 
