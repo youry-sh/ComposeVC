@@ -4369,10 +4369,14 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                 statusLabel={statusLabel}
               />
             )}
-            {/* Chronological stream: text appears under the tools that preceded it */}
+            {/* Chronological stream: text appears under the tools that preceded it.
+                Folded, the running commentary between tool calls belongs INSIDE
+                the strip — only the newest chunk (the answer being written) stays
+                in the chat, so the same narration is not shown twice. */}
             {liveTimeline.length > 0 ? (
               liveTimeline.map((item) => {
                 if (item.kind === "text") {
+                  if (!liveToolsOpen && item.id !== lastLiveTextId) return null;
                   return <MarkdownContent key={item.id} content={item.text} />;
                 }
                 if (!liveToolsOpen) return null;
