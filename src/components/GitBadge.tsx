@@ -400,11 +400,29 @@ const GitBadge: React.FC<Props> = ({ rootPath }) => {
             </div>
 
             <label className="git-pop-auto" title="Stage everything and commit it whenever the folder stops changing">
-              <input type="checkbox" checked={autoCommit} onChange={toggleAutoCommit} />
+              <input
+                type="checkbox"
+                checked={auto.commit}
+                onChange={() => setAutoPref({ commit: !auto.commit })}
+              />
               <span className="git-pop-auto-text">
                 <span className="git-pop-auto-title">Auto-commit</span>
                 <span className="git-pop-auto-hint">
-                  commits `git add -A` ~{Math.round((POLL_MS * 2) / 1000)}s after the last change
+                  `git add -A` ~{Math.round((POLL_MS * 2) / 1000)}s after the last change
+                </span>
+              </span>
+            </label>
+
+            <label className="git-pop-auto" title="Push the commits this branch is ahead by, as soon as there are any">
+              <input
+                type="checkbox"
+                checked={auto.push}
+                onChange={() => setAutoPref({ push: !auto.push })}
+              />
+              <span className="git-pop-auto-text">
+                <span className="git-pop-auto-title">Auto-push</span>
+                <span className="git-pop-auto-hint">
+                  only new commits · never forces · pauses when behind
                 </span>
               </span>
             </label>
