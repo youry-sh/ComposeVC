@@ -1,4 +1,4 @@
-# ANTI — Chromium fingerprint browser (cross-platform)
+# ANTI — Chromium fingerprint browser (cross-platform) <!-- test comment edit -->
 
 Go CLI + Electron integration that launches an isolated Chromium profile with a
 seed-derived fingerprint persona, driven by the C++ patched fingerprint-chromium

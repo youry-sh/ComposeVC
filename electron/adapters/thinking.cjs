@@ -1,6 +1,7 @@
 /**
  * Extract model "thinking" / reasoning from API fields or <think> tags in text.
  * Returns { text, reasoning } — text is the user-visible answer without think blocks.
+ * (test comment edit)
  */
 
 const THINK_TAG_RE =

@@ -50,6 +50,17 @@ export type GitStatus =
       lastCommit: { hash: string; subject: string; author: string; when: string } | null;
     };
 
+export type GitAutoCommitResult = {
+  ok: boolean;
+  committed: boolean;
+  /** Why nothing was committed — clean, conflicts, merge-in-progress, too-many, … */
+  reason?: string;
+  hash?: string | null;
+  message?: string;
+  files?: number;
+  error?: string;
+};
+
 export type GitBranch = { name: string; current: boolean };
 export type GitChangedFile = { code: string; staged: boolean; path: string };
 export type GitCommit = { hash: string; subject: string; author: string; when: string };
@@ -70,6 +81,10 @@ declare global {
         action: "fetch" | "pull" | "push" | "checkout",
         payload?: { branch?: string }
       ) => Promise<{ ok: boolean; output?: string; error?: string | null }>;
+      gitAutoCommit: (
+        rootPath: string | null,
+        options?: { prefix?: string }
+      ) => Promise<GitAutoCommitResult>;
       readProviderConfig: () => Promise<ProviderConfig>;
       writeProviderConfig: (config: ProviderConfig) => Promise<ProviderConfig>;
       listRunners: () => Promise<{ ok: boolean; runners?: RunnerJob[]; error?: string }>;

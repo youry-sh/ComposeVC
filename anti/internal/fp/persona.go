@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// ScreenPreset is a common desktop resolution pack.
+// ScreenPreset is a common desktop resolution pack (test comment edit).
 type ScreenPreset struct {
 	Width  int
 	Height int

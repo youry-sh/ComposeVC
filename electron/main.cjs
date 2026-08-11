@@ -1092,6 +1092,81 @@ ipcMain.handle("git:details", async (_event, rootPath) => {
   }
 });
 
+/**
+ * Stage everything and commit it, with the guards an unattended commit needs:
+ * never commit into a conflict or a half-finished merge/rebase, and never turn
+ * a missing .gitignore into a thousand-file commit.
+ */
+const AUTOCOMMIT_MAX_FILES = 400;
+
+ipcMain.handle("git:autocommit", async (_event, rootPath, options = {}) => {
+  try {
+    if (!rootPath || !(await gitService.isRepo(rootPath))) {
+      return { ok: false, committed: false, reason: "not-a-repo" };
+    }
+
+    // A commit in the middle of a merge/rebase would silently finish it.
+    const gitDir = await gitService.execGit(["rev-parse", "--git-dir"], rootPath, { timeout: 5000 });
+    if (gitDir.ok) {
+      const dir = path.resolve(rootPath, gitDir.stdout);
+      const busy = ["MERGE_HEAD", "CHERRY_PICK_HEAD", "REVERT_HEAD", "rebase-merge", "rebase-apply"];
+      for (const marker of busy) {
+        if (fs.existsSync(path.join(dir, marker))) {
+          return { ok: true, committed: false, reason: "merge-in-progress" };
+        }
+      }
+    }
+
+    const before = await gitService.getStatus(rootPath);
+    if (!before.isRepo) return { ok: false, committed: false, reason: "not-a-repo" };
+    if (before.conflicted > 0) return { ok: true, committed: false, reason: "conflicts" };
+
+    const changed = before.staged + before.modified + before.untracked;
+    if (changed === 0) return { ok: true, committed: false, reason: "clean" };
+    if (changed > AUTOCOMMIT_MAX_FILES) {
+      return { ok: true, committed: false, reason: "too-many", files: changed };
+    }
+
+    const add = await gitService.execGit(["add", "-A"], rootPath, { timeout: 30000 });
+    if (!add.ok) return { ok: false, committed: false, reason: "add-failed", error: add.stderr || add.error };
+
+    // Everything may have been ignored — nothing to commit after staging.
+    const staged = await gitService.execGit(["diff", "--cached", "--name-only"], rootPath, { timeout: 15000 });
+    const stagedFiles = staged.ok ? staged.stdout.split("\n").filter(Boolean) : [];
+    if (stagedFiles.length === 0) return { ok: true, committed: false, reason: "nothing-staged" };
+
+    const summary = [
+      before.modified ? `${before.modified} modified` : null,
+      before.untracked ? `${before.untracked} new` : null,
+    ]
+      .filter(Boolean)
+      .join(", ");
+    const prefix = String(options?.prefix || "auto").trim() || "auto";
+    const message = `${prefix}: ${stagedFiles.length} file${stagedFiles.length === 1 ? "" : "s"}${summary ? ` (${summary})` : ""}`;
+
+    const commit = await gitService.execGit(["commit", "-m", message], rootPath, { timeout: 60000 });
+    if (!commit.ok) {
+      return {
+        ok: false,
+        committed: false,
+        reason: "commit-failed",
+        error: [commit.stdout, commit.stderr].filter(Boolean).join("\n").slice(0, 400),
+      };
+    }
+
+    const head = await gitService.execGit(["rev-parse", "--short", "HEAD"], rootPath, { timeout: 5000 });
+    return {
+      ok: true,
+      committed: true,
+      hash: head.ok ? head.stdout : null,
+      message,
+      files: stagedFiles.length,
+    };
+  } catch (error) {
+    return { ok: false, committed: false, reason: "error", error: String(error?.message || error) };
+  }
+});
+
 ipcMain.handle("git:action", async (_event, rootPath, action, payload = {}) => {
   try {
     if (!GIT_UI_ACTIONS.has(action)) return { ok: false, error: `Unsupported action: ${action}` };

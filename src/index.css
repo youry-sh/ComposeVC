@@ -8443,6 +8443,36 @@
 .git-badge-count.is-untracked { color: var(--ink-600); }
 .git-badge-count.is-conflicted { color: var(--danger); }
 .git-badge-clean { flex: none; opacity: .55; }
+.git-badge-auto {
+  flex: none;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: var(--active-bg);
+  color: var(--ink-800);
+  font-size: 9px;
+  letter-spacing: .06em;
+}
+
+.git-pop-auto {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 7px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-2);
+  cursor: pointer;
+}
+.git-pop-auto input { margin-top: 2px; accent-color: var(--ink-800); cursor: pointer; }
+.git-pop-auto-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.git-pop-auto-title { font-size: 11px; color: var(--ink-900); }
+.git-pop-auto-hint {
+  font-family: var(--terminal-font);
+  font-size: 9px;
+  color: var(--ink-500);
+  opacity: .8;
+}
 
 .git-pop {
   position: fixed;
