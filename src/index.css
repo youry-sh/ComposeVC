@@ -6659,16 +6659,6 @@
     -webkit-app-region: drag;
   }
 
-  .titlebar-brand-ico {
-    width: 30px;
-    height: 30px;
-    border-radius: 9px;
-    object-fit: contain;
-    display: block;
-    flex: 0 0 auto;
-    box-shadow: 0 0 16px rgba(16, 185, 129, 0.28);
-  }
-
   /* ── top bar nav tabs ── */
   .topbar-tabs {
     display: flex;
@@ -7491,7 +7481,6 @@
   padding: 0 11px 0 9px;
   border-right: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border));
 }
-.titlebar-brand-ico { width: 25px; height: 25px; border-radius: 2px; box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 22%, transparent); }
 .titlebar-brand-copy {
   color: var(--ink-800);
   font: 600 10px/1 var(--terminal-font);
