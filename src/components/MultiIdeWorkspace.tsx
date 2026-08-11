@@ -379,6 +379,7 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
       <ChatAside
         chatCount={totalChats}
         runningPanels={runningPanels}
+        activeRootPath={stableSlots.find((s) => s.id === activeSlotId)?.rootPath || null}
         onOpenRunners={onOpenRunners}
       />
     </div>
