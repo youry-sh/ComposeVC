@@ -77,7 +77,7 @@ const StatTile: React.FC<{ label: string; value: string; title?: string }> = ({
   </div>
 );
 
-const ChatAside: React.FC<Props> = ({ chatCount, runningPanels, onOpenRunners }) => {
+const ChatAside: React.FC<Props> = ({ chatCount, runningPanels, activeRootPath, onOpenRunners }) => {
   const [memory, setMemory] = useState("—");
   const [uptime, setUptime] = useState("00:00:00");
   const [tokens, setTokens] = useState("0");
@@ -174,6 +174,8 @@ const ChatAside: React.FC<Props> = ({ chatCount, runningPanels, onOpenRunners })
           <span>err {errors}</span>
         </div>
       </section>
+
+      <GitPanel rootPath={activeRootPath} />
 
       <section className="aside-block aside-block-grow">
         <header className="aside-head">
