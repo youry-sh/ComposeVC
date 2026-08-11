@@ -48,7 +48,7 @@ export function formatTemplate(template: string, vars: Record<string, string | n
 export const translations = {
   en: {
     openFolder: "Open Folder",
-    chat: "Chat",
+    chat: "Agent Work",
     askAnything: "Ask anything (Ctrl+L)",
     noConversationYet: "No conversation yet",
     askAnythingToStart: "Ask anything to start",
@@ -248,7 +248,7 @@ export const translations = {
   },
   ru: {
     openFolder: "Открыть папку",
-    chat: "Чат",
+    chat: "Работа агента",
     askAnything: "Спроси что-нибудь (Ctrl+L)",
     noConversationYet: "Пока нет диалога",
     askAnythingToStart: "Спроси что-нибудь, чтобы начать",
@@ -447,7 +447,7 @@ export const translations = {
   },
   uk: {
     openFolder: "Відкрити папку",
-    chat: "Чат",
+    chat: "Робота агента",
     askAnything: "Запитай що завгодно (Ctrl+L)",
     noConversationYet: "Ще немає розмови",
     askAnythingToStart: "Запитай що завгодно, щоб почати",

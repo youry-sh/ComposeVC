@@ -305,7 +305,7 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
                   <span className="chat-rail-head-row">
                     <span className="chat-rail-dot" aria-hidden />
                     <span className="chat-rail-index">{String(index + 1).padStart(2, "0")}</span>
-                    <span className="chat-rail-name">{name || labels.chat || "Chat"}</span>
+                    <span className="chat-rail-name">{name || labels.chat || "Agent Work"}</span>
                     {sessionCount > 0 && (
                       <span className="chat-rail-count" title={labels.chatHistory || "Chats"}>
                         {sessionCount}
