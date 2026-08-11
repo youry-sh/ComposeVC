@@ -8400,6 +8400,91 @@
   white-space: pre;
 }
 
+/* ══ Live tool strip ═══════════════════════════════════════════════════════
+   One folded line while the agent works: spinner, a phrase with a highlight
+   travelling across it, the tool-call counter and a disclosure arrow. */
+.tool-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  padding: 5px 9px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-2);
+  color: var(--ink-700);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .12s ease, background .12s ease;
+}
+.tool-strip:hover { border-color: var(--border-strong); background: var(--surface-3); }
+.tool-strip.is-open { border-color: var(--border-strong); }
+.tool-strip-spin {
+  flex: none;
+  width: 12px;
+  font-family: var(--terminal-font);
+  font-size: 12px;
+  line-height: 1;
+  color: var(--ink-600);
+}
+.tool-strip-text {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  animation: thinking-label-swap .28s ease-out;
+}
+.tool-strip-text-base {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ink-700);
+}
+/* The travelling highlight: a gradient clipped to the glyphs themselves. */
+.tool-strip-text-shine {
+  position: absolute;
+  inset: 0;
+  white-space: nowrap;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    transparent 35%,
+    var(--ink-950) 50%,
+    transparent 65%,
+    transparent 100%
+  );
+  background-size: 220% 100%;
+  background-repeat: no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: loading-shimmer 2.4s ease-in-out infinite;
+  pointer-events: none;
+}
+.tool-strip-count {
+  flex: none;
+  min-width: 20px;
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--ink-800);
+  font-family: var(--terminal-font);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.tool-strip-chevron { flex: none; font-size: 9px; color: var(--ink-500); }
+
+@media (prefers-reduced-motion: reduce) {
+  .tool-strip-text-shine { animation: none; }
+}
+
 /* ══ Git ═══════════════════════════════════════════════════════════════════
    Rail: one line of numbers under the chat, nothing to click.
    Right column: branches, files and the real `git log --graph`. No modal. */
