@@ -1078,15 +1078,17 @@ ipcMain.handle("git:status", async (_event, rootPath) => {
   }
 });
 
-ipcMain.handle("git:details", async (_event, rootPath) => {
+ipcMain.handle("git:details", async (_event, rootPath, options = {}) => {
   try {
     if (!rootPath || !(await gitService.isRepo(rootPath))) return { ok: false, error: "not-a-repo" };
-    const [branches, files, commits] = await Promise.all([
+    const limit = Math.max(10, Math.min(200, Number(options?.limit) || 60));
+    const [branches, files, graph, total] = await Promise.all([
       gitService.listBranches(rootPath),
       gitService.listChangedFiles(rootPath, 120),
-      gitService.recentCommits(rootPath, 8),
+      gitService.graphLog(rootPath, limit),
+      gitService.commitCount(rootPath),
     ]);
-    return { ok: true, branches, files, commits };
+    return { ok: true, branches, files, graph, totalCommits: total, shown: graph.length };
   } catch (error) {
     return { ok: false, error: String(error?.message || error) };
   }

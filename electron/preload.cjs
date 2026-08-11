@@ -3,7 +3,8 @@ const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("lopster", {
   // Git for the chat shell: status badge, popover details, safe actions.
   gitStatus: (rootPath) => ipcRenderer.invoke("git:status", rootPath || null),
-  gitDetails: (rootPath) => ipcRenderer.invoke("git:details", rootPath || null),
+  gitDetails: (rootPath, options) =>
+    ipcRenderer.invoke("git:details", rootPath || null, options || {}),
   gitAction: (rootPath, action, payload) =>
     ipcRenderer.invoke("git:action", rootPath || null, action, payload || {}),
   gitAutoCommit: (rootPath, options) =>

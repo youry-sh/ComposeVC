@@ -81,11 +81,17 @@ declare global {
   interface Window {
     lopster?: {
       gitStatus: (rootPath: string | null) => Promise<GitStatus>;
-      gitDetails: (rootPath: string | null) => Promise<{
+      gitDetails: (
+        rootPath: string | null,
+        options?: { limit?: number }
+      ) => Promise<{
         ok: boolean;
         branches?: GitBranch[];
         files?: GitChangedFile[];
-        commits?: GitCommit[];
+        /** `git log --graph` lines: "<graph>\t<hash>\t<date>\t<author>\t<subject>" */
+        graph?: string[];
+        totalCommits?: number;
+        shown?: number;
         error?: string;
       }>;
       gitAction: (
