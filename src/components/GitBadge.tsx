@@ -22,23 +22,37 @@ const AUTOCOMMIT_KEY = "lopster-git-autocommit";
  */
 const autoCommitOwners = new Map<string, symbol>();
 
-function loadAutoCommitPrefs(): Record<string, boolean> {
-  try {
-    const raw = window.localStorage.getItem(AUTOCOMMIT_KEY);
-    const parsed = raw ? (JSON.parse(raw) as unknown) : null;
-    if (parsed && typeof parsed === "object") return parsed as Record<string, boolean>;
-  } catch {
-    /* ignore */
+type AutoPrefs = { commit: boolean; push: boolean };
+
+/** Older builds stored a bare boolean per folder — read that as commit-only. */
+function normalizePref(value: unknown): AutoPrefs {
+  if (value === true) return { commit: true, push: false };
+  if (value && typeof value === "object") {
+    const record = value as Partial<AutoPrefs>;
+    return { commit: record.commit === true, push: record.push === true };
   }
-  return {};
+  return { commit: false, push: false };
 }
 
-function saveAutoCommitPref(rootPath: string, enabled: boolean) {
+function loadAutoPrefs(): Record<string, AutoPrefs> {
   try {
-    const prefs = loadAutoCommitPrefs();
-    if (enabled) prefs[rootPath] = true;
-    else delete prefs[rootPath];
-    window.localStorage.setItem(AUTOCOMMIT_KEY, JSON.stringify(prefs));
+    const raw = window.localStorage.getItem(AUTOCOMMIT_KEY);
+    const parsed = raw ? (JSON.parse(raw) as Record<string, unknown>) : null;
+    if (!parsed || typeof parsed !== "object") return {};
+    const out: Record<string, AutoPrefs> = {};
+    for (const [key, value] of Object.entries(parsed)) out[key] = normalizePref(value);
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+function saveAutoPref(rootPath: string, prefs: AutoPrefs) {
+  try {
+    const all = loadAutoPrefs();
+    if (prefs.commit || prefs.push) all[rootPath] = prefs;
+    else delete all[rootPath];
+    window.localStorage.setItem(AUTOCOMMIT_KEY, JSON.stringify(all));
   } catch {
     /* ignore */
   }
