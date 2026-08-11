@@ -54,7 +54,7 @@ const LiveToolStrip: React.FC<Props> = ({ count, open, onToggle, statusLabel, ru
           React remount the span on every rotation, which restarted the
           highlight from the top of its cycle and read as the glow dropping out
           for a second. Swapping the text content alone keeps it continuous. */}
-      <span className={`tool-strip-text${running ? " is-shining" : ""}`}>{text}</span>
+      <span className="tool-strip-text">{text}</span>
 
       <span className="tool-strip-count" title={`${count} tool calls`}>
         {count}

@@ -8537,27 +8537,16 @@
   overflow: hidden;
   text-overflow: ellipsis;
   color: var(--ink-700);
-  animation: thinking-label-swap .28s ease-out;
+  animation: none;
 }
 /* The highlight travels across the glyphs of this same node: the gradient
    carries the base colour everywhere and a brighter band in the middle, so no
    second copy of the text is needed to paint it. */
 .tool-strip-text.is-shining {
-  color: transparent;
-  -webkit-text-fill-color: transparent;
-  background-image: linear-gradient(
-    90deg,
-    var(--ink-700) 0%,
-    var(--ink-700) 38%,
-    var(--ink-950) 50%,
-    var(--ink-700) 62%,
-    var(--ink-700) 100%
-  );
-  background-size: 260% 100%;
-  background-repeat: no-repeat;
-  -webkit-background-clip: text;
-  background-clip: text;
-  animation: thinking-label-swap .28s ease-out, loading-shimmer 2.4s ease-in-out infinite;
+  color: var(--ink-700);
+  -webkit-text-fill-color: currentColor;
+  background: none;
+  animation: none;
 }
 .tool-strip-count {
   flex: none;
