@@ -4357,12 +4357,22 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             <div className="mb-2 text-[11px] font-semibold text-ink-950 tracking-tight">
               ComposeVC
             </div>
+            {/* One collapsed line instead of a card per tool call. */}
+            {toolActivity.length > 0 && (
+              <LiveToolStrip
+                count={toolActivity.length}
+                open={liveToolsOpen}
+                onToggle={() => setLiveToolsOpen((value) => !value)}
+                statusLabel={statusLabel}
+              />
+            )}
             {/* Chronological stream: text appears under the tools that preceded it */}
             {liveTimeline.length > 0 ? (
               liveTimeline.map((item) => {
                 if (item.kind === "text") {
                   return <MarkdownContent key={item.id} content={item.text} />;
                 }
+                if (!liveToolsOpen) return null;
                 const step = toolActivity.find((s) => s.toolCallId === item.toolCallId);
                 if (!step) return null;
                 return (
@@ -4379,7 +4389,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
               })
             ) : (
               <>
-                {toolActivity.length > 0 && (
+                {toolActivity.length > 0 && liveToolsOpen && (
                   <ToolActivityList
                     steps={toolActivity}
                     more={labels.more}
