@@ -1,3 +1,0 @@
-Тестовий файл
-Created: 2026-08-11
-Hello from ComposeVC!
