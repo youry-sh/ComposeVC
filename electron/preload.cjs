@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld("lopster", {
     ipcRenderer.invoke("git:action", rootPath || null, action, payload || {}),
   gitAutoCommit: (rootPath, options) =>
     ipcRenderer.invoke("git:autocommit", rootPath || null, options || {}),
+  gitAutoPush: (rootPath) => ipcRenderer.invoke("git:autopush", rootPath || null),
   readProviderConfig: () => ipcRenderer.invoke("config:read"),
   writeProviderConfig: (config) => ipcRenderer.invoke("config:write", config),
   listRunners: () => ipcRenderer.invoke("runner:list"),

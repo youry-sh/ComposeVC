@@ -1167,6 +1167,51 @@ ipcMain.handle("git:autocommit", async (_event, rootPath, options = {}) => {
   }
 });
 
+/**
+ * Push the commits this branch is ahead by — nothing else.
+ *
+ * `git push` only ever sends commits the remote does not have, so files that
+ * were already pushed are never re-sent. Never forces: if the branch is behind
+ * the push would be rejected anyway, so it is skipped with a reason instead of
+ * failing every few seconds.
+ */
+ipcMain.handle("git:autopush", async (_event, rootPath) => {
+  try {
+    if (!rootPath || !(await gitService.isRepo(rootPath))) {
+      return { ok: false, pushed: false, reason: "not-a-repo" };
+    }
+
+    const status = await gitService.getStatus(rootPath);
+    if (!status.isRepo) return { ok: false, pushed: false, reason: "not-a-repo" };
+    if (status.detached || !status.branch) return { ok: true, pushed: false, reason: "detached" };
+    if (status.ahead === 0) return { ok: true, pushed: false, reason: "nothing-to-push" };
+    if (status.behind > 0) return { ok: true, pushed: false, reason: "behind", behind: status.behind };
+
+    const args = status.upstream
+      ? ["push"]
+      : ["push", "--set-upstream", "origin", status.branch];
+
+    const res = await gitService.execGit(args, rootPath, { timeout: 120000 });
+    if (!res.ok) {
+      return {
+        ok: false,
+        pushed: false,
+        reason: "push-failed",
+        error: [res.stdout, res.stderr].filter(Boolean).join("\n").slice(0, 400),
+      };
+    }
+    return {
+      ok: true,
+      pushed: true,
+      commits: status.ahead,
+      branch: status.branch,
+      output: [res.stdout, res.stderr].filter(Boolean).join("\n").slice(0, 400),
+    };
+  } catch (error) {
+    return { ok: false, pushed: false, reason: "error", error: String(error?.message || error) };
+  }
+});
+
 ipcMain.handle("git:action", async (_event, rootPath, action, payload = {}) => {
   try {
     if (!GIT_UI_ACTIONS.has(action)) return { ok: false, error: `Unsupported action: ${action}` };

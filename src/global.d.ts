@@ -85,6 +85,7 @@ declare global {
         rootPath: string | null,
         options?: { prefix?: string }
       ) => Promise<GitAutoCommitResult>;
+      gitAutoPush: (rootPath: string | null) => Promise<GitAutoPushResult>;
       readProviderConfig: () => Promise<ProviderConfig>;
       writeProviderConfig: (config: ProviderConfig) => Promise<ProviderConfig>;
       listRunners: () => Promise<{ ok: boolean; runners?: RunnerJob[]; error?: string }>;
