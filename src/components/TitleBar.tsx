@@ -151,12 +151,6 @@ const TitleBar: React.FC<TitleBarProps> = ({
   return (
     <div className="titlebar-root">
       <div className="titlebar-brand-block">
-        <img
-          src="./logo/app-icon.png"
-          alt="ComposeVC"
-          draggable={false}
-          className="titlebar-brand-ico"
-        />
         <span className="titlebar-brand-copy" aria-label="ComposeVC">COMPOSE//VC</span>
       </div>
 
