@@ -873,6 +873,7 @@ declare global {
 	    external?: number;
 	    workingSetBytes?: number;
 	    uptimeSec?: number;
+	    totalRuntimeSec?: number;
 	    error?: string;
 		  }>;
 		};  }

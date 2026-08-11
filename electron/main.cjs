@@ -3709,7 +3709,12 @@ app.whenReady().then(async () => {
   // (the child is also runnable manually from a terminal).
   try {
     const { process: proxyProcess } = require("./proxy/index.cjs");
-    const boot = await proxyProcess.autoStartIfNeeded(app.getPath("userData"));
+    // Packaged builds force the managed proxy up on every launch so a freshly
+    // installed machine never faces a dead gateway. In dev the store toggle is
+    // respected (a proxy may already be running in a terminal).
+    const boot = await proxyProcess.autoStartIfNeeded(app.getPath("userData"), {
+      force: app.isPackaged,
+    });
     if (boot.started) console.log("[proxy] auto-started on", boot.status?.baseUrl);
   } catch (error) {
     console.error("Proxy auto-start failed:", error?.message || error);

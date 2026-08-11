@@ -534,7 +534,7 @@ async function status() {
 }
 
 /** Resume the gateway on app launch if the store says it should run. */
-async function autoStartIfNeeded(udPath) {
+async function autoStartIfNeeded(udPath, opts = {}) {
   setUserDataPath(udPath);
   try {
     const storeApi = require("./store.cjs");
@@ -545,7 +545,21 @@ async function autoStartIfNeeded(udPath) {
       const ext = await detectExternal();
       if (ext) return { started: false, external: true, status: ext };
     }
-    if (!store.autoStart && !store.enabled) return { started: false, status: await status() };
+    // `force` (packaged exe) always brings the gateway up: a first-run machine
+    // has no store yet, so autoStart/enabled default to false and the app's
+    // providers would hit a dead 127.0.0.1:8787. Persist the flag so the state
+    // stays consistent for the proxy UI.
+    if (opts.force && !store.autoStart) {
+      try {
+        store.autoStart = true;
+        await storeApi.save(udPath, store);
+      } catch {
+        /* non-fatal — still start below */
+      }
+    }
+    if (!opts.force && !store.autoStart && !store.enabled) {
+      return { started: false, status: await status() };
+    }
     const st = await start(udPath, { host: store.host, port: store.port });
     return { started: true, status: st };
   } catch (e) {
