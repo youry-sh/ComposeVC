@@ -8633,10 +8633,14 @@
   cursor: default;
 }
 
+/* Both scroll areas use the chat's own scroller (ChatMonoScroll): the native
+   bar is hidden and the thin gradient rail is drawn instead, so git matches
+   the conversation. Height is capped here; the component scrolls inside it. */
 .git-panel-files {
   margin-top: 8px;
   max-height: 92px;
-  overflow-y: auto;
+}
+.git-panel-files .chat-mono-scroll-viewport {
   display: flex;
   flex-direction: column;
   gap: 1px;
