@@ -198,17 +198,49 @@ const GitBadge: React.FC<Props> = ({ rootPath }) => {
         if (open) await loadDetails();
       }
     })();
-  }, [autoCommit, rootPath, status, open, refreshStatus, loadDetails]);
+  }, [auto.commit, rootPath, status, open, refreshStatus, loadDetails]);
 
-  const toggleAutoCommit = () => {
+  // Auto-push: send whatever the branch is ahead by. `git push` transfers only
+  // commits the remote lacks, so already-pushed files are never re-sent.
+  useEffect(() => {
+    if (!auto.push || !rootPath || !status?.isRepo) return;
+    if (autoCommitOwners.get(rootPath) !== ownerRef.current) return;
+    if (pushingRef.current || committingRef.current) return;
+    if (status.ahead === 0 || status.detached) return;
+    if (Date.now() < pushCooldownRef.current) return;
+
+    pushingRef.current = true;
+    void (async () => {
+      try {
+        const res = await window.lopster?.gitAutoPush?.(rootPath);
+        if (res?.pushed) {
+          setNotice({
+            text: `auto-push: ${res.commits} commit${res.commits === 1 ? "" : "s"} → ${res.branch}`,
+            error: false,
+          });
+        } else if (res?.reason === "behind") {
+          pushCooldownRef.current = Date.now() + 60_000;
+          setNotice({ text: `auto-push paused: ${res.behind} behind — pull first`, error: true });
+        } else if (res?.reason === "push-failed" || res?.reason === "error") {
+          pushCooldownRef.current = Date.now() + 60_000;
+          setNotice({ text: `auto-push failed: ${res.error || ""}`.slice(0, 300), error: true });
+        }
+      } finally {
+        pushingRef.current = false;
+        await refreshStatus();
+      }
+    })();
+  }, [auto.push, rootPath, status, refreshStatus]);
+
+  const setAutoPref = (patch: Partial<AutoPrefs>) => {
     if (!rootPath) return;
-    const next = !autoCommit;
-    setAutoCommit(next);
-    saveAutoCommitPref(rootPath, next);
+    const next = { ...auto, ...patch };
+    setAuto(next);
+    saveAutoPref(rootPath, next);
     lastSignatureRef.current = null;
-    // Whoever flips the switch takes over the folder.
+    pushCooldownRef.current = 0;
+    // Whoever flips a switch takes over the folder.
     autoCommitOwners.set(rootPath, ownerRef.current);
-    setNotice(next ? { text: "auto-commit on", error: false } : null);
   };
 
   // Close on outside click / Escape.
@@ -322,8 +354,13 @@ const GitBadge: React.FC<Props> = ({ rootPath }) => {
         {!status.dirty && status.ahead === 0 && status.behind === 0 && (
           <span className="git-badge-clean" title="clean">clean</span>
         )}
-        {autoCommit && (
-          <span className="git-badge-auto" title="auto-commit is on for this folder">auto</span>
+        {(auto.commit || auto.push) && (
+          <span
+            className="git-badge-auto"
+            title={`auto ${[auto.commit ? "commit" : null, auto.push ? "push" : null].filter(Boolean).join(" + ")} is on for this folder`}
+          >
+            {auto.commit && auto.push ? "auto↑" : "auto"}
+          </span>
         )}
       </button>
 
