@@ -5,9 +5,7 @@ import { RunnerJob } from "../types";
 import {
   CONTEXT_METRICS_EVENT,
   ContextMetricsDetail,
-  formatBytes,
   formatTokenCount,
-  formatUptime,
 } from "./StatusBar";
 
 /**
@@ -78,11 +76,8 @@ const StatTile: React.FC<{ label: string; value: string; title?: string }> = ({
 );
 
 const ChatAside: React.FC<Props> = ({ chatCount, runningPanels, activeRootPath, onOpenRunners }) => {
-  const [memory, setMemory] = useState("—");
-  const [uptime, setUptime] = useState("00:00:00");
   const [tokens, setTokens] = useState("0");
   const [requests, setRequests] = useState("0");
-  const [errors, setErrors] = useState("0");
   const [contextBySlot, setContextBySlot] = useState<Record<string, number>>({});
   const [runners, setRunners] = useState<RunnerJob[]>([]);
 
@@ -90,21 +85,11 @@ const ChatAside: React.FC<Props> = ({ chatCount, runningPanels, activeRootPath, 
     let cancelled = false;
     const refresh = async () => {
       try {
-        const sys = await window.lopster?.getSystemMetrics?.();
-        if (!cancelled && sys?.ok) {
-          setMemory(formatBytes(sys.workingSetBytes || sys.rss || sys.heapUsed || 0));
-          if (typeof sys.uptimeSec === "number") setUptime(formatUptime(sys.uptimeSec));
-        }
-      } catch {
-        /* ignore */
-      }
-      try {
         const usage = await window.lopster?.proxyGetUsageStats?.();
         if (cancelled) return;
         const totals = usage?.ok ? usage.usage?.totals : null;
         setTokens(formatTokenCount(totals?.totalTokens ?? 0));
         setRequests(formatTokenCount(totals?.requests ?? 0));
-        setErrors(formatTokenCount(totals?.errorRequests ?? 0));
       } catch {
         /* ignore */
       }
@@ -167,11 +152,6 @@ const ChatAside: React.FC<Props> = ({ chatCount, runningPanels, activeRootPath, 
           <StatTile label="Context" value={formatTokenCount(contextTotal)} title="Live context across all panels" />
           <StatTile label="Requests" value={requests} title="Proxy usage — requests" />
           <StatTile label="Chats" value={String(chatCount)} title="Saved chats across all panels" />
-        </div>
-        <div className="aside-meta">
-          <span>mem {memory}</span>
-          <span>up {uptime}</span>
-          <span>err {errors}</span>
         </div>
       </section>
 

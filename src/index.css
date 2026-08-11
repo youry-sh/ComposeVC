@@ -8165,17 +8165,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.aside-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-  margin-top: 8px;
-  font-family: var(--terminal-font);
-  font-size: 10px;
-  font-variant-numeric: tabular-nums;
-  color: var(--ink-500);
-  opacity: .75;
-}
 
 /* Runner table */
 .aside-empty {
