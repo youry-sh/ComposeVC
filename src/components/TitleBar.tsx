@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Minus, Square, X } from "lucide-react";
+import { CheckSquare, Minus, Square, X } from "lucide-react";
 import {
   IcoMulti,
   IcoProxy,
@@ -17,7 +17,7 @@ import {
   formatUptime,
 } from "./StatusBar";
 
-type Panel = "multiide" | "proxy" | "settings" | "customtools" | "runner";
+type Panel = "multiide" | "proxy" | "settings" | "customtools" | "runner" | "todo";
 
 interface TitleBarProps {
   subtitle?: string;
@@ -160,6 +160,7 @@ const TitleBar: React.FC<TitleBarProps> = ({
     { id: "proxy", title: labels?.proxy || "Proxy", icon: <IcoProxy className="topbar-tab-ico" /> },
     { id: "runner", title: "Runner", icon: <IcoRunner className="topbar-tab-ico" /> },
     { id: "customtools", title: "Custom Tools", icon: <IcoTools className="topbar-tab-ico" /> },
+    { id: "todo", title: "Todo", icon: <CheckSquare className="topbar-tab-ico" /> },
   ];
 
   return (

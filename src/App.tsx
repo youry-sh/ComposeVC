@@ -7,6 +7,7 @@ import ProxyWorkspace from "./components/ProxyWorkspace";
 import RunnerWorkspace from "./components/RunnerWorkspace";
 import RunnerSendModal from "./components/RunnerSendModal";
 import CustomToolsWorkspace from "./components/CustomToolsWorkspace";
+import TodoWorkspace from "./components/TodoWorkspace";
 import MultiIdeWorkspace, {
   loadMultiIdeSlots,
   saveMultiIdeSlots,
@@ -21,7 +22,7 @@ import {
 import { CustomTool, ProjectSearchResult, ProviderConfig } from "./types";
 import { dispatchInsertChatInput, loadMouseSnippets, textForMouseButton } from "./utils/mouseSnippets";
 
-type Panel = "multiide" | "proxy" | "settings" | "customtools" | "runner";
+type Panel = "multiide" | "proxy" | "settings" | "customtools" | "runner" | "todo";
 
 const App: React.FC = () => {
   const [rootPath, setRootPath] = useState<string | null>(null);
@@ -39,6 +40,7 @@ const App: React.FC = () => {
       if (saved === "proxy") return "proxy";
       if (saved === "runner") return "runner";
       if (saved === "customtools") return "customtools";
+      if (saved === "todo") return "todo";
     } catch {
       /* ignore */
     }
@@ -449,6 +451,11 @@ const App: React.FC = () => {
                 setRunnerSendOpen(true);
               }}
             />
+          )}
+          {activePanel === "todo" && (
+            <div className="flex-1 min-w-0 min-h-0 flex overflow-hidden">
+              <TodoWorkspace />
+            </div>
           )}
           {activePanel === "customtools" && (
             <div className="flex-1 min-w-0 min-h-0 flex overflow-hidden">
