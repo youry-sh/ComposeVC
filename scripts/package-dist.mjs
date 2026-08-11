@@ -348,6 +348,19 @@ if (!skipWeb) {
   log("skipping web build (--skip-web)");
 }
 
+// --- 3b) Harden the renderer bundle (obfuscate dist/assets/*.js in place) ---
+// The React bundle is otherwise only minified, i.e. one beautify away from the
+// full app logic. Skipped together with --skip-harden. A banner marker inside
+// each file makes re-runs (e.g. --skip-web) idempotent.
+if (!skipHarden) {
+  const rendererArgs = ["scripts/harden-renderer.mjs"];
+  if (lightHarden) rendererArgs.push("--light");
+  log(lightHarden ? "hardening renderer (light)…" : "hardening renderer (heavy obfuscation)…");
+  run(process.execPath, rendererArgs, { shell: false });
+} else {
+  log("skipping renderer harden (--skip-harden)");
+}
+
 // --- 4) Harden electron main (javascript-obfuscator → release-assets/electron-hard) ---
 const hardMain = path.join(hardElectron, "main.cjs");
 if (skipHarden) {
