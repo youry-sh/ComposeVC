@@ -447,38 +447,6 @@ const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, 
             {activeTab === "appearance" && (
               <div className="settings-body-scroll">
               <div className="settings-section">
-                <div className="settings-section-head">
-                  <div className="settings-section-title">{labels.theme}</div>
-                  <p className="settings-section-desc">{labels.themeDescription}</p>
-                </div>
-
-                <div className="settings-theme-grid">
-                  {THEMES.map((theme) => {
-                    const selected = themeId === theme.id;
-                    return (
-                      <button
-                        key={theme.id}
-                        type="button"
-                        onClick={() => {
-                          setThemeId(theme.id);
-                          applyTheme(theme.id);
-                        }}
-                        className={`settings-theme-card ${selected ? "is-active" : ""}`}
-                      >
-                        <div className="settings-theme-swatches">
-                          {theme.swatches.map((color, i) => (
-                            <span key={`${theme.id}-${i}`} style={{ background: color }} />
-                          ))}
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="truncate text-[12px] font-medium text-ink-950">{theme.name}</span>
-                          {selected ? <Check className="h-3 w-3 shrink-0" style={{ color: PRIMARY }} /> : null}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-
                 <div className="settings-card">
                   <div className="settings-card-title">{labels.languages}</div>
                   <div className="settings-lang-row">
