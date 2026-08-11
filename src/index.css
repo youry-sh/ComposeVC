@@ -8626,6 +8626,71 @@
   .subagent-bar-spin { animation: none; }
 }
 
+/* ══ Soviet-7 council bar ══════════════════════════════════════════════════
+   Seven advisor seats fill as each finishes, then a spinner for synthesis. */
+.council-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  padding: 8px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  animation: thinking-label-swap .25s ease-out;
+}
+.council-seats { display: flex; gap: 4px; flex: none; }
+.council-seat {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid var(--ink-400);
+  background: transparent;
+  transition: background .2s ease, border-color .2s ease;
+}
+.council-seat.is-pending { opacity: .5; }
+.council-seat.is-running {
+  background: var(--ink-800);
+  border-color: var(--ink-800);
+  animation: chat-rail-pulse 1.2s ease-in-out infinite;
+}
+.council-seat.is-done { background: var(--ink-950); border-color: var(--ink-950); }
+.council-seat.is-error { background: var(--danger); border-color: var(--danger); }
+.council-synth-spin {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--ink-300);
+  border-top-color: var(--ink-950);
+  animation: subagent-spin .7s linear infinite;
+}
+.council-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--terminal-font);
+  font-size: 12px;
+  letter-spacing: .02em;
+  color: var(--ink-800);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.council-count {
+  flex: none;
+  padding: 1px 8px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface);
+  font-family: var(--terminal-font);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-600);
+}
+@media (prefers-reduced-motion: reduce) {
+  .council-seat.is-running, .council-synth-spin { animation: none; }
+}
+
 /* ══ Git ═══════════════════════════════════════════════════════════════════
    Rail: one line of numbers under the chat, nothing to click.
    Right column: branches, files and the real `git log --graph`. No modal. */

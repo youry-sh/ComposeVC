@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import AsciiLogo from "./AsciiLogo";
 import LiveToolStrip from "./LiveToolStrip";
 import SubagentBar from "./SubagentBar";
+import Soviet7Bar from "./Soviet7Bar";
 import {
   Bookmark,
   BrainCircuit,
@@ -3743,6 +3744,42 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
     }
     return { running, done, total };
   }, [toolActivity]);
+
+  /** Live Soviet-7 council state for the compact bar (7 advisor seats + phase). */
+  const soviet7Live = useMemo(() => {
+    let step: AgentToolProgress | null = null;
+    for (let i = toolActivity.length - 1; i >= 0; i -= 1) {
+      if (toolActivity[i].name === "soviet_7_council") {
+        step = toolActivity[i];
+        break;
+      }
+    }
+    if (!step) return null;
+
+    const units = step.units || [];
+    const total = step.total || units.length || 7;
+    let done = 0;
+    let error = 0;
+    const seats: string[] = [];
+    for (let i = 0; i < total; i += 1) {
+      const unit = units.find((u) => u.index === i) || units[i];
+      const status = String(unit?.status || "pending").toLowerCase();
+      seats.push(status);
+      if (status === "done") done += 1;
+      else if (status === "error" || status === "stopped") {
+        done += 1;
+        error += 1;
+      }
+    }
+
+    const councilPhase = done < total;
+    // After every advisor is done, main synthesizes — show that only until the
+    // next real tool step appends (then it is normal execution, not council).
+    const isLast = toolActivity[toolActivity.length - 1]?.name === "soviet_7_council";
+    const synthesizing = !councilPhase && isLast;
+    const active = councilPhase || synthesizing;
+    return { total, done, error, seats, phase: councilPhase ? "council" : "synth", active };
+  }, [toolActivity]);
   const latestAssistantDraft = assistantDrafts.length > 0
     ? assistantDrafts[assistantDrafts.length - 1]
     : "";
@@ -4481,7 +4518,17 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
 
       {/* Input */}
       <div className="relative px-3 pb-3 pt-1.5 min-w-0 z-[1]">
-        {/* Sub-agents surface as one compact line here, not as live rows in chat. */}
+        {/* Soviet-7 council and plain sub-agents each surface as one compact
+            line here, not as live rows in the chat. */}
+        {soviet7Live?.active && (
+          <Soviet7Bar
+            seats={soviet7Live.seats}
+            total={soviet7Live.total}
+            done={soviet7Live.done}
+            error={soviet7Live.error}
+            phase={soviet7Live.phase as "council" | "synth"}
+          />
+        )}
         <SubagentBar
           running={subagentLive.running}
           done={subagentLive.done}
