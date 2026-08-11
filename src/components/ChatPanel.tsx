@@ -3708,6 +3708,14 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   );
   /** Live tool cards stay folded behind the status strip until asked for. */
   const [liveToolsOpen, setLiveToolsOpen] = useState(false);
+  /** Newest text chunk of the running turn — the one that stays in the chat. */
+  const lastLiveTextId = useMemo(() => {
+    for (let index = liveTimeline.length - 1; index >= 0; index -= 1) {
+      const item = liveTimeline[index];
+      if (item.kind === "text") return item.id;
+    }
+    return null;
+  }, [liveTimeline]);
   const [showModelMenu, setShowModelMenu] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [chatBookmarksModalOpen, setChatBookmarksModalOpen] = useState(false);
@@ -4406,7 +4414,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                     allUnitsCount={labels.allUnitsCount}
                   />
                 )}
-                {assistantDrafts.map((text, index) => (
+                {(liveToolsOpen ? assistantDrafts : assistantDrafts.slice(-1)).map((text, index) => (
                   <MarkdownContent key={`${index}-${text.slice(0, 24)}`} content={text} />
                 ))}
               </>
