@@ -203,7 +203,7 @@ const GitPanel: React.FC<Props> = ({ rootPath }) => {
       )}
 
       {details.files.length > 0 && (
-        <div className="git-panel-files">
+        <ChatMonoScroll className="git-panel-files">
           {details.files.slice(0, 30).map((file) => (
             <div key={file.path} className="git-panel-file" title={file.path}>
               <span className={`git-panel-code${file.staged ? " is-staged" : ""}`}>{file.code}</span>
@@ -213,7 +213,7 @@ const GitPanel: React.FC<Props> = ({ rootPath }) => {
           {details.files.length > 30 && (
             <div className="git-panel-more">+{details.files.length - 30} more</div>
           )}
-        </div>
+        </ChatMonoScroll>
       )}
 
       <div className="git-panel-graph-head">
