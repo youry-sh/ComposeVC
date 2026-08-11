@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import AsciiLogo from "./AsciiLogo";
+import LiveToolStrip from "./LiveToolStrip";
 import {
   Bookmark,
   BrainCircuit,
@@ -4406,6 +4407,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             )}
             {/* Tools that somehow missed timeline ids still show at the end */}
             {liveTimeline.length > 0 &&
+              liveToolsOpen &&
               (() => {
                 const shown = new Set(
                   liveTimeline.filter((i) => i.kind === "tool").map((i) => (i as { toolCallId: string }).toolCallId)
