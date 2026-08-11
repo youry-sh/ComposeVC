@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Clock3, Database, HardDrive, Layers } from "lucide-react";
 
 export const CONTEXT_METRICS_EVENT = "lopster-context-metrics";
@@ -55,6 +55,8 @@ export function formatUptime(sec: number): string {
 
 const StatusBar: React.FC<{ label?: string }> = ({ label = "MultiIDE" }) => {
   const [uptime, setUptime] = useState("00:00:00");
+  const uptimeSecRef = useRef(0);
+  const uptimeSyncAtRef = useRef(Date.now());
   const [memoryLabel, setMemoryLabel] = useState("—");
   const [tokensLabel, setTokensLabel] = useState("0");
   const [contextLabel, setContextLabel] = useState("0");
@@ -68,7 +70,11 @@ const StatusBar: React.FC<{ label?: string }> = ({ label = "MultiIDE" }) => {
         if (cancelled) return;
         if (sys?.ok) {
           setMemoryLabel(formatBytes(sys.workingSetBytes || sys.rss || sys.heapUsed || 0));
-          if (typeof sys.uptimeSec === "number") setUptime(formatUptime(sys.uptimeSec));
+          if (typeof sys.uptimeSec === "number") {
+            uptimeSecRef.current = sys.uptimeSec;
+            uptimeSyncAtRef.current = Date.now();
+            setUptime(formatUptime(sys.uptimeSec));
+          }
         } else {
           const perf = (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory;
           if (perf?.usedJSHeapSize) setMemoryLabel(formatBytes(perf.usedJSHeapSize));
@@ -95,6 +101,16 @@ const StatusBar: React.FC<{ label?: string }> = ({ label = "MultiIDE" }) => {
       cancelled = true;
       window.clearInterval(id);
     };
+  }, []);
+
+  // Smooth 1s uptime tick — the 2s metrics poll only re-syncs the base value.
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setUptime(
+        formatUptime(uptimeSecRef.current + Math.floor((Date.now() - uptimeSyncAtRef.current) / 1000))
+      );
+    }, 1000);
+    return () => window.clearInterval(id);
   }, []);
 
   useEffect(() => {

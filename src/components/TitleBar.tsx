@@ -59,6 +59,8 @@ const TitleBar: React.FC<TitleBarProps> = ({
   labels,
 }) => {
   const [uptime, setUptime] = useState("00:00:00");
+  const uptimeSecRef = useRef(0);
+  const uptimeSyncAtRef = useRef(Date.now());
   const [memoryLabel, setMemoryLabel] = useState("—");
   const [memoryRatio, setMemoryRatio] = useState(0);
   const [tokensLabel, setTokensLabel] = useState("0");
@@ -72,7 +74,7 @@ const TitleBar: React.FC<TitleBarProps> = ({
   const tokPeak = useRef(1);
   const ctxPeak = useRef(1);
 
-  // live clock + date
+  // live clock + date + smooth 1s uptime tick (metrics poll re-syncs the base)
   useEffect(() => {
     const tick = () => {
       const d = new Date();
@@ -81,6 +83,9 @@ const TitleBar: React.FC<TitleBarProps> = ({
       );
       setDateStr(
         d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" })
+      );
+      setUptime(
+        formatUptime(uptimeSecRef.current + Math.floor((Date.now() - uptimeSyncAtRef.current) / 1000))
       );
     };
     tick();
@@ -100,7 +105,11 @@ const TitleBar: React.FC<TitleBarProps> = ({
         const mb = memBytes / (1024 * 1024);
         if (mb > memPeak.current) memPeak.current = mb;
         setMemoryRatio(mb / memPeak.current);
-        if (typeof sys.uptimeSec === "number") setUptime(formatUptime(sys.uptimeSec));
+        if (typeof sys.uptimeSec === "number") {
+          uptimeSecRef.current = sys.uptimeSec;
+          uptimeSyncAtRef.current = Date.now();
+          setUptime(formatUptime(sys.uptimeSec));
+        }
       } catch {
         /* ignore */
       }
