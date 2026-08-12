@@ -419,7 +419,8 @@ const PostWorkspace: React.FC = () => {
   }, [mode, draft?.content]);
 
   useEffect(() => () => {
-    if (saveTimer.current) window.clearTimeout(saveTimer.current);
+    void flushSave();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const searching = query.trim().length > 0;
