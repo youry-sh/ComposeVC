@@ -73,7 +73,14 @@ export type GitAutoPushResult = {
   error?: string;
 };
 
-export type PostMeta = { id: string; title: string; createdAt: number; updatedAt: number };
+export type PostFolder = { id: string; name: string; createdAt: number };
+export type PostMeta = {
+  id: string;
+  title: string;
+  folderId: string | null;
+  createdAt: number;
+  updatedAt: number;
+};
 export type PostFull = PostMeta & { content: string };
 
 export type GitBranch = { name: string; current: boolean };
