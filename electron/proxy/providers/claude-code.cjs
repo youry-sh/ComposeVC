@@ -15,7 +15,7 @@ module.exports = {
   wireFormat: "anthropic",
   defaultBaseUrl: creds.API_BASE,
   description:
-    "Anthropic Claude Code (Pro/Max OAuth) — models: claude-code/claude-sonnet-4-6, claude-code/claude-opus-4-7. Multi-account failover on limits.",
+    "Anthropic Claude Code (Pro/Max OAuth) — Claude 5, Fable 5, Opus, Sonnet, and Haiku. Model access depends on the account plan. Multi-account failover on limits.",
   supportsOauth: true,
   supportsApiKey: false,
   supportsCliImport: true,

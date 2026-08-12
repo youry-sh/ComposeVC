@@ -6,15 +6,29 @@
 
 const creds = require("./claudeCodeCreds.cjs");
 
+// Claude Code has no model-list API for subscription OAuth. Keep this catalog
+// aligned with the official Claude Code model configuration documentation.
+// Plan-gated models are real selections but can still be rejected for accounts
+// whose organization does not have access.
 const CLAUDE_CODE_CATALOG = [
+  { id: "claude-fable-5", name: "Claude Fable 5", kind: "reasoning" },
+  { id: "claude-opus-5", name: "Claude Opus 5", kind: "reasoning" },
+  { id: "claude-sonnet-5", name: "Claude Sonnet 5", kind: "chat" },
+  { id: "claude-opus-4-8", name: "Claude Opus 4.8", kind: "reasoning" },
   { id: "claude-opus-4-7", name: "Claude Opus 4.7", kind: "reasoning" },
   { id: "claude-opus-4-6", name: "Claude Opus 4.6", kind: "reasoning" },
   { id: "claude-opus-4-5", name: "Claude Opus 4.5", kind: "reasoning" },
   { id: "claude-sonnet-4-6", name: "Claude Sonnet 4.6", kind: "chat" },
   { id: "claude-sonnet-4-5", name: "Claude Sonnet 4.5", kind: "chat" },
-  { id: "claude-haiku-4-5-20251001", name: "Claude Haiku 4.5", kind: "chat" },
+  { id: "claude-haiku-4-5-20251001", name: "Claude Haiku 4.5 (pinned)", kind: "chat" },
   { id: "claude-haiku-4-5", name: "Claude Haiku 4.5", kind: "chat" },
   { id: "claude-3-5-haiku-latest", name: "Claude 3.5 Haiku", kind: "chat" },
+  // Official rolling aliases. These follow the newest model available to the
+  // account and avoid requiring a catalog release for every future revision.
+  { id: "fable", name: "Fable (latest available)", kind: "reasoning" },
+  { id: "opus", name: "Opus (latest available)", kind: "reasoning" },
+  { id: "sonnet", name: "Sonnet (latest available)", kind: "chat" },
+  { id: "haiku", name: "Haiku (latest available)", kind: "chat" },
 ];
 
 function catalogFor() {

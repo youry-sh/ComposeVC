@@ -21,8 +21,11 @@ const SCOPES = [
 const CODE_CHALLENGE_METHOD = "S256";
 const ANTHROPIC_BETA_OAUTH = "oauth-2025-04-20";
 const ANTHROPIC_VERSION = "2023-06-01";
-/** Pinned Claude Code CLI release (OmniRoute open-sse/claudeIdentity). */
-const CLAUDE_CODE_VERSION = "2.1.195";
+/**
+ * Pinned current Claude Code release. Opus 5 requires >=2.1.219 and Sonnet 5
+ * requires >=2.1.197, so an older identity hides/rejects the newest models.
+ */
+const CLAUDE_CODE_VERSION = "2.1.228";
 const CLAUDE_CODE_STAINLESS_VERSION = "0.94.0";
 const API_BASE = "https://api.anthropic.com";
 const MESSAGES_URL = `${API_BASE}/v1/messages`;
