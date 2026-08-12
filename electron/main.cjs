@@ -955,6 +955,21 @@ async function loadWindowContent(win, options = {}) {
 function installPackagedWindowHardening(win) {
   const wc = win.webContents;
 
+  // The only allowed guest is the isolated in-app YouTube viewer. Renderer
+  // markup cannot attach arbitrary privileged webviews or inject a preload.
+  wc.on("will-attach-webview", (event, webPreferences, params) => {
+    let allowed = false;
+    try { allowed = /^https:\/\/(?:www\.)?youtube\.com\/watch\?/i.test(String(params?.src || "")); } catch {}
+    if (!allowed) { event.preventDefault(); return; }
+    delete webPreferences.preload;
+    webPreferences.nodeIntegration = false;
+    webPreferences.contextIsolation = true;
+    webPreferences.sandbox = true;
+  });
+  wc.on("did-attach-webview", (_event, guest) => {
+    try { guest.setWindowOpenHandler(() => ({ action: "deny" })); } catch {}
+  });
+
   // Keep DevTools closed.
   try {
     wc.closeDevTools();

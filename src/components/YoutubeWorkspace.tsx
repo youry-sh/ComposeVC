@@ -9,6 +9,42 @@ const YoutubeWorkspace: React.FC = () => {
   const [title, setTitle] = useState("");
   const [error, setError] = useState("");
   const [playing, setPlaying] = useState<YoutubeVideo | null>(null);
+  const preparePlayer = useCallback((node: any) => {
+    if (!node) return;
+    const onReady = async () => {
+      try {
+        await node.insertCSS(`
+          html, body, ytd-app, #content, ytd-page-manager, ytd-watch-flexy,
+          #columns, #primary, #primary-inner, #player-container-outer,
+          #player-container-inner, #player-container, #player {
+            width: 100% !important; height: 100% !important; max-width: none !important;
+            min-width: 0 !important; min-height: 0 !important; margin: 0 !important;
+            padding: 0 !important; background: #000 !important; overflow: hidden !important;
+          }
+          ytd-masthead, #masthead-container, #guide, #secondary, #below,
+          #chat, #panels, ytd-popup-container, tp-yt-iron-overlay-backdrop {
+            display: none !important;
+          }
+          #player { position: fixed !important; inset: 0 !important; z-index: 2147483646 !important; }
+          #movie_player, .html5-video-container, video {
+            width: 100% !important; height: 100% !important; max-width: none !important;
+          }
+          video { object-fit: contain !important; }
+        `);
+        await node.executeJavaScript(`(() => {
+          const settle = () => {
+            const player = document.querySelector('#movie_player');
+            const video = document.querySelector('video');
+            if (player) { player.style.width = '100%'; player.style.height = '100%'; }
+            if (video) { video.play().catch(() => {}); return true; }
+            return false;
+          };
+          settle(); setTimeout(settle, 800); setTimeout(settle, 1800);
+        })()`, true);
+      } catch { /* guest may be navigating; next dom-ready retries */ }
+    };
+    node.addEventListener("dom-ready", onReady, { once: true });
+  }, []);
   const refresh = useCallback(async () => { const res = await window.lopster?.youtubeList?.(); if (res?.ok) setVideos(res.videos || []); }, []);
   useEffect(() => { void refresh(); }, [refresh]);
   const add = async () => {
@@ -42,7 +78,7 @@ const YoutubeWorkspace: React.FC = () => {
           </article>)}
         </div>}
       </ChatMonoScroll>
-      {playing && <div className="youtube-player-scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) setPlaying(null); }}><div className="youtube-player"><header><div><Youtube /><span>{playing.title}</span></div><button onClick={() => setPlaying(null)}><X /></button></header>{React.createElement("webview", { className: "youtube-webview", src: `${playing.url}&autoplay=1`, partition: "persist:composevc-youtube", webpreferences: "contextIsolation=yes,sandbox=yes", title: playing.title })}</div></div>}
+      {playing && <div className="youtube-player-scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) setPlaying(null); }}><div className="youtube-player"><header><div><Youtube /><span>{playing.title}</span></div><button onClick={() => setPlaying(null)}><X /></button></header>{React.createElement("webview", { ref: preparePlayer, className: "youtube-webview", src: `${playing.url}&autoplay=1`, partition: "persist:composevc-youtube", webpreferences: "contextIsolation=yes,sandbox=yes", title: playing.title })}</div></div>}
     </div>
   );
 };
