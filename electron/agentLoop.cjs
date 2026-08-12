@@ -14,6 +14,7 @@ const { createAskUserHandler, rejectAllPending } = require("./askUserBridge.cjs"
 const { createSpawnSubagentHandler } = require("./subagent.cjs");
 const codeImpactHost = require("./codeImpactHost.cjs");
 const chatSessions = require("./chatSessionRegistry.cjs");
+const { REQUIRED_CYCLES, getCycleDirective } = require("./thinkingMaxPrompt.cjs");
 
 const ITERATIONS_PER_CONTINUE = 7;
 /** Root agent turn budget (chat). Subagents may request higher via maxIterations. */
@@ -21,7 +22,7 @@ const MAX_TOTAL_ITERATIONS = 8000;
 /** Subagent hard ceiling (worker automation needs long tool runs). */
 const MAX_SUBAGENT_TOTAL_ITERATIONS = 250;
 const MAX_TOOL_CALLS_PER_BATCH = 20;
-const THINKING_MAX_REQUIRED_CYCLES = 4;
+const THINKING_MAX_REQUIRED_CYCLES = REQUIRED_CYCLES;
 const DEFAULT_MAX_CONTEXT_TOKENS = 500000;
 const DEFAULT_AUTO_COMPACT_TOKENS = 400000;
 const ABSOLUTE_MAX_CONTEXT_TOKENS = 2_000_000;
@@ -986,12 +987,7 @@ async function runAgentLoopInner({
     if (!result.toolCalls || result.toolCalls.length === 0) {
       if (thinkingMax && thinkingMaxCycles < THINKING_MAX_REQUIRED_CYCLES) {
         const nextCycle = thinkingMaxCycles + 1;
-        const cycleFocus = [
-          "Generate genuinely competing hypotheses and identify what evidence would distinguish them.",
-          "Challenge the leading hypothesis adversarially: find contradictions, counterexamples, hidden assumptions, and failure modes.",
-          "Reconstruct the user's perspective and trace practical consequences, edge cases, dependencies, and risks.",
-          "Synthesize the previous rounds into a decision, resolve conflicts, and state what must still be validated with tools.",
-        ][Math.min(nextCycle - 1, 3)];
+        const cycleFocus = getCycleDirective(nextCycle);
         workingMessages = [
           ...workingMessages,
           { role: "assistant", content: result.text || "", reasoning_content: result.reasoning || "" },

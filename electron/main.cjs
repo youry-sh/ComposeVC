@@ -30,6 +30,7 @@ const customTools = require("./customTools.cjs");
 const mcpManager = require("./mcpManager.cjs");
 const instructions = require("./instructions.cjs");
 const agentPrompts = require("./agentPrompts.cjs");
+const { THINKING_MAX_PROMPT } = require("./thinkingMaxPrompt.cjs");
 const autoInsert = require("./autoInsert.cjs");
 const {
   SOVIET7_MODE_ID,
@@ -2321,11 +2322,7 @@ async function executeChatRequest(event, request, overrides = {}) {
       ? `${activeSystemPrompts.join("\n\n")}\n\n--- Injected ComposeVC context ---\n${baseSystemPrompt}`
       : baseSystemPrompt;
   if (request.thinkingMax === true) {
-    systemPrompt +=
-      "\n\n--- Thinking-max is locked ON by the user ---\n" +
-      "You MUST complete all runtime-requested Thinking-max cycles before giving the final answer on this turn. " +
-      "Each cycle must add new analysis rather than paraphrasing the previous one. Use further fresh think calls whenever new evidence, a contradiction, a risky decision, or an unresolved hypothesis appears. " +
-      "Do not substitute ordinary provider reasoning for the think tool. After thinking, validate conclusions with available tools and only then answer.";
+    systemPrompt += `\n\n${THINKING_MAX_PROMPT}`;
   }
 
   const runSessionId = sessionId || `ephemeral-${Date.now().toString(16)}`;
