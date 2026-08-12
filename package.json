@@ -31,7 +31,8 @@
     "test:proxy-parallel": "node tests/proxy/parallel-routing.test.cjs",
     "test:mcp": "node tests/mcp.test.cjs",
     "test:soviet7": "node tests/soviet7-architecture.test.cjs",
-    "test:custom-tools-prompt": "node tests/custom-tools-prompt.test.cjs"
+    "test:custom-tools-prompt": "node tests/custom-tools-prompt.test.cjs",
+    "test:custom-tools-search": "node tests/custom-tools-search.test.cjs"
   },
   "dependencies": {
     "@faker-js/faker": "^10.5.0",

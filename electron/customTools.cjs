@@ -497,7 +497,12 @@ async function searchCustomTools(userDataPath, query, { limit = SEARCH_DEFAULT_L
     total: all.length,
     injectMode: list.filter(isToolEnabled).length <= FULL_INJECT_MAX ? "full" : "search",
     fullInjectMax: FULL_INJECT_MAX,
-    results: ranked.map(({ tool, score }) => ({ ...toolSummary(tool), score })),
+    results: ranked.map(({ tool, score, coverage, fuzzy }) => ({
+      ...toolSummary(tool),
+      score: Math.round(score * 100) / 100,
+      coverage: Math.round((coverage || 0) * 100) / 100,
+      fuzzy: Math.round((fuzzy || 0) * 100) / 100,
+    })),
   };
 }
 

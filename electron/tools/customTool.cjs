@@ -105,6 +105,9 @@ module.exports = {
     "unless user explicitly asks for a built-in runtime change. " +
     "Do NOT grep/read the open project to locate custom-tool storage — use action=path (no name → toolsRoot) " +
     "or action=list. Project scripts are optional reference only; the tool must live under userData/custom-tools.\n\n" +
+    "SEARCH: use a short capability phrase, including the object and action (for example `download telegram video`). " +
+    "Search is bilingual and typo-tolerant. If the task has independent parts, search each part separately; an empty result means " +
+    "try one broader synonym before concluding that no tool exists. Results include coverage and fuzzy confidence.\n\n" +
     "Actions: list|search|get|validate|add|update|remove|run|enable|disable|export|import|" +
     "write_file|read_file|list_files|path (path without name = tools root + inventory)",
   isReadOnly: false,
