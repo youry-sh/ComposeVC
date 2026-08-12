@@ -237,6 +237,7 @@ const PostWorkspace: React.FC = () => {
   // Ids we just wrote ourselves — the main process echoes posts:changed back to
   // this window too, and reloading on our own save would wipe what is being typed.
   const selfSaved = useRef<Set<string>>(new Set());
+  const pendingSave = useRef<PostFull | null>(null);
 
   const refreshList = useCallback(async (nextQuery?: string) => {
     const res = await window.lopster?.postsList?.({ query: (nextQuery ?? query).trim() });
@@ -365,19 +366,35 @@ const PostWorkspace: React.FC = () => {
   );
 
   // ── autosave ──
-  const scheduleSave = useCallback((next: PostFull) => {
-    setSaved(false);
-    if (saveTimer.current) window.clearTimeout(saveTimer.current);
-    saveTimer.current = window.setTimeout(async () => {
-      selfSaved.current.add(next.id);
-      try {
-        await window.lopster?.postsUpdate?.(next.id, { title: next.title, content: next.content });
-        setSaved(true);
-      } catch {
-        selfSaved.current.delete(next.id);
-      }
-    }, SAVE_DEBOUNCE_MS);
+  const commitSave = useCallback(async () => {
+    const next = pendingSave.current;
+    if (!next) return;
+    pendingSave.current = null;
+    selfSaved.current.add(next.id);
+    try {
+      await window.lopster?.postsUpdate?.(next.id, { title: next.title, content: next.content });
+      setSaved(true);
+    } catch {
+      selfSaved.current.delete(next.id);
+    }
   }, []);
+
+  const scheduleSave = useCallback(
+    (next: PostFull) => {
+      setSaved(false);
+      pendingSave.current = next;
+      if (saveTimer.current) window.clearTimeout(saveTimer.current);
+      saveTimer.current = window.setTimeout(() => void commitSave(), SAVE_DEBOUNCE_MS);
+    },
+    [commitSave]
+  );
+
+  // Never lose the tail of an edit: write it out before leaving the post.
+  const flushSave = useCallback(() => {
+    if (saveTimer.current) window.clearTimeout(saveTimer.current);
+    saveTimer.current = null;
+    return commitSave();
+  }, [commitSave]);
   const onTitle = (title: string) => {
     if (!draft) return;
     const next = { ...draft, title };
