@@ -15,6 +15,99 @@ import type { PostFull, PostMeta } from "../global";
 const PAGE_SIZE = 40;
 const SAVE_DEBOUNCE_MS = 600;
 
+type GraphProps = {
+  posts: PostMeta[];
+  activeId: string | null;
+  onOpen: (id: string) => void;
+  onDelete: (id: string) => void;
+};
+
+const PostGraph: React.FC<GraphProps> = ({ posts, activeId, onOpen, onDelete }) => {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [view, setView] = useState({ x: 0, y: 0, scale: 1 });
+  const drag = useRef<{ x: number; y: number; viewX: number; viewY: number } | null>(null);
+  const nodes = useMemo(() => posts.map((post, index) => {
+    const ring = Math.floor(Math.sqrt(index));
+    const angle = index * 2.399963 + (post.id.charCodeAt(0) || 0) * 0.03;
+    const radius = index === 0 ? 0 : 38 + ring * 34;
+    return { ...post, x: Math.cos(angle) * radius, y: Math.sin(angle) * radius };
+  }), [posts]);
+  const edges = useMemo(() => nodes.slice(1).map((node, index) => ({
+    from: nodes[Math.max(0, Math.floor(index / 2))],
+    to: node,
+  })), [nodes]);
+
+  useEffect(() => {
+    if (selectedId && !posts.some((post) => post.id === selectedId)) setSelectedId(null);
+  }, [posts, selectedId]);
+
+  return (
+    <aside className="post-graph" aria-label="Граф постов">
+      <div className="post-graph-head">
+        <span>GRAPH</span>
+        <span>{posts.length} nodes</span>
+      </div>
+      <svg
+        className="post-graph-svg"
+        viewBox="-210 -260 420 520"
+        onWheel={(event) => {
+          event.preventDefault();
+          const factor = event.deltaY < 0 ? 1.12 : 0.89;
+          setView((current) => ({ ...current, scale: Math.max(.45, Math.min(2.8, current.scale * factor)) }));
+        }}
+        onPointerDown={(event) => {
+          drag.current = { x: event.clientX, y: event.clientY, viewX: view.x, viewY: view.y };
+          event.currentTarget.setPointerCapture(event.pointerId);
+        }}
+        onPointerMove={(event) => {
+          if (!drag.current) return;
+          setView((current) => ({
+            ...current,
+            x: drag.current!.viewX + (event.clientX - drag.current!.x),
+            y: drag.current!.viewY + (event.clientY - drag.current!.y),
+          }));
+        }}
+        onPointerUp={() => { drag.current = null; }}
+        onPointerCancel={() => { drag.current = null; }}
+        onDoubleClick={() => setView({ x: 0, y: 0, scale: 1 })}
+      >
+        <g transform={`translate(${view.x} ${view.y}) scale(${view.scale})`}>
+          {edges.map((edge) => (
+            <line key={`${edge.from.id}-${edge.to.id}`} className="post-graph-edge" x1={edge.from.x} y1={edge.from.y} x2={edge.to.x} y2={edge.to.y} />
+          ))}
+          {nodes.map((node) => {
+            const active = node.id === activeId;
+            const selected = node.id === selectedId;
+            return (
+              <g
+                key={node.id}
+                className={`post-graph-node${active ? " is-active" : ""}${selected ? " is-selected" : ""}`}
+                transform={`translate(${node.x} ${node.y})`}
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={() => { setSelectedId(node.id); onOpen(node.id); }}
+              >
+                <circle r={active ? 5 : 3.5} />
+                <text x="9" y="3.5">{node.title.length > 22 ? `${node.title.slice(0, 21)}…` : node.title}</text>
+              </g>
+            );
+          })}
+        </g>
+      </svg>
+      <div className="post-graph-foot">
+        <span>wheel zoom · drag pan · double-click reset</span>
+        <button
+          type="button"
+          disabled={!selectedId}
+          onClick={() => selectedId && onDelete(selectedId)}
+          title="Удалить выбранный пост"
+        >
+          <Trash2 className="w-3 h-3" /> delete
+        </button>
+      </div>
+    </aside>
+  );
+};
+
 const PostWorkspace: React.FC = () => {
   const [list, setList] = useState<PostMeta[]>([]);
   const [total, setTotal] = useState(0);
@@ -294,6 +387,13 @@ const PostWorkspace: React.FC = () => {
           </div>
         )}
       </main>
+
+      <PostGraph
+        posts={list}
+        activeId={activeId}
+        onOpen={(id) => void openPost(id)}
+        onDelete={(id) => void deletePost(id)}
+      />
     </div>
   );
 };
