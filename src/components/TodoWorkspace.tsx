@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Check, Plus, Search, Trash2, X } from "lucide-react";
+import ChatMonoScroll from "./ChatMonoScroll";
 
 /**
  * TODO workspace — one board: tasks (left) + habits (right).
@@ -200,7 +201,7 @@ const TodoWorkspace: React.FC = () => {
               <Plus className="w-4 h-4" />
             </button>
           </div>
-          <div className="todo-list">
+          <ChatMonoScroll className="todo-list">
             {tasks.length === 0 && <p className="todo-empty">{q ? "Ничего не найдено" : "Задач пока нет"}</p>}
             {tasks.map((t) => (
               <div key={t.id} className={`todo-task${t.done ? " is-done" : ""}`}>
@@ -218,7 +219,7 @@ const TodoWorkspace: React.FC = () => {
                 </button>
               </div>
             ))}
-          </div>
+          </ChatMonoScroll>
         </section>
 
         {/* ── right: habits with full 5-year square fields ── */}
@@ -239,7 +240,7 @@ const TodoWorkspace: React.FC = () => {
               <Plus className="w-4 h-4" />
             </button>
           </div>
-          <div className="todo-list">
+          <ChatMonoScroll className="todo-list">
             {habits.length === 0 && <p className="todo-empty">{q ? "Ничего не найдено" : "Привычек пока нет"}</p>}
             {habits.map((h) => (
               <div key={h.id} className="habit-card">
@@ -255,7 +256,7 @@ const TodoWorkspace: React.FC = () => {
                 <HabitField habit={h} onToggle={toggleSquare} />
               </div>
             ))}
-          </div>
+          </ChatMonoScroll>
         </section>
       </div>
     </div>

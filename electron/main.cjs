@@ -20,6 +20,7 @@ const { compactMessages, isRealUserMessage } = require("./compact.cjs");
 const { contentToText: contentPartsToText } = require("./adapters/contentParts.cjs");
 const memory = require("./memory.cjs");
 const gitService = require("./gitService.cjs");
+const postsStore = require("./postsStore.cjs");
 const customTools = require("./customTools.cjs");
 const mcpManager = require("./mcpManager.cjs");
 const instructions = require("./instructions.cjs");
@@ -2528,6 +2529,9 @@ async function executeChatRequest(event, request, overrides = {}) {
           onMcpChanged: (payload) => {
             try { event.sender.send("mcp:changed", payload || { type: "changed" }); } catch {}
           },
+          onPostsChanged: (payload) => {
+            try { broadcastPostsChanged(payload || { type: "changed" }); } catch {}
+          },
         },
         signal: abortController.signal,
         tokenCountingMode: config.tokenCountingMode || "provider",
@@ -3053,6 +3057,77 @@ function broadcastCustomToolsChanged(payload) {
     }
   }
 }
+
+function broadcastPostsChanged(payload) {
+  for (const win of BrowserWindow.getAllWindows()) {
+    try {
+      win.webContents.send("posts:changed", payload || { type: "changed" });
+    } catch {
+      // ignore
+    }
+  }
+}
+
+// ── Posts (POST tab): Telegraph-style markdown, stored as md + json ──────────
+ipcMain.handle("posts:list", async (_event, options = {}) => {
+  try {
+    const query = String(options?.query || "").trim();
+    const all = query
+      ? await postsStore.searchPosts(app.getPath("userData"), query)
+      : postsStore.listPosts(app.getPath("userData"));
+    const page = Math.max(0, Number(options?.page) || 0);
+    const pageSize = Math.min(200, Math.max(1, Number(options?.pageSize) || 40));
+    const start = page * pageSize;
+    return {
+      ok: true,
+      total: all.length,
+      page,
+      pageSize,
+      posts: all.slice(start, start + pageSize),
+    };
+  } catch (error) {
+    return { ok: false, error: String(error?.message || error) };
+  }
+});
+
+ipcMain.handle("posts:get", async (_event, id) => {
+  try {
+    const post = await postsStore.getPost(app.getPath("userData"), String(id || ""));
+    return post ? { ok: true, post } : { ok: false, error: "not-found" };
+  } catch (error) {
+    return { ok: false, error: String(error?.message || error) };
+  }
+});
+
+ipcMain.handle("posts:create", async (_event, input = {}) => {
+  try {
+    const post = await postsStore.createPost(app.getPath("userData"), input || {});
+    broadcastPostsChanged({ type: "created", id: post.id });
+    return { ok: true, post };
+  } catch (error) {
+    return { ok: false, error: String(error?.message || error) };
+  }
+});
+
+ipcMain.handle("posts:update", async (_event, id, patch = {}) => {
+  try {
+    const post = await postsStore.updatePost(app.getPath("userData"), String(id || ""), patch || {});
+    broadcastPostsChanged({ type: "updated", id: post.id });
+    return { ok: true, post };
+  } catch (error) {
+    return { ok: false, error: String(error?.message || error) };
+  }
+});
+
+ipcMain.handle("posts:delete", async (_event, id) => {
+  try {
+    const res = await postsStore.removePost(app.getPath("userData"), String(id || ""));
+    if (res.ok) broadcastPostsChanged({ type: "deleted", id: res.id });
+    return res;
+  } catch (error) {
+    return { ok: false, error: String(error?.message || error) };
+  }
+});
 
 ipcMain.handle("mcp:list", async () => mcpManager.listServers(app.getPath("userData")));
 ipcMain.handle("mcp:add", async (_event, input = {}) => {

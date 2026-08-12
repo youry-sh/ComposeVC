@@ -73,6 +73,9 @@ export type GitAutoPushResult = {
   error?: string;
 };
 
+export type PostMeta = { id: string; title: string; createdAt: number; updatedAt: number };
+export type PostFull = PostMeta & { content: string };
+
 export type GitBranch = { name: string; current: boolean };
 export type GitChangedFile = { code: string; staged: boolean; path: string };
 export type GitCommit = { hash: string; subject: string; author: string; when: string };
@@ -104,6 +107,22 @@ declare global {
         options?: { prefix?: string }
       ) => Promise<GitAutoCommitResult>;
       gitAutoPush: (rootPath: string | null) => Promise<GitAutoPushResult>;
+      postsList: (options?: { query?: string; page?: number; pageSize?: number }) => Promise<{
+        ok: boolean;
+        total?: number;
+        page?: number;
+        pageSize?: number;
+        posts?: PostMeta[];
+        error?: string;
+      }>;
+      postsGet: (id: string) => Promise<{ ok: boolean; post?: PostFull; error?: string }>;
+      postsCreate: (input: { title?: string; content?: string }) => Promise<{ ok: boolean; post?: PostFull; error?: string }>;
+      postsUpdate: (
+        id: string,
+        patch: { title?: string; content?: string }
+      ) => Promise<{ ok: boolean; post?: PostFull; error?: string }>;
+      postsDelete: (id: string) => Promise<{ ok: boolean; id?: string; reason?: string }>;
+      onPostsChanged: (callback: (payload: { type?: string; id?: string }) => void) => () => void;
       readProviderConfig: () => Promise<ProviderConfig>;
       writeProviderConfig: (config: ProviderConfig) => Promise<ProviderConfig>;
       listRunners: () => Promise<{ ok: boolean; runners?: RunnerJob[]; error?: string }>;

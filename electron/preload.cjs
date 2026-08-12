@@ -10,6 +10,17 @@ contextBridge.exposeInMainWorld("lopster", {
   gitAutoCommit: (rootPath, options) =>
     ipcRenderer.invoke("git:autocommit", rootPath || null, options || {}),
   gitAutoPush: (rootPath) => ipcRenderer.invoke("git:autopush", rootPath || null),
+  // Posts (POST tab)
+  postsList: (options) => ipcRenderer.invoke("posts:list", options || {}),
+  postsGet: (id) => ipcRenderer.invoke("posts:get", id),
+  postsCreate: (input) => ipcRenderer.invoke("posts:create", input || {}),
+  postsUpdate: (id, patch) => ipcRenderer.invoke("posts:update", id, patch || {}),
+  postsDelete: (id) => ipcRenderer.invoke("posts:delete", id),
+  onPostsChanged: (callback) => {
+    const listener = (_event, payload) => callback(payload);
+    ipcRenderer.on("posts:changed", listener);
+    return () => ipcRenderer.removeListener("posts:changed", listener);
+  },
   readProviderConfig: () => ipcRenderer.invoke("config:read"),
   writeProviderConfig: (config) => ipcRenderer.invoke("config:write", config),
   listRunners: () => ipcRenderer.invoke("runner:list"),
