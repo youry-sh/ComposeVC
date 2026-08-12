@@ -395,51 +395,57 @@ async function listModelsFor(userDataPath, opts = {}) {
   const sources = ["catalog"];
   if (cliCache.length) sources.push("grok_cli_cache");
   if (manual.length) sources.push("manual");
-  if (providerId === "qauth" && account && account.accessToken && refreshLive) {
-    liveAccountId = account.id;
-    try {
-      const auth = require("./oauth/qauthAuth.cjs");
+  if (providerId === "qauth" && refreshLive) {
+    const auth = require("./oauth/qauthAuth.cjs");
+    const discovered = [];
+    const discoveryErrors = [];
+    if (account?.accessToken) {
+      liveAccountId = account.id;
       try {
-        const { ensureFreshToken } = require("./accounts.cjs");
-        account = await ensureFreshToken(userDataPath, account);
-      } catch {
-      }
-      const provider = getProvider(providerId);
-      const modelsRoot = account.baseUrl || provider?.defaultBaseUrl;
-      const modelsUrl = provider?.modelsUrl ? provider.modelsUrl(modelsRoot) : modelsRoot;
-      const liveRes = await fetchOpenAIModels(modelsUrl, `workos:${String(account.accessToken).replace(/^workos:/i, "")}`);
-      if (liveRes.length) {
-        live = liveRes.map((model) => ({ ...model, source: "live", owned_by: model.owned_by || providerId }));
-        sources.push("live");
-      }
-    } catch (e) {
-      liveWarning = e.message || String(e);
-      try {
-        const auth = require("./oauth/qauthAuth.cjs");
-        const recommended = await auth.fetchRecommendedModels();
-        const groups = [recommended?.recommended, recommended?.free, recommended?.clinePass];
-        live = groups
-          .flatMap((group) => Array.isArray(group) ? group : [])
-          .map((model) => ({
-            id: model.id || model.model || model.name,
-            object: "model",
-            created: null,
-            owned_by: "qauth",
-            kind: classifyModel(model.id || model.model || model.name),
-            source: "live",
-            name: model.name,
-          }))
-          .filter((model) => model.id);
-        if (live.length) {
-          sources.push("live");
-          liveWarning = null;
+        try {
+          const { ensureFreshToken } = require("./accounts.cjs");
+          account = await ensureFreshToken(userDataPath, account);
+        } catch {
+          /* Try the current token; the models request will report a real auth error. */
         }
-      } catch {
+        discovered.push(...modelsFromQauthPayload(await auth.fetchModels(account.accessToken)));
+      } catch (e) {
+        discoveryErrors.push(e.message || String(e));
       }
     }
+    try {
+      // Always merge Cline's public categories. The authenticated endpoint can be
+      // successful yet omit free, recommended, or Cline Pass entries.
+      discovered.push(...modelsFromQauthPayload(await auth.fetchRecommendedModels()));
+    } catch (e) {
+      discoveryErrors.push(e.message || String(e));
+    }
+    // Registration/import stores the last successful payload. Keep it as an
+    // offline source so a transient Cline outage does not collapse the list.
+    discovered.push(...modelsFromQauthPayload(account?.providerMeta?.modelsRaw));
+    const seenQauthIds = new Set();
+    live = discovered
+      .map((model) => {
+        const id = model.id || model.model || model.name;
+        const key = String(id || "").toLowerCase();
+        if (!id || seenQauthIds.has(key)) return null;
+        seenQauthIds.add(key);
+        return {
+          id,
+          object: model.object || "model",
+          created: model.created || null,
+          owned_by: model.owned_by || model.provider || "qauth",
+          kind: model.kind || classifyModel(id),
+          source: "live",
+          name: model.name || id,
+        };
+      })
+      .filter(Boolean);
+    if (live.length) sources.push("live");
+    liveWarning = discoveryErrors.length && !live.length
+      ? `Cline model discovery failed: ${discoveryErrors.join("; ")}`
+      : null;
   }
-
-  if (providerId === "qauth" && live.length && liveWarning) liveWarning = null;
 
   if (refreshLive && account && account.authType === "apikey" && account.apiKey) {
     liveAccountId = account.id;
