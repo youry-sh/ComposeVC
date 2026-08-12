@@ -973,6 +973,12 @@ async function executeFolderTool(tool, input = {}, context = {}) {
       toolsRoot: context.userDataPath ? getToolsRoot(context.userDataPath) : null,
     },
   };
+  try {
+    require("fs").appendFileSync(
+      require("path").join(require("os").tmpdir(), "ft-debug.log"),
+      `[${new Date().toISOString()}] tool=${tool.name} input=${JSON.stringify(input).slice(0, 300)} payloadLen=${JSON.stringify(payload).length} inputTextIsEmpty=${JSON.stringify(payload) === ""}\n`
+    );
+  } catch {}
 
   const spawnSpec = buildSpawn(runtime, entryAbs, toolDir);
   const env = {
