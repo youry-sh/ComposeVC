@@ -790,6 +790,8 @@ async function runAgentLoopInner({
     ...toolContext,
     workTimer,
     isSubagent: Boolean(isSubagent),
+    // Lets the think tool enforce stricter cycle content while the mode is locked on.
+    thinkingMax: Boolean(thinkingMax),
     sessionId: sessionId || toolContext?.sessionId || null,
     chatId: sessionId || toolContext?.chatId || null,
     askUser,
