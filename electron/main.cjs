@@ -3071,20 +3071,51 @@ function broadcastPostsChanged(payload) {
 // ── Posts (POST tab): Telegraph-style markdown, stored as md + json ──────────
 ipcMain.handle("posts:list", async (_event, options = {}) => {
   try {
+    const ud = app.getPath("userData");
     const query = String(options?.query || "").trim();
-    const all = query
-      ? await postsStore.searchPosts(app.getPath("userData"), query)
-      : postsStore.listPosts(app.getPath("userData"));
-    const page = Math.max(0, Number(options?.page) || 0);
-    const pageSize = Math.min(200, Math.max(1, Number(options?.pageSize) || 40));
-    const start = page * pageSize;
-    return {
-      ok: true,
-      total: all.length,
-      page,
-      pageSize,
-      posts: all.slice(start, start + pageSize),
-    };
+    const posts = query ? await postsStore.searchPosts(ud, query) : postsStore.listPosts(ud);
+    const folders = postsStore.listFolders(ud);
+    return { ok: true, total: posts.length, folders, posts };
+  } catch (error) {
+    return { ok: false, error: String(error?.message || error) };
+  }
+});
+
+ipcMain.handle("posts:move", async (_event, id, folderId) => {
+  try {
+    const meta = await postsStore.movePost(app.getPath("userData"), String(id || ""), folderId ?? null);
+    broadcastPostsChanged({ type: "moved", id: meta.id });
+    return { ok: true, post: meta };
+  } catch (error) {
+    return { ok: false, error: String(error?.message || error) };
+  }
+});
+
+ipcMain.handle("posts:folderCreate", async (_event, input = {}) => {
+  try {
+    const folder = await postsStore.createFolder(app.getPath("userData"), input || {});
+    broadcastPostsChanged({ type: "folder", id: folder.id });
+    return { ok: true, folder };
+  } catch (error) {
+    return { ok: false, error: String(error?.message || error) };
+  }
+});
+
+ipcMain.handle("posts:folderRename", async (_event, id, name) => {
+  try {
+    const folder = await postsStore.renameFolder(app.getPath("userData"), String(id || ""), name);
+    broadcastPostsChanged({ type: "folder", id: folder.id });
+    return { ok: true, folder };
+  } catch (error) {
+    return { ok: false, error: String(error?.message || error) };
+  }
+});
+
+ipcMain.handle("posts:folderDelete", async (_event, id) => {
+  try {
+    const res = await postsStore.removeFolder(app.getPath("userData"), String(id || ""));
+    if (res.ok) broadcastPostsChanged({ type: "folder", id: res.id });
+    return res;
   } catch (error) {
     return { ok: false, error: String(error?.message || error) };
   }

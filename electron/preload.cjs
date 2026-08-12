@@ -16,6 +16,10 @@ contextBridge.exposeInMainWorld("lopster", {
   postsCreate: (input) => ipcRenderer.invoke("posts:create", input || {}),
   postsUpdate: (id, patch) => ipcRenderer.invoke("posts:update", id, patch || {}),
   postsDelete: (id) => ipcRenderer.invoke("posts:delete", id),
+  postsMove: (id, folderId) => ipcRenderer.invoke("posts:move", id, folderId ?? null),
+  postsFolderCreate: (input) => ipcRenderer.invoke("posts:folderCreate", input || {}),
+  postsFolderRename: (id, name) => ipcRenderer.invoke("posts:folderRename", id, name),
+  postsFolderDelete: (id) => ipcRenderer.invoke("posts:folderDelete", id),
   onPostsChanged: (callback) => {
     const listener = (_event, payload) => callback(payload);
     ipcRenderer.on("posts:changed", listener);
