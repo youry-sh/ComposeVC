@@ -251,6 +251,7 @@ export interface CustomTool {
   inputSchema?: Record<string, unknown>;
   enabled?: boolean;
   tags?: string[];
+  dependencies?: string[];
   createdAt?: number;
   updatedAt?: number;
 }

@@ -218,6 +218,7 @@ const App: React.FC = () => {
     entry?: string;
     tags?: string[];
     inputSchema?: Record<string, unknown>;
+    dependencies?: string[];
   }) => {
     try {
       const tool = await window.lopster?.addCustomTool?.(input);
@@ -247,6 +248,7 @@ const App: React.FC = () => {
       enabled?: boolean;
       tags?: string[];
       inputSchema?: Record<string, unknown>;
+      dependencies?: string[];
     }
   ) => {
     try {

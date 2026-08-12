@@ -23,6 +23,7 @@ interface CustomToolsWorkspaceProps {
     entry?: string;
     tags?: string[];
     inputSchema?: Record<string, unknown>;
+    dependencies?: string[];
   }) => Promise<void>;
   onUpdate: (
     toolId: string,
@@ -36,6 +37,7 @@ interface CustomToolsWorkspaceProps {
       enabled?: boolean;
       tags?: string[];
       inputSchema?: Record<string, unknown>;
+      dependencies?: string[];
     }
   ) => Promise<void>;
   onRemove: (toolId: string) => Promise<void>;
@@ -168,6 +170,7 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
   const [runtime, setRuntime] = useState("node");
   const [codeText, setCodeText] = useState(DEFAULT_CODE);
   const [tagsText, setTagsText] = useState("");
+  const [dependencies, setDependencies] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [busyShare, setBusyShare] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -200,6 +203,7 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
       setRuntime("node");
       setCodeText(DEFAULT_CODE);
       setTagsText("");
+      setDependencies([]);
       setError(null);
     }
   }, [tools, selectedId]);
@@ -211,6 +215,7 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
     setRuntime("node");
     setCodeText(DEFAULT_CODE);
     setTagsText("");
+    setDependencies([]);
     setError(null);
   };
 
@@ -232,6 +237,7 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
       "node";
     setRuntime(rt);
     setTagsText((tool.tags || []).join(", "));
+    setDependencies(tool.dependencies || []);
     setError(null);
     try {
       const file = await window.lopster?.readCustomToolFile?.(tool.id);
@@ -278,6 +284,7 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
           runtime,
           entry,
           tags,
+          dependencies,
         });
       } else {
         await onAdd({
@@ -288,6 +295,7 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
           runtime,
           entry,
           tags,
+          dependencies,
         });
         resetCreateForm();
       }
@@ -831,6 +839,26 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
                 <option value="powershell">powershell (main.ps1)</option>
               </select>
             </label>
+            <div className="grid min-w-0 gap-1.5">
+              <span className={labelClass}>Подключённые инструменты</span>
+              <div className="grid max-h-36 grid-cols-1 gap-1 overflow-y-auto border border-ink-200 bg-ink-50 p-2 sm:grid-cols-2 scrollbar-thin">
+                {tools.filter((tool) => tool.id !== selectedId && tool.name !== name.trim()).length ? (
+                  tools.filter((tool) => tool.id !== selectedId && tool.name !== name.trim()).map((tool) => (
+                    <label key={tool.id} className="flex min-w-0 cursor-pointer items-center gap-2 px-1 py-1 text-[11px] text-ink-700 hover:bg-ink-100">
+                      <input
+                        type="checkbox"
+                        checked={dependencies.includes(tool.name)}
+                        onChange={() => setDependencies((current) => current.includes(tool.name) ? current.filter((name) => name !== tool.name) : [...current, tool.name])}
+                      />
+                      <span className="truncate font-mono">{tool.name}</span>
+                    </label>
+                  ))
+                ) : (
+                  <span className="px-1 py-2 text-[10px] text-ink-500">Создай другие инструменты — их можно будет подключить сюда.</span>
+                )}
+              </div>
+              <span className="text-[10px] text-ink-500">Код получает ctx.callTool. Подключать можно только отмеченные инструменты; циклы блокируются.</span>
+            </div>
             <label className="grid min-w-0 gap-1.5">
               <span className={labelClass}>{labels.customToolBody}</span>
               <textarea
