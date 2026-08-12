@@ -134,7 +134,9 @@ function withTags(models, providerId) {
   const provider = getProvider(providerId);
   const tag = (provider?.modelTag || provider?.alias || providerId || "").toLowerCase();
   return (models || []).map((m) => {
-    const bare = normalizeId(m.id);
+    // Cline/QAuth upstream ids intentionally contain vendor prefixes such as
+    // anthropic/ and openai/. Only its own route tag may be removed.
+    const bare = providerId === "qauth" ? normalizeQauthModelId(m.id) : normalizeId(m.id);
     const tagged = tag ? `${tag}/${bare}` : bare;
     return {
       ...m,
