@@ -247,12 +247,12 @@ const PostWorkspace: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
 
-  const openPost = useCallback(async (id: string) => {
+  const openPost = useCallback(async (id: string, opts?: { keepMode?: boolean }) => {
     const res = await window.lopster?.postsGet?.(id);
     if (res?.ok && res.post) {
       setActiveId(id);
       setDraft(res.post);
-      setMode("preview");
+      if (!opts?.keepMode) setMode("preview");
       setSaved(true);
     }
   }, []);
