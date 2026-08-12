@@ -403,16 +403,19 @@ async function listModelsFor(userDataPath, opts = {}) {
     const auth = require("./oauth/qauthAuth.cjs");
     const discovered = [];
     const discoveryErrors = [];
-    if (account?.accessToken) {
+    if (account?.accessToken || account?.apiKey) {
       liveAccountId = account.id;
       try {
-        try {
-          const { ensureFreshToken } = require("./accounts.cjs");
-          account = await ensureFreshToken(userDataPath, account);
-        } catch {
-          /* Try the current token; the models request will report a real auth error. */
+        if (account.authType === "oauth") {
+          try {
+            const { ensureFreshToken } = require("./accounts.cjs");
+            account = await ensureFreshToken(userDataPath, account);
+          } catch {
+            /* Try the current token; the models request will report a real auth error. */
+          }
         }
-        discovered.push(...modelsFromQauthPayload(await auth.fetchModels(account.accessToken)));
+        const credential = account.accessToken || account.apiKey;
+        discovered.push(...modelsFromQauthPayload(await auth.fetchModels(credential)));
       } catch (e) {
         discoveryErrors.push(e.message || String(e));
       }
@@ -451,7 +454,13 @@ async function listModelsFor(userDataPath, opts = {}) {
       : null;
   }
 
-  if (refreshLive && account && account.authType === "apikey" && account.apiKey) {
+  if (
+    refreshLive &&
+    account &&
+    account.authType === "apikey" &&
+    account.apiKey &&
+    providerId !== "qauth"
+  ) {
     liveAccountId = account.id;
     try {
       const provider = getProvider(providerId);
