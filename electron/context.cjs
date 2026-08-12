@@ -70,7 +70,7 @@ async function getProjectTree(rootPath) {
 const cache = new Map();
 
 async function buildSystemPrompt({ rootPath, projectName, userDataPath }) {
-  const cacheKey = rootPath || "no-project";
+  const cacheKey = `${rootPath || "no-project"}::${userDataPath || "no-user-data"}`;
   if (cache.has(cacheKey)) {
     return cache.get(cacheKey);
   }
@@ -81,11 +81,33 @@ async function buildSystemPrompt({ rootPath, projectName, userDataPath }) {
     instructions.readAllInstructions(userDataPath, rootPath),
   ]);
 
+  const toolsRoot = userDataPath
+    ? path.join(userDataPath, "custom-tools")
+    : "<userData>/custom-tools";
+  const composeSourceMap = rootPath
+    ? [
+        "COMPOSEVC SOURCE MAP (use this when changing how Custom Tools work):",
+        `- User-created tool DATA/CODE: ${path.join(toolsRoot, "<tool_name>")} (tool.json + main.js/main.py/main.ps1 + helpers). This is outside the open project.`,
+        `- Custom Tools store/catalog/execution: ${path.join(rootPath, "electron", "customTools.cjs")}`,
+        `- Folder scaffold, manifests, file safety and process runner: ${path.join(rootPath, "electron", "ctl", "folderTools.cjs")}`,
+        `- Agent-facing custom_tool actions and schema: ${path.join(rootPath, "electron", "tools", "customTool.cjs")}`,
+        `- Built-in tool registration: ${path.join(rootPath, "electron", "tools", "registry.cjs")}`,
+        `- Main IPC handlers: ${path.join(rootPath, "electron", "main.cjs")} (customTools:* handlers)`,
+        `- Renderer bridge: ${path.join(rootPath, "electron", "preload.cjs")}`,
+        `- TypeScript bridge contract: ${path.join(rootPath, "src", "global.d.ts")}`,
+        `- Custom Tools workspace UI: ${path.join(rootPath, "src", "components", "CustomToolsWorkspace.tsx")}`,
+        `- Agent rules and catalog injection: ${path.join(rootPath, "electron", "context.cjs")}`,
+        "DECISION RULE: if asked to create/edit one user tool, use custom_tool and operate only in its userData folder. If asked to change the Custom Tools feature itself, inspect and update the project source layers above end-to-end. Never confuse these two jobs.",
+      ].join("\n")
+    : "";
+
   const sections = [
     "You are ComposeVC, an AI coding assistant embedded in the ComposeVC application.",
     "You can call tools to read, edit, create files, and search their contents (grep), " +
       "list directories, and run shell commands (bash).",
     "Always use tools to inspect real file contents before making claims about code. Prefer minimal, targeted edits.",
+    `RUNTIME PATHS (authoritative for this app instance):\n- Electron userData: ${userDataPath || "(unavailable)"}\n- User-created custom tools root: ${toolsRoot}\nUse these exact paths; do not guess an AppData folder and do not search the open project for user-created tool folders.`,
+    composeSourceMap,
     "Shodan is a built-in KEYLESS intelligence tool: use it for user-approved Shodan-style queries without requesting or requiring an API key. Set its limit directly from the requested count (up to 5000); it supports native Shodan filters, quoted terms and OR branches, and combines public facet result sets for multiple content markers. org:\"X\" is emulated via hostname/cert-CN/html marker queries, and bare markers also match hostnames and cert CNs. Titles are verified by default for already-returned HTTP(S) services; pass verify_titles=false to skip. Every completed search is auto-saved to <userData>/shodan-results/<query>-<ts>.json and the tool result includes savedPath/savedDir — check those paths for the persisted results before doing follow-up work. Do not use it for port scanning, credential testing, exploitation, or mass-target automation.",
     "FILE READ RULE (critical — do not ignore):\n" +
       "- Read source/config/text files ONLY via read_file.\n" +
@@ -405,7 +427,10 @@ async function buildSystemPromptWithCustomTools({
 
 function invalidateContextCache(rootPath) {
   if (rootPath) {
-    cache.delete(rootPath);
+    const prefix = `${rootPath}::`;
+    for (const key of cache.keys()) {
+      if (key.startsWith(prefix)) cache.delete(key);
+    }
   } else {
     cache.clear();
   }
