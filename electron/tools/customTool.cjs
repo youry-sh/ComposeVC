@@ -100,7 +100,9 @@ module.exports = {
     "creation (smoke it). Any language (node|python|powershell) is fine.\n" +
     "EDIT: action=write_file name=my_tool file=main.js content=… | read_file | list_files | path name=… (absolute folder).\n" +
     "RUN: call the tool BY NAME as a first-class tool, or custom_tool action=run name=my_tool args={…}.\n" +
-    "After creating a tool ALWAYS smoke-test it (action=run) before reusing it in the flow.\n\n" +
+    "After creating a tool ALWAYS smoke-test it (action=run) before reusing it in the flow.\n" +
+    "DONE means a complete implementation: no TODOs, placeholders, demo output, fake success, missing requested branches, or handoff for the user to finish. Include all helpers, validate inputs, handle useful errors, and test realistic success and failure cases; repair and rerun until correct.\n\n" +
+    "COMPOSEVC IS READ-ONLY AND CLOSED during custom-tool work. Never inspect or modify its source, electron/, src/, registry, preload, IPC, context, or package files. " +
     "FORBIDDEN: putting custom tools in the project tree, electron/tools/*.cjs, or registry.cjs " +
     "unless user explicitly asks for a built-in runtime change. " +
     "Do NOT grep/read the open project to locate custom-tool storage — use action=path (no name → toolsRoot) " +
