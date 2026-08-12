@@ -9,20 +9,35 @@ const postsStore = require("../postsStore.cjs");
 module.exports = {
   name: "posts",
   description:
-    "Manage the user's markdown posts (the POST tab). Actions: list, read, create, update, delete. " +
+    "Manage the user's markdown posts and folders (the POST tab). " +
+    "Post actions: list, read, create, update, delete, move (into a folder). " +
+    "Folder actions: create_folder, rename_folder, delete_folder. " +
     "Bodies are full markdown — headings, bold/italic, lists, tables, code blocks, links, images. " +
-    "Use create for a new post, update to rewrite title and/or content, delete to remove one.",
+    "Pass folderId on create/update/move to file a post into a folder (null/omit = root). " +
+    "Use list to discover folder ids alongside posts.",
   inputSchema: {
     type: "object",
     properties: {
       action: {
         type: "string",
-        enum: ["list", "read", "create", "update", "delete"],
+        enum: [
+          "list",
+          "read",
+          "create",
+          "update",
+          "delete",
+          "move",
+          "create_folder",
+          "rename_folder",
+          "delete_folder",
+        ],
         description: "Which operation to run",
       },
-      id: { type: "string", description: "Post id (read, update, delete)" },
+      id: { type: "string", description: "Post id (read, update, delete, move)" },
       title: { type: "string", description: "Post title (create, update)" },
       content: { type: "string", description: "Markdown body (create, update)" },
+      folderId: { type: "string", description: "Target folder id (create, update, move); omit or null = root" },
+      folderName: { type: "string", description: "Folder name (create_folder, rename_folder)" },
     },
     required: ["action"],
   },
