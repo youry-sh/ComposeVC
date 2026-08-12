@@ -9185,6 +9185,12 @@
 .books-reader-head > button:last-child { justify-self: end; }
 .books-reader-head > button.is-read { color: var(--ok); border-color: var(--ok-border); }
 .books-reader-head > div { flex-direction: column; align-items: center; gap: 2px; }
+.books-reader-head > .books-autoread-controls { justify-self: end; flex-direction: row; align-items: center; gap: 3px; }
+.books-autoread-controls button { min-width: 27px; padding: 0 6px; }
+.books-autoread-controls button:first-child { min-width: 66px; }
+.books-autoread-controls button.is-active { border-color: var(--accent); background: var(--active-bg); color: var(--ink-950); }
+.books-autoread-controls button.is-read { color: var(--ok); border-color: var(--ok-border); }
+.books-autoread-controls > span { min-width: 54px; font: 8px/1 var(--terminal-font); color: var(--ink-500); text-align: center; }
 .books-reader-head strong { max-width: 70vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; color: var(--ink-950); }
 .books-reader-head span { font-size: 8px; color: var(--ink-500); }
 .books-reader-body { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: 220px minmax(0, 1fr) 220px; }
@@ -9214,6 +9220,8 @@
 .books-page-content img { display: block; max-width: 100%; max-height: 70vh; margin: 24px auto; object-fit: contain; }
 .books-page-content blockquote { margin: 1.5em 1.2em; padding: .25em 0 .25em 18px; border-left: 2px solid var(--border-strong); color: var(--ink-700); }
 .books-page-content a { color: var(--accent-soft); text-decoration: underline; }
+.books-autoread-word { border-radius: 2px; transition: color .1s ease, background .1s ease, box-shadow .1s ease; }
+.books-autoread-word.is-reading { background: var(--accent); color: var(--accent-fg); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 13%, transparent); }
 .books-page-nav { flex: 0 0 auto; height: 40px; display: grid; grid-template-columns: 90px 1fr 90px; align-items: center; gap: 12px; padding: 0 12px; border-top: 1px solid var(--border); background: var(--panel-header-bg); }
 .books-page-nav > button { border-color: transparent; background: transparent; padding: 0 4px; }
 .books-page-nav > button:last-child { justify-self: end; }

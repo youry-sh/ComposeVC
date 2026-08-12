@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, BookOpen, Check, ChevronLeft, ChevronRight, Download, Library, Loader2, Quote, Search, Trash2, X } from "lucide-react";
+import { ArrowLeft, BookOpen, Check, ChevronLeft, ChevronRight, Download, Library, Loader2, Pause, Play, Quote, Search, Trash2, X } from "lucide-react";
 import ChatMonoScroll, { type ChatMonoScrollHandle } from "./ChatMonoScroll";
 import type { BookFull, BookMeta, BookQuote } from "../global";
 
@@ -16,7 +16,10 @@ const BooksWorkspace: React.FC = () => {
   const [opened, setOpened] = useState<BookFull | null>(null);
   const [chapter, setChapter] = useState(0);
   const [selection, setSelection] = useState("");
+  const [autoRead, setAutoRead] = useState(false);
+  const [readingSpeed, setReadingSpeed] = useState(220);
   const scrollRef = useRef<ChatMonoScrollHandle>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
   const positionTimer = useRef<number | null>(null);
 
   const refresh = useCallback(async () => {
@@ -48,7 +51,7 @@ const BooksWorkspace: React.FC = () => {
     if (!res?.book) return;
     const next = res.book;
     const index = Math.max(0, Math.min(next.chapters.length - 1, next.lastChapter || 0));
-    setOpened(next); setChapter(index); setSelection("");
+    setAutoRead(false); setOpened(next); setChapter(index); setSelection("");
   };
   const setPage = (next: number) => {
     if (!opened) return;
@@ -76,6 +79,59 @@ const BooksWorkspace: React.FC = () => {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [opened, chapter]);
+  useEffect(() => {
+    if (!opened || !contentRef.current) return;
+    const root = contentRef.current;
+    // React may retain the same dangerous-html node between speed changes.
+    // Restore the cached chapter before adding word spans to avoid nesting them.
+    root.innerHTML = opened.chapters[chapter]?.html || "";
+    if (!autoRead) return;
+    const viewport = scrollRef.current?.getViewport();
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode: (node) => node.textContent?.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT,
+    });
+    const textNodes: Text[] = [];
+    while (walker.nextNode()) textNodes.push(walker.currentNode as Text);
+    const words: HTMLSpanElement[] = [];
+    for (const node of textNodes) {
+      const fragment = document.createDocumentFragment();
+      for (const part of (node.textContent || "").split(/(\s+)/)) {
+        if (!part) continue;
+        if (/^\s+$/.test(part)) { fragment.appendChild(document.createTextNode(part)); continue; }
+        const span = document.createElement("span");
+        span.className = "books-autoread-word";
+        span.textContent = part;
+        fragment.appendChild(span);
+        words.push(span);
+      }
+      node.parentNode?.replaceChild(fragment, node);
+    }
+    if (!words.length) { setAutoRead(false); return; }
+    let index = 0;
+    let previous: HTMLSpanElement | null = null;
+    const tick = () => {
+      previous?.classList.remove("is-reading");
+      const word = words[index];
+      if (!word) {
+        if (chapter + 1 < opened.chapters.length) setPage(chapter + 1);
+        else setAutoRead(false);
+        return false;
+      }
+      word.classList.add("is-reading"); previous = word;
+      if (viewport) {
+        const wordRect = word.getBoundingClientRect();
+        const viewRect = viewport.getBoundingClientRect();
+        if (wordRect.bottom > viewRect.bottom - viewRect.height * .18 || wordRect.top < viewRect.top + 24) {
+          viewport.scrollTo({ top: Math.max(0, viewport.scrollTop + wordRect.top - viewRect.top - viewRect.height * .32), behavior: "smooth" });
+        }
+      }
+      index += 1;
+      return true;
+    };
+    tick();
+    const timer = window.setInterval(() => { if (!tick()) window.clearInterval(timer); }, Math.max(90, Math.round(60000 / readingSpeed)));
+    return () => { window.clearInterval(timer); previous?.classList.remove("is-reading"); };
+  }, [autoRead, readingSpeed, chapter, opened?.id]);
   const importBooks = async () => {
     setImporting(true);
     try { const res = await window.lopster?.booksImport?.(); if (res?.ok && res.books?.[0]) await openBook(res.books[0].id); }
@@ -111,9 +167,15 @@ const BooksWorkspace: React.FC = () => {
     return (
       <div className="books-reader">
         <header className="books-reader-head">
-          <button type="button" onClick={() => { setOpened(null); void refresh(); }}><ArrowLeft /> LIBRARY</button>
+          <button type="button" onClick={() => { setAutoRead(false); setOpened(null); void refresh(); }}><ArrowLeft /> LIBRARY</button>
           <div><strong>{opened.title}</strong><span>{opened.author || "Неизвестный автор"}</span></div>
-          <button type="button" className={opened.read ? "is-read" : ""} onClick={() => void toggleRead()}><Check /> {opened.read ? "ПРОЧИТАНО" : "ОТМЕТИТЬ"}</button>
+          <div className="books-autoread-controls">
+            <button type="button" className={autoRead ? "is-active" : ""} onClick={() => setAutoRead((value) => !value)}>{autoRead ? <Pause /> : <Play />} {autoRead ? "ПАУЗА" : "АВТО"}</button>
+            <button type="button" onClick={() => setReadingSpeed((value) => Math.max(100, value - 20))}>−</button>
+            <span>{readingSpeed} WPM</span>
+            <button type="button" onClick={() => setReadingSpeed((value) => Math.min(600, value + 20))}>+</button>
+            <button type="button" className={opened.read ? "is-read" : ""} onClick={() => void toggleRead()}><Check /></button>
+          </div>
         </header>
         <div className="books-reader-body">
           <nav className="books-chapters">
@@ -127,7 +189,7 @@ const BooksWorkspace: React.FC = () => {
               <article className="books-page" onMouseUp={captureSelection}>
                 <div className="books-page-kicker">{chapter + 1} / {opened.chapters.length}</div>
                 <h1>{current?.title}</h1>
-                <div className="books-page-content" dangerouslySetInnerHTML={{ __html: current?.html || "" }} />
+                <div ref={contentRef} className="books-page-content" dangerouslySetInnerHTML={{ __html: current?.html || "" }} />
               </article>
             </ChatMonoScroll>
             <footer className="books-page-nav">
