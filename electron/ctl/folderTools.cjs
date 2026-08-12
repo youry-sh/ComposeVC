@@ -38,6 +38,11 @@ const JSON_IDLE_MS = 400;
 const KILL_GRACE_MS = 800;
 const NO_OUTPUT_WARN_MS = 15000;
 
+function normalizeDependencies(raw, ownName = "") {
+  if (!Array.isArray(raw)) return [];
+  return [...new Set(raw.map(normalizeToolName).filter((name) => name && name !== ownName))].slice(0, 50);
+}
+
 function isPlainObject(v) {
   return v != null && typeof v === "object" && !Array.isArray(v);
 }
@@ -313,6 +318,7 @@ async function ensureToolScaffold(userDataPath, input = {}) {
     inputSchema,
     enabled,
     tags,
+    dependencies: normalizeDependencies(input.dependencies != null ? input.dependencies : prev.dependencies, name),
     timeout_ms:
       Number(input.timeout_ms || input.timeoutMs || prev.timeout_ms || prev.timeoutMs) ||
       DEFAULT_TIMEOUT_MS,
@@ -385,6 +391,7 @@ async function readFolderTool(userDataPath, folderName) {
     description,
     enabled,
     tags,
+    dependencies: normalizeDependencies(raw.dependencies, name),
     createdAt,
     updatedAt,
     path: toolDir,
@@ -511,6 +518,10 @@ async function updateFolderManifest(userDataPath, name, patch = {}) {
       : Array.isArray(raw.tags)
         ? raw.tags
         : tool.tags || ["folder"],
+    dependencies: normalizeDependencies(
+      patch.dependencies != null ? patch.dependencies : raw.dependencies || tool.dependencies,
+      nextName
+    ),
     timeout_ms: Math.min(
       MAX_TIMEOUT_MS,
       Math.max(
@@ -971,6 +982,13 @@ async function executeFolderTool(tool, input = {}, context = {}) {
       projectName: context.projectName || null,
       userDataPath: context.userDataPath || null,
       toolsRoot: context.userDataPath ? getToolsRoot(context.userDataPath) : null,
+      dependencies: Array.isArray(tool.dependencies) ? tool.dependencies : [],
+      callTool: {
+        bridgePath: path.join(__dirname, "toolBridge.cjs"),
+        nodePath: process.execPath,
+        stack: Array.isArray(context.__customToolStack) ? context.__customToolStack : [],
+        usage: "spawnSync(ctx.callTool.nodePath, [ctx.callTool.bridgePath], {input: JSON.stringify({caller:ctx.toolName,name,args,userDataPath:ctx.userDataPath,rootPath:ctx.rootPath,projectName:ctx.projectName,stack:ctx.callTool.stack}),encoding:'utf8',env:{...process.env,ELECTRON_RUN_AS_NODE:'1'}})",
+      },
     },
   };
 

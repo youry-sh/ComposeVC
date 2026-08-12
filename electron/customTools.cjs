@@ -82,6 +82,7 @@ function toolSummary(tool) {
     description: tool.description || "",
     enabled: tool.enabled !== false,
     tags: Array.isArray(tool.tags) ? tool.tags : [],
+    dependencies: Array.isArray(tool.dependencies) ? tool.dependencies : [],
     kind,
     path: tool.path || tool.folder || tool.body?.toolDir || null,
     folder: tool.folder || tool.path || null,
@@ -158,6 +159,7 @@ async function addCustomTool(userDataPath, input = {}) {
     inputSchema: input.inputSchema || input.schema,
     enabled: input.enabled,
     tags: Array.isArray(input.tags) ? input.tags : ["folder"],
+    dependencies: input.dependencies,
     timeout_ms: input.timeout_ms || input.timeoutMs || bodyIn.timeout_ms,
     files: input.files || bodyIn.files,
   });
