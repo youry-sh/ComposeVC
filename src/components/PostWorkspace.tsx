@@ -144,7 +144,8 @@ const PostGraph: React.FC<{
       </div>
       <svg
         className="post-graph-svg"
-        viewBox="-230 -270 460 540"
+        viewBox={`${-extent} ${-extent} ${extent * 2} ${extent * 2}`}
+        preserveAspectRatio="xMidYMid meet"
         onWheel={(event) => {
           const factor = event.deltaY < 0 ? 1.12 : 0.89;
           setView((c) => ({ ...c, scale: Math.max(0.4, Math.min(3, c.scale * factor)) }));
