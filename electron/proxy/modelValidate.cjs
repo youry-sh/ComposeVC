@@ -127,7 +127,9 @@ function preferredListForProvider(providerId) {
  * Empty allowlist → no opinion (caller may still send).
  */
 function resolveAllowedModel(providerId, requestedModel, models) {
-  const bare = bareModelId(requestedModel);
+  const bare = providerId === "qauth"
+    ? String(requestedModel || "").trim().replace(/^(?:(?:qauth|cline)\/)+/i, "")
+    : bareModelId(requestedModel);
   const allow = allowlistFromModels(models);
   if (!allow.size) {
     return {
