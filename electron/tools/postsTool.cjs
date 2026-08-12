@@ -58,10 +58,12 @@ module.exports = {
       switch (action) {
         case "list": {
           const posts = postsStore.listPosts(userDataPath);
+          const folders = postsStore.listFolders(userDataPath);
           return {
             ok: true,
             count: posts.length,
-            posts: posts.map((p) => ({ id: p.id, title: p.title, updatedAt: p.updatedAt })),
+            folders: folders.map((f) => ({ id: f.id, name: f.name })),
+            posts: posts.map((p) => ({ id: p.id, title: p.title, folderId: p.folderId, updatedAt: p.updatedAt })),
           };
         }
         case "read": {
