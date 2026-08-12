@@ -5,7 +5,7 @@ const sessions = new Map();
 
 function shellConfig() {
   if (process.platform === "win32") {
-    return { command: process.env.COMSPEC || "powershell.exe", args: ["-NoLogo"] };
+    return { command: "powershell.exe", args: ["-NoLogo"] };
   }
   return { command: process.env.SHELL || "/bin/bash", args: ["-l"] };
 }
