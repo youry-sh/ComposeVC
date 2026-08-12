@@ -195,6 +195,11 @@ module.exports = {
         items: { type: "string" },
         description: "Optional tags for search",
       },
+      dependencies: {
+        type: "array",
+        items: { type: "string" },
+        description: "Names of other custom tools this tool is allowed to call through ctx.callTool",
+      },
       timeout_ms: { type: "number", description: "Folder tool run timeout ms" },
       query: { type: "string", description: "For search" },
       limit: { type: "number", description: "Search/list limit" },
@@ -393,6 +398,7 @@ module.exports = {
           inputSchema: input.inputSchema || input.schema,
           enabled: input.enabled,
           tags: input.tags,
+          dependencies: input.dependencies,
         });
         notifyChanged(context, { type: "added", tool });
         const kind = tool.kind || tool.body?.kind || "folder";
@@ -440,6 +446,7 @@ module.exports = {
         }
         if (input.enabled === true || input.enabled === false) patch.enabled = input.enabled;
         if (Array.isArray(input.tags)) patch.tags = input.tags;
+        if (Array.isArray(input.dependencies)) patch.dependencies = input.dependencies;
         if (input.code != null) patch.code = input.code;
         if (input.content != null && input.code == null) patch.content = input.content;
         if (input.runtime != null || input.lang != null || input.language != null) {

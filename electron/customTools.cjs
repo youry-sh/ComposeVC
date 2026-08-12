@@ -589,6 +589,7 @@ async function toShareEntry(tool) {
     },
     enabled: tool.enabled !== false,
     tags: Array.isArray(tool.tags) ? tool.tags : [],
+    dependencies: Array.isArray(tool.dependencies) ? tool.dependencies : [],
   };
 }
 
@@ -961,6 +962,9 @@ async function importCustomTools(userDataPath, source, options = {}) {
       const tags = Array.isArray(raw.tags)
         ? raw.tags.map((t) => String(t || "").trim()).filter(Boolean).slice(0, 20)
         : [];
+      const dependencies = Array.isArray(raw.dependencies)
+        ? raw.dependencies.map(normalizeToolName).filter(Boolean)
+        : [];
 
       const existing = byName.get(name);
       if (existing) {
@@ -983,6 +987,7 @@ async function importCustomTools(userDataPath, source, options = {}) {
             inputSchema,
             enabled,
             tags,
+            dependencies,
             files,
           });
           const updatedTool = await folderTools.readFolderTool(userDataPath, name);
@@ -1003,6 +1008,7 @@ async function importCustomTools(userDataPath, source, options = {}) {
         inputSchema,
         enabled,
         tags,
+        dependencies,
         files,
       });
       if (files.length) {
