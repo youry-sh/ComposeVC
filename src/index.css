@@ -9126,8 +9126,8 @@
 .youtube-add button svg, .youtube-card footer button svg { width: 12px; }
 .youtube-error { flex: 0 0 auto; padding: 6px 14px; border-bottom: 1px solid var(--danger-border); background: var(--danger-bg); color: var(--danger); font: 9px/1.4 var(--terminal-font); }
 .youtube-scroll { flex: 1 1 auto; min-height: 0; }
-.youtube-scroll .chat-mono-scroll-viewport { padding: 24px 26px 60px; }
-.youtube-grid { width: 100%; max-width: 1320px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 26px 20px; }
+.youtube-scroll .chat-mono-scroll-viewport { padding: 14px 14px 54px; }
+.youtube-grid { width: 100%; margin: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: start; gap: 18px 12px; }
 .youtube-card { min-width: 0; overflow: hidden; border: 1px solid var(--border); background: color-mix(in srgb, var(--surface) 74%, transparent); }
 .youtube-card.is-watched { opacity: .62; }
 .youtube-card:hover { border-color: var(--border-strong); opacity: 1; }
@@ -9156,12 +9156,11 @@
 .youtube-player header > div { min-width: 0; display: flex; align-items: center; gap: 7px; font: 9px/1 var(--terminal-font); color: var(--ink-800); }
 .youtube-player header > div svg { width: 13px; }
 .youtube-player header span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.youtube-player header > .youtube-player-actions { flex: none; display: flex; align-items: center; gap: 3px; }
-.youtube-player-actions button:first-child { width: auto; padding: 0 9px; font: 8px/1 var(--terminal-font); color: var(--ink-600); }
 .youtube-player button { width: 27px; height: 27px; padding: 0; border-color: transparent; background: transparent; }
 .youtube-player button svg { width: 13px; }
-.youtube-player iframe { width: 100%; aspect-ratio: 16/9; display: block; border: 0; background: #000; }
-@media (max-width: 900px) { .youtube-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } .youtube-head { grid-template-columns: 130px minmax(0,1fr); } .youtube-add { grid-template-columns: 1fr auto; } .youtube-add input:nth-child(2) { display: none; } }
+.youtube-webview { width: 100%; height: min(72vh, 720px); display: flex; border: 0; background: #000; }
+@media (max-width: 1280px) { .youtube-grid { grid-template-columns: repeat(4, minmax(0,1fr)); } }
+@media (max-width: 1000px) { .youtube-grid { grid-template-columns: repeat(3, minmax(0,1fr)); } .youtube-head { grid-template-columns: 130px minmax(0,1fr); } .youtube-add { grid-template-columns: 1fr auto; } .youtube-add input:nth-child(2) { display: none; } }
 
 .books-shell, .books-reader { flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
 .books-head, .books-reader-head {
