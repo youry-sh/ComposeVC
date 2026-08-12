@@ -169,7 +169,9 @@ function resolveAllowedModel(providerId, requestedModel, models) {
     }
   }
   const prefs = preferredListForProvider(providerId);
-  const fb = pickFallbackModel(models, null, prefs);
+  const fb = providerId === "qauth"
+    ? String(models?.[0]?.bareId || models?.[0]?.id || "").replace(/^(?:(?:qauth|cline)\/)+/i, "")
+    : pickFallbackModel(models, null, prefs);
   if (fb) {
     return {
       ok: true,
