@@ -211,66 +211,118 @@ const STOPWORDS = new Set(
   ].map((w) => w.toLowerCase())
 );
 
-function tokenize(text) {
-  const raw = String(text || "")
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}/._-]+/gu, " ");
-  const parts = raw.split(/\s+/).filter(Boolean);
+// Hybrid lexical retrieval is deliberately dependency-free: 1,000 tools are small
+// enough to rank in-memory, while avoiding an embedding model keeps startup reliable.
+const RU_STOPWORDS = "и в во на с со к ко о об про для по из у от до за при без над под между это эта эти тот та те как что чтобы или но а же ли бы не ни да нет есть быть был была были будет можно нужно надо уже ещё еще тоже только если когда где кто чем этот тут там так вот мне меня мой моя мои твой ваш наш их его её ее мы вы он она они я ты тул тулы кастом кастомный кастомные".split(" ");
+for (const word of RU_STOPWORDS) STOPWORDS.add(word);
+const CYRILLIC_MAP = { а:"a",б:"b",в:"v",г:"g",д:"d",е:"e",ё:"e",ж:"zh",з:"z",и:"i",й:"y",к:"k",л:"l",м:"m",н:"n",о:"o",п:"p",р:"r",с:"s",т:"t",у:"u",ф:"f",х:"h",ц:"ts",ч:"ch",ш:"sh",щ:"sch",ъ:"",ы:"y",ь:"",э:"e",ю:"yu",я:"ya" };
+const CONCEPTS = [
+  ["search", "find", "lookup", "искать", "поиск", "найти"],
+  ["download", "fetch", "save", "скачать", "загрузить", "сохранить"],
+  ["email", "mail", "gmail", "почта", "письмо"],
+  ["image", "photo", "picture", "изображение", "фото", "картинка"],
+  ["video", "youtube", "ролик", "видео"], ["telegram", "tg", "телеграм"],
+  ["parse", "extract", "scrape", "парсить", "извлечь", "собрать"],
+  ["convert", "transform", "encode", "конвертировать", "преобразовать"],
+  ["database", "sql", "db", "база", "данные"], ["file", "document", "файл", "документ"],
+  ["audio", "sound", "voice", "аудио", "звук", "голос"], ["translate", "translation", "перевести", "перевод"],
+];
+const CONCEPT_BY_TERM = new Map();
+for (const group of CONCEPTS) for (const term of group) CONCEPT_BY_TERM.set(term, group);
+
+function normalizeSearchText(text) {
+  return String(text || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+function transliterate(text) {
+  return normalizeSearchText(text).replace(/[а-яё]/g, (ch) => CYRILLIC_MAP[ch] ?? ch);
+}
+function stemToken(token) {
+  if (/^[а-яё]{5,}$/u.test(token)) return token.replace(/(иями|ами|ями|ого|ему|ому|ыми|ими|ить|ать|ять|еть|уть|ов|ев|ий|ый|ая|яя|ое|ее|ые|ие|ам|ям|ах|ях|ом|ем|у|ю|а|я|ы|и|ь)$/u, "");
+  if (/^[a-z]{5,}$/.test(token)) return token.replace(/(ingly|edly|ation|ments|ment|ness|ing|ers|ies|ied|ed|es|s)$/, "");
+  return token;
+}
+function tokenize(text, { expand = false } = {}) {
+  const parts = normalizeSearchText(text).replace(/[^\p{L}\p{N}/._-]+/gu, " ").split(/\s+/).filter(Boolean);
   const out = [];
-  for (const p of parts) {
-    const t = p.replace(/^\/+/, "").replace(/^-+|-+$/g, "");
-    if (!t || t.length < 2) continue;
-    if (STOPWORDS.has(t)) continue;
-    if (/^\d+$/.test(t)) continue;
-    out.push(t);
-    if (t.includes("-") || t.includes("_")) {
-      for (const sub of t.split(/[-_]+/)) {
-        if (sub.length >= 2 && !STOPWORDS.has(sub) && !/^\d+$/.test(sub)) out.push(sub);
-      }
+  for (const part of parts) {
+    const compound = part.replace(/^\/+/, "").replace(/^-+|-+$/g, "");
+    for (const token of [compound, ...compound.split(/[-_]+/)]) {
+      if (!token || token.length < 2 || STOPWORDS.has(token) || /^\d+$/.test(token)) continue;
+      out.push(token, stemToken(token));
+      const latin = transliterate(token);
+      if (latin !== token) out.push(latin);
+      if (expand) for (const synonym of CONCEPT_BY_TERM.get(token) || []) out.push(synonym, stemToken(synonym));
     }
   }
-  return out;
+  return [...new Set(out.filter(Boolean))];
 }
-
-function scoreCustomTool(tool, query, terms) {
-  const q = String(query || "").trim().toLowerCase();
-  const name = String(tool.name || "").toLowerCase();
-  const title = String(tool.title || "").toLowerCase();
-  const desc = String(tool.description || "").toLowerCase();
-  const tags = (Array.isArray(tool.tags) ? tool.tags : []).map((t) => String(t || "").toLowerCase());
-  const kind = String(tool.body?.kind || "").toLowerCase();
-  const bodyHead = JSON.stringify(tool.body || {}).slice(0, BODY_INDEX_CHARS).toLowerCase();
-  const hay = [name, title, desc, ...tags, kind, bodyHead].join(" ");
+function trigrams(text) {
+  const value = `  ${transliterate(text).replace(/[^a-z0-9]+/g, " ")}  `;
+  const result = new Set();
+  for (let i = 0; i <= value.length - 3; i++) result.add(value.slice(i, i + 3));
+  return result;
+}
+function diceSimilarity(a, b) {
+  if (!a.size || !b.size) return 0;
+  let common = 0;
+  for (const gram of a) if (b.has(gram)) common++;
+  return (2 * common) / (a.size + b.size);
+}
+function toolSearchDocument(tool) {
+  const schema = tool.inputSchema || {};
+  const fields = {
+    name: String(tool.name || ""), title: String(tool.title || ""),
+    tags: (Array.isArray(tool.tags) ? tool.tags : []).join(" "), description: String(tool.description || ""),
+    schema: JSON.stringify({ properties: schema.properties, required: schema.required }),
+    body: JSON.stringify(tool.body || {}).slice(0, BODY_INDEX_CHARS),
+  };
+  const tokens = {};
+  for (const [key, value] of Object.entries(fields)) tokens[key] = tokenize(value);
+  return { fields, tokens, all: new Set(Object.values(tokens).flat()), grams: trigrams(Object.values(fields).join(" ")) };
+}
+function scoreCustomTool(tool, query, queryTerms, doc, stats) {
+  const q = normalizeSearchText(query).trim();
+  if (!q) return { score: 0, weak: true, coverage: 0 };
+  const weights = { name: 9, title: 6, tags: 7, description: 3, schema: 2, body: 0.6 };
   let score = 0;
-  if (!q) return { score: 0, weak: true };
-  if (name === q) score += 50;
-  if (name.includes(q)) score += 20;
-  if (title.includes(q)) score += 12;
-  if (desc.includes(q)) score += 8;
-  for (const tag of tags) {
-    if (tag === q) score += 15;
-    else if (tag.includes(q)) score += 8;
+  for (const [field, tokens] of Object.entries(doc.tokens)) {
+    const counts = new Map();
+    for (const token of tokens) counts.set(token, (counts.get(token) || 0) + 1);
+    for (const term of queryTerms) {
+      const tf = counts.get(term) || 0;
+      if (!tf) continue;
+      const df = stats.df.get(term) || 0;
+      const idf = Math.log(1 + (stats.count - df + 0.5) / (df + 0.5));
+      score += weights[field] * idf * ((tf * 2.2) / (tf + 1.2));
+    }
   }
-  for (const t of terms) {
-    if (name === t) score += 18;
-    else if (name.includes(t)) score += 8;
-    if (title.includes(t)) score += 5;
-    if (desc.includes(t)) score += 3;
-    if (tags.some((tag) => tag === t || tag.includes(t))) score += 6;
-    if (hay.includes(t)) score += 1.5;
-  }
-  return { score, weak: score <= 0 };
+  const name = normalizeSearchText(doc.fields.name).replace(/[_-]+/g, " ");
+  const title = normalizeSearchText(doc.fields.title);
+  if (name === q) score += 80; else if (name.includes(q)) score += 30;
+  if (title === q) score += 45; else if (q.length >= 4 && title.includes(q)) score += 18;
+  const fuzzy = diceSimilarity(stats.queryGrams, doc.grams);
+  if (fuzzy >= 0.18) score += fuzzy * 18;
+  const matched = stats.originalTerms.filter((term) => doc.all.has(term)).length;
+  const coverage = stats.originalTerms.length ? matched / stats.originalTerms.length : 0;
+  score *= 0.65 + 0.75 * coverage;
+  if (stats.originalTerms.length > 1 && coverage === 1) score += 22;
+  return { score, weak: score < 1, coverage, fuzzy };
 }
 
 function rankCustomTools(tools, query, { limit = CATALOG_TOP_K } = {}) {
   const list = Array.isArray(tools) ? tools.filter(Boolean) : [];
   const q = String(query || "").trim();
-  const terms = tokenize(q);
+  const originalTerms = tokenize(q);
+  const terms = tokenize(q, { expand: true });
   const cap = Math.min(SEARCH_MAX_LIMIT, Math.max(1, Number(limit) || CATALOG_TOP_K));
-  const scored = list
-    .map((tool) => {
-      const { score, weak } = scoreCustomTool(tool, q, terms);
-      return { tool, score, weak };
+  const docs = list.map((tool) => ({ tool, doc: toolSearchDocument(tool) }));
+  const df = new Map();
+  for (const { doc } of docs) for (const term of doc.all) df.set(term, (df.get(term) || 0) + 1);
+  const stats = { count: Math.max(1, list.length), df, originalTerms, queryGrams: trigrams(q) };
+  const scored = docs
+    .map(({ tool, doc }) => {
+      const details = scoreCustomTool(tool, q, terms, doc, stats);
+      return { tool, ...details };
     })
     .sort(
       (a, b) =>
