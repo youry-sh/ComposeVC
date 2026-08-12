@@ -395,6 +395,15 @@ const PostWorkspace: React.FC = () => {
     saveTimer.current = null;
     return commitSave();
   }, [commitSave]);
+
+  // Switching posts must not drop edits that are still inside the debounce window.
+  const selectPost = useCallback(
+    async (id: string) => {
+      if (pendingSave.current && pendingSave.current.id !== id) await flushSave();
+      await openPost(id);
+    },
+    [flushSave, openPost]
+  );
   const onTitle = (title: string) => {
     if (!draft) return;
     const next = { ...draft, title };
@@ -482,7 +491,7 @@ const PostWorkspace: React.FC = () => {
       onDragStart={(e) => onDragStart(e, p.id)}
       onDragEnd={onDragEnd}
     >
-      <button type="button" className="post-item-btn" onClick={() => void openPost(p.id)}>
+      <button type="button" className="post-item-btn" onClick={() => void selectPost(p.id)}>
         <span className="post-item-title">{p.title}</span>
         <span className="post-item-when">{stamp(p)}</span>
       </button>
@@ -691,7 +700,7 @@ const PostWorkspace: React.FC = () => {
         posts={posts}
         folders={folders}
         activeId={activeId}
-        onOpen={(id) => void openPost(id)}
+        onOpen={(id) => void selectPost(id)}
         onDelete={(id) => void deletePost(id)}
       />
     </div>
