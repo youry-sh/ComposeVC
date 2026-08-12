@@ -92,32 +92,49 @@ const BooksWorkspace: React.FC = () => {
     });
     const textNodes: Text[] = [];
     while (walker.nextNode()) textNodes.push(walker.currentNode as Text);
-    const words: HTMLSpanElement[] = [];
+    const phrases: Array<{ element: HTMLSpanElement; words: number; pause: number }> = [];
     for (const node of textNodes) {
       const fragment = document.createDocumentFragment();
-      for (const part of (node.textContent || "").split(/(\s+)/)) {
-        if (!part) continue;
-        if (/^\s+$/.test(part)) { fragment.appendChild(document.createTextNode(part)); continue; }
+      const parts = (node.textContent || "").match(/\S+\s*/g) || [];
+      let buffer = "";
+      let wordCount = 0;
+      const flush = () => {
+        if (!buffer) return;
         const span = document.createElement("span");
-        span.className = "books-autoread-word";
-        span.textContent = part;
+        span.className = "books-autoread-phrase";
+        span.textContent = buffer;
         fragment.appendChild(span);
-        words.push(span);
+        const punctuation = /[.!?…][”»)]?\s*$/.test(buffer) ? 260 : /[,;:—][”»)]?\s*$/.test(buffer) ? 120 : 0;
+        phrases.push({ element: span, words: wordCount, pause: punctuation });
+        buffer = ""; wordCount = 0;
+      };
+      for (const part of parts) {
+        buffer += part; wordCount += 1;
+        const endsThought = /[.!?…][”»)]?\s*$/.test(part);
+        const softBreak = /[,;:—][”»)]?\s*$/.test(part);
+        if ((wordCount >= 3 && endsThought) || (wordCount >= 4 && softBreak) || wordCount >= 7) flush();
       }
+      flush();
       node.parentNode?.replaceChild(fragment, node);
     }
-    if (!words.length) { setAutoRead(false); return; }
+    if (!phrases.length) { setAutoRead(false); return; }
     let index = 0;
     let previous: HTMLSpanElement | null = null;
+    let previousBlock: HTMLElement | null = null;
+    let timer: number | null = null;
     const tick = () => {
       previous?.classList.remove("is-reading");
-      const word = words[index];
-      if (!word) {
+      previousBlock?.classList.remove("is-autoread-block");
+      const phrase = phrases[index];
+      if (!phrase) {
         if (chapter + 1 < opened.chapters.length) setPage(chapter + 1);
         else setAutoRead(false);
-        return false;
+        return;
       }
+      const word = phrase.element;
       word.classList.add("is-reading"); previous = word;
+      previousBlock = word.closest("p, li, blockquote, h1, h2, h3, h4") as HTMLElement | null;
+      previousBlock?.classList.add("is-autoread-block");
       if (viewport) {
         const wordRect = word.getBoundingClientRect();
         const viewRect = viewport.getBoundingClientRect();
@@ -126,11 +143,15 @@ const BooksWorkspace: React.FC = () => {
         }
       }
       index += 1;
-      return true;
+      const duration = Math.max(520, Math.round((60000 / readingSpeed) * phrase.words + phrase.pause));
+      timer = window.setTimeout(tick, duration);
     };
     tick();
-    const timer = window.setInterval(() => { if (!tick()) window.clearInterval(timer); }, Math.max(90, Math.round(60000 / readingSpeed)));
-    return () => { window.clearInterval(timer); previous?.classList.remove("is-reading"); };
+    return () => {
+      if (timer !== null) window.clearTimeout(timer);
+      previous?.classList.remove("is-reading");
+      previousBlock?.classList.remove("is-autoread-block");
+    };
   }, [autoRead, readingSpeed, chapter, opened?.id]);
   const importBooks = async () => {
     setImporting(true);
