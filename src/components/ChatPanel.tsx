@@ -4473,9 +4473,10 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                     if (item.id !== lastLiveTextId) return null;
                     return <MarkdownContent key={item.id} content={item.text} />;
                   }
-                  if (!liveToolsOpen) return null;
                   const step = toolActivity.find((s) => s.toolCallId === item.toolCallId);
                   if (!step) return null;
+                  // Folded: hide every tool card EXCEPT an ask waiting for you.
+                  if (!liveToolsOpen && !isAskStep(step)) return null;
                   return (
                     <ToolActivityList
                       key={item.id}
@@ -4494,16 +4495,20 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
               </>
             ) : (
               <>
-                {toolActivity.length > 0 && liveToolsOpen && (
-                  <ToolActivityList
-                    steps={toolActivity}
-                    more={labels.more}
-                    moreCount={labels.moreCount}
-                    collapse={labels.collapse}
-                    collapseUnits={labels.collapseUnits}
-                    allUnitsCount={labels.allUnitsCount}
-                  />
-                )}
+                {(() => {
+                  // Open → everything; folded → only asks waiting for you.
+                  const steps = liveToolsOpen ? toolActivity : toolActivity.filter(isAskStep);
+                  return steps.length > 0 ? (
+                    <ToolActivityList
+                      steps={steps}
+                      more={labels.more}
+                      moreCount={labels.moreCount}
+                      collapse={labels.collapse}
+                      collapseUnits={labels.collapseUnits}
+                      allUnitsCount={labels.allUnitsCount}
+                    />
+                  ) : null;
+                })()}
                 {assistantDrafts.slice(-1).map((text, index) => (
                   <MarkdownContent key={`${index}-${text.slice(0, 24)}`} content={text} />
                 ))}
