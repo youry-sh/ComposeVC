@@ -14,7 +14,7 @@ const {
   registerCustomProvidersFromStore,
 } = require("./providers/registry.cjs");
 const { catalogFor: antigravityCatalog } = require("./oauth/antigravityUsage.cjs");
-const { modelsFromQauthPayload } = require("./qauthModels.cjs");
+const { modelsFromQauthPayload, normalizeQauthModelId } = require("./qauthModels.cjs");
 
 /** OpenAI Platform API key catalog (api.openai.com). NOT for ChatGPT OAuth/Codex. */
 const OPENAI_PLATFORM_FALLBACK_MODELS = [
@@ -426,7 +426,7 @@ async function listModelsFor(userDataPath, opts = {}) {
     const seenQauthIds = new Set();
     live = discovered
       .map((model) => {
-        const id = model.id || model.model || model.name;
+        const id = normalizeQauthModelId(model.id || model.model || model.name);
         const key = String(id || "").toLowerCase();
         if (!id || seenQauthIds.has(key)) return null;
         seenQauthIds.add(key);
