@@ -9083,6 +9083,13 @@
 .post-graph-node:hover text, .post-graph-node.is-selected text { fill: var(--ink-800); }
 .post-graph-node.is-active { color: var(--accent); }
 .post-graph-node.is-active text { fill: var(--ink-950); font-weight: 600; }
+/* Folder hubs: bigger, brighter, with a clear ring. */
+.post-graph-node.is-folder { color: var(--ink-700); cursor: default; }
+.post-graph-node.is-folder circle { stroke: color-mix(in srgb, var(--ink-900) 45%, transparent); stroke-width: 6; }
+.post-graph-node.is-folder text { fill: var(--ink-800); font-weight: 600; letter-spacing: .02em; }
+.post-graph-edge.is-folder { stroke: color-mix(in srgb, var(--ink-500) 34%, transparent); stroke-width: .9; }
+.post-graph-edge.is-post { stroke: color-mix(in srgb, var(--ink-500) 16%, transparent); }
+.post-graph-root { fill: var(--ink-600); }
 .post-graph-foot button {
   display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 6px;
   border: 1px solid transparent; border-radius: 1px; background: transparent; color: var(--ink-500);
@@ -9102,6 +9109,111 @@
   .post-shell { grid-template-columns: 230px minmax(0, 1fr) 240px; }
   .post-graph-foot > span { display: none; }
 }
+
+/* ══ BOOKS workspace ═══════════════════════════════════════════════════════ */
+.books-shell, .books-reader { flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+.books-head, .books-reader-head {
+  flex: 0 0 auto; height: 48px; display: grid; grid-template-columns: 1fr minmax(260px, 520px) 1fr;
+  align-items: center; gap: 18px; padding: 0 14px; border-bottom: 1px solid var(--border);
+  background: var(--panel-header-bg); font-family: var(--terminal-font);
+}
+.books-head > div, .books-reader-head > div { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.books-head > div > svg { width: 17px; color: var(--accent); }
+.books-head > div span { display: flex; flex-direction: column; }
+.books-head strong { font-size: 11px; letter-spacing: .14em; color: var(--ink-950); }
+.books-head small { margin-top: 2px; font-size: 8px; color: var(--ink-500); }
+.books-head label { height: 30px; display: flex; align-items: center; gap: 7px; padding: 0 9px; border: 1px solid var(--border-strong); background: var(--input-bg); }
+.books-head label svg { width: 13px; color: var(--ink-500); }
+.books-head input { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; color: var(--ink-900); font: 10px/1 var(--terminal-font); }
+.books-head > button { justify-self: end; }
+.books-head button, .books-empty button, .books-reader button {
+  height: 29px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--border-strong); border-radius: 1px; background: var(--surface-2); color: var(--ink-800);
+  font: 9px/1 var(--terminal-font); cursor: pointer;
+}
+.books-head button:hover, .books-empty button:hover, .books-reader button:hover:not(:disabled) { background: var(--active-bg); color: var(--ink-950); }
+.books-head button svg, .books-reader button svg { width: 13px; height: 13px; }
+.books-library-scroll { flex: 1 1 auto; min-height: 0; }
+.books-library-scroll .chat-mono-scroll-viewport { padding: 24px 26px 60px; }
+.books-grid { display: grid; grid-template-columns: repeat(6, minmax(120px, 1fr)); gap: 30px 20px; max-width: 1500px; margin: 0 auto; }
+.book-card { min-width: 0; position: relative; display: flex; flex-direction: column; }
+.book-card::after { position: absolute; left: -8px; right: -8px; top: 210px; height: 7px; z-index: 0; content: ""; border-top: 1px solid var(--border-strong); background: linear-gradient(180deg, var(--surface-3), var(--bg)); box-shadow: 0 7px 13px rgba(0,0,0,.45); }
+.book-cover { width: min(100%, 148px); aspect-ratio: .67; position: relative; z-index: 1; align-self: center; overflow: hidden; padding: 0; border: 1px solid color-mix(in srgb, var(--book-hue, 0) 0%, var(--border-strong)); border-radius: 2px; background: linear-gradient(145deg, hsl(var(--book-hue) 18% 24%), hsl(var(--book-hue) 14% 9%)); color: var(--ink-900); cursor: pointer; box-shadow: -7px 8px 18px rgba(0,0,0,.42), inset 3px 0 0 rgba(255,255,255,.05); transition: transform .15s ease, border-color .15s ease; }
+.book-cover:hover { transform: translateY(-4px); border-color: var(--ink-600); }
+.book-cover > img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.book-cover > span { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px; padding: 15px; text-align: center; }
+.book-cover > span svg { width: 24px; opacity: .45; }
+.book-cover > span b { font: 600 12px/1.35 var(--terminal-font); }
+.book-cover > span small { font: 8px/1.3 var(--terminal-font); color: var(--ink-500); }
+.book-cover > i { position: absolute; top: 7px; right: 7px; width: 19px; height: 19px; display: grid; place-items: center; border-radius: 50%; background: var(--ok); color: var(--bg); }
+.book-cover > i svg { width: 11px; }
+.book-meta { position: relative; z-index: 1; padding-top: 15px; }
+.book-meta > strong, .book-meta > span, .book-meta > p { display: block; overflow: hidden; text-overflow: ellipsis; }
+.book-meta > strong { white-space: nowrap; font-size: 12px; color: var(--ink-950); }
+.book-meta > span { margin-top: 3px; white-space: nowrap; font: 9px/1.2 var(--terminal-font); color: var(--ink-500); }
+.book-meta > p { height: 30px; margin: 7px 0 8px; font-size: 9px; line-height: 1.6; color: var(--ink-600); }
+.book-progress { height: 2px; overflow: hidden; background: var(--border); }
+.book-progress i { display: block; height: 100%; background: var(--accent); }
+.book-card > footer { height: 30px; display: grid; grid-template-columns: 1fr auto 24px; align-items: center; gap: 4px; }
+.book-card > footer button { height: 23px; border: 0; background: transparent; color: var(--ink-600); font: 8px/1 var(--terminal-font); cursor: pointer; text-align: left; }
+.book-card > footer button:hover { color: var(--ink-950); }
+.book-card > footer button:last-child { display: grid; place-items: center; padding: 0; }
+.book-card > footer button:last-child:hover { color: var(--danger); }
+.book-card > footer button svg { width: 11px; }
+.book-card > footer span { font: 8px/1 var(--terminal-font); color: var(--ink-400); }
+.books-empty { min-height: calc(100vh - 150px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--ink-500); text-align: center; font: 10px/1.5 var(--terminal-font); }
+.books-empty > svg { width: 35px; height: 35px; opacity: .55; }
+.books-empty strong { color: var(--ink-900); font-size: 13px; }
+.books-empty span { max-width: 480px; }
+
+.books-reader-head { grid-template-columns: 180px 1fr 180px; }
+.books-reader-head > button:first-child { justify-self: start; }
+.books-reader-head > button:last-child { justify-self: end; }
+.books-reader-head > button.is-read { color: var(--ok); border-color: var(--ok-border); }
+.books-reader-head > div { flex-direction: column; align-items: center; gap: 2px; }
+.books-reader-head strong { max-width: 70vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; color: var(--ink-950); }
+.books-reader-head span { font-size: 8px; color: var(--ink-500); }
+.books-reader-body { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: 220px minmax(0, 1fr) 280px; }
+.books-chapters, .books-quotes { min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--surface); }
+.books-chapters { border-right: 1px solid var(--border); }
+.books-quotes { border-left: 1px solid var(--border); }
+.books-side-label { flex: 0 0 auto; height: 34px; display: flex; align-items: center; justify-content: space-between; padding: 0 11px; border-bottom: 1px solid var(--border); font: 9px/1 var(--terminal-font); letter-spacing: .1em; color: var(--ink-500); }
+.books-chapter-scroll, .books-quotes-scroll { flex: 1 1 auto; min-height: 0; }
+.books-chapter-scroll .chat-mono-scroll-viewport { padding: 5px; }
+.books-chapter-scroll button { width: 100%; min-height: 32px; justify-content: flex-start; padding: 5px 7px; border-color: transparent; background: transparent; color: var(--ink-600); text-align: left; line-height: 1.35; }
+.books-chapter-scroll button > span { width: 22px; color: var(--ink-400); }
+.books-chapter-scroll button.is-active { background: var(--active-bg); color: var(--ink-950); box-shadow: inset 2px 0 0 var(--accent); }
+.books-reading-column { min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+.books-page-scroll { flex: 1 1 auto; min-height: 0; }
+.books-page-scroll .chat-mono-scroll-viewport { display: flex; justify-content: center; }
+.books-page { width: min(760px, 100%); min-height: 100%; box-sizing: border-box; padding: 52px 54px 100px; color: var(--ink-850, var(--ink-800)); user-select: text; }
+.books-page-kicker { font: 8px/1 var(--terminal-font); letter-spacing: .14em; color: var(--ink-400); }
+.books-page > h1 { margin: 14px 0 32px; font-size: 28px; line-height: 1.18; color: var(--ink-950); }
+.books-page-content { font: 16px/1.85 Georgia, "Times New Roman", serif; }
+.books-page-content :is(p, ul, ol, blockquote) { margin: 0 0 1.25em; }
+.books-page-content h2 { margin: 2em 0 .8em; font-size: 22px; color: var(--ink-950); }
+.books-page-content h3 { margin: 1.7em 0 .7em; font-size: 18px; color: var(--ink-900); }
+.books-page-content img { display: block; max-width: 100%; max-height: 70vh; margin: 24px auto; object-fit: contain; }
+.books-page-content blockquote { padding-left: 18px; border-left: 2px solid var(--border-strong); color: var(--ink-700); }
+.books-page-content a { color: var(--accent-soft); text-decoration: underline; }
+.books-page-nav { flex: 0 0 auto; height: 40px; display: grid; grid-template-columns: 90px 1fr 90px; align-items: center; gap: 12px; padding: 0 12px; border-top: 1px solid var(--border); background: var(--panel-header-bg); }
+.books-page-nav > button { border-color: transparent; background: transparent; padding: 0 4px; }
+.books-page-nav > button:last-child { justify-self: end; }
+.books-page-nav > div { height: 2px; position: relative; background: var(--border); }
+.books-page-nav > div i { height: 100%; display: block; background: var(--accent); }
+.books-page-nav > div span { position: absolute; top: -15px; right: 0; font: 8px/1 var(--terminal-font); color: var(--ink-500); }
+.books-save-quote { flex: 0 0 auto; margin: 7px; color: var(--accent) !important; }
+.books-quotes-scroll .chat-mono-scroll-viewport { padding: 7px; }
+.books-quotes-scroll > .chat-mono-scroll-viewport > p { padding: 18px 10px; font: 9px/1.6 var(--terminal-font); color: var(--ink-500); }
+.books-quotes blockquote { position: relative; margin: 0 0 7px; padding: 10px 10px 7px 24px; border: 1px solid var(--border); background: color-mix(in srgb, var(--surface-2) 65%, transparent); }
+.books-quotes blockquote > svg { position: absolute; top: 10px; left: 8px; width: 10px; color: var(--ink-400); }
+.books-quotes blockquote p { margin: 0; font: 11px/1.55 Georgia, serif; color: var(--ink-800); }
+.books-quotes blockquote footer { margin-top: 8px; display: flex; justify-content: space-between; align-items: center; font: 8px/1 var(--terminal-font); color: var(--ink-400); }
+.books-quotes blockquote button { width: 20px; height: 20px; padding: 0; border: 0; background: transparent; }
+.books-quotes blockquote button:hover { color: var(--danger) !important; }
+.books-quotes blockquote button svg { width: 10px; }
+@media (max-width: 1250px) { .books-grid { grid-template-columns: repeat(4, minmax(120px, 1fr)); } .books-reader-body { grid-template-columns: 190px minmax(0,1fr) 240px; } }
+@media (max-width: 900px) { .books-grid { grid-template-columns: repeat(3, minmax(120px, 1fr)); } .books-reader-body { grid-template-columns: 170px minmax(0,1fr); } .books-quotes { display: none; } .books-page { padding-inline: 35px; } }
 
 /* ══ Git ═══════════════════════════════════════════════════════════════════
    Rail: one line of numbers under the chat, nothing to click.

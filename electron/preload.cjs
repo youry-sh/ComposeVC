@@ -25,6 +25,16 @@ contextBridge.exposeInMainWorld("lopster", {
     ipcRenderer.on("posts:changed", listener);
     return () => ipcRenderer.removeListener("posts:changed", listener);
   },
+  booksList: (options) => ipcRenderer.invoke("books:list", options || {}),
+  booksGet: (id) => ipcRenderer.invoke("books:get", id),
+  booksImport: () => ipcRenderer.invoke("books:import"),
+  booksUpdate: (id, patch) => ipcRenderer.invoke("books:update", id, patch || {}),
+  booksDelete: (id) => ipcRenderer.invoke("books:delete", id),
+  onBooksChanged: (callback) => {
+    const listener = (_event, payload) => callback(payload);
+    ipcRenderer.on("books:changed", listener);
+    return () => ipcRenderer.removeListener("books:changed", listener);
+  },
   readProviderConfig: () => ipcRenderer.invoke("config:read"),
   writeProviderConfig: (config) => ipcRenderer.invoke("config:write", config),
   listRunners: () => ipcRenderer.invoke("runner:list"),

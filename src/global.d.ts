@@ -82,6 +82,14 @@ export type PostMeta = {
   updatedAt: number;
 };
 export type PostFull = PostMeta & { content: string };
+export type BookQuote = { id: string; text: string; chapter: number; createdAt: number };
+export type BookMeta = {
+  id: string; title: string; author: string; description: string; cover: string | null;
+  format: string; createdAt: number; updatedAt: number; progress: number; lastChapter: number;
+  positions: Record<string, number>; read: boolean; wordCount: number; quotes: BookQuote[];
+};
+export type BookChapter = { id: string; title: string; html: string };
+export type BookFull = BookMeta & { chapters: BookChapter[] };
 
 export type GitBranch = { name: string; current: boolean };
 export type GitChangedFile = { code: string; staged: boolean; path: string };
@@ -137,6 +145,12 @@ declare global {
       postsFolderRename: (id: string, name: string) => Promise<{ ok: boolean; folder?: PostFolder; error?: string }>;
       postsFolderDelete: (id: string) => Promise<{ ok: boolean; id?: string; reason?: string }>;
       onPostsChanged: (callback: (payload: { type?: string; id?: string }) => void) => () => void;
+      booksList: (options?: { query?: string }) => Promise<{ ok: boolean; books?: BookMeta[]; error?: string }>;
+      booksGet: (id: string) => Promise<{ ok: boolean; book?: BookFull; error?: string }>;
+      booksImport: () => Promise<{ ok: boolean; canceled?: boolean; books?: BookMeta[]; error?: string }>;
+      booksUpdate: (id: string, patch: Partial<BookMeta>) => Promise<{ ok: boolean; book?: BookMeta; error?: string }>;
+      booksDelete: (id: string) => Promise<{ ok: boolean; error?: string }>;
+      onBooksChanged: (callback: (payload: { type?: string; id?: string; ids?: string[] }) => void) => () => void;
       readProviderConfig: () => Promise<ProviderConfig>;
       writeProviderConfig: (config: ProviderConfig) => Promise<ProviderConfig>;
       listRunners: () => Promise<{ ok: boolean; runners?: RunnerJob[]; error?: string }>;

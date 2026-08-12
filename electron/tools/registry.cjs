@@ -23,6 +23,7 @@ const shodanTool = require("./shodanTool.cjs");
 const mcpManagerTool = require("./mcpManagerTool.cjs");
 const gitTool = require("./gitTool.cjs");
 const postsTool = require("./postsTool.cjs");
+const booksTool = require("./booksTool.cjs");
 
 const TOOLS = [
   readFile,
@@ -50,6 +51,7 @@ const TOOLS = [
         mcpManagerTool,
         gitTool,
         postsTool,
+        booksTool,
 				];/** Common aliases the model may emit */const TOOL_ALIASES = {  timer: "work_timer",  worktimer: "work_timer",
   minimum_work_timer: "work_timer",
   glob: "grep",

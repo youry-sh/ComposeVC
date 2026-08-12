@@ -39,6 +39,156 @@ function loadOpenFolders(): Set<string> {
   return new Set();
 }
 
+/**
+ * Folder-aware post graph (right column): the root sits in the centre, each
+ * folder is a hub around it, and every post orbits its folder (unfiled posts
+ * orbit the centre). Wheel = zoom, drag = pan, double-click = reset. Clicking
+ * a post opens it.
+ */
+type GraphNode = {
+  id: string;
+  x: number;
+  y: number;
+  title: string;
+  kind: "post" | "folder" | "root";
+  postId?: string;
+};
+type GraphEdge = { x1: number; y1: number; x2: number; y2: number; kind: string };
+
+const PostGraph: React.FC<{
+  posts: PostMeta[];
+  folders: PostFolder[];
+  activeId: string | null;
+  onOpen: (id: string) => void;
+  onDelete: (id: string) => void;
+}> = ({ posts, folders, activeId, onOpen, onDelete }) => {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [view, setView] = useState({ x: 0, y: 0, scale: 1 });
+  const drag = useRef<{ x: number; y: number; viewX: number; viewY: number } | null>(null);
+
+  const { nodes, edges } = useMemo(() => {
+    const nodeList: GraphNode[] = [];
+    const edgeList: GraphEdge[] = [];
+    nodeList.push({ id: "__root", x: 0, y: 0, title: "", kind: "root" });
+
+    const orbit = (cx: number, cy: number, i: number, count: number, base: number) => {
+      const a = (i / Math.max(1, count)) * Math.PI * 2 + (cx + cy) * 0.02;
+      const r = base + (i % 3) * 10;
+      return { x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r };
+    };
+
+    const unfiled = posts.filter((p) => !p.folderId);
+    unfiled.forEach((p, i) => {
+      const { x, y } = orbit(0, 0, i, unfiled.length, 46);
+      nodeList.push({ id: p.id, x, y, title: p.title, kind: "post", postId: p.id });
+      edgeList.push({ x1: 0, y1: 0, x2: x, y2: y, kind: "root" });
+    });
+
+    const shown = folders.filter((f) => posts.some((p) => p.folderId === f.id));
+    shown.forEach((f, fi) => {
+      const fa = (fi / Math.max(1, shown.length)) * Math.PI * 2 - Math.PI / 2;
+      const fx = Math.cos(fa) * 130;
+      const fy = Math.sin(fa) * 130;
+      nodeList.push({ id: "F:" + f.id, x: fx, y: fy, title: f.name, kind: "folder" });
+      edgeList.push({ x1: 0, y1: 0, x2: fx, y2: fy, kind: "folder" });
+      const inside = posts.filter((p) => p.folderId === f.id);
+      inside.forEach((p, i) => {
+        const { x, y } = orbit(fx, fy, i, inside.length, 34);
+        nodeList.push({ id: p.id, x, y, title: p.title, kind: "post", postId: p.id });
+        edgeList.push({ x1: fx, y1: fy, x2: x, y2: y, kind: "post" });
+      });
+    });
+    return { nodes: nodeList, edges: edgeList };
+  }, [posts, folders]);
+
+  useEffect(() => {
+    if (selectedId && !posts.some((p) => p.id === selectedId)) setSelectedId(null);
+  }, [posts, selectedId]);
+
+  return (
+    <aside className="post-graph" aria-label="Граф постов">
+      <div className="post-graph-head">
+        <span>GRAPH</span>
+        <span>
+          {posts.length} · {folders.length}📁
+        </span>
+      </div>
+      <svg
+        className="post-graph-svg"
+        viewBox="-230 -270 460 540"
+        onWheel={(event) => {
+          const factor = event.deltaY < 0 ? 1.12 : 0.89;
+          setView((c) => ({ ...c, scale: Math.max(0.4, Math.min(3, c.scale * factor)) }));
+        }}
+        onPointerDown={(event) => {
+          drag.current = { x: event.clientX, y: event.clientY, viewX: view.x, viewY: view.y };
+          event.currentTarget.setPointerCapture(event.pointerId);
+        }}
+        onPointerMove={(event) => {
+          if (!drag.current) return;
+          setView((c) => ({
+            ...c,
+            x: drag.current!.viewX + (event.clientX - drag.current!.x),
+            y: drag.current!.viewY + (event.clientY - drag.current!.y),
+          }));
+        }}
+        onPointerUp={() => {
+          drag.current = null;
+        }}
+        onPointerCancel={() => {
+          drag.current = null;
+        }}
+        onDoubleClick={() => setView({ x: 0, y: 0, scale: 1 })}
+      >
+        <g transform={`translate(${view.x} ${view.y}) scale(${view.scale})`}>
+          {edges.map((e, i) => (
+            <line key={i} className={`post-graph-edge is-${e.kind}`} x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2} />
+          ))}
+          {nodes.map((node) => {
+            if (node.kind === "root") return <circle key={node.id} className="post-graph-root" cx={0} cy={0} r={4} />;
+            const active = node.postId != null && node.postId === activeId;
+            const selected = node.id === selectedId;
+            const isFolder = node.kind === "folder";
+            return (
+              <g
+                key={node.id}
+                className={`post-graph-node${isFolder ? " is-folder" : ""}${active ? " is-active" : ""}${selected ? " is-selected" : ""}`}
+                transform={`translate(${node.x} ${node.y})`}
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={() => {
+                  if (node.postId) {
+                    setSelectedId(node.id);
+                    onOpen(node.postId);
+                  }
+                }}
+              >
+                <circle r={isFolder ? 6 : active ? 5 : 3.5} />
+                <text x={isFolder ? 11 : 9} y="3.5">
+                  {node.title.length > 22 ? `${node.title.slice(0, 21)}…` : node.title}
+                </text>
+              </g>
+            );
+          })}
+        </g>
+      </svg>
+      <div className="post-graph-foot">
+        <span>колесо zoom · тащить · 2× сброс</span>
+        <button
+          type="button"
+          disabled={!selectedId}
+          onClick={() => {
+            const node = nodes.find((n) => n.id === selectedId);
+            if (node?.postId) onDelete(node.postId);
+          }}
+          title="Удалить выбранный пост"
+        >
+          <Trash2 className="w-3 h-3" /> delete
+        </button>
+      </div>
+    </aside>
+  );
+};
+
 const PostWorkspace: React.FC = () => {
   const [folders, setFolders] = useState<PostFolder[]>([]);
   const [posts, setPosts] = useState<PostMeta[]>([]);
@@ -473,6 +623,15 @@ const PostWorkspace: React.FC = () => {
           </div>
         )}
       </main>
+
+      {/* ── right: folder-aware graph ── */}
+      <PostGraph
+        posts={posts}
+        folders={folders}
+        activeId={activeId}
+        onOpen={(id) => void openPost(id)}
+        onDelete={(id) => void deletePost(id)}
+      />
     </div>
   );
 };

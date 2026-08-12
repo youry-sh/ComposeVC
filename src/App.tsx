@@ -9,6 +9,7 @@ import RunnerSendModal from "./components/RunnerSendModal";
 import CustomToolsWorkspace from "./components/CustomToolsWorkspace";
 import TodoWorkspace from "./components/TodoWorkspace";
 import PostWorkspace from "./components/PostWorkspace";
+import BooksWorkspace from "./components/BooksWorkspace";
 import MultiIdeWorkspace, {
   loadMultiIdeSlots,
   saveMultiIdeSlots,
@@ -23,7 +24,7 @@ import {
 import { CustomTool, ProjectSearchResult, ProviderConfig } from "./types";
 import { dispatchInsertChatInput, loadMouseSnippets, textForMouseButton } from "./utils/mouseSnippets";
 
-type Panel = "multiide" | "proxy" | "settings" | "customtools" | "runner" | "todo" | "post";
+type Panel = "multiide" | "proxy" | "settings" | "customtools" | "runner" | "todo" | "post" | "books";
 
 const App: React.FC = () => {
   const [rootPath, setRootPath] = useState<string | null>(null);
@@ -43,6 +44,7 @@ const App: React.FC = () => {
       if (saved === "customtools") return "customtools";
       if (saved === "todo") return "todo";
       if (saved === "post") return "post";
+      if (saved === "books") return "books";
     } catch {
       /* ignore */
     }
@@ -462,6 +464,11 @@ const App: React.FC = () => {
           {activePanel === "post" && (
             <div className="flex-1 min-w-0 min-h-0 flex overflow-hidden">
               <PostWorkspace />
+            </div>
+          )}
+          {activePanel === "books" && (
+            <div className="flex-1 min-w-0 min-h-0 flex overflow-hidden">
+              <BooksWorkspace />
             </div>
           )}
           {activePanel === "customtools" && (

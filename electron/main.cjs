@@ -4,6 +4,7 @@ const { app, BrowserWindow, clipboard, dialog, ipcMain, shell, nativeImage, sess
 app.disableHardwareAcceleration();
 app.commandLine.appendSwitch("disable-gpu");
 const { spawn } = require("child_process");
+const { Worker } = require("worker_threads");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
@@ -21,6 +22,7 @@ const { contentToText: contentPartsToText } = require("./adapters/contentParts.c
 const memory = require("./memory.cjs");
 const gitService = require("./gitService.cjs");
 const postsStore = require("./postsStore.cjs");
+const booksStore = require("./booksStore.cjs");
 const customTools = require("./customTools.cjs");
 const mcpManager = require("./mcpManager.cjs");
 const instructions = require("./instructions.cjs");
@@ -2532,6 +2534,9 @@ async function executeChatRequest(event, request, overrides = {}) {
           onPostsChanged: (payload) => {
             try { broadcastPostsChanged(payload || { type: "changed" }); } catch {}
           },
+          onBooksChanged: (payload) => {
+            try { broadcastBooksChanged(payload || { type: "changed" }); } catch {}
+          },
         },
         signal: abortController.signal,
         tokenCountingMode: config.tokenCountingMode || "provider",
@@ -2859,6 +2864,9 @@ ipcMain.handle("agent:notifyComplete", (event, payload = {}) => {
         projectName: request.projectName || null,
         userDataPath: app.getPath("userData"),
         invalidateContext: () => invalidateContextCache(rootPath),
+        onBooksChanged: (payload) => {
+          try { broadcastBooksChanged(payload || { type: "changed" }); } catch {}
+        },
       },
       signal: abortController.signal,
       tokenCountingMode: config.tokenCountingMode || "provider",
@@ -3068,6 +3076,21 @@ function broadcastPostsChanged(payload) {
   }
 }
 
+function broadcastBooksChanged(payload) {
+  for (const win of BrowserWindow.getAllWindows()) {
+    try { win.webContents.send("books:changed", payload || { type: "changed" }); } catch {}
+  }
+}
+
+function importBookInWorker(userDataPath, filePath) {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(path.join(__dirname, "bookImportWorker.cjs"), { workerData: { userDataPath, filePath } });
+    worker.once("message", (message) => message?.ok ? resolve(message.book) : reject(new Error(message?.error || "Book conversion failed")));
+    worker.once("error", reject);
+    worker.once("exit", (code) => { if (code !== 0) reject(new Error(`Book converter exited with code ${code}`)); });
+  });
+}
+
 // ── Posts (POST tab): Telegraph-style markdown, stored as md + json ──────────
 ipcMain.handle("posts:list", async (_event, options = {}) => {
   try {
@@ -3158,6 +3181,34 @@ ipcMain.handle("posts:delete", async (_event, id) => {
   } catch (error) {
     return { ok: false, error: String(error?.message || error) };
   }
+});
+
+// ── Books: imported once, normalized and cached under userData/books ────────
+ipcMain.handle("books:list", async (_event, options = {}) => {
+  try { return { ok: true, books: booksStore.listBooks(app.getPath("userData"), options.query) }; }
+  catch (error) { return { ok: false, error: String(error?.message || error) }; }
+});
+ipcMain.handle("books:get", async (_event, id) => {
+  try { const book = await booksStore.getBook(app.getPath("userData"), String(id || "")); return book ? { ok: true, book } : { ok: false, error: "not-found" }; }
+  catch (error) { return { ok: false, error: String(error?.message || error) }; }
+});
+ipcMain.handle("books:import", async () => {
+  try {
+    const picked = await dialog.showOpenDialog({ title: "Импорт книги", properties: ["openFile", "multiSelections"], filters: [{ name: "Books", extensions: ["fb2", "fb3", "epub", "pdf", "txt"] }] });
+    if (picked.canceled) return { ok: true, canceled: true, books: [] };
+    const imported = [];
+    for (const filePath of picked.filePaths) imported.push(await importBookInWorker(app.getPath("userData"), filePath));
+    broadcastBooksChanged({ type: "imported", ids: imported.map((b) => b.id) });
+    return { ok: true, books: imported };
+  } catch (error) { return { ok: false, error: String(error?.message || error) }; }
+});
+ipcMain.handle("books:update", async (_event, id, patch = {}) => {
+  try { const book = await booksStore.updateBook(app.getPath("userData"), String(id || ""), patch); broadcastBooksChanged({ type: "updated", id: book.id }); return { ok: true, book }; }
+  catch (error) { return { ok: false, error: String(error?.message || error) }; }
+});
+ipcMain.handle("books:delete", async (_event, id) => {
+  try { const ok = await booksStore.removeBook(app.getPath("userData"), String(id || "")); if (ok) broadcastBooksChanged({ type: "deleted", id }); return { ok }; }
+  catch (error) { return { ok: false, error: String(error?.message || error) }; }
 });
 
 ipcMain.handle("mcp:list", async () => mcpManager.listServers(app.getPath("userData")));
