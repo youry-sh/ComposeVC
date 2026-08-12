@@ -9206,10 +9206,10 @@
 .books-head button:hover, .books-empty button:hover, .books-reader button:hover:not(:disabled) { background: var(--active-bg); color: var(--ink-950); }
 .books-head button svg, .books-reader button svg { width: 13px; height: 13px; }
 .books-library-scroll { flex: 1 1 auto; min-height: 0; }
-.books-library-scroll .chat-mono-scroll-viewport { padding: 28px 28px 70px; }
+.books-library-scroll .chat-mono-scroll-viewport { padding: 18px 14px 64px; }
 .books-grid {
   display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); grid-auto-rows: 370px;
-  align-items: start; gap: 34px 22px; width: 100%; max-width: 1380px; margin: 0 auto;
+  align-items: start; gap: 34px 18px; width: 100%; max-width: none; margin: 0;
   background-image: repeating-linear-gradient(
     to bottom,
     transparent 0,
