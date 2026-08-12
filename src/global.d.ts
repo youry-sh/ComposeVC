@@ -107,21 +107,28 @@ declare global {
         options?: { prefix?: string }
       ) => Promise<GitAutoCommitResult>;
       gitAutoPush: (rootPath: string | null) => Promise<GitAutoPushResult>;
-      postsList: (options?: { query?: string; page?: number; pageSize?: number }) => Promise<{
+      postsList: (options?: { query?: string }) => Promise<{
         ok: boolean;
         total?: number;
-        page?: number;
-        pageSize?: number;
+        folders?: PostFolder[];
         posts?: PostMeta[];
         error?: string;
       }>;
       postsGet: (id: string) => Promise<{ ok: boolean; post?: PostFull; error?: string }>;
-      postsCreate: (input: { title?: string; content?: string }) => Promise<{ ok: boolean; post?: PostFull; error?: string }>;
+      postsCreate: (input: {
+        title?: string;
+        content?: string;
+        folderId?: string | null;
+      }) => Promise<{ ok: boolean; post?: PostFull; error?: string }>;
       postsUpdate: (
         id: string,
-        patch: { title?: string; content?: string }
+        patch: { title?: string; content?: string; folderId?: string | null }
       ) => Promise<{ ok: boolean; post?: PostFull; error?: string }>;
       postsDelete: (id: string) => Promise<{ ok: boolean; id?: string; reason?: string }>;
+      postsMove: (id: string, folderId: string | null) => Promise<{ ok: boolean; post?: PostMeta; error?: string }>;
+      postsFolderCreate: (input: { name?: string }) => Promise<{ ok: boolean; folder?: PostFolder; error?: string }>;
+      postsFolderRename: (id: string, name: string) => Promise<{ ok: boolean; folder?: PostFolder; error?: string }>;
+      postsFolderDelete: (id: string) => Promise<{ ok: boolean; id?: string; reason?: string }>;
       onPostsChanged: (callback: (payload: { type?: string; id?: string }) => void) => () => void;
       readProviderConfig: () => Promise<ProviderConfig>;
       writeProviderConfig: (config: ProviderConfig) => Promise<ProviderConfig>;
