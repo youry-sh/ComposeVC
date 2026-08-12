@@ -26,7 +26,7 @@ import type { PostFolder, PostFull, PostMeta } from "../global";
  */
 
 const PAGE_SIZE = 40;
-const SAVE_DEBOUNCE_MS = 600;
+const SAVE_DEBOUNCE_MS = 1500;
 const OPEN_KEY = "composevc-post-folders-open";
 
 function loadOpenFolders(): Set<string> {
@@ -234,6 +234,9 @@ const PostWorkspace: React.FC = () => {
   const [renaming, setRenaming] = useState<string | null>(null);
   const saveTimer = useRef<number | null>(null);
   const bodyRef = useRef<HTMLTextAreaElement | null>(null);
+  // Ids we just wrote ourselves — the main process echoes posts:changed back to
+  // this window too, and reloading on our own save would wipe what is being typed.
+  const selfSaved = useRef<Set<string>>(new Set());
 
   const refreshList = useCallback(async (nextQuery?: string) => {
     const res = await window.lopster?.postsList?.({ query: (nextQuery ?? query).trim() });
