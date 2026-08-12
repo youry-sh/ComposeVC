@@ -77,22 +77,51 @@ module.exports = {
           const post = await postsStore.createPost(userDataPath, {
             title: input.title,
             content: input.content,
+            folderId: input.folderId,
           });
           notify({ type: "created", id: post.id });
-          return { ok: true, id: post.id, title: post.title };
+          return { ok: true, id: post.id, title: post.title, folderId: post.folderId };
         }
         case "update": {
           const id = String(input.id || "").trim();
           if (!id) return { ok: false, error: "id is required for update" };
-          if (typeof input.title !== "string" && typeof input.content !== "string") {
-            return { ok: false, error: "provide title and/or content to update" };
+          const patch = {};
+          if (typeof input.title === "string") patch.title = input.title;
+          if (typeof input.content === "string") patch.content = input.content;
+          if ("folderId" in input) patch.folderId = input.folderId;
+          if (Object.keys(patch).length === 0) {
+            return { ok: false, error: "provide title, content and/or folderId to update" };
           }
-          const post = await postsStore.updatePost(userDataPath, id, {
-            title: input.title,
-            content: input.content,
-          });
+          const post = await postsStore.updatePost(userDataPath, id, patch);
           notify({ type: "updated", id: post.id });
-          return { ok: true, id: post.id, title: post.title };
+          return { ok: true, id: post.id, title: post.title, folderId: post.folderId };
+        }
+        case "move": {
+          const id = String(input.id || "").trim();
+          if (!id) return { ok: false, error: "id is required for move" };
+          const meta = await postsStore.movePost(userDataPath, id, input.folderId ?? null);
+          notify({ type: "moved", id });
+          return { ok: true, id, folderId: meta.folderId };
+        }
+        case "create_folder": {
+          const folder = await postsStore.createFolder(userDataPath, { name: input.folderName });
+          notify({ type: "folder", id: folder.id });
+          return { ok: true, folderId: folder.id, name: folder.name };
+        }
+        case "rename_folder": {
+          const id = String(input.folderId || input.id || "").trim();
+          if (!id) return { ok: false, error: "folderId is required for rename_folder" };
+          const folder = await postsStore.renameFolder(userDataPath, id, input.folderName);
+          notify({ type: "folder", id });
+          return { ok: true, folderId: folder.id, name: folder.name };
+        }
+        case "delete_folder": {
+          const id = String(input.folderId || input.id || "").trim();
+          if (!id) return { ok: false, error: "folderId is required for delete_folder" };
+          const res = await postsStore.removeFolder(userDataPath, id);
+          if (!res.ok) return { ok: false, error: `folder not found: ${id}` };
+          notify({ type: "folder", id });
+          return { ok: true, folderId: id };
         }
         case "delete": {
           const id = String(input.id || "").trim();
