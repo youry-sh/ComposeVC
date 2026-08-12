@@ -339,6 +339,11 @@ async function buildSystemPrompt({ rootPath, projectName, userDataPath }) {
       "- Finish the requested tool completely: no TODOs, placeholders, demo-only returns, fake success, omitted requested branches, or instructions telling the user to finish the code.\n" +
       "- Include every required entry, helper, configuration, and schema file. Validate inputs and return actionable errors. Do not leave missing dependencies or external setup unless the requested service genuinely requires credentials.\n" +
       "- Test realistic success and failure inputs with custom_tool action=run. Inspect failures, repair the tool files, and rerun until correct. Then run the completed tool for the user's actual task when applicable. A scaffold or one green trivial test is not completion.",
+    "CUSTOM TOOL COMPOSITION:\n" +
+      "- A custom tool may be assembled from other custom tools. Connect them by setting dependencies=[\"tool_name\", ...] in custom_tool add/update; only connected tools may be invoked.\n" +
+      "- At runtime ctx.dependencies lists allowed names and ctx.callTool contains bridgePath, nodePath, stack and a usage recipe. Invoke the bridge as a child process with JSON {caller:ctx.toolName,name,args,userDataPath:ctx.userDataPath,rootPath:ctx.rootPath,projectName:ctx.projectName,stack:ctx.callTool.stack}; parse its JSON stdout.\n" +
+      "- Build master tools as clear orchestration code: pass the previous result into the next connected tool explicitly, check every child result, and return one final JSON result. Connections are not decorative. Missing dependencies and cycles are rejected.\n" +
+      "- Prefer composing proven existing tools over copying their code. Do not modify a connected child tool unless the user asks to change that child itself.",
     `Today's date: ${new Date().toISOString().slice(0, 10)}.`,
   ];
 

@@ -101,6 +101,7 @@ module.exports = {
     "EDIT: action=write_file name=my_tool file=main.js content=… | read_file | list_files | path name=… (absolute folder).\n" +
     "RUN: call the tool BY NAME as a first-class tool, or custom_tool action=run name=my_tool args={…}.\n" +
     "After creating a tool ALWAYS smoke-test it (action=run) before reusing it in the flow.\n" +
+    "COMPOSE: add/update dependencies=[\"other_tool\",...] to connect tools. Runtime ctx.dependencies lists allowed tools and ctx.callTool provides bridgePath, nodePath, stack and an executable usage recipe. Call the bridge with JSON to run a connected tool and parse its JSON stdout. Missing links and cycles are blocked.\n" +
     "DONE means a complete implementation: no TODOs, placeholders, demo output, fake success, missing requested branches, or handoff for the user to finish. Include all helpers, validate inputs, handle useful errors, and test realistic success and failure cases; repair and rerun until correct.\n\n" +
     "COMPOSEVC IS READ-ONLY AND CLOSED during custom-tool work. Never inspect or modify its source, electron/, src/, registry, preload, IPC, context, or package files. " +
     "FORBIDDEN: putting custom tools in the project tree, electron/tools/*.cjs, registry.cjs, or anywhere in ComposeVC. There is no exception during a custom-tool task. " +
