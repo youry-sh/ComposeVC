@@ -119,6 +119,17 @@ function preferredListForProvider(providerId) {
       "gpt-5-mini",
     ];
   }
+  if (providerId === "claude-code") {
+    // Sonnet is Claude Code's recommended daily coding model. Keep plan-gated
+    // Fable/Opus selectable without making them an automatic fallback.
+    return [
+      "claude-sonnet-5",
+      "claude-opus-5",
+      "claude-sonnet-4-6",
+      "claude-opus-4-8",
+      "claude-haiku-4-5",
+    ];
+  }
   return [];
 }
 
