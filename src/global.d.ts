@@ -102,6 +102,11 @@ export type GitCommit = { hash: string; subject: string; author: string; when: s
 declare global {
   interface Window {
     lopster?: {
+      terminalEnsure: (id: "1" | "2") => Promise<{ id: string; pid: number; cwd: string }>;
+      terminalInput: (id: "1" | "2", data: string) => void;
+      terminalResize: (id: "1" | "2", cols: number, rows: number) => void;
+      onTerminalData: (callback: (payload: { id: string; data: string }) => void) => () => void;
+      onTerminalExit: (callback: (payload: { id: string; exitCode: number }) => void) => () => void;
       gitStatus: (rootPath: string | null) => Promise<GitStatus>;
       gitDetails: (
         rootPath: string | null,

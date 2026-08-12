@@ -46,6 +46,8 @@ const runnerEngine = require("./runners/runnerEngine.cjs");
 const { showAgentToast } = require("./agentToast.cjs");
 const { runtime: sizeworkout } = require("./sizeworkout.cjs");
 const workerPool = require("./workerPool.cjs");
+const terminalManager = require("./terminalManager.cjs");
+terminalManager.register(ipcMain, app);
 sizeworkout.on("changed", (workspace) => {
   for (const win of BrowserWindow.getAllWindows()) {
     try {
@@ -3880,6 +3882,11 @@ app.on("before-quit", (event) => {
   }
   try {
     runnerEngine.stop();
+  } catch {
+    /* ignore */
+  }
+  try {
+    terminalManager.dispose();
   } catch {
     /* ignore */
   }

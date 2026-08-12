@@ -11,6 +11,7 @@ import TodoWorkspace from "./components/TodoWorkspace";
 import PostWorkspace from "./components/PostWorkspace";
 import BooksWorkspace from "./components/BooksWorkspace";
 import YoutubeWorkspace from "./components/YoutubeWorkspace";
+import TerminalWorkspace from "./components/TerminalWorkspace";
 import StorageModal from "./components/StorageModal";
 import MultiIdeWorkspace, {
   loadMultiIdeSlots,
@@ -26,7 +27,7 @@ import {
 import { CustomTool, ProjectSearchResult, ProviderConfig } from "./types";
 import { dispatchInsertChatInput, loadMouseSnippets, textForMouseButton } from "./utils/mouseSnippets";
 
-type Panel = "multiide" | "proxy" | "settings" | "customtools" | "runner" | "todo" | "post" | "books" | "youtube";
+type Panel = "multiide" | "proxy" | "settings" | "customtools" | "runner" | "terminal" | "todo" | "post" | "books" | "youtube";
 
 const App: React.FC = () => {
   const [rootPath, setRootPath] = useState<string | null>(null);
@@ -43,6 +44,7 @@ const App: React.FC = () => {
       if (saved === "files" || saved === "multiide") return "multiide";
       if (saved === "proxy") return "proxy";
       if (saved === "runner") return "runner";
+      if (saved === "terminal") return "terminal";
       if (saved === "customtools") return "customtools";
       if (saved === "todo") return "todo";
       if (saved === "post") return "post";
@@ -465,6 +467,9 @@ const App: React.FC = () => {
               }}
             />
           )}
+          <div className={activePanel === "terminal" ? "flex-1 min-w-0 min-h-0 flex overflow-hidden" : "hidden"}>
+            <TerminalWorkspace />
+          </div>
           {activePanel === "todo" && (
             <div className="flex-1 min-w-0 min-h-0 flex overflow-hidden">
               <TodoWorkspace />

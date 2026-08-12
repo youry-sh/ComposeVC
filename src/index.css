@@ -2,6 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
+.terminal-workspace {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  overflow: hidden;
+  background: #090909;
+}
+.terminal-pane {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  padding: 9px 8px 7px 11px;
+  background: #090909;
+}
+.terminal-pane + .terminal-pane { border-left: 1px solid var(--border-strong); }
+.terminal-pane .xterm { height: 100%; }
+.terminal-pane .xterm-viewport { scrollbar-width: thin; scrollbar-color: var(--ink-300) transparent; }
+.terminal-pane .xterm-screen { cursor: text; }
+
 @layer base {
   /*
    * Theme tokens — every surface/control should use these.

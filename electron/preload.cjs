@@ -1,6 +1,19 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("lopster", {
+  terminalEnsure: (id) => ipcRenderer.invoke("terminal:ensure", id),
+  terminalInput: (id, data) => ipcRenderer.send("terminal:input", { id, data }),
+  terminalResize: (id, cols, rows) => ipcRenderer.send("terminal:resize", { id, cols, rows }),
+  onTerminalData: (callback) => {
+    const listener = (_event, payload) => callback(payload);
+    ipcRenderer.on("terminal:data", listener);
+    return () => ipcRenderer.removeListener("terminal:data", listener);
+  },
+  onTerminalExit: (callback) => {
+    const listener = (_event, payload) => callback(payload);
+    ipcRenderer.on("terminal:exit", listener);
+    return () => ipcRenderer.removeListener("terminal:exit", listener);
+  },
   // Git for the chat shell: status badge, popover details, safe actions.
   gitStatus: (rootPath) => ipcRenderer.invoke("git:status", rootPath || null),
   gitDetails: (rootPath, options) =>

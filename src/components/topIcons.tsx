@@ -54,6 +54,13 @@ export const IcoTools: React.FC<IconProps> = ({ className }) => (
   </svg>
 );
 
+export const IcoTerminal: React.FC<IconProps> = ({ className }) => (
+  <svg {...base} className={className}>
+    <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" />
+    <path d="M4.3 6.1 L6.5 8 L4.3 9.9 M8.2 10 h3.3" />
+  </svg>
+);
+
 /** Settings — sliders */
 export const IcoSettings: React.FC<IconProps> = ({ className }) => (
   <svg {...base} className={className}>

@@ -7,6 +7,7 @@ import {
   IcoTools,
   IcoSettings,
   IcoProviders,
+  IcoTerminal,
 } from "./topIcons";
 import {
   CONTEXT_METRICS_EVENT,
@@ -17,7 +18,7 @@ import {
   formatUptime,
 } from "./StatusBar";
 
-type Panel = "multiide" | "proxy" | "settings" | "customtools" | "runner" | "todo" | "post" | "books" | "youtube";
+type Panel = "multiide" | "proxy" | "settings" | "customtools" | "runner" | "terminal" | "todo" | "post" | "books" | "youtube";
 
 interface TitleBarProps {
   subtitle?: string;
@@ -170,6 +171,7 @@ const TitleBar: React.FC<TitleBarProps> = ({
     { id: "multiide", title: labels?.multiIde || "MultiIDE", icon: <IcoMulti className="topbar-tab-ico" /> },
     { id: "proxy", title: labels?.proxy || "Proxy", icon: <IcoProxy className="topbar-tab-ico" /> },
     { id: "runner", title: "Runner", icon: <IcoRunner className="topbar-tab-ico" /> },
+    { id: "terminal", title: "Terminal", icon: <IcoTerminal className="topbar-tab-ico" /> },
     { id: "customtools", title: "Custom Tools", icon: <IcoTools className="topbar-tab-ico" /> },
   ];
   const libraryTabs: Array<{ id: Panel; title: string; subtitle: string; icon: React.ReactNode }> = [
