@@ -6591,7 +6591,7 @@
       var(--sidebar-tint)
     );
     border-bottom: 1px solid var(--border);
-    overflow: hidden;
+    overflow: visible;
     z-index: 50;
   }
 
@@ -9117,6 +9117,30 @@
   align-items: center; gap: 18px; padding: 0 14px; border-bottom: 1px solid var(--border);
   background: var(--panel-header-bg); font-family: var(--terminal-font);
 }
+.topbar-library-menu { position: relative; height: 100%; display: flex; align-items: center; }
+.topbar-library-trigger { width: 38px; padding: 0 6px; justify-content: center; gap: 2px; }
+.topbar-library-chevron { width: 8px; height: 8px; color: var(--ink-500); }
+.topbar-library-popover {
+  position: absolute; top: 36px; left: 0; z-index: 300; width: 220px; padding: 5px;
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border-strong)); border-radius: 2px;
+  background: var(--surface); box-shadow: 0 16px 45px rgba(0,0,0,.68), inset 0 1px 0 color-mix(in srgb, var(--accent) 12%, transparent);
+  -webkit-app-region: no-drag;
+}
+.topbar-library-title { height: 25px; display: flex; align-items: center; padding: 0 8px; border-bottom: 1px solid var(--border); font: 8px/1 var(--terminal-font); letter-spacing: .14em; color: var(--ink-400); }
+.topbar-library-popover > button {
+  width: 100%; min-height: 44px; display: grid; grid-template-columns: 28px minmax(0,1fr) 5px;
+  align-items: center; gap: 8px; padding: 5px 7px; border: 0; border-radius: 1px;
+  background: transparent; color: var(--ink-700); text-align: left; cursor: pointer;
+}
+.topbar-library-popover > button:hover { background: var(--hover-bg); color: var(--ink-950); }
+.topbar-library-popover > button.is-active { background: var(--active-bg); color: var(--ink-950); }
+.topbar-library-icon { width: 26px; height: 26px; display: grid; place-items: center; border: 1px solid var(--border); background: var(--surface-2); }
+.topbar-library-icon svg { width: 13px; height: 13px; }
+.topbar-library-popover > button > span:nth-child(2) { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.topbar-library-popover strong { font: 600 10px/1 var(--terminal-font); letter-spacing: .06em; text-transform: uppercase; }
+.topbar-library-popover small { font: 8px/1 var(--terminal-font); color: var(--ink-500); }
+.topbar-library-popover i { width: 4px; height: 18px; background: transparent; }
+.topbar-library-popover > button.is-active i { background: var(--accent); }
 .books-head > div, .books-reader-head > div { display: flex; align-items: center; gap: 9px; min-width: 0; }
 .books-head > div > svg { width: 17px; color: var(--accent); }
 .books-head > div span { display: flex; flex-direction: column; }
