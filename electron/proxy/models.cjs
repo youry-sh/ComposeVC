@@ -199,7 +199,9 @@ function customModelsFor(store, providerId) {
   const list = Array.isArray(all[providerId]) ? all[providerId] : [];
   return list
     .map((m) => {
-      const id = normalizeId(m.id || m);
+      const id = providerId === "qauth"
+        ? normalizeQauthModelId(m.id || m)
+        : normalizeId(m.id || m);
       if (!id) return null;
       return {
         id,
