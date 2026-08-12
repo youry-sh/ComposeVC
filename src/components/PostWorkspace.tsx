@@ -66,39 +66,68 @@ const PostGraph: React.FC<{
   const [view, setView] = useState({ x: 0, y: 0, scale: 1 });
   const drag = useRef<{ x: number; y: number; viewX: number; viewY: number } | null>(null);
 
-  const { nodes, edges } = useMemo(() => {
+  const { nodes, edges, extent } = useMemo(() => {
     const nodeList: GraphNode[] = [];
     const edgeList: GraphEdge[] = [];
     nodeList.push({ id: "__root", x: 0, y: 0, title: "", kind: "root" });
 
-    const orbit = (cx: number, cy: number, i: number, count: number, base: number) => {
-      const a = (i / Math.max(1, count)) * Math.PI * 2 + (cx + cy) * 0.02;
-      const r = base + (i % 3) * 10;
-      return { x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r };
+    // Phyllotaxis (sunflower) placement — evenly spread, never overlapping:
+    // point i sits at radius ∝ √i on the golden angle, ~SPACING apart.
+    const GOLDEN = 2.399963229;
+    const SPACING = 24;
+    const INNER = 18;
+    const point = (cx: number, cy: number, i: number, phase: number) => {
+      const r = INNER + SPACING * Math.sqrt(i + 0.5);
+      const t = i * GOLDEN + phase;
+      return { x: cx + Math.cos(t) * r, y: cy + Math.sin(t) * r };
     };
+    // Outer radius of a cluster of n points (0 when empty).
+    const clusterR = (n: number) => (n <= 0 ? 0 : INNER + SPACING * Math.sqrt(n));
 
     const unfiled = posts.filter((p) => !p.folderId);
+    const shown = folders
+      .map((f) => ({ f, inside: posts.filter((p) => p.folderId === f.id) }))
+      .filter((d) => d.inside.length > 0)
+      .map((d) => ({ ...d, r: clusterR(d.inside.length) }));
+
+    // Root cluster (unfiled) sits in the middle.
     unfiled.forEach((p, i) => {
-      const { x, y } = orbit(0, 0, i, unfiled.length, 46);
+      const { x, y } = point(0, 0, i, 0);
       nodeList.push({ id: p.id, x, y, title: p.title, kind: "post", postId: p.id });
       edgeList.push({ x1: 0, y1: 0, x2: x, y2: y, kind: "root" });
     });
 
-    const shown = folders.filter((f) => posts.some((p) => p.folderId === f.id));
-    shown.forEach((f, fi) => {
-      const fa = (fi / Math.max(1, shown.length)) * Math.PI * 2 - Math.PI / 2;
-      const fx = Math.cos(fa) * 130;
-      const fy = Math.sin(fa) * 130;
-      nodeList.push({ id: "F:" + f.id, x: fx, y: fy, title: f.name, kind: "folder" });
-      edgeList.push({ x1: 0, y1: 0, x2: fx, y2: fy, kind: "folder" });
-      const inside = posts.filter((p) => p.folderId === f.id);
-      inside.forEach((p, i) => {
-        const { x, y } = orbit(fx, fy, i, inside.length, 34);
-        nodeList.push({ id: p.id, x, y, title: p.title, kind: "post", postId: p.id });
-        edgeList.push({ x1: fx, y1: fy, x2: x, y2: y, kind: "post" });
+    // Folder clusters ring the centre. The ring is wide enough that no folder
+    // cloud overlaps the root cloud OR its neighbours on the ring.
+    const K = shown.length;
+    if (K > 0) {
+      const rootR = clusterR(unfiled.length);
+      const maxR = shown.reduce((m, d) => Math.max(m, d.r), 0);
+      let ring = rootR + maxR + 54;
+      if (K > 1) {
+        const neighbourSep = maxR * 2 + 34;
+        ring = Math.max(ring, neighbourSep / (2 * Math.sin(Math.PI / K)));
+      }
+      shown.forEach((d, fi) => {
+        const a = (fi / K) * Math.PI * 2 - Math.PI / 2;
+        const fx = Math.cos(a) * ring;
+        const fy = Math.sin(a) * ring;
+        nodeList.push({ id: "F:" + d.f.id, x: fx, y: fy, title: d.f.name, kind: "folder" });
+        edgeList.push({ x1: 0, y1: 0, x2: fx, y2: fy, kind: "folder" });
+        d.inside.forEach((p, i) => {
+          const { x, y } = point(fx, fy, i, a);
+          nodeList.push({ id: p.id, x, y, title: p.title, kind: "post", postId: p.id });
+          edgeList.push({ x1: fx, y1: fy, x2: x, y2: y, kind: "post" });
+        });
       });
-    });
-    return { nodes: nodeList, edges: edgeList };
+    }
+
+    // Fit the viewBox to everything (+ room for labels on the right).
+    let ext = 90;
+    for (const n of nodeList) {
+      ext = Math.max(ext, Math.abs(n.x) + 46, Math.abs(n.y) + 22);
+    }
+    return { nodes: nodeList, edges: edgeList, extent: ext };
   }, [posts, folders]);
 
   useEffect(() => {
