@@ -24,7 +24,9 @@ type GraphProps = {
 
 const PostGraph: React.FC<GraphProps> = ({ posts, activeId, onOpen, onDelete }) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [view, setView] = useState({ x: 0, y: 0, scale: 1 });
+  const view = useRef({ x: 0, y: 0, scale: 1 });
+  const layerRef = useRef<SVGGElement | null>(null);
+  const frameRef = useRef<number | null>(null);
   const drag = useRef<{ x: number; y: number; viewX: number; viewY: number } | null>(null);
   const nodes = useMemo(() => posts.map((post, index) => {
     const ring = Math.floor(Math.sqrt(index));
@@ -41,6 +43,22 @@ const PostGraph: React.FC<GraphProps> = ({ posts, activeId, onOpen, onDelete }) 
     if (selectedId && !posts.some((post) => post.id === selectedId)) setSelectedId(null);
   }, [posts, selectedId]);
 
+  const paintView = useCallback(() => {
+    if (frameRef.current !== null) return;
+    frameRef.current = window.requestAnimationFrame(() => {
+      frameRef.current = null;
+      const current = view.current;
+      layerRef.current?.setAttribute(
+        "transform",
+        `translate(${current.x} ${current.y}) scale(${current.scale})`
+      );
+    });
+  }, []);
+
+  useEffect(() => () => {
+    if (frameRef.current !== null) window.cancelAnimationFrame(frameRef.current);
+  }, []);
+
   return (
     <aside className="post-graph" aria-label="Граф постов">
       <div className="post-graph-head">
@@ -53,25 +71,27 @@ const PostGraph: React.FC<GraphProps> = ({ posts, activeId, onOpen, onDelete }) 
         onWheel={(event) => {
           event.preventDefault();
           const factor = event.deltaY < 0 ? 1.12 : 0.89;
-          setView((current) => ({ ...current, scale: Math.max(.45, Math.min(2.8, current.scale * factor)) }));
+          view.current.scale = Math.max(.45, Math.min(2.8, view.current.scale * factor));
+          paintView();
         }}
         onPointerDown={(event) => {
-          drag.current = { x: event.clientX, y: event.clientY, viewX: view.x, viewY: view.y };
+          drag.current = { x: event.clientX, y: event.clientY, viewX: view.current.x, viewY: view.current.y };
           event.currentTarget.setPointerCapture(event.pointerId);
         }}
         onPointerMove={(event) => {
           if (!drag.current) return;
-          setView((current) => ({
-            ...current,
-            x: drag.current!.viewX + (event.clientX - drag.current!.x),
-            y: drag.current!.viewY + (event.clientY - drag.current!.y),
-          }));
+          view.current.x = drag.current.viewX + (event.clientX - drag.current.x);
+          view.current.y = drag.current.viewY + (event.clientY - drag.current.y);
+          paintView();
         }}
         onPointerUp={() => { drag.current = null; }}
         onPointerCancel={() => { drag.current = null; }}
-        onDoubleClick={() => setView({ x: 0, y: 0, scale: 1 })}
+        onDoubleClick={() => {
+          view.current = { x: 0, y: 0, scale: 1 };
+          paintView();
+        }}
       >
-        <g transform={`translate(${view.x} ${view.y}) scale(${view.scale})`}>
+        <g ref={layerRef} transform="translate(0 0) scale(1)">
           {edges.map((edge) => (
             <line key={`${edge.from.id}-${edge.to.id}`} className="post-graph-edge" x1={edge.from.x} y1={edge.from.y} x2={edge.to.x} y2={edge.to.y} />
           ))}
