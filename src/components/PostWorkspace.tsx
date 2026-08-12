@@ -275,12 +275,18 @@ const PostWorkspace: React.FC = () => {
   // Live sync when the agent (or another window) changes posts/folders.
   useEffect(() => {
     const unsub = window.lopster?.onPostsChanged?.((payload) => {
+      // Our own autosave comes back as an "updated" echo: refresh the sidebar,
+      // but leave the editor (and the caret) exactly where it is.
+      if (payload?.id && selfSaved.current.delete(payload.id)) {
+        void refreshList();
+        return;
+      }
       void refreshList();
       if (payload?.type === "deleted" && payload.id === activeId) {
         setActiveId(null);
         setDraft(null);
       } else if (payload?.id && payload.id === activeId && payload.type === "updated") {
-        void openPost(payload.id);
+        void openPost(payload.id, { keepMode: true });
       }
     });
     return () => unsub?.();
@@ -363,8 +369,13 @@ const PostWorkspace: React.FC = () => {
     setSaved(false);
     if (saveTimer.current) window.clearTimeout(saveTimer.current);
     saveTimer.current = window.setTimeout(async () => {
-      await window.lopster?.postsUpdate?.(next.id, { title: next.title, content: next.content });
-      setSaved(true);
+      selfSaved.current.add(next.id);
+      try {
+        await window.lopster?.postsUpdate?.(next.id, { title: next.title, content: next.content });
+        setSaved(true);
+      } catch {
+        selfSaved.current.delete(next.id);
+      }
     }, SAVE_DEBOUNCE_MS);
   }, []);
   const onTitle = (title: string) => {
