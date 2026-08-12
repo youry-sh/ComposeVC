@@ -4514,14 +4514,15 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                 ))}
               </>
             )}
-            {/* Tools that somehow missed timeline ids still show at the end */}
+            {/* Tools that somehow missed timeline ids still show at the end.
+                Folded: still surface any orphan ask waiting for you. */}
             {liveTimeline.length > 0 &&
-              liveToolsOpen &&
               (() => {
                 const shown = new Set(
                   liveTimeline.filter((i) => i.kind === "tool").map((i) => (i as { toolCallId: string }).toolCallId)
                 );
-                const orphan = toolActivity.filter((s) => s.toolCallId && !shown.has(s.toolCallId));
+                let orphan = toolActivity.filter((s) => s.toolCallId && !shown.has(s.toolCallId));
+                if (!liveToolsOpen) orphan = orphan.filter(isAskStep);
                 return orphan.length > 0 ? (
                   <ToolActivityList
                     steps={orphan}
