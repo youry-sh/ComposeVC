@@ -23,12 +23,6 @@ const CLAUDE_CODE_CATALOG = [
   { id: "claude-haiku-4-5-20251001", name: "Claude Haiku 4.5 (pinned)", kind: "chat" },
   { id: "claude-haiku-4-5", name: "Claude Haiku 4.5", kind: "chat" },
   { id: "claude-3-5-haiku-latest", name: "Claude 3.5 Haiku", kind: "chat" },
-  // Official rolling aliases. These follow the newest model available to the
-  // account and avoid requiring a catalog release for every future revision.
-  { id: "fable", name: "Fable (latest available)", kind: "reasoning" },
-  { id: "opus", name: "Opus (latest available)", kind: "reasoning" },
-  { id: "sonnet", name: "Sonnet (latest available)", kind: "chat" },
-  { id: "haiku", name: "Haiku (latest available)", kind: "chat" },
 ];
 
 function catalogFor() {

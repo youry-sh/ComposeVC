@@ -209,7 +209,7 @@ function providerDefaultBare(providerId, models) {
     const prefs = preferredListForProvider("kiro");
     return prefs[0] || "claude-haiku-4.5";
   }
-  if (providerId === "claude-code") return "claude-sonnet-4-6";
+  if (providerId === "claude-code") return "claude-sonnet-5";
   if (providerId === "gemini-cli") return "gemini-2.5-flash";
   if (providerId === "grok") return "grok-4.5";
   if (providerId === "antigravity") return "gemini-2.5-flash";
