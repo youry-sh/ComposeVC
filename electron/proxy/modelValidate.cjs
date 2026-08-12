@@ -130,7 +130,11 @@ function resolveAllowedModel(providerId, requestedModel, models) {
   const bare = providerId === "qauth"
     ? String(requestedModel || "").trim().replace(/^(?:(?:qauth|cline)\/)+/i, "")
     : bareModelId(requestedModel);
-  const allow = allowlistFromModels(models);
+  const allow = providerId === "qauth"
+    ? new Set((models || []).map((m) => normalizeModelKey(
+        String(m.bareId || m.id || m || "").replace(/^(?:(?:qauth|cline)\/)+/i, "")
+      )).filter(Boolean))
+    : allowlistFromModels(models);
   if (!allow.size) {
     return {
       ok: true,
