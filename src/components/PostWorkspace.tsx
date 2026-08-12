@@ -1,212 +1,139 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Eye, Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  Folder,
+  FolderOpen,
+  FolderPlus,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
 import ChatMonoScroll from "./ChatMonoScroll";
 import MarkdownContent from "./markdown/MarkdownContent";
-import type { PostFull, PostMeta } from "../global";
+import type { PostFolder, PostFull, PostMeta } from "../global";
 
 /**
- * POST tab — Telegraph-style markdown posts.
- *   • Left: list with "+", title search, 40-per-page pagination.
+ * POST tab — Telegraph-style markdown posts, organised in folders.
+ *   • Left: folders (collapsible, drop targets) + unfiled posts, search, paging.
+ *   • Drag a post onto a folder to move it; the agent can do the same via the
+ *     `posts` tool (create/move folders and posts). Search spans title + body
+ *     across every folder.
  *   • Center: title + a clean writing surface (edit / preview), full markdown.
- * Bodies are .md, metadata is index.json — both under userData/posts. The agent
- * edits the same store through the `posts` tool; changes sync live here.
  */
 
 const PAGE_SIZE = 40;
 const SAVE_DEBOUNCE_MS = 600;
+const OPEN_KEY = "composevc-post-folders-open";
 
-type GraphProps = {
-  posts: PostMeta[];
-  activeId: string | null;
-  onOpen: (id: string) => void;
-  onDelete: (id: string) => void;
-};
-
-const PostGraph: React.FC<GraphProps> = ({ posts, activeId, onOpen, onDelete }) => {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const view = useRef({ x: 0, y: 0, scale: 1 });
-  const layerRef = useRef<SVGGElement | null>(null);
-  const frameRef = useRef<number | null>(null);
-  const drag = useRef<{ x: number; y: number; viewX: number; viewY: number } | null>(null);
-  const nodes = useMemo(() => posts.map((post, index) => {
-    const ring = Math.floor(Math.sqrt(index));
-    const angle = index * 2.399963 + (post.id.charCodeAt(0) || 0) * 0.03;
-    const radius = index === 0 ? 0 : 38 + ring * 34;
-    return { ...post, x: Math.cos(angle) * radius, y: Math.sin(angle) * radius };
-  }), [posts]);
-  const edges = useMemo(() => nodes.slice(1).map((node, index) => ({
-    from: nodes[Math.max(0, Math.floor(index / 2))],
-    to: node,
-  })), [nodes]);
-
-  useEffect(() => {
-    if (selectedId && !posts.some((post) => post.id === selectedId)) setSelectedId(null);
-  }, [posts, selectedId]);
-
-  const paintView = useCallback(() => {
-    if (frameRef.current !== null) return;
-    frameRef.current = window.requestAnimationFrame(() => {
-      frameRef.current = null;
-      const current = view.current;
-      layerRef.current?.setAttribute(
-        "transform",
-        `translate(${current.x} ${current.y}) scale(${current.scale})`
-      );
-    });
-  }, []);
-
-  useEffect(() => () => {
-    if (frameRef.current !== null) window.cancelAnimationFrame(frameRef.current);
-  }, []);
-
-  return (
-    <aside className="post-graph" aria-label="Граф постов">
-      <div className="post-graph-head">
-        <span>GRAPH</span>
-        <span>{posts.length} nodes</span>
-      </div>
-      <svg
-        className="post-graph-svg"
-        viewBox="-210 -260 420 520"
-        onWheel={(event) => {
-          event.preventDefault();
-          const factor = event.deltaY < 0 ? 1.12 : 0.89;
-          view.current.scale = Math.max(.45, Math.min(2.8, view.current.scale * factor));
-          paintView();
-        }}
-        onPointerDown={(event) => {
-          drag.current = { x: event.clientX, y: event.clientY, viewX: view.current.x, viewY: view.current.y };
-          event.currentTarget.setPointerCapture(event.pointerId);
-        }}
-        onPointerMove={(event) => {
-          if (!drag.current) return;
-          view.current.x = drag.current.viewX + (event.clientX - drag.current.x);
-          view.current.y = drag.current.viewY + (event.clientY - drag.current.y);
-          paintView();
-        }}
-        onPointerUp={() => { drag.current = null; }}
-        onPointerCancel={() => { drag.current = null; }}
-        onDoubleClick={() => {
-          view.current = { x: 0, y: 0, scale: 1 };
-          paintView();
-        }}
-      >
-        <g ref={layerRef} transform="translate(0 0) scale(1)">
-          {edges.map((edge) => (
-            <line key={`${edge.from.id}-${edge.to.id}`} className="post-graph-edge" x1={edge.from.x} y1={edge.from.y} x2={edge.to.x} y2={edge.to.y} />
-          ))}
-          {nodes.map((node) => {
-            const active = node.id === activeId;
-            const selected = node.id === selectedId;
-            return (
-              <g
-                key={node.id}
-                className={`post-graph-node${active ? " is-active" : ""}${selected ? " is-selected" : ""}`}
-                transform={`translate(${node.x} ${node.y})`}
-                onPointerDown={(event) => event.stopPropagation()}
-                onClick={() => { setSelectedId(node.id); onOpen(node.id); }}
-              >
-                <circle r={active ? 5 : 3.5} />
-                <text x="9" y="3.5">{node.title.length > 22 ? `${node.title.slice(0, 21)}…` : node.title}</text>
-              </g>
-            );
-          })}
-        </g>
-      </svg>
-      <div className="post-graph-foot">
-        <span>wheel zoom · drag pan · double-click reset</span>
-        <button
-          type="button"
-          disabled={!selectedId}
-          onClick={() => selectedId && onDelete(selectedId)}
-          title="Удалить выбранный пост"
-        >
-          <Trash2 className="w-3 h-3" /> delete
-        </button>
-      </div>
-    </aside>
-  );
-};
+function loadOpenFolders(): Set<string> {
+  try {
+    const raw = window.localStorage.getItem(OPEN_KEY);
+    if (raw) return new Set(JSON.parse(raw) as string[]);
+  } catch {
+    /* ignore */
+  }
+  return new Set();
+}
 
 const PostWorkspace: React.FC = () => {
-  const [list, setList] = useState<PostMeta[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(0);
+  const [folders, setFolders] = useState<PostFolder[]>([]);
+  const [posts, setPosts] = useState<PostMeta[]>([]);
   const [query, setQuery] = useState("");
   const [activeId, setActiveId] = useState<string | null>(null);
   const [draft, setDraft] = useState<PostFull | null>(null);
-  const [mode, setMode] = useState<"edit" | "preview">("edit");
+  const [mode, setMode] = useState<"edit" | "preview">("preview");
   const [saved, setSaved] = useState(true);
+  const [open, setOpen] = useState<Set<string>>(() => loadOpenFolders());
+  const [page, setPage] = useState(0);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<string | "root" | null>(null);
+  const [renaming, setRenaming] = useState<string | null>(null);
   const saveTimer = useRef<number | null>(null);
   const bodyRef = useRef<HTMLTextAreaElement | null>(null);
 
-  const refreshList = useCallback(
-    async (nextPage = page, nextQuery = query) => {
-      const res = await window.lopster?.postsList?.({
-        query: nextQuery.trim(),
-        page: nextPage,
-        pageSize: PAGE_SIZE,
-      });
-      if (res?.ok) {
-        setList(res.posts || []);
-        setTotal(res.total || 0);
-      }
-    },
-    [page, query]
-  );
+  const refreshList = useCallback(async (nextQuery?: string) => {
+    const res = await window.lopster?.postsList?.({ query: (nextQuery ?? query).trim() });
+    if (res?.ok) {
+      setFolders(res.folders || []);
+      setPosts(res.posts || []);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
 
-  // Debounced search — resets to the first page.
+  const openPost = useCallback(async (id: string) => {
+    const res = await window.lopster?.postsGet?.(id);
+    if (res?.ok && res.post) {
+      setActiveId(id);
+      setDraft(res.post);
+      setMode("preview");
+      setSaved(true);
+    }
+  }, []);
+
+  // Debounced search — refetch; matches span title + body server-side.
   useEffect(() => {
     const id = window.setTimeout(() => {
       setPage(0);
-      void refreshList(0, query);
+      void refreshList(query);
     }, 250);
     return () => window.clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
 
   useEffect(() => {
-    void refreshList(page, query);
+    void refreshList();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]);
+  }, []);
 
-  // Live sync when the agent (or another window) changes posts.
+  // Live sync when the agent (or another window) changes posts/folders.
   useEffect(() => {
     const unsub = window.lopster?.onPostsChanged?.((payload) => {
       void refreshList();
       if (payload?.type === "deleted" && payload.id === activeId) {
         setActiveId(null);
         setDraft(null);
-      } else if (payload?.id && payload.id === activeId) {
-        void openPost(payload.id, { silent: true });
+      } else if (payload?.id && payload.id === activeId && payload.type === "updated") {
+        void openPost(payload.id);
       }
     });
     return () => unsub?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeId]);
 
-  const openPost = useCallback(async (id: string, _opts?: { silent?: boolean }) => {
-    const res = await window.lopster?.postsGet?.(id);
-    if (res?.ok && res.post) {
-      setActiveId(id);
-      setDraft(res.post);
-      // A selected or externally updated post is primarily a document, so show
-      // rendered Markdown first. The explicit Pencil tab remains the edit path.
-      setMode("preview");
-      setSaved(true);
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(OPEN_KEY, JSON.stringify([...open]));
+    } catch {
+      /* ignore */
     }
-  }, []);
+  }, [open]);
 
-  const createPost = useCallback(async () => {
-    const res = await window.lopster?.postsCreate?.({ title: "Новый пост", content: "" });
-    if (res?.ok && res.post) {
-      await refreshList(0, "");
-      setQuery("");
-      setPage(0);
-      setActiveId(res.post.id);
-      setDraft(res.post);
-      setMode("edit");
-      setSaved(true);
+  const createPost = useCallback(
+    async (folderId: string | null = null) => {
+      const res = await window.lopster?.postsCreate?.({ title: "Новый пост", content: "", folderId });
+      if (res?.ok && res.post) {
+        await refreshList("");
+        setQuery("");
+        setActiveId(res.post.id);
+        setDraft(res.post);
+        setMode("edit");
+        setSaved(true);
+        if (folderId) setOpen((s) => new Set(s).add(folderId));
+      }
+    },
+    [refreshList]
+  );
+
+  const createFolder = useCallback(async () => {
+    const res = await window.lopster?.postsFolderCreate?.({ name: "Новая папка" });
+    if (res?.ok && res.folder) {
+      await refreshList();
+      setOpen((s) => new Set(s).add(res.folder!.id));
+      setRenaming(res.folder.id);
     }
   }, [refreshList]);
 
@@ -222,7 +149,33 @@ const PostWorkspace: React.FC = () => {
     [activeId, refreshList]
   );
 
-  // Debounced autosave whenever the draft changes.
+  const deleteFolder = useCallback(
+    async (id: string) => {
+      await window.lopster?.postsFolderDelete?.(id);
+      void refreshList();
+    },
+    [refreshList]
+  );
+
+  const renameFolder = useCallback(
+    async (id: string, name: string) => {
+      setRenaming(null);
+      const trimmed = name.trim();
+      if (trimmed) await window.lopster?.postsFolderRename?.(id, trimmed);
+      void refreshList();
+    },
+    [refreshList]
+  );
+
+  const movePost = useCallback(
+    async (id: string, folderId: string | null) => {
+      await window.lopster?.postsMove?.(id, folderId);
+      void refreshList();
+    },
+    [refreshList]
+  );
+
+  // ── autosave ──
   const scheduleSave = useCallback((next: PostFull) => {
     setSaved(false);
     if (saveTimer.current) window.clearTimeout(saveTimer.current);
@@ -231,7 +184,6 @@ const PostWorkspace: React.FC = () => {
       setSaved(true);
     }, SAVE_DEBOUNCE_MS);
   }, []);
-
   const onTitle = (title: string) => {
     if (!draft) return;
     const next = { ...draft, title };
@@ -245,8 +197,7 @@ const PostWorkspace: React.FC = () => {
     scheduleSave(next);
   };
 
-  // The outer ChatMonoScroll owns scrolling. Grow the textarea with its content
-  // so Chromium never falls back to a second, native textarea scrollbar.
+  // Grow the textarea with its content so there is no second native scrollbar.
   useLayoutEffect(() => {
     if (mode !== "edit" || !bodyRef.current) return;
     const field = bodyRef.current;
@@ -256,40 +207,101 @@ const PostWorkspace: React.FC = () => {
     field.style.height = `${Math.max(field.scrollHeight, availableHeight)}px`;
   }, [mode, draft?.content]);
 
-  useEffect(() => {
-    return () => {
-      if (saveTimer.current) window.clearTimeout(saveTimer.current);
-    };
+  useEffect(() => () => {
+    if (saveTimer.current) window.clearTimeout(saveTimer.current);
   }, []);
 
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const searching = query.trim().length > 0;
 
-  const listStamp = useMemo(
-    () =>
-      list.map((p) => {
-        const d = new Date(p.updatedAt);
-        return { ...p, when: d.toLocaleDateString("ru-RU", { day: "2-digit", month: "short" }) };
-      }),
-    [list]
+  const stamp = (p: PostMeta) =>
+    new Date(p.updatedAt).toLocaleDateString("ru-RU", { day: "2-digit", month: "short" });
+
+  const byFolder = useMemo(() => {
+    const map = new Map<string | null, PostMeta[]>();
+    for (const p of posts) {
+      const arr = map.get(p.folderId) || [];
+      arr.push(p);
+      map.set(p.folderId, arr);
+    }
+    return map;
+  }, [posts]);
+
+  const rootPosts = byFolder.get(null) || [];
+  // Pagination applies to the flat region: search results, or the unfiled root.
+  const flat = searching ? posts : rootPosts;
+  const totalPages = Math.max(1, Math.ceil(flat.length / PAGE_SIZE));
+  const pageSlice = flat.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
+
+  const toggleFolder = (id: string) =>
+    setOpen((s) => {
+      const next = new Set(s);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  // ── drag helpers ──
+  const onDragStart = (e: React.DragEvent, id: string) => {
+    setDragId(id);
+    e.dataTransfer.setData("text/plain", id);
+    e.dataTransfer.effectAllowed = "move";
+  };
+  const onDragEnd = () => {
+    setDragId(null);
+    setDropTarget(null);
+  };
+  const allowDrop = (e: React.DragEvent, target: string | "root") => {
+    if (!dragId) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (dropTarget !== target) setDropTarget(target);
+  };
+  const doDrop = (e: React.DragEvent, folderId: string | null) => {
+    e.preventDefault();
+    const id = dragId || e.dataTransfer.getData("text/plain");
+    if (id) void movePost(id, folderId);
+    onDragEnd();
+  };
+
+  const PostRow: React.FC<{ p: PostMeta }> = ({ p }) => (
+    <div
+      className={`post-item${p.id === activeId ? " is-active" : ""}${dragId === p.id ? " is-dragging" : ""}`}
+      draggable
+      onDragStart={(e) => onDragStart(e, p.id)}
+      onDragEnd={onDragEnd}
+    >
+      <button type="button" className="post-item-btn" onClick={() => void openPost(p.id)}>
+        <span className="post-item-title">{p.title}</span>
+        <span className="post-item-when">{stamp(p)}</span>
+      </button>
+      <button type="button" className="post-item-del" onClick={() => void deletePost(p.id)} aria-label="Удалить">
+        <Trash2 className="w-3.5 h-3.5" />
+      </button>
+    </div>
   );
 
   return (
     <div className="post-shell">
-      {/* ── left: list ── */}
+      {/* ── left: folders + list ── */}
       <aside className="post-side">
         <header className="post-side-head">
           <span className="post-brand">POST</span>
-          <button type="button" className="post-new" onClick={() => void createPost()} title="Новый пост">
-            <Plus className="w-4 h-4" />
-          </button>
+          <div className="post-head-actions">
+            <button type="button" className="post-ghost" onClick={() => void createFolder()} title="Новая папка">
+              <FolderPlus className="w-4 h-4" />
+            </button>
+            <button type="button" className="post-new" onClick={() => void createPost(null)} title="Новый пост">
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
         </header>
+
         <div className="post-search">
           <Search className="post-search-ico" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Поиск по постам…"
+            placeholder="Поиск по постам и папкам…"
             spellCheck={false}
           />
           {query && (
@@ -300,41 +312,103 @@ const PostWorkspace: React.FC = () => {
         </div>
 
         <ChatMonoScroll className="post-list">
-          {listStamp.length === 0 && (
-            <p className="post-empty">{searching ? "Ничего не найдено" : "Постов пока нет"}</p>
+          {posts.length === 0 && folders.length === 0 && (
+            <p className="post-empty">{searching ? "Ничего не найдено" : "Пусто — создайте пост или папку"}</p>
           )}
-          {listStamp.map((p) => (
+
+          {/* Folders: hidden during search (results are flat below). */}
+          {!searching &&
+            folders.map((f) => {
+              const inside = byFolder.get(f.id) || [];
+              const isOpen = open.has(f.id);
+              return (
+                <div key={f.id} className="post-folder">
+                  <div
+                    className={`post-folder-row${dropTarget === f.id ? " is-drop" : ""}`}
+                    onDragOver={(e) => allowDrop(e, f.id)}
+                    onDragLeave={() => dropTarget === f.id && setDropTarget(null)}
+                    onDrop={(e) => doDrop(e, f.id)}
+                  >
+                    <button type="button" className="post-folder-toggle" onClick={() => toggleFolder(f.id)}>
+                      {isOpen ? <FolderOpen className="w-4 h-4" /> : <Folder className="w-4 h-4" />}
+                      {renaming === f.id ? (
+                        <input
+                          className="post-folder-rename"
+                          defaultValue={f.name}
+                          autoFocus
+                          onClick={(e) => e.stopPropagation()}
+                          onBlur={(e) => void renameFolder(f.id, e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                            if (e.key === "Escape") setRenaming(null);
+                          }}
+                        />
+                      ) : (
+                        <span
+                          className="post-folder-name"
+                          onDoubleClick={(e) => {
+                            e.stopPropagation();
+                            setRenaming(f.id);
+                          }}
+                        >
+                          {f.name}
+                        </span>
+                      )}
+                      <span className="post-folder-count">{inside.length}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="post-folder-add"
+                      onClick={() => void createPost(f.id)}
+                      title="Пост в эту папку"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      className="post-folder-del"
+                      onClick={() => void deleteFolder(f.id)}
+                      title="Удалить папку (посты вернутся в корень)"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  {isOpen && (
+                    <div className="post-folder-body">
+                      {inside.length === 0 && <p className="post-folder-empty">Перетащите посты сюда</p>}
+                      {inside.map((p) => (
+                        <PostRow key={p.id} p={p} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+          {/* Root / search results (paginated). */}
+          {(searching || rootPosts.length > 0) && (
             <div
-              key={p.id}
-              className={`post-item${p.id === activeId ? " is-active" : ""}`}
+              className={`post-root${dropTarget === "root" ? " is-drop" : ""}`}
+              onDragOver={(e) => allowDrop(e, "root")}
+              onDragLeave={() => dropTarget === "root" && setDropTarget(null)}
+              onDrop={(e) => doDrop(e, null)}
             >
-              <button type="button" className="post-item-btn" onClick={() => void openPost(p.id)}>
-                <span className="post-item-title">{p.title}</span>
-                <span className="post-item-when">{p.when}</span>
-              </button>
-              <button
-                type="button"
-                className="post-item-del"
-                onClick={() => void deletePost(p.id)}
-                aria-label="Удалить"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
+              {!searching && (
+                <div className="post-root-head">Без папки <span className="post-folder-count">{rootPosts.length}</span></div>
+              )}
+              {pageSlice.map((p) => (
+                <PostRow key={p.id} p={p} />
+              ))}
             </div>
-          ))}
+          )}
         </ChatMonoScroll>
 
         <footer className="post-pager">
-          <button
-            type="button"
-            disabled={page <= 0}
-            onClick={() => setPage((p) => Math.max(0, p - 1))}
-            aria-label="Назад"
-          >
+          <button type="button" disabled={page <= 0} onClick={() => setPage((p) => Math.max(0, p - 1))} aria-label="Назад">
             <ChevronLeft className="w-4 h-4" />
           </button>
           <span className="post-pager-info">
-            {searching ? `${total} найдено` : `${page + 1} / ${totalPages}`}
+            {searching ? `${flat.length} найдено · ${page + 1}/${totalPages}` : `${page + 1} / ${totalPages}`}
           </span>
           <button
             type="button"
@@ -353,18 +427,10 @@ const PostWorkspace: React.FC = () => {
           <>
             <div className="post-toolbar">
               <div className="post-mode">
-                <button
-                  type="button"
-                  className={mode === "edit" ? "is-active" : ""}
-                  onClick={() => setMode("edit")}
-                >
+                <button type="button" className={mode === "edit" ? "is-active" : ""} onClick={() => setMode("edit")}>
                   <Pencil className="w-3.5 h-3.5" /> Редактор
                 </button>
-                <button
-                  type="button"
-                  className={mode === "preview" ? "is-active" : ""}
-                  onClick={() => setMode("preview")}
-                >
+                <button type="button" className={mode === "preview" ? "is-active" : ""} onClick={() => setMode("preview")}>
                   <Eye className="w-3.5 h-3.5" /> Просмотр
                 </button>
               </div>
@@ -407,13 +473,6 @@ const PostWorkspace: React.FC = () => {
           </div>
         )}
       </main>
-
-      <PostGraph
-        posts={list}
-        activeId={activeId}
-        onOpen={(id) => void openPost(id)}
-        onDelete={(id) => void deletePost(id)}
-      />
     </div>
   );
 };
