@@ -3720,6 +3720,25 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   }, [liveTimeline]);
   const hasLiveTimelineText = lastLiveTextId !== null;
 
+  /**
+   * ask_user / ask_otp pause the run waiting for the human, so their card must
+   * stay visible even while the tool strip is folded — otherwise you never see
+   * that an answer is being asked for. Also true for a sub-agent whose nested
+   * unit is waiting on an ask.
+   */
+  const isAskStep = useCallback((s?: AgentToolProgress | null): boolean => {
+    if (!s) return false;
+    if (s.name === "ask_user" || s.name === "ask_otp") return true;
+    return Boolean(
+      Array.isArray(s.units) &&
+        s.units.some(
+          (u) =>
+            Array.isArray(u.children) &&
+            u.children.some((c) => c.name === "ask_user" || c.name === "ask_otp")
+        )
+    );
+  }, []);
+
   /** Live sub-agent tally for the compact bar above the composer. */
   const subagentLive = useMemo(() => {
     let running = 0;

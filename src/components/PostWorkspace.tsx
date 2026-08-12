@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Eye, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import ChatMonoScroll from "./ChatMonoScroll";
 import MarkdownContent from "./markdown/MarkdownContent";
@@ -25,6 +25,7 @@ const PostWorkspace: React.FC = () => {
   const [mode, setMode] = useState<"edit" | "preview">("edit");
   const [saved, setSaved] = useState(true);
   const saveTimer = useRef<number | null>(null);
+  const bodyRef = useRef<HTMLTextAreaElement | null>(null);
 
   const refreshList = useCallback(
     async (nextPage = page, nextQuery = query) => {
@@ -71,12 +72,14 @@ const PostWorkspace: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeId]);
 
-  const openPost = useCallback(async (id: string, opts?: { silent?: boolean }) => {
+  const openPost = useCallback(async (id: string, _opts?: { silent?: boolean }) => {
     const res = await window.lopster?.postsGet?.(id);
     if (res?.ok && res.post) {
       setActiveId(id);
       setDraft(res.post);
-      if (!opts?.silent) setMode("edit");
+      // A selected or externally updated post is primarily a document, so show
+      // rendered Markdown first. The explicit Pencil tab remains the edit path.
+      setMode("preview");
       setSaved(true);
     }
   }, []);
@@ -128,6 +131,17 @@ const PostWorkspace: React.FC = () => {
     setDraft(next);
     scheduleSave(next);
   };
+
+  // The outer ChatMonoScroll owns scrolling. Grow the textarea with its content
+  // so Chromium never falls back to a second, native textarea scrollbar.
+  useLayoutEffect(() => {
+    if (mode !== "edit" || !bodyRef.current) return;
+    const field = bodyRef.current;
+    field.style.height = "0px";
+    const pageHeight = field.parentElement?.clientHeight || 0;
+    const availableHeight = Math.max(0, pageHeight - field.offsetTop - 28);
+    field.style.height = `${Math.max(field.scrollHeight, availableHeight)}px`;
+  }, [mode, draft?.content]);
 
   useEffect(() => {
     return () => {
@@ -255,6 +269,7 @@ const PostWorkspace: React.FC = () => {
                 />
                 {mode === "edit" ? (
                   <textarea
+                    ref={bodyRef}
                     className="post-body-input"
                     value={draft.content}
                     onChange={(e) => onContent(e.target.value)}
