@@ -23,6 +23,7 @@ const memory = require("./memory.cjs");
 const gitService = require("./gitService.cjs");
 const postsStore = require("./postsStore.cjs");
 const booksStore = require("./booksStore.cjs");
+const youtubeStore = require("./youtubeStore.cjs");
 const customTools = require("./customTools.cjs");
 const mcpManager = require("./mcpManager.cjs");
 const instructions = require("./instructions.cjs");
@@ -3209,6 +3210,18 @@ ipcMain.handle("books:update", async (_event, id, patch = {}) => {
 ipcMain.handle("books:delete", async (_event, id) => {
   try { const ok = await booksStore.removeBook(app.getPath("userData"), String(id || "")); if (ok) broadcastBooksChanged({ type: "deleted", id }); return { ok }; }
   catch (error) { return { ok: false, error: String(error?.message || error) }; }
+});
+ipcMain.handle("youtube:list", async () => {
+  try { return { ok: true, videos: youtubeStore.list(app.getPath("userData")) }; } catch (error) { return { ok: false, error: String(error?.message || error) }; }
+});
+ipcMain.handle("youtube:add", async (_event, input = {}) => {
+  try { return { ok: true, video: await youtubeStore.add(app.getPath("userData"), input) }; } catch (error) { return { ok: false, error: String(error?.message || error) }; }
+});
+ipcMain.handle("youtube:update", async (_event, id, patch = {}) => {
+  try { return { ok: true, video: await youtubeStore.update(app.getPath("userData"), String(id || ""), patch) }; } catch (error) { return { ok: false, error: String(error?.message || error) }; }
+});
+ipcMain.handle("youtube:delete", async (_event, id) => {
+  try { return { ok: await youtubeStore.remove(app.getPath("userData"), String(id || "")) }; } catch (error) { return { ok: false, error: String(error?.message || error) }; }
 });
 
 ipcMain.handle("mcp:list", async () => mcpManager.listServers(app.getPath("userData")));

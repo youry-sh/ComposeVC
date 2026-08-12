@@ -90,6 +90,7 @@ export type BookMeta = {
 };
 export type BookChapter = { id: string; title: string; html: string };
 export type BookFull = BookMeta & { chapters: BookChapter[] };
+export type YoutubeVideo = { id: string; videoId: string; url: string; title: string; watched: boolean; createdAt: number; updatedAt: number };
 
 export type GitBranch = { name: string; current: boolean };
 export type GitChangedFile = { code: string; staged: boolean; path: string };
@@ -151,6 +152,10 @@ declare global {
       booksUpdate: (id: string, patch: Partial<BookMeta>) => Promise<{ ok: boolean; book?: BookMeta; error?: string }>;
       booksDelete: (id: string) => Promise<{ ok: boolean; error?: string }>;
       onBooksChanged: (callback: (payload: { type?: string; id?: string; ids?: string[] }) => void) => () => void;
+      youtubeList: () => Promise<{ ok: boolean; videos?: YoutubeVideo[]; error?: string }>;
+      youtubeAdd: (input: { url: string; title?: string }) => Promise<{ ok: boolean; video?: YoutubeVideo; error?: string }>;
+      youtubeUpdate: (id: string, patch: { title?: string; watched?: boolean }) => Promise<{ ok: boolean; video?: YoutubeVideo; error?: string }>;
+      youtubeDelete: (id: string) => Promise<{ ok: boolean; error?: string }>;
       readProviderConfig: () => Promise<ProviderConfig>;
       writeProviderConfig: (config: ProviderConfig) => Promise<ProviderConfig>;
       listRunners: () => Promise<{ ok: boolean; runners?: RunnerJob[]; error?: string }>;

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { BookOpen, CheckSquare, ChevronDown, FileText, LayoutGrid, Minus, Square, X } from "lucide-react";
+import { BookOpen, CheckSquare, ChevronDown, FileText, LayoutGrid, Minus, Square, X, Youtube } from "lucide-react";
 import {
   IcoMulti,
   IcoProxy,
@@ -17,7 +17,7 @@ import {
   formatUptime,
 } from "./StatusBar";
 
-type Panel = "multiide" | "proxy" | "settings" | "customtools" | "runner" | "todo" | "post" | "books";
+type Panel = "multiide" | "proxy" | "settings" | "customtools" | "runner" | "todo" | "post" | "books" | "youtube";
 
 interface TitleBarProps {
   subtitle?: string;
@@ -176,6 +176,7 @@ const TitleBar: React.FC<TitleBarProps> = ({
     { id: "todo", title: "Todo", subtitle: "задачи и привычки", icon: <CheckSquare /> },
     { id: "post", title: "Post", subtitle: "заметки и публикации", icon: <FileText /> },
     { id: "books", title: "Books", subtitle: "библиотека и чтение", icon: <BookOpen /> },
+    { id: "youtube", title: "YouTube", subtitle: "видео и трансляции", icon: <Youtube /> },
   ];
   const libraryActive = libraryTabs.some((tab) => tab.id === active);
 

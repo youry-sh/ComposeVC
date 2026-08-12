@@ -132,6 +132,28 @@ async function buildSystemPrompt({ rootPath, projectName, userDataPath }) {
       "Cards stay hard-capped so large (10k+) projects do not flood context.\n" +
       "- Typical ComposeVC edges: electron/tools/* ↔ registry.cjs; tool names ↔ context/lopsterHo; " +
       "ipcMain.handle ↔ preload ipcRenderer.invoke. Prefer fixing registry/IPC drift over claiming done.",
+    "COMPOSEVC APPLICATION ENGINEERING STANDARD (mandatory for every feature you build in this app):\n" +
+      "- PERSISTENCE: never introduce localStorage, sessionStorage, IndexedDB, cookies, renderer-only caches, or hidden browser state for application data. " +
+      "Persist settings, entities, progress, history, UI state that must survive restart, and user-created content under Electron userData using a clear JSON-backed store (plus separate content/assets when large). " +
+      "If you touch an old feature that still uses localStorage, migrate that touched state to the disk store when reasonably in scope; do not copy the pattern.\n" +
+      "- JSON DB QUALITY: give every store a versioned schema, stable ids, safe defaults, validation/normalization on read, and explicit list/get/create/update/delete functions. " +
+      "Write atomically via <file>.tmp then rename; create directories recursively; never leave half-written JSON. Keep list metadata small and put large bodies, images, converted documents, and reports in per-item files/directories. " +
+      "Renderer code must never access filesystem paths directly: expose narrow ipcMain.handle endpoints through preload and keep src/global.d.ts synchronized.\n" +
+      "- PERFORMANCE: renderer interactions must stay responsive. Do not set React state for every mouse pixel, token, scroll event, animation frame, or high-frequency progress event. " +
+      "Use CSS animations for purely visual motion, requestAnimationFrame/direct transform updates for drag/zoom, debounce disk writes and search, memoize derived collections, lazy-mount independent workspaces, and avoid retaining closed heavy panels. " +
+      "Move parsing, PDF/EPUB conversion, image processing, indexing, and other CPU-heavy work to worker_threads or a separate process. Convert expensive imports once, cache the normalized result on disk, and reuse it on every later open. " +
+      "Never block Electron's main process or create an animation that can turn the window black/frozen. Clean up timers, listeners, observers, workers, object URLs, and subscriptions on unmount/exit.\n" +
+      "- COMPOSEVC VISUAL LANGUAGE: every new workspace must look native to this IDE, not like a generic website or SaaS dashboard. Reuse theme tokens (--bg, --surface, --panel-header-bg, --input-bg, --border, --border-strong, --ink-*, --accent), var(--terminal-font) for chrome/metadata, flat 1px borders, 1–2px radii, dense 26–34px controls, restrained monochrome states, and existing component conventions. " +
+      "Avoid oversized cards, random gradients, glass blur, floating rounded pills, bright unrelated colors, emoji icons, and excessive shadows. Use lucide-react or the established icon system. Keep headers, columns, baselines, repeated rows, covers, actions, and empty states geometrically aligned.\n" +
+      "- SCROLLING AND LAYOUT: use ChatMonoScroll for application lists, readers, reports, timelines, and long panels so they share the chat's custom scrollbar; do not expose native textarea/div scrollbars alongside it. " +
+      "Every flex/grid chain that owns scrolling must have min-height:0 and the workspace must fill the available height to the bottom without arbitrary blank padding. Maintain one clear scroll owner per axis. " +
+      "Use minmax(0,1fr), min-width:0, truncation/clamping, stable row heights, and responsive breakpoints. Keep primary reading/content columns centered and comfortable; sidebars must not visually push the document off-center.\n" +
+      "- UX COMPLETENESS: implement loading, empty, error, disabled, active, keyboard-focus, long-text, narrow-window, and reduced-motion states. Preserve user position/progress on disk where expected. " +
+      "Dangerous actions need an unambiguous target and recoverable/confirmed behavior where appropriate. Controls need titles or accessible labels; keyboard navigation must not steal input-field keystrokes.\n" +
+      "- END-TO-END FEATURE CONTRACT: a new persistent feature is not complete with JSX alone. Trace and implement store module -> main IPC -> preload bridge -> global TypeScript types -> workspace UI -> live refresh/event path -> AI tool registration when the user expects the agent to manage it. " +
+      "An AI-created/imported entity must go through the same normalization, conversion, caching, and notification pipeline as a UI-created entity, so it appears immediately and behaves identically.\n" +
+      "- VERIFICATION: before claiming completion, run syntax checks for changed .cjs files, TypeScript noEmit, git diff --check, focused store/converter tests with temporary data, and the production web build. " +
+      "Inspect code-impact blockers and verify packaged dependencies/worker files when Electron distribution is affected. Report real limitations; never say a format, interaction, or persistence path works merely because its UI exists.",
     "SEARCH: Prefer the 'grep' tool (regular expression content search, stable on Windows). " +
       "Pass 'pattern' for the regex, optional 'path' for a directory/file, and optional 'include' for file names. " +
       "The default path is the open project. " +

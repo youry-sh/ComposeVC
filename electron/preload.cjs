@@ -35,6 +35,10 @@ contextBridge.exposeInMainWorld("lopster", {
     ipcRenderer.on("books:changed", listener);
     return () => ipcRenderer.removeListener("books:changed", listener);
   },
+  youtubeList: () => ipcRenderer.invoke("youtube:list"),
+  youtubeAdd: (input) => ipcRenderer.invoke("youtube:add", input || {}),
+  youtubeUpdate: (id, patch) => ipcRenderer.invoke("youtube:update", id, patch || {}),
+  youtubeDelete: (id) => ipcRenderer.invoke("youtube:delete", id),
   readProviderConfig: () => ipcRenderer.invoke("config:read"),
   writeProviderConfig: (config) => ipcRenderer.invoke("config:write", config),
   listRunners: () => ipcRenderer.invoke("runner:list"),
