@@ -31,7 +31,7 @@ function modelsFromQauthPayload(payload) {
     if (typeof value !== "object" || seenContainers.has(value)) return;
     seenContainers.add(value);
     for (const key of ["models", "recommended", "free", "clinePass", "cline_pass"]) {
-      if (Array.isArray(value[key])) visit(value[key]);
+      if (value[key] && typeof value[key] === "object") visit(value[key]);
     }
     if (value.data && typeof value.data === "object") visit(value.data);
   }
