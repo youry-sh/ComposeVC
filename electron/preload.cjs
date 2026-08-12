@@ -39,6 +39,15 @@ contextBridge.exposeInMainWorld("lopster", {
   youtubeAdd: (input) => ipcRenderer.invoke("youtube:add", input || {}),
   youtubeUpdate: (id, patch) => ipcRenderer.invoke("youtube:update", id, patch || {}),
   youtubeDelete: (id) => ipcRenderer.invoke("youtube:delete", id),
+  storageAccounts: () => ipcRenderer.invoke("storage:accounts"),
+  storagePick: () => ipcRenderer.invoke("storage:pick"),
+  storageUpload: (input) => ipcRenderer.invoke("storage:upload", input || {}),
+  storageList: () => ipcRenderer.invoke("storage:list"),
+  storageDeleteHistory: (id) => ipcRenderer.invoke("storage:deleteHistory", id),
+  onStorageOpen: (callback) => {
+    const listener = () => callback(); ipcRenderer.on("storage:open", listener);
+    return () => ipcRenderer.removeListener("storage:open", listener);
+  },
   readProviderConfig: () => ipcRenderer.invoke("config:read"),
   writeProviderConfig: (config) => ipcRenderer.invoke("config:write", config),
   listRunners: () => ipcRenderer.invoke("runner:list"),

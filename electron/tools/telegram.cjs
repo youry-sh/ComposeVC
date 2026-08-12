@@ -684,6 +684,10 @@ function chatIdCandidates(chat) {
 }
 
 async function resolveChatEntity(client, chat) {
+  if (["me", "self", "saved messages", "избранное"].includes(String(chat || "").trim().toLowerCase())) {
+    const me = await client.getMe();
+    return client.getInputEntity(me);
+  }
   for (const candidate of chatIdCandidates(chat)) {
     try {
       return await client.getInputEntity(candidate);
@@ -1504,6 +1508,20 @@ async function actionSendFile(input, context) {
       const topicId = await resolveTopicId(client, chat, input);
       const entity = topicId !== null ? await resolveForumPeer(client, chat) : await resolveChatEntity(client, chat);
       const options = { file: filePath };
+      options.progressCallback = (progress) => {
+        const value = typeof progress === "number"
+          ? progress
+          : Number(progress?.progress ?? progress?.uploaded / progress?.total);
+        const ratio = Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0;
+        uploadJobs.set(jobId, {
+          status: "uploading",
+          path: filePath,
+          size: fileInfo.size,
+          progress: ratio,
+          uploaded: Math.round(fileInfo.size * ratio),
+          startedAt: uploadJobs.get(jobId)?.startedAt || Date.now(),
+        });
+      };
       if (input.caption || input.text) options.caption = String(input.caption || input.text);
       Object.assign(options, buildReplyParams(input.replyTo, topicId));
       const result = await client.sendFile(entity, options);

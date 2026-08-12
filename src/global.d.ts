@@ -91,6 +91,9 @@ export type BookMeta = {
 export type BookChapter = { id: string; title: string; html: string };
 export type BookFull = BookMeta & { chapters: BookChapter[] };
 export type YoutubeVideo = { id: string; videoId: string; url: string; title: string; watched: boolean; createdAt: number; updatedAt: number };
+export type StorageAccount = { phone: string; name: string; username?: string; isPremium: boolean; error?: string };
+export type StorageFile = { path: string; name: string; size: number };
+export type StorageItem = { id: string; phone: string; name: string; path: string; size: number; jobId: string; status: "queued" | "uploading" | "completed" | "failed"; progress: number; uploaded?: number; error?: string | null; resultId?: string | null; createdAt: number; updatedAt: number };
 
 export type GitBranch = { name: string; current: boolean };
 export type GitChangedFile = { code: string; staged: boolean; path: string };
@@ -156,6 +159,12 @@ declare global {
       youtubeAdd: (input: { url: string; title?: string }) => Promise<{ ok: boolean; video?: YoutubeVideo; error?: string }>;
       youtubeUpdate: (id: string, patch: { title?: string; watched?: boolean }) => Promise<{ ok: boolean; video?: YoutubeVideo; error?: string }>;
       youtubeDelete: (id: string) => Promise<{ ok: boolean; error?: string }>;
+      storageAccounts: () => Promise<{ ok: boolean; accounts?: StorageAccount[]; error?: string }>;
+      storagePick: () => Promise<{ ok: boolean; canceled?: boolean; files?: StorageFile[]; error?: string }>;
+      storageUpload: (input: { phone: string; filePath: string; caption?: string; premium?: boolean }) => Promise<{ ok: boolean; item?: StorageItem; error?: string }>;
+      storageList: () => Promise<{ ok: boolean; items?: StorageItem[]; error?: string }>;
+      storageDeleteHistory: (id: string) => Promise<{ ok: boolean }>;
+      onStorageOpen: (callback: () => void) => () => void;
       readProviderConfig: () => Promise<ProviderConfig>;
       writeProviderConfig: (config: ProviderConfig) => Promise<ProviderConfig>;
       listRunners: () => Promise<{ ok: boolean; runners?: RunnerJob[]; error?: string }>;

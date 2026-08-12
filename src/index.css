@@ -9701,6 +9701,37 @@
   .chat-aside { display: none; }
 }
 
+/* Telegram-backed file storage, opened globally with Ctrl+T. */
+.storage-backdrop { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; padding: 28px; background: rgba(0,0,0,.62); }
+.storage-modal { width: min(720px, 100%); max-height: min(780px, calc(100vh - 56px)); display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--panel-bg); box-shadow: 0 24px 80px rgba(0,0,0,.55); color: var(--text); }
+.storage-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px 14px; border-bottom: 1px solid var(--border); }
+.storage-head h2 { display: flex; align-items: center; gap: 8px; margin: 3px 0 0; font-size: 17px; font-weight: 600; color: var(--ink-950); }
+.storage-kicker, .storage-history-head { font-family: var(--terminal-font); font-size: 9px; letter-spacing: .14em; color: var(--ink-500); }
+.storage-icon-btn { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 5px; background: transparent; color: var(--ink-500); cursor: pointer; }
+.storage-icon-btn:hover { background: var(--hover-bg); color: var(--ink-950); }
+.storage-account-row { display: flex; align-items: center; gap: 10px; padding: 14px 20px 0; }
+.storage-account-row select { flex: 1; min-width: 0; height: 34px; padding: 0 10px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: var(--input-bg); color: var(--ink-800); font-size: 12px; }
+.storage-limit { flex: none; padding: 5px 7px; border: 1px solid var(--border); border-radius: 4px; font: 9px var(--terminal-font); letter-spacing: .06em; color: var(--ink-500); }
+.storage-limit.premium { border-color: color-mix(in srgb, var(--ok) 35%, var(--border)); color: var(--ok); }
+.storage-drop { margin: 14px 20px 10px; min-height: 92px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; border: 1px dashed var(--border-strong); border-radius: 8px; background: var(--input-bg); color: var(--ink-700); cursor: pointer; }
+.storage-drop:hover:not(:disabled) { background: var(--hover-bg); color: var(--ink-950); }
+.storage-drop:disabled { cursor: default; opacity: .45; }
+.storage-drop strong { font-size: 12px; font-weight: 600; }.storage-drop span { font-size: 10px; color: var(--ink-500); }
+.storage-picked { max-height: 105px; margin: 0 20px 10px; overflow: auto; border: 1px solid var(--border); border-radius: 6px; background: var(--input-bg); }
+.storage-picked > div { display: flex; align-items: center; gap: 7px; min-height: 28px; padding: 4px 9px; border-bottom: 1px solid var(--border); font-size: 11px; }.storage-picked > div:last-child { border: 0; }.storage-picked span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.storage-picked small { color: var(--ink-500); }
+.storage-send-row { display: flex; gap: 8px; padding: 0 20px 14px; }
+.storage-send-row input { flex: 1; min-width: 0; height: 34px; padding: 0 10px; border: 1px solid var(--border); border-radius: 6px; outline: 0; background: var(--input-bg); color: var(--ink-800); font-size: 11px; }.storage-send-row input:focus { border-color: var(--border-strong); }
+.storage-send-row button { min-width: 118px; display: flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--active-bg); color: var(--ink-950); font-size: 11px; cursor: pointer; }.storage-send-row button:disabled { opacity: .4; cursor: default; }
+.storage-error { margin: -5px 20px 12px; padding: 7px 9px; border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--border)); border-radius: 5px; color: var(--danger); font-size: 10px; }
+.storage-history-head { display: flex; justify-content: space-between; padding: 11px 20px 7px; border-top: 1px solid var(--border); }.storage-history-head small { font-size: 9px; letter-spacing: 0; text-transform: none; }
+.storage-history { min-height: 110px; max-height: 270px; overflow: auto; padding: 0 12px 12px 20px; }
+.storage-item { display: flex; align-items: center; gap: 10px; min-height: 59px; padding: 8px 3px; border-bottom: 1px solid var(--border); }.storage-item:last-child { border: 0; }
+.storage-file-icon { flex: none; display: grid; place-items: center; width: 29px; height: 29px; border: 1px solid var(--border); border-radius: 5px; color: var(--ink-600); }.storage-item-body { flex: 1; min-width: 0; }.storage-item-body > div:first-child { display: flex; gap: 8px; align-items: baseline; }.storage-item strong { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-weight: 500; }.storage-item small, .storage-item p { color: var(--ink-500); font-size: 9px; }.storage-item p { margin: 3px 0 0; }.storage-item p.is-error { color: var(--danger); }
+.storage-progress { height: 2px; margin-top: 6px; overflow: hidden; background: var(--border); }.storage-progress i { display: block; height: 100%; background: var(--ink-700); transition: width .18s linear; }
+.storage-empty { margin: 14px 20px; padding: 18px; border: 1px dashed var(--border); border-radius: 7px; text-align: center; color: var(--ink-500); font-size: 11px; }.storage-history .storage-empty { margin: 5px 0; }
+.storage-spin { animation: storage-spin .8s linear infinite; } @keyframes storage-spin { to { transform: rotate(360deg); } }
+@media (max-width: 620px) { .storage-backdrop { padding: 12px; }.storage-account-row, .storage-send-row { align-items: stretch; flex-direction: column; }.storage-limit { align-self: flex-start; }.storage-send-row button { height: 34px; } }
+
 
 
 

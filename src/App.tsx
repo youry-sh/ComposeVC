@@ -11,6 +11,7 @@ import TodoWorkspace from "./components/TodoWorkspace";
 import PostWorkspace from "./components/PostWorkspace";
 import BooksWorkspace from "./components/BooksWorkspace";
 import YoutubeWorkspace from "./components/YoutubeWorkspace";
+import StorageModal from "./components/StorageModal";
 import MultiIdeWorkspace, {
   loadMultiIdeSlots,
   saveMultiIdeSlots,
@@ -63,10 +64,16 @@ const App: React.FC = () => {
   });
   const [searchOpen, setSearchOpen] = useState(false);
   const [runnerSendOpen, setRunnerSendOpen] = useState(false);
+  const [storageOpen, setStorageOpen] = useState(false);
   const [runnerSendTarget, setRunnerSendTarget] = useState<string | null>(null);
   const [customTools, setCustomTools] = useState<CustomTool[]>([]);
   const [appLanguage, setAppLanguage] = useState<AppLanguage>(() => getStoredLanguage());
   const t = translations[appLanguage];
+
+  useEffect(() => {
+    const unsubscribe = window.lopster?.onStorageOpen?.(() => setStorageOpen(true));
+    return () => unsubscribe?.();
+  }, []);
 
   useEffect(() => {
     applyLanguage(appLanguage);
@@ -515,6 +522,8 @@ const App: React.FC = () => {
         }}
         onOpenRunnerTab={() => setActivePanel("runner")}
       />
+
+      <StorageModal open={storageOpen} onClose={() => setStorageOpen(false)} />
 
       <SettingsModal
         open={settingsOpen}

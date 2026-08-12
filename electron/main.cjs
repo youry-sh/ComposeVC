@@ -24,6 +24,8 @@ const gitService = require("./gitService.cjs");
 const postsStore = require("./postsStore.cjs");
 const booksStore = require("./booksStore.cjs");
 const youtubeStore = require("./youtubeStore.cjs");
+const storageStore = require("./storageStore.cjs");
+const telegramTool = require("./tools/telegram.cjs");
 const customTools = require("./customTools.cjs");
 const mcpManager = require("./mcpManager.cjs");
 const instructions = require("./instructions.cjs");
@@ -1001,6 +1003,11 @@ function installPackagedWindowHardening(win) {
       } catch {
         /* ignore */
       }
+      return;
+    }
+    if (ctrl && !shift && !alt && code === "KeyT") {
+      event.preventDefault();
+      try { if (!wc.isDestroyed()) wc.send("storage:open", {}); } catch {}
       return;
     }
     // F12, Ctrl+Shift+I/J/C, Ctrl+Shift+U, Ctrl+U (view source)
@@ -3238,6 +3245,55 @@ ipcMain.handle("youtube:update", async (_event, id, patch = {}) => {
 ipcMain.handle("youtube:delete", async (_event, id) => {
   try { return { ok: await youtubeStore.remove(app.getPath("userData"), String(id || "")) }; } catch (error) { return { ok: false, error: String(error?.message || error) }; }
 });
+
+// ── STORAGE: Telegram Saved Messages cloud drive ───────────────────────────
+ipcMain.handle("storage:accounts", async () => {
+  try {
+    const context = { userDataPath: app.getPath("userData") };
+    const listed = await telegramTool.execute({ action: "list_accounts" }, context);
+    const accounts = [];
+    for (const account of listed.accounts || []) {
+      try {
+        const me = await telegramTool.execute({ action: "get_me", phone: account.phone }, context);
+        accounts.push({ phone: account.phone, name: me.name || account.name, username: me.username || account.username, isPremium: Boolean(me.isPremium) });
+      } catch { accounts.push({ ...account, isPremium: false, error: "session unavailable" }); }
+    }
+    return { ok: true, accounts };
+  } catch (error) { return { ok: false, error: String(error?.message || error) }; }
+});
+ipcMain.handle("storage:pick", async () => {
+  const result = await dialog.showOpenDialog({ title: "Добавить в Telegram STORAGE", properties: ["openFile", "multiSelections"] });
+  if (result.canceled) return { ok: true, canceled: true, files: [] };
+  const files = [];
+  for (const filePath of result.filePaths) { const stat = await fs.promises.stat(filePath); files.push({ path: filePath, name: path.basename(filePath), size: stat.size }); }
+  return { ok: true, files };
+});
+ipcMain.handle("storage:upload", async (_event, input = {}) => {
+  try {
+    const ud = app.getPath("userData"); const phone = String(input.phone || ""); const filePath = String(input.filePath || input.path || "");
+    if (!phone) throw new Error("Select a Telegram account");
+    const me = await telegramTool.execute({ action: "get_me", phone }, { userDataPath: ud });
+    const isPremium = Boolean(me.isPremium);
+    const stat = await fs.promises.stat(filePath); const max = isPremium ? 4 * 1024 ** 3 : 2 * 1024 ** 3;
+    if (!stat.isFile()) throw new Error("Файл не найден");
+    if (stat.size > max) throw new Error(`Лимит аккаунта: ${isPremium ? "4 ГБ" : "2 ГБ"}`);
+    const queued = await telegramTool.execute({ action: "send_file", phone, chat: "me", path: filePath, premium: isPremium, caption: input.caption }, { userDataPath: ud });
+    if (!queued.ok) throw new Error(queued.error || "Не удалось поставить загрузку в очередь");
+    const item = await storageStore.add(ud, { phone, name: path.basename(filePath), path: filePath, size: stat.size, jobId: queued.jobId, status: "queued", progress: 0 });
+    return { ok: true, item };
+  } catch (error) { return { ok: false, error: String(error?.message || error) }; }
+});
+ipcMain.handle("storage:list", async () => {
+  const ud = app.getPath("userData"); const items = storageStore.read(ud);
+  for (const item of items.filter((entry) => entry.jobId && ["queued", "uploading"].includes(entry.status))) {
+    try {
+      const status = await telegramTool.execute({ action: "upload_status", jobId: item.jobId }, { userDataPath: ud });
+      await storageStore.update(ud, item.id, { status: status.status, progress: status.progress ?? (status.status === "completed" ? 1 : item.progress), uploaded: status.uploaded || 0, error: status.error || null, resultId: status.resultId || null });
+    } catch {}
+  }
+  return { ok: true, items: storageStore.read(ud) };
+});
+ipcMain.handle("storage:deleteHistory", async (_event, id) => ({ ok: await storageStore.remove(app.getPath("userData"), String(id || "")) }));
 
 ipcMain.handle("mcp:list", async () => mcpManager.listServers(app.getPath("userData")));
 ipcMain.handle("mcp:add", async (_event, input = {}) => {
