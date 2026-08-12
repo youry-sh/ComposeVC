@@ -119,6 +119,33 @@ function assertNameAvailable(tools, name, excludeId) {
   if (clash) throw new Error(`Custom tool name already exists: ${name}`);
 }
 
+function dependencyNames(raw, ownName) {
+  return [...new Set((Array.isArray(raw) ? raw : []).map(normalizeToolName).filter((name) => name && name !== ownName))];
+}
+
+function assertDependencyGraph(tools, toolName, rawDependencies, previousName = toolName) {
+  const dependencies = dependencyNames(rawDependencies, toolName);
+  const known = new Set(tools.map((tool) => tool.name));
+  for (const name of dependencies) {
+    if (!known.has(name) && name !== previousName) throw new Error(`Connected custom tool not found: ${name}`);
+  }
+  const graph = new Map(tools.map((tool) => [tool.name, dependencyNames(tool.dependencies, tool.name)]));
+  if (previousName !== toolName) graph.delete(previousName);
+  graph.set(toolName, dependencies);
+  const visiting = new Set();
+  const visited = new Set();
+  const walk = (name, trail) => {
+    if (visiting.has(name)) throw new Error(`Custom tool connection cycle blocked: ${[...trail, name].join(" -> ")}`);
+    if (visited.has(name)) return;
+    visiting.add(name);
+    for (const next of graph.get(name) || []) walk(next, [...trail, name]);
+    visiting.delete(name);
+    visited.add(name);
+  };
+  for (const name of graph.keys()) walk(name, []);
+  return dependencies;
+}
+
 function wantsFolderTool(input = {}) {
   return true;
 }
@@ -128,6 +155,7 @@ async function addCustomTool(userDataPath, input = {}) {
   const name = normalizeToolName(input.name);
   if (!name) throw new Error("Tool name is required");
   assertNameAvailable(tools, name, null);
+  const dependencies = assertDependencyGraph(tools, name, input.dependencies || []);
 
   const bodyIn =
     input.body != null && typeof input.body === "object"
@@ -159,7 +187,7 @@ async function addCustomTool(userDataPath, input = {}) {
     inputSchema: input.inputSchema || input.schema,
     enabled: input.enabled,
     tags: Array.isArray(input.tags) ? input.tags : ["folder"],
-    dependencies: input.dependencies,
+    dependencies,
     timeout_ms: input.timeout_ms || input.timeoutMs || bodyIn.timeout_ms,
     files: input.files || bodyIn.files,
   });
@@ -177,10 +205,29 @@ async function updateCustomTool(userDataPath, toolId, patch = {}) {
     tools.find((t) => t.name === normalizeToolName(toolId));
   if (!current) throw new Error(`Custom tool not found: ${toolId}`);
 
-  return folderTools.updateFolderManifest(userDataPath, current.name, {
+  const nextName = patch.name != null ? normalizeToolName(patch.name) : current.name;
+  assertNameAvailable(tools, nextName, current.id);
+  const dependencies = assertDependencyGraph(
+    tools,
+    nextName,
+    patch.dependencies != null ? patch.dependencies : current.dependencies || [],
+    current.name
+  );
+
+  const updated = await folderTools.updateFolderManifest(userDataPath, current.name, {
     ...patch,
     name: patch.name,
+    dependencies,
   });
+  if (nextName !== current.name) {
+    for (const tool of tools) {
+      if (tool.id === current.id || !Array.isArray(tool.dependencies) || !tool.dependencies.includes(current.name)) continue;
+      await folderTools.updateFolderManifest(userDataPath, tool.name, {
+        dependencies: tool.dependencies.map((name) => name === current.name ? nextName : name),
+      });
+    }
+  }
+  return updated;
 }
 
 async function removeCustomTool(userDataPath, toolId) {
@@ -191,6 +238,14 @@ async function removeCustomTool(userDataPath, toolId) {
   if (!found) return { deleted: false };
 
   const result = await folderTools.removeFolderTool(userDataPath, found.name);
+  if (result.deleted) {
+    for (const tool of tools) {
+      if (tool.id === found.id || !Array.isArray(tool.dependencies) || !tool.dependencies.includes(found.name)) continue;
+      await folderTools.updateFolderManifest(userDataPath, tool.name, {
+        dependencies: tool.dependencies.filter((name) => name !== found.name),
+      });
+    }
+  }
   return { deleted: result.deleted, tool: found, path: result.path || found.path };
 }
 
