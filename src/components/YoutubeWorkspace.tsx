@@ -42,7 +42,7 @@ const YoutubeWorkspace: React.FC = () => {
           </article>)}
         </div>}
       </ChatMonoScroll>
-      {playing && <div className="youtube-player-scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) setPlaying(null); }}><div className="youtube-player"><header><div><Youtube /><span>{playing.title}</span></div><button onClick={() => setPlaying(null)}><X /></button></header><iframe src={`https://www.youtube.com/embed/${playing.videoId}?autoplay=1&rel=0`} title={playing.title} allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen /></div></div>}
+      {playing && <div className="youtube-player-scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) setPlaying(null); }}><div className="youtube-player"><header><div><Youtube /><span>{playing.title}</span></div><span className="youtube-player-actions"><button onClick={() => void window.lopster?.openExternal?.(playing.url)}>ОТКРЫТЬ НА YOUTUBE</button><button onClick={() => setPlaying(null)}><X /></button></span></header><iframe src={`https://www.youtube.com/embed/${playing.videoId}?autoplay=1&rel=0&playsinline=1&widget_referrer=https%3A%2F%2Fwww.youtube.com%2F`} referrerPolicy="origin" title={playing.title} allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen /></div></div>}
     </div>
   );
 };

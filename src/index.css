@@ -9156,6 +9156,8 @@
 .youtube-player header > div { min-width: 0; display: flex; align-items: center; gap: 7px; font: 9px/1 var(--terminal-font); color: var(--ink-800); }
 .youtube-player header > div svg { width: 13px; }
 .youtube-player header span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.youtube-player header > .youtube-player-actions { flex: none; display: flex; align-items: center; gap: 3px; }
+.youtube-player-actions button:first-child { width: auto; padding: 0 9px; font: 8px/1 var(--terminal-font); color: var(--ink-600); }
 .youtube-player button { width: 27px; height: 27px; padding: 0; border-color: transparent; background: transparent; }
 .youtube-player button svg { width: 13px; }
 .youtube-player iframe { width: 100%; aspect-ratio: 16/9; display: block; border: 0; background: #000; }

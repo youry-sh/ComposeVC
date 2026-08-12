@@ -3852,6 +3852,22 @@ app.whenReady().then(async () => {
   app.commandLine.appendSwitch("disable-gpu-shader-disk-cache");
   app.commandLine.appendSwitch("disk-cache-dir", path.join(app.getPath("userData"), "cache"));
 
+  // YouTube rejects embeds loaded from Electron's file:// renderer with error
+  // 153 when the navigation has no HTTP Referer. Scope the compatibility header
+  // strictly to YouTube player requests; no other application traffic changes.
+  session.defaultSession.webRequest.onBeforeSendHeaders(
+    { urls: ["https://www.youtube.com/embed/*", "https://www.youtube-nocookie.com/embed/*"] },
+    (details, callback) => {
+      callback({
+        requestHeaders: {
+          ...details.requestHeaders,
+          Referer: "https://www.youtube.com/",
+          Origin: "https://www.youtube.com",
+        },
+      });
+    }
+  );
+
   // Cumulative runtime: load the stored base, then checkpoint every minute so
   // a hard kill loses at most ~1 minute of the current session.
   try {
