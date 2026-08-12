@@ -190,8 +190,14 @@ function listAvailableProviderModules() {
 function taggedModelId(providerId, modelId) {
   const p = getProvider(providerId);
   const tag = (p?.modelTag || p?.alias || providerId || "model").toLowerCase();
-  // Strip only known provider tags — keep org/model ids (deepseek/deepseek-v4-flash-free)
+  // QAuth/Cline model ids contain meaningful vendor prefixes (openai/, anthropic/).
+  // Strip only an existing QAuth route tag; preserve the upstream id verbatim.
   let bare = String(modelId || "").trim();
+  if (providerId === "qauth" || p?.id === "qauth") {
+    while (/^(?:qauth|cline)\//i.test(bare)) bare = bare.slice(bare.indexOf("/") + 1);
+    return `${tag}/${bare}`;
+  }
+  // Strip only known provider tags — keep org/model ids (deepseek/deepseek-v4-flash-free)
   while (bare.includes("/")) {
     const idx = bare.indexOf("/");
     const prefix = bare.slice(0, idx).toLowerCase();
