@@ -59,6 +59,23 @@ const BooksWorkspace: React.FC = () => {
     setOpened({ ...opened, lastChapter: index, progress });
     void window.lopster?.booksUpdate?.(opened.id, { lastChapter: index, progress });
   };
+  useEffect(() => {
+    if (!opened) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) return;
+      const target = event.target as HTMLElement | null;
+      if (target?.matches("input, textarea, select, [contenteditable='true']")) return;
+      if (event.key === "ArrowLeft" && chapter > 0) {
+        event.preventDefault();
+        setPage(chapter - 1);
+      } else if (event.key === "ArrowRight" && chapter + 1 < opened.chapters.length) {
+        event.preventDefault();
+        setPage(chapter + 1);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [opened, chapter]);
   const importBooks = async () => {
     setImporting(true);
     try { const res = await window.lopster?.booksImport?.(); if (res?.ok && res.books?.[0]) await openBook(res.books[0].id); }
@@ -115,7 +132,7 @@ const BooksWorkspace: React.FC = () => {
             </ChatMonoScroll>
             <footer className="books-page-nav">
               <button disabled={chapter === 0} onClick={() => setPage(chapter - 1)}><ChevronLeft /> НАЗАД</button>
-              <div><i style={{ width: `${Math.round(opened.progress * 100)}%` }} /><span>{Math.round(opened.progress * 100)}%</span></div>
+              <div><i style={{ width: `${Math.round(opened.progress * 100)}%` }} /><span>← → · {Math.round(opened.progress * 100)}%</span></div>
               <button disabled={chapter + 1 >= opened.chapters.length} onClick={() => setPage(chapter + 1)}>ДАЛЬШЕ <ChevronRight /></button>
             </footer>
           </main>
