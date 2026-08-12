@@ -103,8 +103,7 @@ module.exports = {
     "After creating a tool ALWAYS smoke-test it (action=run) before reusing it in the flow.\n" +
     "DONE means a complete implementation: no TODOs, placeholders, demo output, fake success, missing requested branches, or handoff for the user to finish. Include all helpers, validate inputs, handle useful errors, and test realistic success and failure cases; repair and rerun until correct.\n\n" +
     "COMPOSEVC IS READ-ONLY AND CLOSED during custom-tool work. Never inspect or modify its source, electron/, src/, registry, preload, IPC, context, or package files. " +
-    "FORBIDDEN: putting custom tools in the project tree, electron/tools/*.cjs, or registry.cjs " +
-    "unless user explicitly asks for a built-in runtime change. " +
+    "FORBIDDEN: putting custom tools in the project tree, electron/tools/*.cjs, registry.cjs, or anywhere in ComposeVC. There is no exception during a custom-tool task. " +
     "Do NOT grep/read the open project to locate custom-tool storage — use action=path (no name → toolsRoot) " +
     "or action=list. Project scripts are optional reference only; the tool must live under userData/custom-tools.\n\n" +
     "SEARCH: use a short capability phrase, including the object and action (for example `download telegram video`). " +
