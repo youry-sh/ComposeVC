@@ -78,7 +78,7 @@ const YoutubeWorkspace: React.FC = () => {
           </article>)}
         </div>}
       </ChatMonoScroll>
-      {playing && <div className="youtube-player-scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) setPlaying(null); }}><div className="youtube-player"><header><div><Youtube /><span>{playing.title}</span></div><button onClick={() => setPlaying(null)}><X /></button></header>{React.createElement("webview", { ref: preparePlayer, className: "youtube-webview", src: `${playing.url}&autoplay=1`, partition: "persist:composevc-youtube", webpreferences: "contextIsolation=yes,sandbox=yes", title: playing.title })}</div></div>}
+      {playing && <div className="youtube-player-scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) setPlaying(null); }}><div className="youtube-player"><button className="youtube-player-close" onClick={() => setPlaying(null)} title="Закрыть"><X /></button>{React.createElement("webview", { ref: preparePlayer, className: "youtube-webview", src: `${playing.url}&autoplay=1`, partition: "persist:composevc-youtube", webpreferences: "contextIsolation=yes,sandbox=yes", title: playing.title })}</div></div>}
     </div>
   );
 };
