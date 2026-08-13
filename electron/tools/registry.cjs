@@ -19,7 +19,6 @@ const waitSubagents = require("./waitSubagents.cjs");
 const restoreBackup = require("./restoreBackup.cjs");
 const customTool = require("./customTool.cjs");
 const httpTool = require("./httpTool.cjs");const proxyManager = require("./proxyManager.cjs");const telegram = require("./telegram.cjs");
-const shodanTool = require("./shodanTool.cjs");
 const mcpManagerTool = require("./mcpManagerTool.cjs");
 const gitTool = require("./gitTool.cjs");
 const runnerTool = require("./runnerTool.cjs");
@@ -44,11 +43,9 @@ const TOOLS = [
   waitSubagents,
   restoreBackup,
 	  customTool,
-		  proxyManager,
+			  proxyManager,
 				telegram,
-        shodanTool,
-        mcpManagerTool,
-        gitTool,
+        mcpManagerTool,        gitTool,
         runnerTool,
 				];/** Common aliases the model may emit */const TOOL_ALIASES = {  timer: "work_timer",  worktimer: "work_timer",
   minimum_work_timer: "work_timer",
