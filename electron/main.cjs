@@ -4,7 +4,6 @@ const { app, BrowserWindow, clipboard, dialog, ipcMain, shell, nativeImage, sess
 app.disableHardwareAcceleration();
 app.commandLine.appendSwitch("disable-gpu");
 const { spawn } = require("child_process");
-const { Worker } = require("worker_threads");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
@@ -21,9 +20,6 @@ const { compactMessages, isRealUserMessage } = require("./compact.cjs");
 const { contentToText: contentPartsToText } = require("./adapters/contentParts.cjs");
 const memory = require("./memory.cjs");
 const gitService = require("./gitService.cjs");
-const postsStore = require("./postsStore.cjs");
-const booksStore = require("./booksStore.cjs");
-const youtubeStore = require("./youtubeStore.cjs");
 const storageStore = require("./storageStore.cjs");
 const telegramTool = require("./tools/telegram.cjs");
 const customTools = require("./customTools.cjs");
