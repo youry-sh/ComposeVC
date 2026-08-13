@@ -1,0 +1,11 @@
+{
+  "tasks": [
+    {
+      "id": "task-1786647289457-b7a2e0ae6aa99",
+      "text": "**W05** Честно убрать «browser/anti tooling» из runner-промпта **или** сделать тулу `browser`. Сейчас ложь. **S / P0**",
+      "completed": false,
+      "createdAt": 1786647289457,
+      "updatedAt": 1786647289457
+    }
+  ]
+}
