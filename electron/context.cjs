@@ -205,6 +205,12 @@ async function buildSystemPrompt({ rootPath, projectName, userDataPath }) {
       "test blind spots, and improvements that prevent future bugs. Prioritize work by impact and evidence; do not manufacture speculative work.\n" +
       "- Do not waste time with empty polling or sleep loops; perform useful task-related work between status checks. " +
       "The human Stop control may still abort the run.\n\n" +
+      "RUNNER TAB (runner — background autonomous jobs):\n" +
+      "- Use the runner tool to create, search, update, enable/disable, run, stop, and delete jobs from the Runner tab. " +
+      "Do not reinvent this with bash loops, sleep, or custom_tool.\n" +
+      "- A runner has a name, standing prompt/task, model, and either an interval timer (minutes) or manual-only trigger (triggerType=off).\n" +
+      "- Create: action=create name=… prompt=… intervalMinutes=30 (or interval='1h'). Omit modelId to use the current chat model. action=models lists ids.\n" +
+      "- Lookup by id or name. Search before update/delete when the user is vague. action=reports / get_report for run history.\n\n" +
       "SIGNUP / PROFILE FORMS — AUTO-GENERATE (mandatory):\n" +
       "If the human did NOT already give real personal data for the task, you MUST invent and fill it yourself mid-work. " +
       "Do NOT ask_user / ask_otp for: first/last name, full name, email, phone, username, password, date of birth, " +

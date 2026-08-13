@@ -788,6 +788,8 @@ async function runAgentLoopInner({
 
   const fullToolContext = {
     ...toolContext,
+    modelId: model?.id || toolContext?.modelId || null,
+    modelName: model?.name || toolContext?.modelName || null,
     workTimer,
     isSubagent: Boolean(isSubagent),
     // Lets the think tool enforce stricter cycle content while the mode is locked on.

@@ -22,6 +22,7 @@ const httpTool = require("./httpTool.cjs");const proxyManager = require("./proxy
 const shodanTool = require("./shodanTool.cjs");
 const mcpManagerTool = require("./mcpManagerTool.cjs");
 const gitTool = require("./gitTool.cjs");
+const runnerTool = require("./runnerTool.cjs");
 
 const TOOLS = [
   readFile,
@@ -48,6 +49,7 @@ const TOOLS = [
         shodanTool,
         mcpManagerTool,
         gitTool,
+        runnerTool,
 				];/** Common aliases the model may emit */const TOOL_ALIASES = {  timer: "work_timer",  worktimer: "work_timer",
   minimum_work_timer: "work_timer",
   glob: "grep",
@@ -146,6 +148,14 @@ const TOOLS = [
 	  tdata: "telegram",
 	  tg_login: "telegram",
   send_tg: "telegram",
+  // Runner tab (background autonomous jobs)
+  runners: "runner",
+  runner_tool: "runner",
+  manage_runner: "runner",
+  manage_runners: "runner",
+  runner_manager: "runner",
+  background_runner: "runner",
+  create_runner: "runner",
 };
 // Longest-name-first, built once — used by fuzzy tool-name recovery.
 const TOOLS_BY_NAME_LENGTH = TOOLS.slice().sort((a, b) => b.name.length - a.name.length);

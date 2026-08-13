@@ -281,7 +281,12 @@ module.exports = {
   },
 
   async execute(input = {}, context = {}) {
-    const action = String(input.action || input.command || "").trim().toLowerCase();
+    const rawName = String(context.originalToolName || context.rawToolName || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, "");
+    let action = String(input.action || input.command || "").trim().toLowerCase();
+    if (!action && rawName === "create_runner") action = "create";
+    if (!action && (rawName === "runners" || rawName === "manage_runners")) action = "list";
     if (!action) throw new Error(`action required: ${ACTIONS.join(", ")}`);
 
     const limit = Math.max(1, Math.min(200, Number(input.limit) || 50));

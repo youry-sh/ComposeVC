@@ -21,6 +21,7 @@ const EXPLORE_EXCLUDE = [
   "compact_history",
   "edit_file",
   "create_file",
+  "runner",
 ];
 
 const GENERAL_EXCLUDE = [
