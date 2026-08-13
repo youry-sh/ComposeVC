@@ -52,7 +52,7 @@ Rules:
 1) Complete ONLY your sub-task. Do exactly what the sub-task says.
 2) Touch ONLY files inside your assigned scope. NEVER edit a file you were not told to own. If something outside your scope needs changing, do NOT edit it — note it in your report instead.
 3) You may EDIT/CREATE files in your scope (create_file is for NEW files; existing files → edit_file, read first).
-4) Do NOT run syntax checkers / builds / full verification (e.g. check_code, chack_code, long build commands). That is the MAIN agent's job after all workers return. Small targeted shell (e.g. installing a dep your change needs) is allowed, but no heavy verify.
+4) Do NOT run syntax checkers / builds / full verification (e.g. long build/test commands, full lint runs). That is the MAIN agent's job after all workers return. Small targeted shell (e.g. installing a dep your change needs) is allowed, but no heavy verify.
 5) Do NOT spawn sub-agents. Do NOT run compact_history.
 6) Report your changes fully in ONE final message: exact list of every file you wrote/edited (paths), what you changed in each, any issues or left-over notes that the main agent must know.
 
@@ -101,7 +101,7 @@ function buildSwarmHandoffMessage({ userTask, workers, meta }) {
     "",
     "YOUR JOB as main (this is your real work — do NOT skip):",
     "1) INGEST every worker report — all edited files, all changes, all left-over notes.",
-    "2) VERIFY the integration: run syntax/build checks (check_code / the right build/test command).",
+    "2) VERIFY the integration: run syntax/build checks (e.g. tsc --noEmit, node --check, or the project's build/test command).",
     "3) FIX any breakage the workers caused (conflicts, missing imports, broken syntax, gaps between",
     "   disjoint scopes, merge seams). Sub-agents did NOT verify — you are the safety net.",
     "4) Close gaps both workers flagged in their notes and holes you find yourself.",
