@@ -3,7 +3,10 @@ ComposeVC - run from source on any Windows PC
 
 STEP 1 - one time only:
   Right-click  build-sc\install.bat  and it will self-elevate to admin.
-  It installs Node.js + Go, then all project libraries (web search included).
+  It installs aria2 (fast multi-connection downloader), Node.js + Go,
+  then all project libraries (web search included).
+  Large files are pulled with aria2 (16 connections) or curl.exe —
+  never PowerShell Invoke-WebRequest.
   Needs an internet connection. Takes a few minutes.
 
 STEP 2 - every time you want to use the app:
