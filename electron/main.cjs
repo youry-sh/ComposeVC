@@ -2539,12 +2539,6 @@ async function executeChatRequest(event, request, overrides = {}) {
           onMcpChanged: (payload) => {
             try { event.sender.send("mcp:changed", payload || { type: "changed" }); } catch {}
           },
-          onPostsChanged: (payload) => {
-            try { broadcastPostsChanged(payload || { type: "changed" }); } catch {}
-          },
-          onBooksChanged: (payload) => {
-            try { broadcastBooksChanged(payload || { type: "changed" }); } catch {}
-          },
         },
         signal: abortController.signal,
         tokenCountingMode: config.tokenCountingMode || "provider",
@@ -2872,9 +2866,6 @@ ipcMain.handle("agent:notifyComplete", (event, payload = {}) => {
         projectName: request.projectName || null,
         userDataPath: app.getPath("userData"),
         invalidateContext: () => invalidateContextCache(rootPath),
-        onBooksChanged: (payload) => {
-          try { broadcastBooksChanged(payload || { type: "changed" }); } catch {}
-        },
       },
       signal: abortController.signal,
       tokenCountingMode: config.tokenCountingMode || "provider",

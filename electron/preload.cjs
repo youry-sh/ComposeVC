@@ -23,35 +23,6 @@ contextBridge.exposeInMainWorld("lopster", {
   gitAutoCommit: (rootPath, options) =>
     ipcRenderer.invoke("git:autocommit", rootPath || null, options || {}),
   gitAutoPush: (rootPath) => ipcRenderer.invoke("git:autopush", rootPath || null),
-  // Posts (POST tab)
-  postsList: (options) => ipcRenderer.invoke("posts:list", options || {}),
-  postsGet: (id) => ipcRenderer.invoke("posts:get", id),
-  postsCreate: (input) => ipcRenderer.invoke("posts:create", input || {}),
-  postsUpdate: (id, patch) => ipcRenderer.invoke("posts:update", id, patch || {}),
-  postsDelete: (id) => ipcRenderer.invoke("posts:delete", id),
-  postsMove: (id, folderId) => ipcRenderer.invoke("posts:move", id, folderId ?? null),
-  postsFolderCreate: (input) => ipcRenderer.invoke("posts:folderCreate", input || {}),
-  postsFolderRename: (id, name) => ipcRenderer.invoke("posts:folderRename", id, name),
-  postsFolderDelete: (id) => ipcRenderer.invoke("posts:folderDelete", id),
-  onPostsChanged: (callback) => {
-    const listener = (_event, payload) => callback(payload);
-    ipcRenderer.on("posts:changed", listener);
-    return () => ipcRenderer.removeListener("posts:changed", listener);
-  },
-  booksList: (options) => ipcRenderer.invoke("books:list", options || {}),
-  booksGet: (id) => ipcRenderer.invoke("books:get", id),
-  booksImport: () => ipcRenderer.invoke("books:import"),
-  booksUpdate: (id, patch) => ipcRenderer.invoke("books:update", id, patch || {}),
-  booksDelete: (id) => ipcRenderer.invoke("books:delete", id),
-  onBooksChanged: (callback) => {
-    const listener = (_event, payload) => callback(payload);
-    ipcRenderer.on("books:changed", listener);
-    return () => ipcRenderer.removeListener("books:changed", listener);
-  },
-  youtubeList: () => ipcRenderer.invoke("youtube:list"),
-  youtubeAdd: (input) => ipcRenderer.invoke("youtube:add", input || {}),
-  youtubeUpdate: (id, patch) => ipcRenderer.invoke("youtube:update", id, patch || {}),
-  youtubeDelete: (id) => ipcRenderer.invoke("youtube:delete", id),
   storageAccounts: () => ipcRenderer.invoke("storage:accounts"),
   storagePick: () => ipcRenderer.invoke("storage:pick"),
   storageUpload: (input) => ipcRenderer.invoke("storage:upload", input || {}),

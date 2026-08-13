@@ -50,7 +50,6 @@
     "katex": "^0.17.0",
     "lucide-react": "^0.378.0",
     "node-pty": "^1.1.0",
-    "pdf-parse": "^2.4.5",
     "png-to-ico": "^3.0.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
