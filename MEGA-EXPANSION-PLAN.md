@@ -1,6 +1,8 @@
 # ComposeVC — Mega Expansion Backlog
 
 Дата съёмки: 2026-08-13  
+**Обновление 2026-08-13:** вкладки Todo / Post / Books / YouTube удалены из продукта целиком (UI, IPC, сторы, тулы `posts`/`books`). Пункты про них в этом файле больше не актуальны.
+
 Файл для выбора, не для слепой реализации. Каждый пункт — отдельная фича с ID. Бери по ID, не пачками «всё сразу».
 
 ---
@@ -34,16 +36,12 @@
 | Runner | топбар | Интервальные джобы, репорты, ретраи. Триггер только `interval` / `off` |
 | Terminal | топбар | Ровно 2 pty (`1` и `2`), copy/paste, без вкладок/сессий |
 | Custom Tools | топбар | Folder tools, import/export, агент пишет код тулы |
-| Todo | Library | Задачи + привычки 5×365 квадратов. **Только localStorage, агент не видит** |
-| Post | Library | Markdown посты + папки, агент-тула `posts` есть |
-| Books | Library | Импорт/чтение, агент-тула `books` есть |
-| YouTube | Library | Плейлист + webview. **Агент-тулы нет** |
 
 Модалки, не вкладки: Settings, Providers, Search, Storage, MCP, RunnerSend.
 
 ### Встроенные агент-тулы (~28, registry)
 
-`read_file` `edit_file` `create_file` `list_dir` `grep` `bash` `wsl` `compact_history` `work_timer` `think` `web_search` `web_fetch` `http` `ask_user` `ask_otp` `cf_mail` `spawn_subagent` `spawn_subagent_batch` `wait_subagents` `restore_backup` `custom_tool` `proxy_manager` `telegram` `shodan` `mcp_manager` `git` `posts` `books`
+`read_file` `edit_file` `create_file` `list_dir` `grep` `bash` `wsl` `compact_history` `work_timer` `think` `web_search` `web_fetch` `http` `ask_user` `ask_otp` `cf_mail` `spawn_subagent` `spawn_subagent_batch` `wait_subagents` `restore_backup` `custom_tool` `proxy_manager` `telegram` `shodan` `mcp_manager` `git`
 
 ### Лежит в репо, но не в продукте
 
@@ -57,8 +55,6 @@
 | Soviet-7 | `electron/soviet7/` | 7 советников, UI только бар в чате |
 | `codeImpactEngine.cjs` | electron | Не выведен как тула/вкладка |
 | `sizeworkout.cjs` | electron | IPC есть, вкладки нет |
-| YouTube | UI есть | Нет `youtube` tool |
-| Todo | UI есть | Нет `todo` tool, нет main-process store |
 
 ### Провайдеры прокси (уже много)
 
@@ -75,8 +71,6 @@ openai, grok, antigravity, gemini-cli, gemini, claude-code, anthropic, kiro, cur
 Не новые вкладки. Быстрые победы.
 
 - [ ] **W01** Зарегистрировать `check_code` (починить имя `chack_code` → `check_code`) и дать агенту гонять lint/test/audit. **S / P0**
-- [ ] **W02** Тул `todo` + перенос Todo из localStorage в `userData`. Иначе вкладка мёртвая для агента. **M / P0**
-- [ ] **W03** Тул `youtube` (list/add/update/delete/search/transcript). UI уже есть. **S / P0**
 - [ ] **W04** Вкладка Shodan вместо пустого `ShodanWorkspace.tsx`, поверх уже сохранённых JSON в `userData/shodan-results/`. **M / P0**
 - [ ] **W05** Честно убрать «browser/anti tooling» из runner-промпта **или** сделать тулу `browser`. Сейчас ложь. **S / P0**
 - [ ] **W06** Вынести MCP из модалки в нормальную вкладку (IPC уже полный). **M / P1**
@@ -89,13 +83,13 @@ openai, grok, antigravity, gemini-cli, gemini, claude-code, anthropic, kiro, cur
 
 ## 1. Новые вкладки — 28 штук
 
-Сейчас в топбаре 5 основных + 4 в Library. Ниже — кандидаты. Не обязательно все в топбар: часть в Library, часть в overflow «More».
+Сейчас в топбаре 5 основных вкладок. Ниже — кандидаты. Не обязательно все в топбар: часть в overflow «More».
 
 ### Как встраивать, чтобы топбар не умер
 
 - Топбар: MultiIDE, Proxy, Browser, Editor, Terminal, Runner (ядро).
 - Группа **Agent**: Swarm, Soviet, MCP, Custom Tools.
-- Группа **Library** (уже есть): Todo, Post, Books, YouTube + Mail, Telegram, Memory, Docs.
+- Группа **Library**: Mail, Telegram, Memory, Docs.
 - Группа **Ops**: Git, Problems, Tests, Docker, Logs, Usage, Network.
 - Overflow / command palette (`Ctrl+P` по вкладкам) — обязательно, иначе 28 кнопок = каша.
 

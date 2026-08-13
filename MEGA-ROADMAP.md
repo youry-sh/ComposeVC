@@ -2,6 +2,8 @@
 
 > **Дата:** 2026-08-13 · **Статус:** черновик для выбора · **Автор:** агент-исследование (полный аудит кодовой базы)
 >
+> **Обновление 2026-08-13:** вкладки Todo / Post / Books / YouTube удалены из продукта (UI + IPC + сторы + тулы `posts`/`books`).
+>
 > **Квоты плана:** 🔧 64 новых тула (T01–T64) · 📑 26 новых вкладок (W01–W26) · ⚙️ 222 новых функции (F001–F222)
 >
 > **Как пользоваться:** каждая позиция имеет ID и приоритет. Отмечай галочками то, что берёшь, — потом кидай список ID в чат, и я реализую по контракту из раздела 7.
@@ -17,14 +19,14 @@
 
 | Слой | Содержимое |
 |---|---|
-| **Main (Electron)** | `main.cjs` 4015 строк, **117 IPC-каналов** (окно, git, proxy, runner, telegram, chat, memory, context, posts, books, youtube, storage, mcp, customTools, terminal, shodan-нет, search, media) |
-| **Renderer (React/TS)** | 10 вкладок: `multiide, proxy, settings, customtools, runner, terminal, todo, post, books, youtube` + 6 модалок (Providers, Settings, SearchOverlay, RunnerSend, Storage, Mcp) + `ProxyPopup` (usage/settings) + ~40 компонентов |
-| **Агентские тулы** | 28 встроенных в `electron/tools/registry.cjs` (read_file, edit_file, bash, wsl, think, web_search/fetch, http, ask_user/otp, cf_mail, subagents, restore_backup, custom_tool, proxy_manager, telegram, shodan, mcp_manager, git, posts, books, …) + **5 кастомных OSINT-тулов** (osint_email/phone/telegram/username/breach) |
+| **Main (Electron)** | `main.cjs` ~4000 строк, IPC (окно, git, proxy, runner, telegram, chat, memory, context, storage, mcp, customTools, terminal, search, media) |
+| **Renderer (React/TS)** | 6 вкладок: `multiide, proxy, settings, customtools, runner, terminal` + 6 модалок (Providers, Settings, SearchOverlay, RunnerSend, Storage, Mcp) + `ProxyPopup` (usage/settings) |
+| **Агентские тулы** | встроенные в `electron/tools/registry.cjs` (read_file, edit_file, bash, wsl, think, web_search/fetch, http, ask_user/otp, cf_mail, subagents, restore_backup, custom_tool, proxy_manager, telegram, shodan, mcp_manager, git, …) |
 | **Прокси-система** | ~27 провайдеров (openai, grok, antigravity, gemini-cli, claude-code, kiro, github-copilot, windsurf, cursor, codebuddy(-cn), qoder, qauth, opencode(-go), openrouter, deepseek, zai, a6api, j3gb, orcarouter, google-ai-studio, anthropic, …), 17 OAuth-модулей, конвертеры форматов (convert/), guard/ (activity, scan, rules, blocklist), routing/, SSE, ngrok-туннель, balanceProbe, usageStats |
 | **Агенты** | soviet7 (совет 7 адвайзеров), swarm (план→параллельные воркеры→верификация), subagent (+batch), workerPool, agentLoop, codeImpactEngine, thinking-max, compact |
 | **Адаптеры** | openai / anthropic / gemini + contentParts (мультимодальность), thinking, починка сломанного JSON тулов |
 | **anti/** (Go) | Анти-детект браузер: Chromium-движок с **20 C++ патчами фингерпринта** (000–019), fp-inject, captcha-helper, персоны (seed), прокси-бридж, гео, пинг, профили, CDP, Windows/Linux/macOS |
-| **Контент** | Книги (FB2/FB3/EPUB/PDF/TXT → worker-конвертация), посты (markdown+папки+граф), YouTube-вкладка (webview), Todo, заметки-нет |
+| **Контент** | Контент-вкладки Todo / Post / Books / YouTube удалены |
 | **Telegram** | teleproto-сессии, бот на слот чата, Saved Messages как облачное хранилище (storage:), экспорт, форвард, топики |
 | **Инфра** | MCP-менеджер, терминалы (xterm+node-pty), .backup (snapshot/diff/restore), git-автокоммит/автопуш, i18n (en/ru/uk), темы, search overlay, mediaSession, sizeworkout |
 
@@ -102,7 +104,7 @@
 | T35 | `context_optimizer` | C | P2 | Умное сжатие контекста: выкинуть стоп-слова, суммаризация старого, приоритеты |
 | T36 | `account_health` | C | P1 | Массовый health-check всех аккаунтов: квоты, баланс, ошибки, сводный отчёт |
 | T37 | `sse_replay` | B | P2 | Реплей сохранённых SSE-стримов провайдера (отладка конвертеров) |
-| T38 | `injection_scan` | B | P2 | Скан промптов/тулов на инъекции и подозрительные паттерны (обёртка над guard/scan) |
+| T38 | `injection_scan` | B | P2 | Скан собственных промптов/тулов на инъекции — отдельный сканер (guard/scan сканирует ОТВЕТЫ провайдеров, а не свои промпты) |
 
 ### Telegram (7)
 
@@ -157,7 +159,7 @@
 | ID | Вкладка | Приоритет | Что это |
 |---|---|---|---|
 | W01 | **Shodan** | P1 | Орфан-компонент `ShodanWorkspace.tsx` наконец подключить: панель `"shodan"` в App.tsx + IPC `shodan:search` + автосохранение в библиотеку |
-| W02 | **OSINT Center** | P1 | Единый дашборд: цель (email/телефон/ник/домен/IP) → все OSINT-тулы одним нажатием, сводка и отчёт (T01–T12, W01) |
+| W02 | **OSINT Center** | P1 | Единый дашборд: цель (email/телефон/ник/домен/IP) → все OSINT-тулы одним нажатием, сводка и отчёт (T01–T12, W01). ⚠️ Проверено: в preload есть CRUD кастомных тулов, но **нет run-моста** — нужен 1 новый канал `customTools:run` (+preload+types) |
 | W03 | **Telegram Center** | P1 | UI управления аккаунтами/диалогами/отправкой (сейчас только тул) |
 | W04 | **Agents** | P2 | Панель soviet7 / swarm / subagents: запуск, прогресс, результаты, параметры |
 | W05 | **Memory** | P2 | Менеджер сессий: список, поиск, просмотр, экспорт, fork, pin |
@@ -169,7 +171,7 @@
 | W11 | **Data Inspector** | P2 | Инспектор JSON-хранилищ (books/posts/memory/config/customTools) — browse/edit/экспорт |
 | W12 | **Metrics** | P2 | Дашборды: система + usage провайдеров + стоимость (графики, per-day) |
 | W13 | **Scheduler** | P2 | Единый планировщик: раннеры (cron), Telegram-отправки, web-мониторинг, OSINT-повторы |
-| W14 | **Anti Browser** | P1 | Управление anti-профилями: создание, запуск, фингерпринт-таблица, прокси (T46–T51) |
+| W14 | **Anti Browser** | P2 | Управление anti-профилями: создание, запуск, фингерпринт-таблица, прокси (T46–T51). ⚠️ Нужен новый модуль трекинга процессов `antiSession.cjs` (упомянут в anti/README, в коде ОТСУТСТВУЕТ) + новый IPC `anti:*` |
 | W15 | **Extensions** | P3 | Менеджер Chrome-расширений для anti (captcha-helper, fp-inject, свои) |
 | W16 | **Proxy Pool** | P1 | Отдельная вкладка пула прокси: импорт, тест (T17), гео-карта, назначение профилям |
 | W17 | **Snippets** | P2 | Сниппеты кода/текста (T30) + быстрые промпты с вставкой в чат |
@@ -320,7 +322,7 @@
 | F107 | Авто-определение моделей аккаунта пробным запросом | P2 |
 | F108 | Рейтинг стабильности аккаунта (rate ошибок, латентность) | P3 |
 | F109 | Дневная квота на аккаунт с авто-переключением на запасной | P2 |
-| F110 | Блокировка подозрительной активности аккаунта (guard-интеграция) | P3 |
+| F110 | Блокировка аккаунта при аномалиях (прокинуть вердикт guard — детектора команд в ответах — в статус аккаунта) | P3 |
 
 ### C6. Telegram (F111–F130)
 
@@ -396,11 +398,11 @@
 
 | ID | Функция | Приоритет |
 |---|---|---|
-| F166 | Cron-расписания для раннеров (W13) | P1 |
+| F166 | Cron-выражения в trigger раннеров (сейчас только interval, мин. 1 мин — нет «по будням в 9:00») | P1 |
 | F167 | Переменные/env при запуске раннера | P1 |
 | F168 | Артефакты раннера (файлы результата в отчёт) | P2 |
-| F169 | Retry-политика раннера | P2 |
-| F170 | Параллельный запуск с ограничением | P2 |
+| F169 | UI-настройка retry для раннера (движок уже поддерживает maxRetries+backoff — нет UI) | P2 |
+| F170 | UI-настройка лимита параллельных прогонов (движок: MAX_CONCURRENT_RUNS=60 + очереди — нет UI) | P2 |
 | F171 | Графики и сводки в отчётах | P2 |
 | F172 | Уведомления о завершении: toast + Telegram | P1 |
 | F173 | Пауза/возобновление раннера | P2 |
@@ -427,7 +429,7 @@
 |---|---|---|
 | F185 | Vault: шифрованные секреты с мастер-паролем (F061 общий) | P2 |
 | F186 | Авто-бэкап конфигов и сессий по расписанию | P2 |
-| F187 | UI-редактор правил guard (rules.json) | P2 |
+| F187 | UI-редактор правил guard (742 правила детектора вредоносных команд в ответах LLM-провайдеров, rules.json) | P2 |
 | F188 | Whitelist доменов для агентских web-тулов | P2 |
 | F189 | Режим «только чтение» для агента | P1 |
 | F190 | Sandbox-режим bash (список разрешённых команд) | P2 |
@@ -494,6 +496,29 @@
 - Anti-глубина: F141–F150, T51.
 - W15, W19–W20; всё остальное P3.
 
+### 🚀 Стартовый пакет (рекомендуемый первый заход — максимум видимой мощи на день работы)
+
+> Полный список в 312 позиций — это библиотека. Этот пакет — 12 позиций, которые дают 80% эффекта за 2–3 недели. Всё в нём проверено на реальные крючки (см. пометки).
+
+| № | ID | Что | Почему первым |
+|---|---|---|---|
+| 1 | F010 | Миграция localStorage → дисковый store | Фундамент: разблокирует многооконность и персистенцию без переписывания потом |
+| 2 | T17 | `web_proxy_check` | Тул на 1 день, нужен везде (пул прокси, anti, OSINT) |
+| 3 | T01+T02 | `osint_domain` + `osint_ip` | Два тула-кита для OSINT-дашборда |
+| 4 | T46 | `anti_profile_mgr` (агентский тул) | Сразу даёт управление anti из чата |
+| 5 | W16 | Proxy Pool | Видимая мощь: импорт, тест, гео, назначение |
+| 6 | W02 | OSINT Center | Главный wow-экран (+1 новый IPC `customTools:run`) |
+| 7 | F021 | Fork сессии | Крючок `copyChatSession` уже есть — зелёный |
+| 8 | F024 | Экспорт сессии в MD/JSON | Крючок `loadSession` уже есть — зелёный |
+| 9 | F043 | Авто-compact по порогу токенов | Крючок `compactChat` уже есть — зелёный |
+| 10 | F032 | Slash-команды (/fix, /explain…) | Мгновенный UX-выигрыш |
+| 11 | F192 | UI для .backup | Доверие: видно историю, diff, откат |
+| 12 | W24 | Command Palette | Быстрый доступ ко всему |
+
+**Правило порядка при пересечениях:** фундамент (F010) → тулы (T*) → вкладки (W*) → функции-надстройки (F*). Если выбраны пересекающиеся позиции — реализую в этом порядке.
+
+**Teardown-правило W14:** вкладка Anti обязана включать «убить все профили» (kill-all) и авто-очистку осиротевших Chrome при выходе — движок запускает detached-процессы (README), без этого риск зомби-процессов.
+
 ---
 
 ## 6. Контракт интеграции (чек-лист для ЛЮБОЙ выбранной фичи)
@@ -516,6 +541,22 @@ store (electron/xxxStore.cjs, версионированная схема, ат�
 - CPU-тяжёлое (конвертация, индексация, OCR) — в worker_threads/отдельный процесс.
 - У каждой вкладки: loading/empty/error/disabled-состояния.
 - Код-импакт: после реализации проверять `code_impact`-карточки и закрывать blocker'ы.
+
+### Definition of Done (шаблон приёмки ЛЮБОЙ позиции — H-D)
+
+Фича считается СДЕЛАННОЙ только когда выполнено всё:
+
+1. **Работает в проде** — `npm run dev:app` / `build:app`, не только в теории.
+2. **Контракт полный** — store → IPC → preload → global.d.ts → UI → (AI-регистрация) — ни одного пропущенного слоя; tsc noEmit зелёный, `node --check` для затронутых .cjs зелёный.
+3. **Персистенция на диске** — никакого нового localStorage; версионированная схема, атомарная запись.
+4. **Состояния** — loading / empty / error / disabled / узкий экран / длинный текст.
+5. **Live-refresh** — broadcast-канал changed, UI подписан, нет мёртвых данных после действий в другом окне.
+6. **Скролл и лэйаут** — ChatMonoScroll, min-height:0, один владелец скролла на ось.
+7. **Тест** — минимальный тест в tests/ (или smoke-прогон с реальными аргументами для тулов).
+8. **Нет регрессий** — `git diff --check`, проверка соседей (код-импакт), без висящих таймеров/подписок.
+9. **Документация** — строка в MEGA-ROADMAP (статус: реализовано) + README при необходимости.
+
+Схема приёмки: LO запускает сам → если пункт 1–8 выполнен, но LO недоволен UX — это баг, не «субъективщина».
 
 ---
 
