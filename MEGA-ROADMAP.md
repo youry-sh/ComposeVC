@@ -17,9 +17,9 @@
 
 | Слой | Содержимое |
 |---|---|
-| **Main (Electron)** | `main.cjs` ~4000 строк, **130+ IPC-каналов** (окно, git, proxy, runner, telegram, chat, memory, context, posts, books, youtube, storage, mcp, customTools, terminal, shodan-нет, search, media) |
+| **Main (Electron)** | `main.cjs` 4015 строк, **117 IPC-каналов** (окно, git, proxy, runner, telegram, chat, memory, context, posts, books, youtube, storage, mcp, customTools, terminal, shodan-нет, search, media) |
 | **Renderer (React/TS)** | 10 вкладок: `multiide, proxy, settings, customtools, runner, terminal, todo, post, books, youtube` + 6 модалок (Providers, Settings, SearchOverlay, RunnerSend, Storage, Mcp) + `ProxyPopup` (usage/settings) + ~40 компонентов |
-| **Агентские тулы** | 27 встроенных в `electron/tools/registry.cjs` (read_file, edit_file, bash, wsl, think, web_search/fetch, http, ask_user/otp, cf_mail, subagents, restore_backup, custom_tool, proxy_manager, telegram, shodan, mcp_manager, git, posts, books, …) + **5 кастомных OSINT-тулов** (osint_email/phone/telegram/username/breach) |
+| **Агентские тулы** | 28 встроенных в `electron/tools/registry.cjs` (read_file, edit_file, bash, wsl, think, web_search/fetch, http, ask_user/otp, cf_mail, subagents, restore_backup, custom_tool, proxy_manager, telegram, shodan, mcp_manager, git, posts, books, …) + **5 кастомных OSINT-тулов** (osint_email/phone/telegram/username/breach) |
 | **Прокси-система** | ~27 провайдеров (openai, grok, antigravity, gemini-cli, claude-code, kiro, github-copilot, windsurf, cursor, codebuddy(-cn), qoder, qauth, opencode(-go), openrouter, deepseek, zai, a6api, j3gb, orcarouter, google-ai-studio, anthropic, …), 17 OAuth-модулей, конвертеры форматов (convert/), guard/ (activity, scan, rules, blocklist), routing/, SSE, ngrok-туннель, balanceProbe, usageStats |
 | **Агенты** | soviet7 (совет 7 адвайзеров), swarm (план→параллельные воркеры→верификация), subagent (+batch), workerPool, agentLoop, codeImpactEngine, thinking-max, compact |
 | **Адаптеры** | openai / anthropic / gemini + contentParts (мультимодальность), thinking, починка сломанного JSON тулов |
