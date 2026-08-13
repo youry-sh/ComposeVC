@@ -32,7 +32,7 @@
 
 ## 1. Найденные долги (исправить в первую очередь — «found, not fixed»)
 
-1. **`ShodanWorkspace.tsx` — орфан.** Компонент существует в `src/components/`, но **нигде не подключён**: в `App.tsx` панель `"shodan"` не зарегистрирована, IPC `shodan:*` нет. Готовый тул `shodan` есть, UI — нет. (→ план: W01)
+1. **`ShodanWorkspace.tsx` — намеренный стаб, не орфан.** Файл из 3 строк: `// Shodan is intentionally available only as the built-in AI tool in electron/tools/shodanTool.cjs. export {};` — то есть **автор сознательно оставил Shodan без UI** («только тул»). Значит W01 — это greenfield (новый IPC `shodan:search` + preload + types + Panel type + весь UI), а не «подключить готовое», и он **конфликтует с явным дизайн-решением** — перед реализацией спросить LO. (Исправлено по результатам адверсального цикла: ранее ошибочно классифицирован как «орфан, почти готов».)
 2. **localStorage в UI-состоянии.** Активная вкладка (`lopster-active-panel`), слоты MultiIDE (`lopster-multiide-slots`), доска Todo — всё в localStorage. По стандарту проекта персистенция должна быть в дисковом store (userData JSON) — мигрировать (→ F010, F012).
 3. **`chat:send:legacy-disabled` всё ещё зарегистрирован** (L2815) — легаси-путь без soviet7/custom tools остался в main. Либо убрать, либо пометить deprecated в UI.
 4. **Guard/rules.json и blocklist.json** — правила существуют, но **нет UI-редактора** (→ F187–F189).
