@@ -7,10 +7,6 @@ import ProxyWorkspace from "./components/ProxyWorkspace";
 import RunnerWorkspace from "./components/RunnerWorkspace";
 import RunnerSendModal from "./components/RunnerSendModal";
 import CustomToolsWorkspace from "./components/CustomToolsWorkspace";
-import TodoWorkspace from "./components/TodoWorkspace";
-import PostWorkspace from "./components/PostWorkspace";
-import BooksWorkspace from "./components/BooksWorkspace";
-import YoutubeWorkspace from "./components/YoutubeWorkspace";
 import TerminalWorkspace from "./components/TerminalWorkspace";
 import StorageModal from "./components/StorageModal";
 import MultiIdeWorkspace, {
@@ -27,7 +23,7 @@ import {
 import { CustomTool, ProjectSearchResult, ProviderConfig } from "./types";
 import { dispatchInsertChatInput, loadMouseSnippets, textForMouseButton } from "./utils/mouseSnippets";
 
-type Panel = "multiide" | "proxy" | "settings" | "customtools" | "runner" | "terminal" | "todo" | "post" | "books" | "youtube";
+type Panel = "multiide" | "proxy" | "settings" | "customtools" | "runner" | "terminal";
 
 const App: React.FC = () => {
   const [rootPath, setRootPath] = useState<string | null>(null);
@@ -46,10 +42,6 @@ const App: React.FC = () => {
       if (saved === "runner") return "runner";
       if (saved === "terminal") return "terminal";
       if (saved === "customtools") return "customtools";
-      if (saved === "todo") return "todo";
-      if (saved === "post") return "post";
-      if (saved === "books") return "books";
-      if (saved === "youtube") return "youtube";
     } catch {
       /* ignore */
     }
@@ -472,24 +464,6 @@ const App: React.FC = () => {
           <div className={activePanel === "terminal" ? "flex-1 min-w-0 min-h-0 flex overflow-hidden" : "hidden"}>
             <TerminalWorkspace />
           </div>
-          {activePanel === "todo" && (
-            <div className="flex-1 min-w-0 min-h-0 flex overflow-hidden">
-              <TodoWorkspace />
-            </div>
-          )}
-          {activePanel === "post" && (
-            <div className="flex-1 min-w-0 min-h-0 flex overflow-hidden">
-              <PostWorkspace />
-            </div>
-          )}
-          {activePanel === "books" && (
-            <div className="flex-1 min-w-0 min-h-0 flex overflow-hidden">
-              <BooksWorkspace />
-            </div>
-          )}
-          {activePanel === "youtube" && (
-            <div className="flex-1 min-w-0 min-h-0 flex overflow-hidden"><YoutubeWorkspace /></div>
-          )}
           {activePanel === "customtools" && (
             <div className="flex-1 min-w-0 min-h-0 flex overflow-hidden">
               <CustomToolsWorkspace

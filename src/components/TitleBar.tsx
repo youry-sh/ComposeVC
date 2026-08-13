@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { BookOpen, CheckSquare, ChevronDown, FileText, LayoutGrid, Minus, Square, X, Youtube } from "lucide-react";
+import { Minus, Square, X } from "lucide-react";
 import {
   IcoMulti,
   IcoProxy,
@@ -18,7 +18,7 @@ import {
   formatUptime,
 } from "./StatusBar";
 
-type Panel = "multiide" | "proxy" | "settings" | "customtools" | "runner" | "terminal" | "todo" | "post" | "books" | "youtube";
+type Panel = "multiide" | "proxy" | "settings" | "customtools" | "runner" | "terminal";
 
 interface TitleBarProps {
   subtitle?: string;
@@ -76,17 +76,6 @@ const TitleBar: React.FC<TitleBarProps> = ({
   const memPeak = useRef(1);
   const tokPeak = useRef(1);
   const ctxPeak = useRef(1);
-  const [libraryMenuOpen, setLibraryMenuOpen] = useState(false);
-  const libraryMenuRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (!libraryMenuOpen) return;
-    const close = (event: PointerEvent) => {
-      if (!libraryMenuRef.current?.contains(event.target as Node)) setLibraryMenuOpen(false);
-    };
-    window.addEventListener("pointerdown", close);
-    return () => window.removeEventListener("pointerdown", close);
-  }, [libraryMenuOpen]);
 
   // live clock + date + smooth 1s uptime tick (metrics poll re-syncs the base)
   useEffect(() => {
@@ -174,13 +163,6 @@ const TitleBar: React.FC<TitleBarProps> = ({
     { id: "terminal", title: "Terminal", icon: <IcoTerminal className="topbar-tab-ico" /> },
     { id: "customtools", title: "Custom Tools", icon: <IcoTools className="topbar-tab-ico" /> },
   ];
-  const libraryTabs: Array<{ id: Panel; title: string; subtitle: string; icon: React.ReactNode }> = [
-    { id: "todo", title: "Todo", subtitle: "задачи и привычки", icon: <CheckSquare /> },
-    { id: "post", title: "Post", subtitle: "заметки и публикации", icon: <FileText /> },
-    { id: "books", title: "Books", subtitle: "библиотека и чтение", icon: <BookOpen /> },
-    { id: "youtube", title: "YouTube", subtitle: "видео и трансляции", icon: <Youtube /> },
-  ];
-  const libraryActive = libraryTabs.some((tab) => tab.id === active);
 
   return (
     <div className="titlebar-root">
@@ -201,37 +183,6 @@ const TitleBar: React.FC<TitleBarProps> = ({
             <span className="topbar-tab-label">{tab.title}</span>
           </button>
         ))}
-        <div className="topbar-library-menu" ref={libraryMenuRef}>
-          <button
-            type="button"
-            title="Todo · Post · Books"
-            aria-haspopup="menu"
-            aria-expanded={libraryMenuOpen}
-            onClick={() => setLibraryMenuOpen((value) => !value)}
-            className={`topbar-tab topbar-library-trigger ${libraryActive ? "is-active" : ""}`}
-          >
-            <LayoutGrid className="topbar-tab-ico" />
-            <ChevronDown className="topbar-library-chevron" />
-          </button>
-          {libraryMenuOpen && (
-            <div className="topbar-library-popover" role="menu">
-              <div className="topbar-library-title">WORKSPACE</div>
-              {libraryTabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  role="menuitem"
-                  className={active === tab.id ? "is-active" : ""}
-                  onClick={() => { onSelect(tab.id); setLibraryMenuOpen(false); }}
-                >
-                  <span className="topbar-library-icon">{tab.icon}</span>
-                  <span><strong>{tab.title}</strong><small>{tab.subtitle}</small></span>
-                  <i />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
         <span className="topbar-tab-sep" />
         <button
           type="button"
