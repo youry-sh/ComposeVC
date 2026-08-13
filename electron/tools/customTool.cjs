@@ -167,7 +167,9 @@ function inferActionFromInput(input = {}) {
   }
 
   const rawName = String(next.name || "").trim();
-  if (looksLikeEntryFile(rawName) && !String(next.file || next.rel || "").trim()) {
+  const shouldTreatNameAsFile =
+    !action || ["write_file", "read_file", "list_files"].includes(action);
+  if (shouldTreatNameAsFile && looksLikeEntryFile(rawName) && !String(next.file || next.rel || "").trim()) {
     next.file = rawName;
     if (next.tool) next.name = String(next.tool).trim();
     else delete next.name;
@@ -233,6 +235,20 @@ async function resolveActionAndInput(input, userDataPath) {
     await fillMissingToolKey(next, userDataPath);
   }
 
+  if (["write_file", "read_file", "list_files"].includes(action)) {
+    const key = resolveIdOrName(next);
+    if (!key.id && !key.name) {
+      const all = await customTools.readCustomTools(userDataPath);
+      const names = all.map((t) => t.name).filter(Boolean).slice(0, 16);
+      throw new Error(
+        `${action} needs the custom tool name, not the entry file` +
+          (next.file ? ` (${next.file})` : "") +
+          `. Pass name=<tool_name> file=${next.file || "main.js"}. ` +
+          (names.length ? `Known tools: ${names.join(", ")}` : "No tools yet — action=list or action=add.")
+      );
+    }
+  }
+
   return { action, input: next, inferred: resolved.inferred };
 }
 
@@ -275,6 +291,16 @@ function parseArgs(input) {
     "file",
     "rel",
     "relative",
+    "op",
+    "command",
+    "method",
+    "operation",
+    "verb",
+    "path",
+    "filePath",
+    "text",
+    "json",
+    "pack",
   ]);
   const rest = {};
   for (const [k, v] of Object.entries(input || {})) {
@@ -311,7 +337,10 @@ module.exports = {
     "Search is bilingual and typo-tolerant. If the task has independent parts, search each part separately; an empty result means " +
     "try one broader synonym before concluding that no tool exists. Results include coverage and fuzzy confidence.\n\n" +
     "Actions: list|search|get|validate|add|update|remove|run|enable|disable|export|import|" +
-    "write_file|read_file|list_files|path (path without name = tools root + inventory)",
+    "write_file|read_file|list_files|path (path without name = tools root + inventory). " +
+    "ALWAYS pass action. If omitted it is inferred: empty→list, query→search, name+args→run, " +
+    "name+code→add/update, file+content→write_file. name=main.js is the entry FILE, not the tool name — " +
+    "use name=<tool> file=main.js.",
   isReadOnly: false,
   inputSchema: {
     type: "object",
@@ -455,9 +484,9 @@ module.exports = {
   },
   async execute(input, context = {}) {
     const userDataPath = requireUserData(context);
-    const action = String(input?.action || "")
-      .trim()
-      .toLowerCase();
+    const resolved = await resolveActionAndInput(input || {}, userDataPath);
+    const action = resolved.action;
+    input = resolved.input;
 
     switch (action) {
       case "list": {
@@ -1081,8 +1110,10 @@ module.exports = {
 
       default:
         throw new Error(
-          `Unknown custom_tool action: ${action}. Use list|search|get|validate|add|update|remove|run|enable|disable|export|import|write_file|read_file|list_files|path`
+          `Unknown custom_tool action: ${action || "(empty)"}. Use list|search|get|validate|add|update|remove|run|enable|disable|export|import|write_file|read_file|list_files|path`
         );
     }
   },
+  inferActionFromInput,
+  resolveActionAndInput,
 };
