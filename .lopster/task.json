@@ -6,6 +6,13 @@
       "completed": false,
       "createdAt": 1786647289457,
       "updatedAt": 1786647289457
+    },
+    {
+      "id": "task-1786647412803-892592127c3f7",
+      "text": "| T02 | `apply_patch` | Единый unified diff вместо кучи `edit_file`. Меньше промахов. | M | P0 |",
+      "completed": false,
+      "createdAt": 1786647412803,
+      "updatedAt": 1786647412803
     }
   ]
 }
