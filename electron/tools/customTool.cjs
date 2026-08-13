@@ -36,6 +36,206 @@ function parseBodyInput(input) {
   return null;
 }
 
+const KNOWN_ACTIONS = new Set([
+  "list",
+  "search",
+  "get",
+  "validate",
+  "add",
+  "update",
+  "remove",
+  "run",
+  "enable",
+  "disable",
+  "export",
+  "import",
+  "write_file",
+  "read_file",
+  "list_files",
+  "path",
+]);
+
+const ACTION_ALIASES = {
+  create: "add",
+  new: "add",
+  make: "add",
+  scaffold: "add",
+  install: "add",
+  delete: "remove",
+  rm: "remove",
+  del: "remove",
+  uninstall: "remove",
+  ls: "list",
+  dir: "list",
+  inventory: "list",
+  find: "search",
+  lookup: "search",
+  query: "search",
+  call: "run",
+  exec: "run",
+  execute: "run",
+  invoke: "run",
+  smoke: "run",
+  smoke_test: "run",
+  write: "write_file",
+  writefile: "write_file",
+  save: "write_file",
+  save_file: "write_file",
+  put: "write_file",
+  read: "read_file",
+  readfile: "read_file",
+  cat: "read_file",
+  open: "read_file",
+  ls_files: "list_files",
+  listfiles: "list_files",
+  files: "list_files",
+  location: "path",
+  folder: "path",
+  where: "path",
+  tools_root: "path",
+  toolsroot: "path",
+  on: "enable",
+  off: "disable",
+  check: "validate",
+};
+
+function isBlankAction(raw) {
+  const s = String(raw == null ? "" : raw)
+    .trim()
+    .toLowerCase();
+  return (
+    !s ||
+    s === "." ||
+    s === "-" ||
+    s === "_" ||
+    s === "none" ||
+    s === "null" ||
+    s === "undefined" ||
+    s === "action" ||
+    s === "custom_tool"
+  );
+}
+
+function looksLikeEntryFile(value) {
+  const s = String(value || "")
+    .trim()
+    .replace(/\\/g, "/");
+  if (!s) return false;
+  const base = s.split("/").pop() || s;
+  return /^(main|index|tool)\.(js|cjs|mjs|py|ps1|ts)$/i.test(base);
+}
+
+function pickActionField(input) {
+  const raw = input?.action ?? input?.op ?? input?.command ?? input?.method ?? input?.operation ?? input?.verb;
+  if (raw && typeof raw === "object") return "";
+  return String(raw == null ? "" : raw)
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+}
+
+function hasCodePayload(input) {
+  return (
+    input.code != null ||
+    Array.isArray(input.files) ||
+    (typeof input.source === "string" && !String(input.source).trim().startsWith("{"))
+  );
+}
+
+function hasFileContent(input) {
+  return input.content != null || input.code != null || input.text != null;
+}
+
+function hasMeaningfulArgs(input) {
+  const args = parseArgs(input);
+  return Boolean(args && typeof args === "object" && Object.keys(args).length > 0);
+}
+
+/**
+ * Recover when the model omits action (common: custom_tool name=main.js).
+ * Mutates a shallow copy: may move name→file when name looks like an entry file.
+ */
+function inferActionFromInput(input = {}) {
+  const next = { ...(input || {}) };
+  let action = pickActionField(next);
+  if (isBlankAction(action)) action = "";
+  if (ACTION_ALIASES[action]) action = ACTION_ALIASES[action];
+
+  if (action && !KNOWN_ACTIONS.has(action) && looksLikeEntryFile(action)) {
+    if (!next.file) next.file = action;
+    action = "";
+  }
+
+  const rawName = String(next.name || "").trim();
+  if (looksLikeEntryFile(rawName) && !String(next.file || next.rel || "").trim()) {
+    next.file = rawName;
+    if (next.tool) next.name = String(next.tool).trim();
+    else delete next.name;
+  }
+
+  if (KNOWN_ACTIONS.has(action)) return { action, input: next, inferred: false };
+
+  const name = String(next.name || next.tool || "").trim();
+  const file = String(next.file || next.rel || next.relative || "").trim();
+  const query = String(next.query || "").trim();
+  const code = hasCodePayload(next);
+  const fileContent = hasFileContent(next);
+  const args = hasMeaningfulArgs(next);
+  const packish =
+    next.pack != null ||
+    next.json != null ||
+    (typeof next.text === "string" && String(next.text).trim().startsWith("{")) ||
+    (typeof next.source === "string" && String(next.source).trim().startsWith("{"));
+
+  if (query && !code && !fileContent) action = "search";
+  else if (file && fileContent) action = "write_file";
+  else if (file && name && !fileContent) action = "read_file";
+  else if (file && !name && fileContent) action = "write_file";
+  else if (file && !name && !fileContent) action = "read_file";
+  else if (name && code) action = "add";
+  else if (name && args) action = "run";
+  else if (name) action = "get";
+  else if (packish) action = "import";
+  else action = "list";
+
+  return { action, input: next, inferred: true };
+}
+
+async function fillMissingToolKey(next, userDataPath) {
+  const key = resolveIdOrName(next);
+  if (key.id || (key.name && !looksLikeEntryFile(key.name))) return key;
+  const all = await customTools.readCustomTools(userDataPath);
+  if (all.length === 1) {
+    next.name = all[0].name;
+    next.id = all[0].id;
+    return { id: all[0].id, name: all[0].name };
+  }
+  return key;
+}
+
+async function resolveActionAndInput(input, userDataPath) {
+  const resolved = inferActionFromInput(input || {});
+  const next = resolved.input;
+  let action = resolved.action;
+
+  if (resolved.inferred && action === "add" && (next.name || next.tool)) {
+    const existing = await customTools.findCustomTool(userDataPath, {
+      name: next.name || next.tool,
+    }).catch(() => null);
+    if (existing) action = "update";
+  }
+
+  if (
+    ["write_file", "read_file", "list_files", "run", "get", "update", "enable", "disable", "remove"].includes(
+      action
+    )
+  ) {
+    await fillMissingToolKey(next, userDataPath);
+  }
+
+  return { action, input: next, inferred: resolved.inferred };
+}
+
 function parseArgs(input) {
   if (input.args != null && typeof input.args === "object") return input.args;
   if (input.input != null && typeof input.input === "object") return input.input;
