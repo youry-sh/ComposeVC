@@ -22,8 +22,28 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
+for /f %%V in ('node -p "const [a,b]=process.versions.node.split('.').map(Number); a*1000+b"') do set "NODE_LEVEL=%%V"
+if not defined NODE_LEVEL (
+  echo [ERROR] Could not determine the Node.js version.
+  echo         Run build-sc\install.bat to repair the setup.
+  pause
+  exit /b 1
+)
+if %NODE_LEVEL% LSS 22012 (
+  echo [ERROR] Node.js 22.12 or newer is required. Installed version:
+  node --version
+  echo         Run build-sc\install.bat to upgrade Node.js and reinstall libraries.
+  pause
+  exit /b 1
+)
 if not exist "node_modules" (
   echo [ERROR] Libraries missing. Run build-sc\install.bat first.
+  pause
+  exit /b 1
+)
+if not exist "node_modules\electron\dist\electron.exe" (
+  echo [ERROR] Electron is incomplete; electron.exe is missing.
+  echo         Run build-sc\install.bat to reinstall the libraries.
   pause
   exit /b 1
 )
