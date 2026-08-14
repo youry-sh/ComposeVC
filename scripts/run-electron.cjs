@@ -76,20 +76,23 @@ function resolveElectronBinary() {
   }
 
   for (const c of candidates) {
-    if (exists(c)) return c;
+    if (!exists(c)) continue;
+    // A .cmd shim is not directly executable by child_process.spawn on Windows.
+    // It is only a last-resort candidate and must be launched through cmd.exe.
+    return c;
   }
   return null;
 }
 
 function main() {
   const bin = resolveElectronBinary();
-  if (!bin) {
+  const isWindowsShim = process.platform === "win32" && /\.(?:cmd|bat)$/i.test(bin || "");
+  if (!bin || isWindowsShim) {
     console.error(
-      "[run-electron] Electron binary not found.\n" +
-        "  Expected: node_modules/electron/dist/electron.exe (or full electron package)\n" +
-        "  Fix: close all Electron windows, then:\n" +
-        "    npm install electron --save-dev\n" +
-        "  or: Build.bat --skip-system\n"
+      "[run-electron] Electron binary not found (the npm command shim alone is not enough).\n" +
+        "  Expected: node_modules/electron/dist/electron.exe\n" +
+        "  Your Electron install is incomplete or incompatible with the installed Node.js.\n" +
+        "  Fix: run build-sc\\install.bat with Node.js 22.12 or newer.\n"
     );
     process.exit(1);
   }
