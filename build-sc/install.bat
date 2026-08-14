@@ -33,31 +33,38 @@ call :ensure_aria2
 if exist "%ARIA2_DIR%\aria2c.exe" set "PATH=%ARIA2_DIR%;%PATH%"
 echo.
 
-rem --- Node.js ---
+rem --- Node.js (Electron 42 requires Node >= 22.12.0 for its installer) ---
+set "NODE_OK="
 where node >nul 2>&1
-if errorlevel 1 (
-  echo [setup] Installing Node.js LTS...
-  call :fast_dl "https://nodejs.org/dist/v20.18.0/node-v20.18.0-x64.msi" "%TEMP%\node-v20.18.0-x64.msi"
+if not errorlevel 1 (
+  for /f %%V in ('node -p "const [a,b]=process.versions.node.split('.').map(Number); a*1000+b"') do set "NODE_LEVEL=%%V"
+  if defined NODE_LEVEL if !NODE_LEVEL! GEQ 22012 set "NODE_OK=1"
+)
+
+if not defined NODE_OK (
+  echo [setup] Installing/upgrading Node.js 22 LTS...
+  call :fast_dl "https://nodejs.org/dist/v22.14.0/node-v22.14.0-x64.msi" "%TEMP%\node-v22.14.0-x64.msi"
   if errorlevel 1 (
     echo [setup] Direct download failed - trying winget...
     where winget >nul 2>&1
     if errorlevel 1 (
-      echo [ERROR] Could not download Node.js. Check internet and retry.
+      echo [ERROR] Could not download Node.js 22+. Check internet and retry.
       pause
       exit /b 1
     )
-    winget install -e --id OpenJS.NodeJS.LTS --accept-source-agreements --accept-package-agreements --disable-interactivity
+    winget upgrade -e --id OpenJS.NodeJS.LTS --accept-source-agreements --accept-package-agreements --disable-interactivity
+    if errorlevel 1 winget install -e --id OpenJS.NodeJS.LTS --accept-source-agreements --accept-package-agreements --disable-interactivity
   ) else (
-    msiexec /i "%TEMP%\node-v20.18.0-x64.msi" /qn /norestart
+    msiexec /i "%TEMP%\node-v22.14.0-x64.msi" /qn /norestart
     if errorlevel 1 (
-      echo [ERROR] Node.js MSI install failed.
+      echo [ERROR] Node.js MSI install/upgrade failed.
       pause
       exit /b 1
     )
-    del /q "%TEMP%\node-v20.18.0-x64.msi" >nul 2>&1
+    del /q "%TEMP%\node-v22.14.0-x64.msi" >nul 2>&1
   )
 ) else (
-  echo [setup] Node.js already present.
+  echo [setup] Compatible Node.js already present.
 )
 
 rem --- Go (optional: only needed to rebuild the anti engine) ---
