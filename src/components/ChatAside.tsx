@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import AsciiWar from "./AsciiWar";
-import AsideBrowser from "./AsideBrowser";
 import GitPanel from "./GitPanel";
 import { RunnerJob } from "../types";
 import {
@@ -207,9 +206,6 @@ const ChatAside: React.FC<Props> = ({ chatCount, runningPanels, activeRootPath, 
       <section className="aside-block aside-block-war">
         <AsciiWar />
       </section>
-
-      {/* Bottom dock: open a film page or a video by link, right in the column. */}
-      <AsideBrowser />
     </aside>
   );
 };

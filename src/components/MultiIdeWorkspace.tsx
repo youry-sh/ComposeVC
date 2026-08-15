@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import MultiChatSlot, { MultiSlotPersist } from "./MultiChatSlot";
+import AsideBrowser from "./AsideBrowser";
 import ChatAside from "./ChatAside";
 import GitBadge from "./GitBadge";
 import ThinkingIndicator from "./ThinkingIndicator";
@@ -342,6 +343,9 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
         <footer className="chat-rail-foot">
           {stableSlots.length}/{MULTIIDE_MAX_SLOTS}
         </footer>
+
+        {/* Bottom dock: open a film page or a video by link, right in the rail. */}
+        <AsideBrowser />
       </aside>
 
       {/* ── Centre: exactly one visible chat panel ──
