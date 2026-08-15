@@ -8047,6 +8047,128 @@
   color: var(--ink-500);
 }
 
+/* ── Ctrl+H switcher: the rail's list as a modal ──
+   Needed because the media dock can cover the rail entirely. */
+.chat-switcher-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 9500;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 14vh;
+  background: rgba(0, 0, 0, .55);
+}
+.chat-switcher {
+  width: min(560px, calc(100vw - 48px));
+  max-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  border-radius: 0;
+  background: var(--surface);
+  box-shadow: var(--shadow-menu);
+}
+.chat-switcher-head {
+  flex: 0 0 auto;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border);
+}
+.chat-switcher-title {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.chat-switcher-hint {
+  font-family: var(--terminal-font);
+  font-size: 10px;
+  color: var(--ink-500);
+}
+.chat-switcher-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+.chat-switcher-row {
+  display: grid;
+  grid-template-columns: 5px 20px minmax(0, 1fr) auto;
+  grid-template-areas: "dot index name count" ". path path path";
+  align-items: center;
+  gap: 3px 9px;
+  width: 100%;
+  padding: 7px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+  color: var(--ink-700);
+  cursor: pointer;
+}
+.chat-switcher-row:last-child { border-bottom: 0; }
+.chat-switcher-row.is-cursor { background: var(--hover-bg); color: var(--ink-950); }
+.chat-switcher-row.is-active { color: var(--ink-950); }
+.chat-switcher-dot {
+  grid-area: dot;
+  width: 5px;
+  height: 5px;
+  background: var(--ink-300);
+}
+.chat-switcher-row.is-active .chat-switcher-dot { background: var(--ink-500); }
+.chat-switcher-row.is-running .chat-switcher-dot {
+  background: var(--ink-950);
+  animation: chat-rail-pulse 1.4s ease-in-out infinite;
+}
+.chat-switcher-index {
+  grid-area: index;
+  font-family: var(--terminal-font);
+  font-size: 10px;
+  color: var(--ink-500);
+}
+.chat-switcher-name {
+  grid-area: name;
+  min-width: 0;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chat-switcher-count {
+  grid-area: count;
+  min-width: 18px;
+  height: 16px;
+  padding: 0 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  font-family: var(--terminal-font);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--ink-600);
+}
+.chat-switcher-path {
+  grid-area: path;
+  min-width: 0;
+  font-family: var(--terminal-font);
+  font-size: 10px;
+  line-height: 1.35;
+  color: var(--ink-500);
+  opacity: .62;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ── Centre stage: one panel visible, the rest hidden but alive ── */
 .chat-stage {
   position: relative;
