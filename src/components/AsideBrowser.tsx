@@ -93,6 +93,12 @@ const AsideBrowser: React.FC = () => {
   const [draft, setDraft] = useState("");
   /** The page actually loaded; null until the first link is opened. */
   const [url, setUrl] = useState<string | null>(null);
+  /**
+   * `src` of the guest — set only when it is (re)mounted. Later links go
+   * through loadURL, so the element keeps its session instead of reloading
+   * twice (once from the attribute, once from the call).
+   */
+  const [mountUrl, setMountUrl] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -123,21 +129,20 @@ const AsideBrowser: React.FC = () => {
     if (!next) return;
     setError(null);
     setDraft(next);
+    setUrl(next);
     setOpen(true);
     try {
       window.localStorage.setItem(URL_KEY, next);
     } catch {
       /* ignore */
     }
-    // The guest is already mounted — navigate it instead of remounting, so a
-    // second link does not tear down the session (cookies, playback position).
+    // The guest is already mounted — navigate it instead of remounting.
     const view = viewRef.current;
     if (view && typeof view.loadURL === "function") {
-      setUrl(next);
       void view.loadURL(next).catch(() => undefined);
       return;
     }
-    setUrl(next);
+    setMountUrl(next);
   }, []);
 
   // Wire the guest's lifecycle to the toolbar. Re-runs once the view mounts.
