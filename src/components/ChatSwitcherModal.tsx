@@ -89,7 +89,12 @@ const ChatSwitcherModal: React.FC<Props> = ({ slots, activeId, onPick, onClose }
 
   return (
     <div className="chat-switcher-scrim" role="dialog" aria-modal="true" aria-label="Chats" onMouseDown={onClose}>
-      <div className="chat-switcher" onMouseDown={(event) => event.stopPropagation()}>
+      <div
+        ref={boxRef}
+        className="chat-switcher"
+        tabIndex={-1}
+        onMouseDown={(event) => event.stopPropagation()}
+      >
         <header className="chat-switcher-head">
           <span className="chat-switcher-title">Chats</span>
           <span className="chat-switcher-hint">↑↓ · 1–9 · Enter · Esc</span>

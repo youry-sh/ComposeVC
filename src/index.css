@@ -8069,6 +8069,7 @@
   border-radius: 0;
   background: var(--surface);
   box-shadow: var(--shadow-menu);
+  outline: none;
 }
 .chat-switcher-head {
   flex: 0 0 auto;
