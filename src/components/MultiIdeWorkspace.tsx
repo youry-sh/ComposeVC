@@ -2,9 +2,14 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import MultiChatSlot, { MultiSlotPersist } from "./MultiChatSlot";
 import AsideBrowser from "./AsideBrowser";
 import ChatAside from "./ChatAside";
+import ChatSwitcherModal from "./ChatSwitcherModal";
 import GitBadge from "./GitBadge";
 import ThinkingIndicator from "./ThinkingIndicator";
 import { CustomTool, MainAgentMode, ProviderConfig } from "../types";
+import { HotkeyDefinition, matchesHotkey } from "../utils/hotkeys";
+
+/** Ctrl+H (Cmd+H on macOS) — the chat switcher, matched by physical key. */
+const SWITCHER_HOTKEY: HotkeyDefinition = { code: "KeyH", modifiers: ["mod"] };
 
 /**
  * Single centred chat panel + a left rail of chat panels.
