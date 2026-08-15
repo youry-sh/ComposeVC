@@ -148,7 +148,7 @@ const AsideBrowser: React.FC = () => {
   // Wire the guest's lifecycle to the toolbar. Re-runs once the view mounts.
   useEffect(() => {
     const view = viewRef.current;
-    if (!view || !url) return;
+    if (!view || !mountUrl) return;
     const onStart = () => {
       setLoading(true);
       setError(null);
@@ -156,7 +156,10 @@ const AsideBrowser: React.FC = () => {
     const onStop = () => setLoading(false);
     const onNavigate = (event: Event) => {
       const next = (event as Event & { url?: string }).url;
-      if (typeof next === "string" && next) setDraft(next);
+      if (typeof next === "string" && next) {
+        setDraft(next);
+        setUrl(next);
+      }
     };
     const onTitle = (event: Event) => {
       const next = (event as Event & { title?: string }).title;
@@ -173,7 +176,18 @@ const AsideBrowser: React.FC = () => {
       setLoading(false);
       setError(detail.errorDescription || `Load failed (${detail.errorCode ?? "?"})`);
     };
-    const onEnterFull = () => setExpanded(true);
+    const onEnterFull = () => {
+      setExpanded(true);
+      // Electron may also lift the <webview> into the embedder's top layer,
+      // which would cover the whole app. The dock expands inside its own
+      // column instead, so drop that outer fullscreen — the guest keeps its
+      // own, so the site's player stays in its fullscreen layout.
+      window.setTimeout(() => {
+        if (document.fullscreenElement === view) {
+          void document.exitFullscreen?.()?.catch(() => undefined);
+        }
+      }, 0);
+    };
     const onLeaveFull = () => setExpanded(false);
 
     view.addEventListener("did-start-loading", onStart);
@@ -194,7 +208,7 @@ const AsideBrowser: React.FC = () => {
       view.removeEventListener("enter-html-full-screen", onEnterFull);
       view.removeEventListener("leave-html-full-screen", onLeaveFull);
     };
-  }, [url]);
+  }, [mountUrl]);
 
   const collapseFullscreen = useCallback(() => {
     setExpanded(false);
@@ -287,7 +301,7 @@ const AsideBrowser: React.FC = () => {
               type="button"
               className="aside-web-btn"
               onClick={() => (expanded ? collapseFullscreen() : setExpanded(true))}
-              title={expanded ? "Back to the panel (Esc)" : "Fill the window"}
+              title={expanded ? "Back to the dock (Esc)" : "Fill the panel"}
             >
               {expanded ? "⤡" : "⤢"}
             </button>
@@ -304,6 +318,7 @@ const AsideBrowser: React.FC = () => {
               className="aside-web-btn"
               onClick={() => {
                 setUrl(null);
+                setMountUrl(null);
                 setTitle("");
                 setError(null);
                 setLoading(false);
@@ -369,19 +384,19 @@ const AsideBrowser: React.FC = () => {
       </form>
 
       <div className="aside-web-stage">
-        {url ? (
+        {mountUrl ? (
           isDesktop ? (
             <webview
               ref={viewRef}
               className="aside-web-view"
-              src={url}
+              src={mountUrl}
               partition="persist:composevc-web"
               useragent={chromeUserAgent()}
             />
           ) : (
             <iframe
               className="aside-web-view"
-              src={url}
+              src={mountUrl}
               title="Web"
               allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
               allowFullScreen

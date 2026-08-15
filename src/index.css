@@ -8286,6 +8286,7 @@
    Square and quiet: no rounded corners, no bold type, one hairline rule
    between blocks. Everything lines up on the same left edge. */
 .chat-aside {
+  position: relative; /* the media dock expands inside THIS column, never over the app */
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -8497,11 +8498,12 @@
 .aside-web:not(.is-open) .aside-web-bar,
 .aside-web:not(.is-open) .aside-web-stage { display: none; }
 
-/* Lifted out of the column: the page covers the whole window. */
+/* Player fullscreen — the dock fills the RIGHT COLUMN and stops there.
+   `absolute` against .chat-aside, so the chat and the rail stay untouched. */
 .aside-web.is-expanded {
-  position: fixed;
+  position: absolute;
   inset: 0;
-  z-index: 3000;
+  z-index: 20;
   height: auto !important;
   border-top: 0;
   background: var(--bg);

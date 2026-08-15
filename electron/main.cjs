@@ -978,9 +978,25 @@ function installPackagedWindowHardening(win) {
     }
   });
 
+  // A guest player going fullscreen must NOT drag the app window with it — the
+  // dock expands inside its own column instead (see .aside-web.is-expanded).
+  const keepWindowed = () => {
+    try {
+      if (!win.isDestroyed() && win.isFullScreen()) win.setFullScreen(false);
+    } catch {
+      /* ignore */
+    }
+  };
+  wc.on("enter-html-full-screen", keepWindowed);
+
   // Popups from a guest page ("open in new tab", player overlays) load in the
   // same view instead of spawning an unhardened window.
   wc.on("did-attach-webview", (_event, guest) => {
+    try {
+      guest.on("enter-html-full-screen", keepWindowed);
+    } catch {
+      /* ignore */
+    }
     try {
       guest.setWindowOpenHandler(({ url }) => {
         if (/^https?:\/\//i.test(String(url || ""))) {
