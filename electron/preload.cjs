@@ -28,6 +28,12 @@ contextBridge.exposeInMainWorld("lopster", {
   storageUpload: (input) => ipcRenderer.invoke("storage:upload", input || {}),
   storageList: () => ipcRenderer.invoke("storage:list"),
   storageDeleteHistory: (id) => ipcRenderer.invoke("storage:deleteHistory", id),
+  // Ctrl+H pressed while a <webview> had focus — the shell opens its switcher.
+  onOpenChatSwitcher: (callback) => {
+    const listener = () => callback();
+    ipcRenderer.on("chat:switcher-toggle", listener);
+    return () => ipcRenderer.removeListener("chat:switcher-toggle", listener);
+  },
   onStorageOpen: (callback) => {
     const listener = () => callback(); ipcRenderer.on("storage:open", listener);
     return () => ipcRenderer.removeListener("storage:open", listener);

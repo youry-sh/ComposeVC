@@ -997,6 +997,25 @@ function installPackagedWindowHardening(win) {
     } catch {
       /* ignore */
     }
+
+    // While a guest page has focus (a video playing over the rail) it owns the
+    // keyboard, so the app's own shortcuts never reach the renderer. Forward
+    // the ones the shell needs — Ctrl+H opens the chat switcher.
+    try {
+      guest.on("before-input-event", (event, input) => {
+        if (!input || input.type !== "keyDown") return;
+        const ctrl = Boolean(input.control || input.meta);
+        if (!ctrl || input.alt || String(input.code || "") !== "KeyH") return;
+        event.preventDefault();
+        try {
+          if (!wc.isDestroyed()) wc.send("chat:switcher-toggle", {});
+        } catch {
+          /* ignore */
+        }
+      });
+    } catch {
+      /* ignore */
+    }
     try {
       guest.setWindowOpenHandler(({ url }) => {
         if (/^https?:\/\//i.test(String(url || ""))) {

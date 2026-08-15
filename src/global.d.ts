@@ -136,6 +136,7 @@ declare global {
       storageUpload: (input: { phone: string; filePath: string; caption?: string; premium?: boolean }) => Promise<{ ok: boolean; item?: StorageItem; error?: string }>;
       storageList: () => Promise<{ ok: boolean; items?: StorageItem[]; error?: string }>;
       storageDeleteHistory: (id: string) => Promise<{ ok: boolean }>;
+      onOpenChatSwitcher: (callback: () => void) => () => void;
       onStorageOpen: (callback: () => void) => () => void;
       readProviderConfig: () => Promise<ProviderConfig>;
       writeProviderConfig: (config: ProviderConfig) => Promise<ProviderConfig>;
