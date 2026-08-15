@@ -956,9 +956,48 @@ async function loadWindowContent(win, options = {}) {
 function installPackagedWindowHardening(win) {
   const wc = win.webContents;
 
-  // No in-app guests. Renderer markup cannot attach webviews or inject a preload.
-  wc.on("will-attach-webview", (event) => {
-    event.preventDefault();
+  // In-app guests are allowed for the aside media dock only, and only on plain
+  // http(s). Whatever the markup asks for, the guest gets no preload and no
+  // node access — it stays a sandboxed page, never a bridge into the app.
+  wc.on("will-attach-webview", (event, webPreferences, params) => {
+    delete webPreferences.preload;
+    delete webPreferences.preloadURL;
+    webPreferences.nodeIntegration = false;
+    webPreferences.nodeIntegrationInSubFrames = false;
+    webPreferences.contextIsolation = true;
+    webPreferences.sandbox = true;
+    webPreferences.webSecurity = true;
+    webPreferences.allowRunningInsecureContent = false;
+    webPreferences.experimentalFeatures = false;
+    webPreferences.devTools = false;
+
+    const src = String(params?.src || "");
+    // An empty src is the not-yet-navigated guest — the dock sets it right after.
+    if (src && !/^https?:\/\//i.test(src) && !/^about:blank$/i.test(src)) {
+      event.preventDefault();
+    }
+  });
+
+  // Popups from a guest page ("open in new tab", player overlays) load in the
+  // same view instead of spawning an unhardened window.
+  wc.on("did-attach-webview", (_event, guest) => {
+    try {
+      guest.setWindowOpenHandler(({ url }) => {
+        if (/^https?:\/\//i.test(String(url || ""))) {
+          // Out of the handler's synchronous frame before navigating.
+          setImmediate(() => {
+            try {
+              if (!guest.isDestroyed()) void guest.loadURL(url);
+            } catch {
+              /* ignore */
+            }
+          });
+        }
+        return { action: "deny" };
+      });
+    } catch {
+      /* ignore */
+    }
   });
 
   // Keep DevTools closed.

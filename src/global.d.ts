@@ -82,6 +82,24 @@ export type GitChangedFile = { code: string; staged: boolean; path: string };
 export type GitCommit = { hash: string; subject: string; author: string; when: string };
 
 declare global {
+  /** Electron's <webview> guest — used by the aside media dock. */
+  namespace JSX {
+    interface IntrinsicElements {
+      webview: import("react").DetailedHTMLProps<
+        import("react").HTMLAttributes<HTMLElement>,
+        HTMLElement
+      > & {
+        src?: string;
+        partition?: string;
+        useragent?: string;
+        preload?: string;
+        httpreferrer?: string;
+        allowpopups?: boolean;
+        webpreferences?: string;
+      };
+    }
+  }
+
   interface Window {
     lopster?: {
       terminalEnsure: (id: "1" | "2") => Promise<{ id: string; pid: number; cwd: string }>;
