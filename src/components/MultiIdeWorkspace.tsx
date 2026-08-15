@@ -171,7 +171,25 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
   });
   /** slotId → live status reported by the panel (streaming + chat count). */
   const [statusBySlot, setStatusBySlot] = useState<Record<string, SlotStatus>>({});
+  /** Ctrl+H list — the only way to switch panels while the dock covers the rail. */
+  const [switcherOpen, setSwitcherOpen] = useState(false);
   const seqRef = useRef(0);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (!matchesHotkey(event, SWITCHER_HOTKEY)) return;
+      event.preventDefault();
+      setSwitcherOpen((prev) => !prev);
+    };
+    window.addEventListener("keydown", onKey);
+    // Same stroke from inside a <webview>: the guest owns the keyboard there,
+    // so the main process forwards it (see installPackagedWindowHardening).
+    const unsub = window.lopster?.onOpenChatSwitcher?.(() => setSwitcherOpen((prev) => !prev));
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      unsub?.();
+    };
+  }, []);
 
   // Keep the selection valid when a panel is closed elsewhere.
   useEffect(() => {
@@ -391,6 +409,20 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
         activeRootPath={stableSlots.find((s) => s.id === activeSlotId)?.rootPath || null}
         onOpenRunners={onOpenRunners}
       />
+
+      {switcherOpen && (
+        <ChatSwitcherModal
+          slots={stableSlots.map((slot) => ({
+            id: slot.id,
+            rootPath: slot.rootPath,
+            running: Boolean(statusBySlot[slot.id]?.running),
+            sessionCount: statusBySlot[slot.id]?.sessionCount ?? 0,
+          }))}
+          activeId={activeSlotId}
+          onPick={setActiveId}
+          onClose={() => setSwitcherOpen(false)}
+        />
+      )}
     </div>
   );
 };
