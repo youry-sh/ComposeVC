@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 /**
  * Ctrl+H — pick a chat panel without the rail.
@@ -29,6 +29,7 @@ function folderName(path: string | null): string | null {
 }
 
 const ChatSwitcherModal: React.FC<Props> = ({ slots, activeId, onPick, onClose }) => {
+  const boxRef = useRef<HTMLDivElement | null>(null);
   const [cursor, setCursor] = useState(() => {
     const index = slots.findIndex((slot) => slot.id === activeId);
     return index >= 0 ? index : 0;
@@ -43,6 +44,12 @@ const ChatSwitcherModal: React.FC<Props> = ({ slots, activeId, onPick, onClose }
     },
     [onClose, onPick, slots]
   );
+
+  // Ctrl+H can arrive while a <webview> holds the keyboard — take focus back,
+  // otherwise the arrows and Enter below would keep going to the guest page.
+  useEffect(() => {
+    boxRef.current?.focus();
+  }, []);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
