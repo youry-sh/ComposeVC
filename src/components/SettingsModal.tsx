@@ -368,6 +368,8 @@ const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, 
   const aiRuntime = draft.aiRuntime || {
     agentCompletionNotifications: true,
     soviet7ModelId: "",
+    labInPromptModelId: "",
+    labInSearchModelId: "",
   };
   const soviet7ModelId =
     typeof aiRuntime.soviet7ModelId === "string" ? aiRuntime.soviet7ModelId.trim() : "";
@@ -376,6 +378,30 @@ const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, 
     : null;
   // Controlled <select> must only use a value that exists in options — orphan ids look stuck on gpt-4o.
   const soviet7SelectValue = soviet7ModelMatch ? soviet7ModelMatch.id : "";
+  const labInPromptModelId =
+    typeof aiRuntime.labInPromptModelId === "string" ? aiRuntime.labInPromptModelId.trim() : "";
+  const labInSearchModelId =
+    typeof aiRuntime.labInSearchModelId === "string" ? aiRuntime.labInSearchModelId.trim() : "";
+  const labInPromptModelMatch = labInPromptModelId
+    ? draft.models.find((m) => m.id === labInPromptModelId || m.name === labInPromptModelId)
+    : null;
+  const labInSearchModelMatch = labInSearchModelId
+    ? draft.models.find((m) => m.id === labInSearchModelId || m.name === labInSearchModelId)
+    : null;
+  const labInPromptSelectValue = labInPromptModelMatch ? labInPromptModelMatch.id : "";
+  const labInSearchSelectValue = labInSearchModelMatch ? labInSearchModelMatch.id : "";
+  const modelOptions = [
+    { value: "", label: "Same as main model (default)" },
+    ...draft.models.map((model) => {
+      const provider = draft.providers.find((p) => p.id === model.providerId);
+      const apiName = model.name || model.id;
+      const idHint = model.id && model.id !== apiName ? ` · id ${model.id}` : "";
+      return {
+        value: model.id,
+        label: provider ? `${provider.name} / ${apiName}${idHint}` : `${apiName}${idHint}`,
+      };
+    }),
+  ];
   
   const updateAiRuntime = (updates: Partial<typeof aiRuntime>) => commitConfig({ ...draft, aiRuntime: { ...aiRuntime, ...updates } });
   const tabTitle = {
@@ -608,18 +634,7 @@ const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, 
                     <UiSelect
                       ariaLabel="Soviet-7 council model"
                       value={soviet7SelectValue}
-                      options={[
-                        { value: "", label: "Same as main model (default)" },
-                        ...draft.models.map((model) => {
-                          const provider = draft.providers.find((p) => p.id === model.providerId);
-                          const apiName = model.name || model.id;
-                          const idHint = model.id && model.id !== apiName ? ` · id ${model.id}` : "";
-                          const label = provider
-                            ? `${provider.name} / ${apiName}${idHint}`
-                            : `${apiName}${idHint}`;
-                          return { value: model.id, label };
-                        }),
-                      ]}
+                      options={modelOptions}
                       onChange={(next) => updateAiRuntime({ soviet7ModelId: next || "" })}
                     />
                     {soviet7ModelId && !soviet7ModelMatch ? (
@@ -627,6 +642,47 @@ const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, 
                         Saved soviet7 model &quot;{soviet7ModelId}&quot; is missing — falls back to main model.
                       </p>
                     ) : null}
+                  </div>
+                </div>
+
+                <div className="settings-card">
+                  <div className="settings-card-title">LAB-IN models</div>
+                  <div className="grid gap-3">
+                    <p className="text-[11px] leading-snug text-ink-500">
+                      Stage models inherit the active chat model when left empty. The main task always executes with the active chat model.
+                    </p>
+                    <div className="grid gap-1.5">
+                      <span className="text-[10px] font-medium uppercase tracking-[0.1em] text-ink-500">
+                        Prompt refiner
+                      </span>
+                      <UiSelect
+                        ariaLabel="LAB-IN prompt refiner model"
+                        value={labInPromptSelectValue}
+                        options={modelOptions}
+                        onChange={(next) => updateAiRuntime({ labInPromptModelId: next || "" })}
+                      />
+                      {labInPromptModelId && !labInPromptModelMatch ? (
+                        <p className="text-[11px] leading-snug" style={{ color: "var(--danger)" }}>
+                          Saved prompt model &quot;{labInPromptModelId}&quot; is missing — falls back to main model.
+                        </p>
+                      ) : null}
+                    </div>
+                    <div className="grid gap-1.5">
+                      <span className="text-[10px] font-medium uppercase tracking-[0.1em] text-ink-500">
+                        Knowledge search agent
+                      </span>
+                      <UiSelect
+                        ariaLabel="LAB-IN knowledge search model"
+                        value={labInSearchSelectValue}
+                        options={modelOptions}
+                        onChange={(next) => updateAiRuntime({ labInSearchModelId: next || "" })}
+                      />
+                      {labInSearchModelId && !labInSearchModelMatch ? (
+                        <p className="text-[11px] leading-snug" style={{ color: "var(--danger)" }}>
+                          Saved search model &quot;{labInSearchModelId}&quot; is missing — falls back to main model.
+                        </p>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
 

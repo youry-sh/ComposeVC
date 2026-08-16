@@ -3829,7 +3829,8 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   const historyIndexRef = useRef(-1);
   /** Draft saved when user first presses ArrowUp from live input */
   const draftBeforeHistoryRef = useRef("");
-  const selectedAgentModeLabel = agentMode === "soviet-7" ? "Soviet-7" : "ComposeVC";
+  const selectedAgentModeLabel =
+    agentMode === "soviet-7" ? "Soviet-7" : agentMode === "lab-in" ? "LAB-IN" : "ComposeVC";
 
   useEffect(() => {
     chatWidthRef.current = chatWidth;
@@ -4792,6 +4793,11 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                       title: "Soviet-7",
                       hint: "7 advisors research → main executes",
                     },
+                    {
+                      mode: "lab-in" as MainAgentMode,
+                      title: "LAB-IN",
+                      hint: "Refine → memory research → execute",
+                    },
                   ]).map((item) => (
                     <button
                       key={item.mode}
@@ -4809,6 +4815,8 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                       }`}>
                         {item.mode === "soviet-7" ? (
                           <Users className="w-3.5 h-3.5" />
+                        ) : item.mode === "lab-in" ? (
+                          <BrainCircuit className="w-3.5 h-3.5" />
                         ) : (
                           <Sparkles className="w-3.5 h-3.5" />
                         )}

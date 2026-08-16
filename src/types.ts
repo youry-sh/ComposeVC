@@ -166,6 +166,10 @@ export interface AiRuntimeConfig {
    * Does not change the main agent model.
    */
   soviet7ModelId?: string;
+  /** LAB-IN stage 1 prompt-refiner model. Empty = active main model. */
+  labInPromptModelId?: string;
+  /** LAB-IN stage 2 shared-knowledge search model. Empty = active main model. */
+  labInSearchModelId?: string;
 }
 
 export interface ProviderConfig {
@@ -188,8 +192,8 @@ export interface ProjectSearchResult {
   score: number;
 }
 
-/** lopster = ComposeVC; soviet-7 = council */
-export type MainAgentMode = "lopster" | "soviet-7";
+/** lopster = ComposeVC; soviet-7 = council; lab-in = refine + memory research + execute */
+export type MainAgentMode = "lopster" | "soviet-7" | "lab-in";
 
 export interface ChatExecutionRequest {
   modelId: string;
@@ -290,6 +294,24 @@ export interface ChatExecutionResponse {
     warning?: string | null;
     stopped?: boolean;
     error?: string;
+  };
+  /** LAB-IN preparation summary (prompt refinement + audited shared-memory research). */
+  labIn?: {
+    ok?: boolean;
+    stopped?: boolean;
+    error?: string;
+    chunkCount?: number;
+    knowledgeRoot?: string;
+    promptModelId?: string;
+    promptModelName?: string;
+    searchModelId?: string;
+    searchModelName?: string;
+    coverage?: boolean;
+    searchPasses?: number;
+    truncated?: boolean;
+    warnings?: string[];
+    counts?: { search: number; read: number; links: number; total: number };
+    required?: { search: number; read: number; links: number };
   };
   /** swarm subagent-batch summary (workers done → main verifies). */
   swarm?: {

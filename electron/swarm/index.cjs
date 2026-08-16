@@ -40,6 +40,7 @@ const PLANNER_EXCLUDE_TOOLS = [
   "ask_user",
   "ask_otp",
   "runner",
+  "vm",
 ];
 
 /** Tools each swarm worker must not use (they only edit their own scope). */

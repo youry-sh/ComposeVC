@@ -23,6 +23,8 @@ const shodanTool = require("./shodanTool.cjs");
 const mcpManagerTool = require("./mcpManagerTool.cjs");
 const gitTool = require("./gitTool.cjs");
 const runnerTool = require("./runnerTool.cjs");
+const vmTool = require("./vmTool.cjs");
+const knowledgeTool = require("./knowledge.cjs");
 
 const TOOLS = [
   readFile,
@@ -50,6 +52,8 @@ const TOOLS = [
         mcpManagerTool,
         gitTool,
         runnerTool,
+        vmTool,
+		knowledgeTool,
 				];/** Common aliases the model may emit */const TOOL_ALIASES = {  timer: "work_timer",  worktimer: "work_timer",
   minimum_work_timer: "work_timer",
   glob: "grep",
@@ -156,6 +160,36 @@ const TOOLS = [
   runner_manager: "runner",
   background_runner: "runner",
   create_runner: "runner",
+  // virtual machines (QEMU engine: Linux/Windows guests driven as text)
+  vms: "vm",
+  virtual_machine: "vm",
+  virtualmachine: "vm",
+  virtual_machines: "vm",
+  vm_tool: "vm",
+  vmtool: "vm",
+  vm_manager: "vm",
+  manage_vm: "vm",
+  manage_vms: "vm",
+  create_vm: "vm",
+  start_vm: "vm",
+  stop_vm: "vm",
+  delete_vm: "vm",
+  list_vms: "vm",
+  vm_exec: "vm",
+  vm_console: "vm",
+  qemu: "vm",
+  hypervisor: "vm",
+  virtualbox: "vm",
+  vbox: "vm",
+  docker_machine: "vm",
+  dockmachine: "vm",
+  machine: "vm",
+  machines: "vm",
+  sandbox: "vm",
+  guest_os: "vm",
+  memory: "knowledge",
+  knowledge_memory: "knowledge",
+  lab_in_memory: "knowledge",
 };
 // Longest-name-first, built once — used by fuzzy tool-name recovery.
 const TOOLS_BY_NAME_LENGTH = TOOLS.slice().sort((a, b) => b.name.length - a.name.length);
@@ -339,6 +373,7 @@ async function dispatch(name, input, context) {
     ? { ...(input || {}) }
     : normalizeToolInput(execName, input || {}, ctx);
   try {
+    assertAllowedRoot(execName, normalizedInput, ctx);
     const data = await tool.execute(normalizedInput, ctx);
     if (ctx.signal?.aborted) {
       return { ok: false, error: "Stopped by user", aborted: true };
@@ -378,6 +413,16 @@ function resolveAgainstRoot(p, rootPath) {
   // ".", "./", empty-ish relative → project root
   if (p === "." || p === "./" || p === ".\\") return rootPath;
   return require("path").join(rootPath, p);
+}
+
+function assertAllowedRoot(name, input, context) {
+  if (!context?.allowedRoot || !["grep", "read_file", "list_dir"].includes(name)) return;
+  const path = require("path");
+  const allowed = path.resolve(String(context.allowedRoot));
+  const target = path.resolve(String(input?.path || allowed));
+  const relative = path.relative(allowed, target);
+  if (relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative))) return;
+  throw new Error(`${name} path is outside the allowed LAB-IN knowledge root`);
 }
 
 function normalizeToolInput(name, input, context) {

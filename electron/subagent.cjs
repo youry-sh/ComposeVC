@@ -22,6 +22,7 @@ const EXPLORE_EXCLUDE = [
   "edit_file",
   "create_file",
   "runner",
+  "vm",
 ];
 
 const GENERAL_EXCLUDE = [

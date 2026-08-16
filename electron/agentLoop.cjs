@@ -257,6 +257,7 @@ async function runAgentLoopInner({
   maxIterations = MAX_TOTAL_ITERATIONS,
   excludeToolNames = [],
   disableTools = false,
+  builtinToolsOnly = false,
   isSubagent = false,
   subagentDepth = 0,
   sessionId = null,
@@ -274,17 +275,19 @@ async function runAgentLoopInner({
         : "";
   let tools = disableTools
     ? []
-    : await getToolSchemasAsync({
-        excludeNames: excludeToolNames,
-        userDataPath: toolsUserDataPath,
-        query: toolsQuery,
-      });
+    : builtinToolsOnly
+      ? getToolSchemas({ excludeNames: excludeToolNames })
+      : await getToolSchemasAsync({
+          excludeNames: excludeToolNames,
+          userDataPath: toolsUserDataPath,
+          query: toolsQuery,
+        });
   let toolsSorted = toolsByNameLength(tools);
   let toolsFingerprint = tools
     .map((t) => `${t.name}:${t.customId || ""}:${(t.description || "").slice(0, 48)}`)
     .join("|");
   const refreshToolSchemas = async (force = false) => {
-    if (disableTools) return false;
+    if (disableTools || builtinToolsOnly) return false;
     if (!toolsUserDataPath && !force) return false;
     try {
       const next = await getToolSchemasAsync({

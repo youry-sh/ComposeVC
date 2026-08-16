@@ -33,6 +33,7 @@ const {
   SOVIET7_NORMAL_MODE_ID,
   runSoviet7Council,
 } = require("./soviet7/index.cjs");
+const { LAB_IN_MODE_ID, runLabInPipeline } = require("./labIn/index.cjs");
 
 const { TOOLS, getToolSchemas, getToolSchemasAsync } = require("./tools/registry.cjs");
 const { createTelegramBot, normalizeTelegramConfig } = require("./telegramBot.cjs");
@@ -236,6 +237,8 @@ const defaultProviderConfig = {
     maxContextTokens: DEFAULT_MAX_CONTEXT_TOKENS,
     autoCompactTokens: DEFAULT_AUTO_COMPACT_TOKENS,
     soviet7ModelId: "",
+    labInPromptModelId: "",
+    labInSearchModelId: "",
   },
 };
 
@@ -330,11 +333,25 @@ function normalizeAiRuntimeConfig(config) {
       : typeof config?.soviet7_model_id === "string"
         ? config.soviet7_model_id.trim()
         : "";
+  const labInPromptModelId =
+    typeof config?.labInPromptModelId === "string"
+      ? config.labInPromptModelId.trim()
+      : typeof config?.lab_in_prompt_model_id === "string"
+        ? config.lab_in_prompt_model_id.trim()
+        : "";
+  const labInSearchModelId =
+    typeof config?.labInSearchModelId === "string"
+      ? config.labInSearchModelId.trim()
+      : typeof config?.lab_in_search_model_id === "string"
+        ? config.lab_in_search_model_id.trim()
+        : "";
   return {
     agentCompletionNotifications: config?.agentCompletionNotifications !== false,
     maxContextTokens,
     autoCompactTokens,
     soviet7ModelId,
+    labInPromptModelId,
+    labInSearchModelId,
   };
 }
 
@@ -2238,6 +2255,45 @@ function mergeSessionMessages(storedMessages, incomingMessages) {
   return stored.length >= incoming.length ? stored : incoming;
 }
 
+function buildLabInConversationContext(messages, currentUserMessage) {
+  const rows = [];
+  const list = Array.isArray(messages) ? messages : [];
+  for (let index = 0; index < list.length; index += 1) {
+    const message = list[index];
+    if (!message || (message.role !== "user" && message.role !== "assistant")) continue;
+    if (message === currentUserMessage) continue;
+    const text = contentPartsToText(message.content).trim();
+    if (!text) continue;
+    rows.push(`${message.role === "user" ? "USER" : "ASSISTANT"}: ${text.slice(0, 5000)}`);
+  }
+  let value = rows.slice(-12).join("\n\n");
+  if (value.length > 24000) value = value.slice(value.length - 24000);
+  return value;
+}
+
+function restoreLabInUserMessage(messages, originalMessage) {
+  if (!Array.isArray(messages) || !originalMessage) return messages;
+  let targetIndex = -1;
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+    if (message?.role === "user" && contentPartsToText(message.content).includes("[LAB-IN EXECUTION PACKAGE]")) {
+      targetIndex = index;
+      break;
+    }
+  }
+  if (targetIndex < 0) return messages;
+  return messages.map((message, index) => {
+    if (index !== targetIndex) return message;
+    return {
+      ...message,
+      content: originalMessage.content,
+      ...(Array.isArray(originalMessage.images) && originalMessage.images.length
+        ? { images: originalMessage.images }
+        : {}),
+    };
+  });
+}
+
 async function executeChatRequest(event, request, overrides = {}) {
   const config = await readProviderConfig();
   const modelId = overrides.modelId || request.modelId;
@@ -2353,20 +2409,24 @@ async function executeChatRequest(event, request, overrides = {}) {
   const excludeToolNames = [];
   let systemPrompt;
   // Removed modes normalize to the default lopster mode.
-  // Modes: lopster | soviet-7
+  // Modes: lopster | soviet-7 | lab-in
   const rawAgentMode = String(overrides.agentMode || request.agentMode || "lopster")
     .trim()
     .toLowerCase();
   const agentMode =
     rawAgentMode === SOVIET7_MODE_ID || rawAgentMode === "soviet7" || rawAgentMode === "soviet_7"
       ? SOVIET7_MODE_ID
-      : "lopster";
+      : rawAgentMode === LAB_IN_MODE_ID || rawAgentMode === "labin" || rawAgentMode === "lab_in"
+        ? LAB_IN_MODE_ID
+        : "lopster";
   const isSoviet7 = agentMode === SOVIET7_MODE_ID;
+  const isLabIn = agentMode === LAB_IN_MODE_ID;
   /** After soviet-7, execute path reports normal mode (lopster). */
   let effectiveAgentMode = agentMode;
   let soviet7Meta = null;
 
   const lastUserMsg = [...requestMessages].reverse().find((m) => isRealUserMessage(m)) || null;
+  const originalLastUserMsg = lastUserMsg ? { ...lastUserMsg } : null;
   // Multimodal: extract plain text only (images stay on the message for adapters).
   const lastUserText = lastUserMsg
     ? contentPartsToText(lastUserMsg.content) ||
@@ -2386,6 +2446,12 @@ async function executeChatRequest(event, request, overrides = {}) {
     activeSystemPrompts.length > 0
       ? `${activeSystemPrompts.join("\n\n")}\n\n--- Injected ComposeVC context ---\n${baseSystemPrompt}`
       : baseSystemPrompt;
+  systemPrompt +=
+    "\n\n## Shared LAB-IN knowledge memory\n" +
+    "The knowledge tool is a persistent global memory shared across projects. " +
+    "Only write to it when the user explicitly asks to remember, save, replenish, or update memory. " +
+    "When asked, preserve the useful substance, provenance, tags, and known links; the tool safely chunks large content. " +
+    "Never silently store ordinary conversations or secrets. For updates, read the existing chunk first and update by ID.";
   if (request.thinkingMax === true) {
     systemPrompt += `\n\n${THINKING_MAX_PROMPT}`;
   }
@@ -2415,7 +2481,88 @@ async function executeChatRequest(event, request, overrides = {}) {
   let stoppedFlag = false;
   let mainProgress = null;
   let historyUserMessages = requestMessages;
+  let labInMeta = null;
   try {
+    // ── LAB-IN: prompt refiner → audited shared-memory search → main execution ──
+    if (isLabIn && typeof lastUserText === "string" && lastUserText.trim()) {
+      mainProgress = createThrottledProgressSender(event, {
+        sessionId: runSessionId,
+        agentId: overrides.agentId,
+        progressChannel: overrides.progressChannel,
+        telegramChatId: overrides.telegramChatId,
+        telegramSlotId: overrides.telegramSlotId,
+        onProgress: (progress) => {
+          if (typeof overrides.onProgress === "function") {
+            try {
+              overrides.onProgress(progress);
+            } catch {
+              /* */
+            }
+          }
+        },
+      });
+      let pipeline;
+      try {
+        pipeline = await runLabInPipeline({
+          runAgentLoop,
+          config,
+          mainModel: model,
+          mainProvider: provider,
+          originalTask: lastUserText,
+          conversationContext: buildLabInConversationContext(requestMessages, lastUserMsg),
+          projectName: request.projectName || null,
+          userDataPath: app.getPath("userData"),
+          signal: abortController.signal,
+          tokenCountingMode: config.tokenCountingMode || "provider",
+          onProgress: mainProgress,
+          sessionId: runSessionId,
+        });
+      } catch (labError) {
+        if (abortController.signal.aborted || labError?.name === "AbortError" || labError?.stopped) {
+          stoppedFlag = true;
+          return {
+            text: labError?.message || "[Stopped by user]",
+            provider,
+            model,
+            sessionId: runSessionId,
+            stopped: true,
+            agentMode: LAB_IN_MODE_ID,
+            labIn: { ok: false, stopped: true, error: labError?.message || "stopped" },
+          };
+        }
+        pipeline = {
+          handoffUserMessage:
+            `[LAB-IN pipeline warning: ${labError?.message || labError}]\n\n` +
+            `Execute the original user request carefully as the main ComposeVC agent:\n\n${lastUserText}`,
+          meta: { ok: false, warnings: [labError?.message || String(labError)], coverage: false },
+        };
+        mainProgress({
+          type: "status",
+          phase: "lab-in-fallback",
+          label: "LAB-IN · preparation failed · main agent continuing…",
+          agentMode: LAB_IN_MODE_ID,
+        });
+      }
+
+      labInMeta = {
+        ok: true,
+        ...(pipeline?.meta || {}),
+      };
+      const handoff = String(pipeline?.handoffUserMessage || lastUserText);
+      let replacedLab = false;
+      requestMessages = requestMessages.map((message, index, all) => {
+        if (replacedLab) return message;
+        const isLastUser =
+          message?.role === "user" && !all.slice(index + 1).some((item) => item?.role === "user");
+        if (!isLastUser) return message;
+        replacedLab = true;
+        return { ...message, content: handoff };
+      });
+      if (!replacedLab) requestMessages = [...requestMessages, { role: "user", content: handoff }];
+      historyUserMessages = requestMessages;
+      effectiveAgentMode = LAB_IN_MODE_ID;
+    }
+
     // ── Soviet-7: fan-out 7 identical advisors → handoff → auto-switch to lopster ──
     // Research uses council model (aiRuntime.soviet7ModelId || main). Execution uses main model.
     if (isSoviet7 && typeof lastUserText === "string" && lastUserText.trim()) {
@@ -2644,7 +2791,8 @@ async function executeChatRequest(event, request, overrides = {}) {
       const failureText = isCyberFlagErrorText(rawFailure)
         ? String(rawFailure)
         : `Request failed after multiple retries: ${rawFailure}`;
-      const recoveredMessages = Array.isArray(error?.recoveredMessages) ? error.recoveredMessages : requestMessages;
+      let recoveredMessages = Array.isArray(error?.recoveredMessages) ? error.recoveredMessages : requestMessages;
+      if (isLabIn) recoveredMessages = restoreLabInUserMessage(recoveredMessages, originalLastUserMsg);
       const fullHistory = [...recoveredMessages, { role: "assistant", content: failureText }];
       let saved = null;
       if (persistSession) {
@@ -2664,6 +2812,7 @@ async function executeChatRequest(event, request, overrides = {}) {
         usage: error?.usage || result?.usage,
         contextTokens: error?.contextTokens || result?.contextTokens,
         stopped: stoppedFlag,
+        labIn: labInMeta || undefined,
       };
     }
 
@@ -2672,6 +2821,7 @@ async function executeChatRequest(event, request, overrides = {}) {
     let fullHistory = Array.isArray(result.messages)
       ? result.messages
       : [...requestMessages, { role: "assistant", content: result.text }];
+    if (isLabIn) fullHistory = restoreLabInUserMessage(fullHistory, originalLastUserMsg);
     {
       const lastUserWanted =
         typeof lastUserText === "string" && lastUserText.trim() ? lastUserText : null;
@@ -2767,6 +2917,7 @@ async function executeChatRequest(event, request, overrides = {}) {
       stopped: result.stopped,
       agentMode: responseAgentMode,
       soviet7: soviet7Meta || undefined,
+      labIn: labInMeta || undefined,
       compactedMessages: result.compactionResult ? result.compactionResult.compactedMessages : undefined,
       compactionInfo: result.compactionResult
         ? {
