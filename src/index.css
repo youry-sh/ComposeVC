@@ -8649,27 +8649,39 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
 
 .aside-web-head {
   flex: 0 0 auto;
-  height: 30px;
+  height: 28px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 0 6px 0 12px;
+  gap: 4px;
+  padding: 0 5px 0 11px;
 }
+/* Folded away: a single thin strip, nothing else takes room in the rail. */
+.aside-web:not(.is-open) .aside-web-head { height: 22px; }
+.aside-web:not(.is-open) { opacity: .78; }
+.aside-web:not(.is-open):hover { opacity: 1; }
+
+/* The whole strip is the fold control. */
 .aside-web-toggle {
-  flex: none;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
   display: flex;
   align-items: center;
   gap: 6px;
   padding: 0;
   border: 0;
   background: transparent;
+  color: inherit;
+  text-align: left;
   cursor: pointer;
 }
 .aside-web-chevron {
+  flex: none;
   font-size: 8px;
   line-height: 1;
   color: var(--ink-500);
 }
+.aside-web-toggle .aside-title { flex: none; }
 .aside-web-name {
   flex: 1 1 auto;
   min-width: 0;
@@ -8679,6 +8691,14 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+/* Folded with a page still loaded — it is running, not gone. */
+.aside-web-live {
+  flex: none;
+  width: 5px;
+  height: 5px;
+  background: var(--ink-950);
+  animation: chat-rail-pulse 1.8s ease-in-out infinite;
 }
 .aside-web-acts {
   flex: none;

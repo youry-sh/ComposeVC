@@ -231,6 +231,36 @@ const AsideBrowser: React.FC = () => {
     return () => window.removeEventListener("keydown", onKey);
   }, [expanded, collapseFullscreen]);
 
+  /**
+   * Fold the dock down to its title strip — the page stays loaded, so a film
+   * keeps playing while the rail is free again. Unfolds back to the same size.
+   */
+  const fold = useCallback(() => {
+    if (!open) {
+      setOpen(true);
+      return;
+    }
+    if (expanded) collapseFullscreen();
+    setOpen(false);
+  }, [collapseFullscreen, expanded, open]);
+
+  // Ctrl+Shift+W folds it from anywhere, including from inside the page (the
+  // main process forwards the stroke when the guest owns the keyboard).
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const mod = event.ctrlKey || event.metaKey;
+      if (!mod || !event.shiftKey || event.code !== "KeyW") return;
+      event.preventDefault();
+      fold();
+    };
+    window.addEventListener("keydown", onKey);
+    const unsub = window.lopster?.onFoldWebDock?.(() => fold());
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      unsub?.();
+    };
+  }, [fold]);
+
   // Drag the top edge to resize the dock; the column above shrinks with it.
   const startResize = useCallback((event: React.MouseEvent) => {
     event.preventDefault();
@@ -281,26 +311,36 @@ const AsideBrowser: React.FC = () => {
       )}
 
       <header className="aside-web-head">
+        {/* The whole strip folds the dock — one click to get it out of the way. */}
         <button
           type="button"
           className="aside-web-toggle"
-          onClick={() => setOpen((prev) => !prev)}
-          title={open ? "Collapse" : "Expand"}
+          onClick={fold}
+          title={open ? "Fold away (Ctrl+Shift+W)" : "Unfold (Ctrl+Shift+W)"}
         >
           <span className="aside-web-chevron" aria-hidden>
             {open ? "▾" : "▸"}
           </span>
           <span className="aside-title">Web</span>
+          <span className="aside-web-name" title={title || url || ""}>
+            {title || (url ? hostOf(url) : "")}
+          </span>
+          {/* Folded but still loaded — the page is alive and keeps playing. */}
+          {!open && mountUrl && <span className="aside-web-live" aria-hidden />}
         </button>
-        <span className="aside-web-name" title={title || url || ""}>
-          {title || (url ? hostOf(url) : "")}
-        </span>
         {url && (
           <div className="aside-web-acts">
             <button
               type="button"
               className="aside-web-btn"
-              onClick={() => (expanded ? collapseFullscreen() : setExpanded(true))}
+              onClick={() => {
+                if (expanded) {
+                  collapseFullscreen();
+                  return;
+                }
+                setOpen(true);
+                setExpanded(true);
+              }}
               title={expanded ? "Back to the dock (Esc)" : "Fill the panel"}
             >
               {expanded ? "⤡" : "⤢"}

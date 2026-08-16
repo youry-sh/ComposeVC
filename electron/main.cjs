@@ -1000,15 +1000,20 @@ function installPackagedWindowHardening(win) {
 
     // While a guest page has focus (a video playing over the rail) it owns the
     // keyboard, so the app's own shortcuts never reach the renderer. Forward
-    // the ones the shell needs — Ctrl+H opens the chat switcher.
+    // the ones the shell needs: Ctrl+H → chat switcher, Ctrl+Shift+W → fold.
     try {
       guest.on("before-input-event", (event, input) => {
         if (!input || input.type !== "keyDown") return;
         const ctrl = Boolean(input.control || input.meta);
-        if (!ctrl || input.alt || String(input.code || "") !== "KeyH") return;
+        if (!ctrl || input.alt) return;
+        const code = String(input.code || "");
+        let channel = null;
+        if (code === "KeyH" && !input.shift) channel = "chat:switcher-toggle";
+        else if (code === "KeyW" && input.shift) channel = "web:dock-fold";
+        if (!channel) return;
         event.preventDefault();
         try {
-          if (!wc.isDestroyed()) wc.send("chat:switcher-toggle", {});
+          if (!wc.isDestroyed()) wc.send(channel, {});
         } catch {
           /* ignore */
         }

@@ -137,6 +137,7 @@ declare global {
       storageList: () => Promise<{ ok: boolean; items?: StorageItem[]; error?: string }>;
       storageDeleteHistory: (id: string) => Promise<{ ok: boolean }>;
       onOpenChatSwitcher: (callback: () => void) => () => void;
+      onFoldWebDock: (callback: () => void) => () => void;
       onStorageOpen: (callback: () => void) => () => void;
       readProviderConfig: () => Promise<ProviderConfig>;
       writeProviderConfig: (config: ProviderConfig) => Promise<ProviderConfig>;

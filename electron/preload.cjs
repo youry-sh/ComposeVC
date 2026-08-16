@@ -34,6 +34,12 @@ contextBridge.exposeInMainWorld("lopster", {
     ipcRenderer.on("chat:switcher-toggle", listener);
     return () => ipcRenderer.removeListener("chat:switcher-toggle", listener);
   },
+  // Ctrl+Shift+W pressed inside a <webview> — fold the media dock away.
+  onFoldWebDock: (callback) => {
+    const listener = () => callback();
+    ipcRenderer.on("web:dock-fold", listener);
+    return () => ipcRenderer.removeListener("web:dock-fold", listener);
+  },
   onStorageOpen: (callback) => {
     const listener = () => callback(); ipcRenderer.on("storage:open", listener);
     return () => ipcRenderer.removeListener("storage:open", listener);
