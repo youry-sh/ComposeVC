@@ -46,7 +46,13 @@ module.exports = {
     if (action === "search") return dense({ query: input.query, results: await store.searchKnowledge(userDataPath, input.query, input) });
     if (action === "read") return dense(await store.getKnowledgeChunk(userDataPath, input.id));
     if (action === "links") return dense(await store.knowledgeLinks(userDataPath, input.id));
-    if (action === "add") return dense(await store.addKnowledge(userDataPath, input));
-    return dense(await store.updateKnowledge(userDataPath, input));
+    if (action === "add") {
+      const result = await store.addKnowledge(userDataPath, input);
+      context.onKnowledgeChanged?.({ type: "added", chunks: result.created || [] });
+      return dense(result);
+    }
+    const result = await store.updateKnowledge(userDataPath, input);
+    context.onKnowledgeChanged?.({ type: "updated", chunk: result });
+    return dense(result);
   },
 };

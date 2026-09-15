@@ -25,7 +25,7 @@ type SizeworkoutUpdate = {
   payload?: unknown;
 };
 
-import { AgentToolProgress, ChatExecutionRequest, ChatExecutionResponse, ChatMessage, ChatRequestMessage, ChatSession, ChatSessionPage, ChatSessionSummary, CompactChatRequest, CompactChatResponse, FileNode, ProblemItem, ProjectSearchResult, ProjectTask, ProviderConfig, RunnerJob, RunnerReport, RunnerReportSummary } from "./types";
+import { AgentToolProgress, ChatExecutionRequest, ChatExecutionResponse, ChatMessage, ChatRequestMessage, ChatSession, ChatSessionPage, ChatSessionSummary, CompactChatRequest, CompactChatResponse, FileNode, KnowledgeChunk, KnowledgeChunkSummary, KnowledgeListResponse, ProblemItem, ProjectSearchResult, ProjectTask, ProviderConfig, RunnerJob, RunnerReport, RunnerReportSummary } from "./types";
 
 /** Snapshot of a chat folder's repository — see electron/gitService.cjs */
 export type GitStatus =
@@ -332,6 +332,26 @@ declare global {
         sessionId: string,
         options?: { oneShot?: boolean; title?: string }
       ) => Promise<ChatSession>;
+      knowledgeList: () => Promise<KnowledgeListResponse>;
+      knowledgeRead: (id: string) => Promise<KnowledgeChunk>;
+      knowledgeCreate: (input: {
+        title: string;
+        content: string;
+        tags?: string[];
+        links?: string[];
+        source?: string;
+      }) => Promise<{ created: KnowledgeChunkSummary[]; duplicates: KnowledgeChunkSummary[] }>;
+      knowledgeUpdate: (
+        id: string,
+        patch: { title?: string; content?: string; tags?: string[]; links?: string[]; source?: string }
+      ) => Promise<KnowledgeChunkSummary>;
+      knowledgeDelete: (id: string) => Promise<{ deleted: KnowledgeChunkSummary; trashPath: string }>;
+      onKnowledgeChanged: (callback: (payload: {
+        type?: "added" | "updated" | "deleted" | "changed" | string;
+        chunk?: KnowledgeChunkSummary;
+        chunks?: KnowledgeChunkSummary[];
+        chunkId?: string;
+      }) => void) => () => void;
       estimateContextTokens: (rootPath: string | null, projectName?: string) => Promise<number>;
       listMcpServers: () => Promise<import("./types").McpServer[]>;
       addMcpServer: (input: Partial<import("./types").McpServer> & { name: string }) => Promise<import("./types").McpServer>;

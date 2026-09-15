@@ -285,6 +285,51 @@ async function updateKnowledge(userDataPath, input = {}) {
   });
 }
 
+async function deleteKnowledge(userDataPath, id) {
+  const chunkId = String(id || "").trim();
+  if (!chunkId) throw new Error("knowledge delete requires id");
+  return withWriteLock(userDataPath, async () => {
+    const paths = await ensureStore(userDataPath);
+    const manifest = await readManifest(userDataPath);
+    const target = manifest.chunks.find((entry) => entry.id === chunkId);
+    if (!target) throw new Error(`Knowledge chunk not found: ${chunkId}`);
+
+    const trashDir = path.join(paths.root, "trash");
+    await fs.promises.mkdir(trashDir, { recursive: true });
+    const sourcePath = path.join(paths.root, target.file);
+    const trashPath = path.join(trashDir, `${chunkId}-${Date.now()}.md`);
+    try {
+      await fs.promises.rename(sourcePath, trashPath);
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
+    }
+
+    const remaining = [];
+    for (const entry of manifest.chunks) {
+      if (entry.id === chunkId) continue;
+      if (!entry.links.includes(chunkId)) {
+        remaining.push(entry);
+        continue;
+      }
+      const read = await readChunkContent(userDataPath, entry);
+      const next = normalizeEntry({
+        ...entry,
+        links: entry.links.filter((link) => link !== chunkId),
+        updatedAt: Date.now(),
+      });
+      await fs.promises.writeFile(
+        path.join(paths.root, next.file),
+        renderChunk(next, read.content),
+        "utf8"
+      );
+      remaining.push(next);
+    }
+    manifest.chunks = remaining;
+    await writeManifest(userDataPath, manifest);
+    return { deleted: target, trashPath };
+  });
+}
+
 async function getKnowledgeChunk(userDataPath, id) {
   const manifest = await readManifest(userDataPath);
   const entry = manifest.chunks.find((chunk) => chunk.id === String(id || "").trim());
@@ -395,6 +440,7 @@ module.exports = {
   splitIntoChunks,
   addKnowledge,
   updateKnowledge,
+  deleteKnowledge,
   getKnowledgeChunk,
   searchKnowledge,
   knowledgeLinks,

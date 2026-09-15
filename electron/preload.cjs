@@ -113,6 +113,16 @@ contextBridge.exposeInMainWorld("lopster", {
     ipcRenderer.invoke("memory:updateSessionMeta", rootPath, sessionId, patch || {}),
   clearChatSessionTranscript: (rootPath, sessionId, options) =>
     ipcRenderer.invoke("memory:clearSessionTranscript", rootPath, sessionId, options || {}),
+  knowledgeList: () => ipcRenderer.invoke("knowledge:list"),
+  knowledgeRead: (id) => ipcRenderer.invoke("knowledge:read", id),
+  knowledgeCreate: (input) => ipcRenderer.invoke("knowledge:create", input || {}),
+  knowledgeUpdate: (id, patch) => ipcRenderer.invoke("knowledge:update", id, patch || {}),
+  knowledgeDelete: (id) => ipcRenderer.invoke("knowledge:delete", id),
+  onKnowledgeChanged: (callback) => {
+    const listener = (_event, payload) => callback(payload || { type: "changed" });
+    ipcRenderer.on("knowledge:changed", listener);
+    return () => ipcRenderer.removeListener("knowledge:changed", listener);
+  },
 
 		  estimateContextTokens: (rootPath, projectName) => ipcRenderer.invoke("context:estimateTokens", rootPath, projectName),
 

@@ -196,8 +196,24 @@ function describeError(error, url) {
   return `${host}: ${detail || "connection failed"}`;
 }
 
-/** Streamed download with resume and mirror fallback; returns a job updated in place. */
-function startDownload(userDataPath, { url, mirrors = [], file, label, signal }) {
+const IDLE_MS = 45_000; // a stream with no bytes for this long is a hang, not slow progress
+const ATTEMPTS_PER_CANDIDATE = 4;
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function sha512(file) {
+  const hash = require("crypto").createHash("sha512");
+  hash.update(fs.readFileSync(file));
+  return hash.digest("hex");
+}
+
+/**
+ * Streamed download that always finishes or fails loudly — never hangs.
+ *  - resumes from the partial file with a Range request;
+ *  - an idle watchdog aborts a stalled stream (the real cause of "тупо зависает");
+ *  - each source is retried several times with resume before the next mirror;
+ *  - size and, when known, sha512 are verified before the file is accepted.
+ */
+function startDownload(userDataPath, { url, mirrors = [], file, label, signal, sha512: wantSha, size: wantSize }) {
   const target = localPath(userDataPath, file);
   const partial = path.join(ensureDir(layout.downloads(userDataPath)), file);
   const candidates = [url, ...mirrors].filter(Boolean);
@@ -208,20 +224,25 @@ function startDownload(userDataPath, { url, mirrors = [], file, label, signal })
     target,
     state: "running",
     bytes: fileSize(partial),
-    total: null,
+    total: wantSize || null,
     startedAt: Date.now(),
     updatedAt: Date.now(),
+    attempt: 0,
     error: null,
   };
   jobs.set(file, job);
 
-  const downloadFrom = async (source) => {
+  const streamOnce = async (source) => {
     let redirects = 0;
     let current = source;
     for (;;) {
       const offset = fileSize(partial);
+      // A stale partial larger than the known size is corrupt — start over.
+      if (wantSize && offset > wantSize) {
+        fs.rmSync(partial, { force: true });
+      }
       const response = await request(current, {
-        headers: offset ? { range: `bytes=${offset}-` } : {},
+        headers: fileSize(partial) ? { range: `bytes=${fileSize(partial)}-` } : {},
         timeoutMs: 60_000,
         signal,
       });
@@ -233,54 +254,101 @@ function startDownload(userDataPath, { url, mirrors = [], file, label, signal })
       }
       if (response.statusCode === 416) {
         response.resume();
-        return; // already complete
+        return; // server says the range is past the end — already complete
       }
       if (response.statusCode !== 200 && response.statusCode !== 206) {
         response.resume();
         throw new Error(`HTTP ${response.statusCode} downloading ${current}`);
       }
-      const append = response.statusCode === 206 && offset > 0;
+      const startAt = fileSize(partial);
+      const append = response.statusCode === 206 && startAt > 0;
       const length = Number(response.headers["content-length"] || 0);
-      job.total = append ? offset + length : length || null;
-      job.bytes = append ? offset : 0;
+      job.total = wantSize || (append ? startAt + length : length || null);
+      job.bytes = append ? startAt : 0;
       job.url = current;
       await new Promise((resolve, reject) => {
         const out = fs.createWriteStream(partial, { flags: append ? "a" : "w" });
+        let idle;
+        const arm = () => {
+          clearTimeout(idle);
+          idle = setTimeout(() => {
+            response.destroy(new Error(`stalled — no data for ${Math.round(IDLE_MS / 1000)}s`));
+          }, IDLE_MS);
+        };
+        const clear = () => clearTimeout(idle);
+        arm();
         response.on("data", (chunk) => {
           job.bytes += chunk.length;
           job.updatedAt = Date.now();
+          arm();
         });
-        response.on("error", reject);
-        out.on("error", reject);
-        out.on("finish", resolve);
+        response.on("error", (err) => {
+          clear();
+          reject(err);
+        });
+        out.on("error", (err) => {
+          clear();
+          reject(err);
+        });
+        out.on("finish", () => {
+          clear();
+          resolve();
+        });
         response.pipe(out);
       });
       return;
     }
   };
 
-  job.promise = (async () => {
-    const failures = [];
-    for (const candidate of candidates) {
-      try {
-        // eslint-disable-next-line no-await-in-loop
-        await downloadFrom(candidate);
-        failures.length = 0;
-        break;
-      } catch (err) {
-        failures.push(describeError(err, candidate));
-        if (candidate === candidates[candidates.length - 1]) {
-          throw new Error(`download failed — ${failures.join(" | ")}`);
-        }
+  const verify = () => {
+    const got = fileSize(partial);
+    if (wantSize && got !== wantSize) {
+      throw new Error(`size mismatch: got ${got} bytes, expected ${wantSize} — retrying`);
+    }
+    if (wantSha) {
+      const got2 = sha512(partial);
+      if (got2.toLowerCase() !== String(wantSha).toLowerCase()) {
+        fs.rmSync(partial, { force: true }); // poisoned; a resume would never converge
+        throw new Error("sha512 mismatch — the download is corrupt, restarting from scratch");
       }
     }
+  };
+
+  job.promise = (async () => {
+    const failures = [];
+    let done = false;
+    for (const candidate of candidates) {
+      for (let attempt = 1; attempt <= ATTEMPTS_PER_CANDIDATE; attempt += 1) {
+        job.attempt += 1;
+        if (signal?.aborted) throw new Error("Stopped by user");
+        try {
+          // eslint-disable-next-line no-await-in-loop
+          await streamOnce(candidate);
+          // eslint-disable-next-line no-await-in-loop
+          verify();
+          done = true;
+          break;
+        } catch (err) {
+          failures.push(`${describeError(err, candidate)} (try ${attempt}/${ATTEMPTS_PER_CANDIDATE})`);
+          job.error = failures[failures.length - 1];
+          if (attempt < ATTEMPTS_PER_CANDIDATE) {
+            // eslint-disable-next-line no-await-in-loop
+            await sleep(Math.min(8000, 1000 * attempt)); // brief backoff, then resume
+          }
+        }
+      }
+      if (done) break;
+    }
+    if (!done) throw new Error(`download failed after retries — ${failures.slice(-4).join(" | ")}`);
+
     fs.renameSync(partial, target);
     job.state = "done";
+    job.error = null;
     job.bytes = fileSize(target);
     job.total = job.bytes;
     job.updatedAt = Date.now();
     const state = readState(userDataPath);
-    state.downloads[file] = { url, bytes: job.bytes, completedAt: Date.now() };
+    state.downloads[file] = { url, bytes: job.bytes, sha512: wantSha || null, completedAt: Date.now() };
     writeState(userDataPath, state);
     return target;
   })().catch((err) => {
@@ -304,22 +372,29 @@ function jobView(job) {
     totalMb: job.total ? Math.round(job.total / (1024 * 1024)) : null,
     percent,
     mbPerSec: Math.round((job.bytes / (1024 * 1024) / seconds) * 10) / 10,
-    error: job.error,
+    attempt: job.attempt || 0,
+    error: job.state === "error" ? job.error : null,
   };
 }
 
-async function pull(userDataPath, { image, url, wait = false, signal } = {}) {
+async function pull(userDataPath, { image, url, mirrors, file: fileName, sha512: wantSha, size: wantSize, wait = false, signal } = {}) {
   ensureDir(layout.images(userDataPath));
   const entry = catalogEntry(image);
-  const file = entry ? entry.file : path.basename(new URL(url).pathname) || `image-${Date.now()}.img`;
+  const file = fileName || (entry ? entry.file : path.basename(new URL(url).pathname) || `image-${Date.now()}.img`);
   const target = localPath(userDataPath, file);
   const existing = jobs.get(file);
   if (existing && existing.state === "running") {
     if (wait) await existing.promise;
     return { started: false, running: true, progress: jobView(jobs.get(file)), path: target };
   }
+  // A previously verified file with the right size (and sha, when checked) is reused.
   if (fs.existsSync(target) && !url) {
-    return { started: false, alreadyPresent: true, path: target, sizeMb: Math.round(fileSize(target) / (1024 * 1024)) };
+    const okSize = !wantSize || fileSize(target) === wantSize;
+    const okSha = !wantSha || sha512(target).toLowerCase() === String(wantSha).toLowerCase();
+    if (okSize && okSha) {
+      return { started: false, alreadyPresent: true, verified: Boolean(wantSha), path: target, sizeMb: Math.round(fileSize(target) / (1024 * 1024)) };
+    }
+    fs.rmSync(target, { force: true }); // stale/corrupt — pull it again
   }
   let downloadUrl = url || null;
   if (!downloadUrl) {
@@ -329,14 +404,16 @@ async function pull(userDataPath, { image, url, wait = false, signal } = {}) {
   }
   const job = startDownload(userDataPath, {
     url: downloadUrl,
-    mirrors: url ? [] : entry?.mirrors || [],
+    mirrors: mirrors || (url ? [] : entry?.mirrors || []),
     file,
     label: entry?.label,
+    sha512: wantSha,
+    size: wantSize,
     signal,
   });
   if (wait) {
     await job.promise;
-    return { started: true, done: true, path: target, sizeMb: Math.round(fileSize(target) / (1024 * 1024)) };
+    return { started: true, done: true, verified: Boolean(wantSha), path: target, sizeMb: Math.round(fileSize(target) / (1024 * 1024)) };
   }
   return {
     started: true,

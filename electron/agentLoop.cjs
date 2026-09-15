@@ -26,6 +26,11 @@ const THINKING_MAX_REQUIRED_CYCLES = REQUIRED_CYCLES;
 const DEFAULT_MAX_CONTEXT_TOKENS = 500000;
 const DEFAULT_AUTO_COMPACT_TOKENS = 400000;
 const ABSOLUTE_MAX_CONTEXT_TOKENS = 2_000_000;
+// First text is delivered immediately; subsequent provider deltas are grouped
+// into a smooth ~15 FPS stream. This removes most IPC/Markdown churn without a
+// perceptible typing delay, and large bursts bypass the timer automatically.
+const STREAM_DELTA_FLUSH_MS = 64;
+const STREAM_DELTA_FORCE_CHARS = 8_192;
 
 function clampTokenBudget(value, fallback, { min = 1_000, max = ABSOLUTE_MAX_CONTEXT_TOKENS } = {}) {
   const numeric = Number(value);
@@ -912,18 +917,28 @@ async function runAgentLoopInner({
     // still read it when a provider error short-circuits the try block.
     let streamedContent = "";
     try {
-      let pendingText = "";
-      let pendingReasoning = "";
+      let pendingTextParts = [];
+      let pendingReasoningParts = [];
+      let pendingStreamChars = 0;
       let streamFlushTimer = null;
       const flushStreamDelta = () => {
+        if (streamFlushTimer) clearTimeout(streamFlushTimer);
         streamFlushTimer = null;
-        if (!pendingText && !pendingReasoning) return;
-        const textDelta = pendingText;
-        if (pendingReasoning) {
+        if (pendingTextParts.length === 0 && pendingReasoningParts.length === 0) return;
+        const textDelta = pendingTextParts.length === 1
+          ? pendingTextParts[0]
+          : pendingTextParts.join("");
+        const reasoningDelta = pendingReasoningParts.length === 1
+          ? pendingReasoningParts[0]
+          : pendingReasoningParts.join("");
+        // Native provider reasoning is not rendered unless Thinking-max is
+        // explicitly locked. Avoid tokenizing and IPC-forwarding invisible
+        // deltas on the normal path.
+        if (reasoningDelta && thinkingMax) {
           onProgress?.({
             type: "assistant_thinking",
             phase: "reasoning",
-            tokenDelta: countTokens(pendingReasoning),
+            tokenDelta: countTokens(reasoningDelta),
           });
         }
         if (textDelta && !suppressPreThinkAnswer) {
@@ -931,8 +946,9 @@ async function runAgentLoopInner({
           streamedText = true;
           streamedContent += textDelta;
         }
-        pendingText = "";
-        pendingReasoning = "";
+        pendingTextParts = [];
+        pendingReasoningParts = [];
+        pendingStreamChars = 0;
       };
       result = await adapter.execute({
         provider,
@@ -942,9 +958,17 @@ async function runAgentLoopInner({
         onRetry,
         signal,
         onDelta: ({ text, reasoning }) => {
-          pendingText += text || "";
-          pendingReasoning += reasoning || "";
-          if (!streamFlushTimer) streamFlushTimer = setTimeout(flushStreamDelta, 32);
+          if (text) pendingTextParts.push(text);
+          if (reasoning && thinkingMax) pendingReasoningParts.push(reasoning);
+          pendingStreamChars += (text?.length || 0) + (thinkingMax ? reasoning?.length || 0 : 0);
+          // Preserve instant time-to-first-text, then batch the hot path.
+          if (!streamedText && text && !suppressPreThinkAnswer) {
+            flushStreamDelta();
+          } else if (pendingStreamChars >= STREAM_DELTA_FORCE_CHARS) {
+            flushStreamDelta();
+          } else if (!streamFlushTimer) {
+            streamFlushTimer = setTimeout(flushStreamDelta, STREAM_DELTA_FLUSH_MS);
+          }
         },
       });
       if (streamFlushTimer) clearTimeout(streamFlushTimer);

@@ -9,6 +9,7 @@ import RunnerSendModal from "./components/RunnerSendModal";
 import CustomToolsWorkspace from "./components/CustomToolsWorkspace";
 import TerminalWorkspace from "./components/TerminalWorkspace";
 import StorageModal from "./components/StorageModal";
+import KnowledgeWorkspace from "./components/KnowledgeWorkspace";
 import MultiIdeWorkspace, {
   loadMultiIdeSlots,
   saveMultiIdeSlots,
@@ -23,7 +24,7 @@ import {
 import { CustomTool, ProjectSearchResult, ProviderConfig } from "./types";
 import { dispatchInsertChatInput, loadMouseSnippets, textForMouseButton } from "./utils/mouseSnippets";
 
-type Panel = "multiide" | "proxy" | "settings" | "customtools" | "runner" | "terminal";
+type Panel = "multiide" | "proxy" | "settings" | "customtools" | "runner" | "terminal" | "knowledge";
 
 const App: React.FC = () => {
   const [rootPath, setRootPath] = useState<string | null>(null);
@@ -41,6 +42,7 @@ const App: React.FC = () => {
       if (saved === "proxy") return "proxy";
       if (saved === "runner") return "runner";
       if (saved === "terminal") return "terminal";
+      if (saved === "knowledge") return "knowledge";
       if (saved === "customtools") return "customtools";
     } catch {
       /* ignore */
@@ -473,6 +475,11 @@ const App: React.FC = () => {
                 onRemove={handleRemoveCustomTool}
                 labels={chatPanelLabels}
               />
+            </div>
+          )}
+          {activePanel === "knowledge" && (
+            <div className="flex-1 min-w-0 min-h-0 flex overflow-hidden">
+              <KnowledgeWorkspace />
             </div>
           )}
         </div>

@@ -167,7 +167,7 @@ async function execute({ provider, model, messages, tools, onRetry, signal, onDe
     if (textDelta || reasoningDelta) onDelta?.({ text: textDelta, reasoning: reasoningDelta });
   };
 
-  await readResponseEvents(response, "Anthropic", consumeChunk);
+  await readResponseEvents(response, "Anthropic", consumeChunk, { collectEvents: false });
   for (const tool of toolBlocks.values()) {
     if (toolCalls.some((call) => call.id === tool.id)) continue;
     let input = {};

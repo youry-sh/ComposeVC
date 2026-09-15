@@ -192,6 +192,33 @@ export interface ProjectSearchResult {
   score: number;
 }
 
+export interface KnowledgeChunkSummary {
+  id: string;
+  title: string;
+  file: string;
+  tags: string[];
+  links: string[];
+  source: string;
+  hash: string;
+  charCount: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface KnowledgeChunk extends KnowledgeChunkSummary {
+  content: string;
+  path: string;
+}
+
+export interface KnowledgeListResponse {
+  root: string;
+  manifestPath: string;
+  chunkCount: number;
+  totalChars: number;
+  updatedAt: number;
+  chunks: KnowledgeChunkSummary[];
+}
+
 /** lopster = ComposeVC; soviet-7 = council; lab-in = refine + memory research + execute */
 export type MainAgentMode = "lopster" | "soviet-7" | "lab-in";
 

@@ -30,11 +30,106 @@ async function readResponseText(response, providerName) {
 }
 
 /**
+ * Incremental SSE/NDJSON decoder. It scans each received character once and
+ * keeps only the unfinished line. The previous parser repeatedly split frames
+ * into arrays and sliced the complete remaining buffer after every event,
+ * turning large network chunks into quadratic string copying.
+ */
+function createEventStreamParser(onEvent, { collectEvents = true } = {}) {
+  let lineBuffer = "";
+  let dataParts = [];
+  const events = collectEvents ? [] : null;
+
+  const emitParsed = (data) => {
+    const payload = String(data || "").trim();
+    if (!payload || payload === "[DONE]") return true;
+    try {
+      const event = JSON.parse(payload);
+      if (events) events.push(event);
+      onEvent?.(event);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const emitDataParts = (force = false) => {
+    if (dataParts.length === 0) return true;
+    const data = dataParts.length === 1 ? dataParts[0] : dataParts.join("\n");
+    if (emitParsed(data)) {
+      dataParts = [];
+      return true;
+    }
+    if (force) dataParts = [];
+    return false;
+  };
+
+  const processLine = (rawLine) => {
+    const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
+    if (!line) {
+      emitDataParts(true);
+      return;
+    }
+    if (line.charCodeAt(0) === 58) return; // SSE comment / keep-alive (`:`)
+
+    if (line.startsWith("data:")) {
+      const first = line.charCodeAt(5);
+      const payload = line.slice(first === 32 ? 6 : 5);
+      // LLM streams use one complete JSON object per data line. Parse it now
+      // for lowest latency; if it is multiline JSON, retain parts until valid.
+      if (dataParts.length > 0) emitDataParts(false);
+      dataParts.push(payload);
+      emitDataParts(false);
+      return;
+    }
+
+    if (
+      line.startsWith("event:") ||
+      line.startsWith("id:") ||
+      line.startsWith("retry:")
+    ) {
+      return;
+    }
+
+    // OpenAI-compatible relays sometimes send one bare JSON object per line.
+    emitDataParts(true);
+    emitParsed(line);
+  };
+
+  const push = (text) => {
+    if (!text) return;
+    lineBuffer += text;
+    let cursor = 0;
+    let newline = lineBuffer.indexOf("\n", cursor);
+    while (newline !== -1) {
+      processLine(lineBuffer.slice(cursor, newline));
+      cursor = newline + 1;
+      newline = lineBuffer.indexOf("\n", cursor);
+    }
+    // One slice per network chunk instead of one slice per SSE frame.
+    if (cursor > 0) lineBuffer = lineBuffer.slice(cursor);
+  };
+
+  const finish = () => {
+    if (lineBuffer) {
+      processLine(lineBuffer);
+      lineBuffer = "";
+    }
+    emitDataParts(true);
+    return events || [];
+  };
+
+  return { push, finish };
+}
+
+/**
  * Consume JSON or SSE without buffering the response first. `onEvent` runs as
  * each complete SSE event arrives, so callers can forward text deltas to the
- * renderer while the upstream model is still generating.
+ * renderer while the upstream model is still generating. Adapters pass
+ * collectEvents:false because retaining thousands of already-consumed JSON
+ * objects until stream completion only increases GC pressure.
  */
-async function readResponseEvents(response, providerName, onEvent) {
+async function readResponseEvents(response, providerName, onEvent, options = {}) {
   if (!response.ok) {
     const text = await response.text();
     throw new Error(formatResponseError(response.status, text, providerName));
@@ -47,58 +142,23 @@ async function readResponseEvents(response, providerName, onEvent) {
     return events;
   }
 
-  // Some OpenAI-compatible relays stream valid `data:` frames but omit or lie
-  // about Content-Type. Inspect the body instead of falling back to response.text().
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
-  const events = [];
-  let buffer = "";
-  const emit = (frame) => {
-    const dataLines = frame
-      .split(/\r?\n/)
-      .filter((line) => line.startsWith("data:"))
-      .map((line) => line.slice(5).trimStart());
-    // SSE normally uses data: lines; accepting a bare JSON frame keeps the
-    // adapter compatible with relays that stream without a correct MIME type.
-    const data = (dataLines.length ? dataLines.join("\n") : frame).trim();
-    if (!data || data === "[DONE]") return;
-    try {
-      const event = JSON.parse(data);
-      events.push(event);
-      onEvent?.(event);
-    } catch {
-      // A few OpenAI-compatible relays emit a bare JSON line instead of a
-      // properly framed SSE event. Ignore malformed keep-alives safely.
-    }
-  };
+  const parser = createEventStreamParser(onEvent, {
+    collectEvents: options.collectEvents !== false,
+  });
 
   try {
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, "\n");
-      let boundary;
-      while ((boundary = buffer.indexOf("\n\n")) !== -1) {
-        emit(buffer.slice(0, boundary));
-        buffer = buffer.slice(boundary + 2);
-      }
-      // Non-SSE relays sometimes emit exactly one JSON object per line.
-      // Preserve an incomplete tail; emit every completed line immediately.
-      const lastNewline = buffer.lastIndexOf("\n");
-      if (lastNewline !== -1) {
-        const completeLines = buffer.slice(0, lastNewline).split("\n");
-        buffer = buffer.slice(lastNewline + 1);
-        for (const line of completeLines) {
-          if (line.trim()) emit(line);
-        }
-      }
+      parser.push(decoder.decode(value, { stream: true }));
     }
-    buffer += decoder.decode();
-    if (buffer.trim()) emit(buffer);
+    parser.push(decoder.decode());
   } finally {
     reader.releaseLock?.();
   }
-  return events;
+  return parser.finish();
 }
 
 const RETRYABLE_STATUS_CODES = new Set([408, 409, 425, 429, 500, 502, 503, 504]);
@@ -240,4 +300,10 @@ function parseJsonOrSse(text) {
     .map((payload) => JSON.parse(payload));
 }
 
-module.exports = { readResponseText, readResponseEvents, parseJsonOrSse, fetchWithRetry };
+module.exports = {
+  readResponseText,
+  readResponseEvents,
+  createEventStreamParser,
+  parseJsonOrSse,
+  fetchWithRetry,
+};

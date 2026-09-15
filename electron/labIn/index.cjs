@@ -5,9 +5,14 @@ const {
   LAB_IN_MAX_HANDOFF_CHARS,
   PROMPT_REFINER_SYSTEM_PROMPT,
   SEARCH_AGENT_SYSTEM_PROMPT,
+  SEARCH_SYNTHESIS_SYSTEM_PROMPT,
+  SEARCH_HELPERS,
   buildRefinerPrompt,
   buildSearchPrompt,
+  buildHelperSearchPrompt,
+  buildSynthesisPrompt,
   buildAuditPrompt,
+  buildHandoffSequence,
   buildHandoff,
 } = require("./prompts.cjs");
 
@@ -88,6 +93,380 @@ function makeSearchExclusions() {
     .filter((name) => !SEARCH_ALLOWED_TOOLS.has(name));
 }
 
+function searchToolContext(paths, userDataPath) {
+  return {
+    rootPath: paths.root,
+    projectName: "LAB-IN shared knowledge",
+    userDataPath,
+    allowedRoot: paths.root,
+    knowledgeReadOnly: true,
+  };
+}
+
+function researchReportLimit(model, reportCount = 4) {
+  const contextTokens = Math.max(8000, Number(model?.contextLimit) || 256000);
+  const sharedBudgetChars = Math.floor(contextTokens * 4 * 0.55);
+  return Math.max(5000, Math.min(36000, Math.floor(sharedBudgetChars / Math.max(1, reportCount))));
+}
+
+function capResearchReport(text, maxChars) {
+  const value = String(text || "").trim();
+  if (value.length <= maxChars) return { text: value, truncated: false };
+  return {
+    text: `${value.slice(0, maxChars)}\n\n…[research report capped by LAB-IN host; synthesis must treat this source as incomplete]`,
+    truncated: true,
+  };
+}
+
+function fallbackResearchPackage(reports) {
+  const usable = (Array.isArray(reports) ? reports : []).filter((report) => String(report?.text || "").trim());
+  if (!usable.length) return "Knowledge research failed; the main agent must proceed from workspace evidence.";
+  return [
+    "[LAB-IN Search Team fallback: final synthesis failed. The independent reports follow and may overlap.]",
+    ...usable.map((report) => `\n## ${report.label}\n${report.text}`),
+  ].join("\n");
+}
+
+async function runSearchTeam({
+  runAgentLoop,
+  searcher,
+  originalTask,
+  refinedPrompt,
+  conversationContext,
+  paths,
+  stats,
+  userDataPath,
+  signal,
+  tokenCountingMode,
+  counts,
+  required,
+  emit,
+}) {
+  const runId = `${Date.now().toString(16)}-${Math.random().toString(16).slice(2, 8)}`;
+  const parentToolCallId = `lab-in-search-team-${runId}`;
+  const warnings = [];
+  const synthesisCounts = emptyCounts();
+  let searchPasses = 0;
+  let completed = 0;
+
+  const assertRunning = () => {
+    if (signal?.aborted) throw Object.assign(new Error("Stopped by user"), { name: "AbortError" });
+  };
+  const commonPromptInput = {
+    originalTask,
+    refinedPrompt,
+    conversationContext,
+    knowledgeRoot: paths.root,
+    chunkCount: stats.chunkCount,
+  };
+  const researchers = [
+    {
+      id: "lead",
+      label: "Search Lead",
+      prompt: buildSearchPrompt(commonPromptInput),
+      maxIterations: 36,
+    },
+    ...SEARCH_HELPERS.map((helper) => ({
+      id: `helper-${helper.id}`,
+      label: helper.label,
+      prompt: buildHelperSearchPrompt({ ...commonPromptInput, helper }),
+      maxIterations: 28,
+    })),
+  ];
+
+  emit({
+    type: "tool_start",
+    toolCallId: parentToolCallId,
+    name: "lab_in_search_team",
+    description: `LAB-IN Search Lead + ${SEARCH_HELPERS.length} helpers · ${stats.chunkCount} chunks`,
+    mode: "explore",
+    batch: true,
+    total: researchers.length,
+    completed: 0,
+    concurrency: researchers.length,
+    status: "running",
+  });
+  emit({
+    type: "subagent_status",
+    toolCallId: parentToolCallId,
+    parentToolCallId,
+    agentId: "batch",
+    batch: true,
+    name: "lab_in_search_team",
+    status: "running",
+    description: `Search Lead + ${SEARCH_HELPERS.length} helpers`,
+    text: `0/${researchers.length} done`,
+    total: researchers.length,
+    completed: 0,
+    concurrency: researchers.length,
+  });
+  for (const researcher of researchers) {
+    emit({
+      type: "subagent_status",
+      toolCallId: parentToolCallId,
+      parentToolCallId,
+      agentId: researcher.id,
+      unit: true,
+      name: "lab_in_search_team",
+      status: "queued",
+      description: researcher.label,
+      text: "queued",
+      mode: "explore",
+    });
+  }
+
+  const makeProgressForwarder = (researcher, localCounts, parentId = parentToolCallId) => {
+    const toolInputs = new Map();
+    return (progress) => {
+      if (!progress) return;
+      if (progress.type === "tool_start" && progress.toolCallId) {
+        toolInputs.set(progress.toolCallId, progress.input || {});
+      }
+      const enriched = progress.type === "tool_end"
+        ? { ...progress, input: toolInputs.get(progress.toolCallId) || {} }
+        : progress;
+      noteToolCall(counts, enriched);
+      noteToolCall(localCounts, enriched);
+      if (progress.type === "tool_end" && progress.toolCallId) toolInputs.delete(progress.toolCallId);
+      if (["tool_start", "tool_end", "retry"].includes(progress.type)) {
+        emit({ ...progress, parentToolCallId: parentId, agentId: researcher.id, unit: true });
+      }
+    };
+  };
+
+  const runResearcher = async (researcher) => {
+    const localCounts = emptyCounts();
+    emit({
+      type: "subagent_status",
+      toolCallId: parentToolCallId,
+      parentToolCallId,
+      agentId: researcher.id,
+      unit: true,
+      name: "lab_in_search_team",
+      status: "running",
+      description: researcher.label,
+      text: "researching shared memory…",
+      mode: "explore",
+    });
+    searchPasses += 1;
+    try {
+      assertRunning();
+      const result = await runAgentLoop({
+        provider: searcher.provider,
+        model: searcher.model,
+        messages: [{ role: "user", content: researcher.prompt }],
+        systemPrompt: SEARCH_AGENT_SYSTEM_PROMPT,
+        toolContext: searchToolContext(paths, userDataPath),
+        rootPath: paths.root,
+        userDataPath,
+        signal,
+        tokenCountingMode,
+        ...stageLimits(searcher.model),
+        maxIterations: researcher.maxIterations,
+        excludeToolNames: makeSearchExclusions(),
+        builtinToolsOnly: true,
+        isSubagent: true,
+        subagentDepth: 1,
+        onProgress: makeProgressForwarder(researcher, localCounts),
+      });
+      const text = String(result?.text || "").trim();
+      emit({
+        type: "subagent_status",
+        toolCallId: parentToolCallId,
+        parentToolCallId,
+        agentId: researcher.id,
+        unit: true,
+        name: "lab_in_search_team",
+        status: text ? "done" : "error",
+        description: researcher.label,
+        text: text
+          ? `done · search ${localCounts.search} · read ${localCounts.read} · links ${localCounts.links}`
+          : "empty report",
+        mode: "explore",
+      });
+      return { ...researcher, ok: Boolean(text), text, counts: localCounts };
+    } catch (error) {
+      const aborted = signal?.aborted || error?.name === "AbortError";
+      const message = error?.message || String(error);
+      emit({
+        type: "subagent_status",
+        toolCallId: parentToolCallId,
+        parentToolCallId,
+        agentId: researcher.id,
+        unit: true,
+        name: "lab_in_search_team",
+        status: aborted ? "stopped" : "error",
+        description: researcher.label,
+        text: aborted ? "stopped" : String(message).slice(0, 140),
+        mode: "explore",
+      });
+      if (!aborted) warnings.push(`${researcher.label} failed: ${message}`);
+      return { ...researcher, ok: false, stopped: aborted, text: "", error: message, counts: localCounts };
+    } finally {
+      completed += 1;
+      emit({
+        type: "subagent_status",
+        toolCallId: parentToolCallId,
+        parentToolCallId,
+        agentId: "batch",
+        batch: true,
+        name: "lab_in_search_team",
+        status: "running",
+        description: `Search Lead + ${SEARCH_HELPERS.length} helpers`,
+        text: `${completed}/${researchers.length} done`,
+        total: researchers.length,
+        completed,
+        concurrency: researchers.length,
+      });
+    }
+  };
+
+  const reports = await Promise.all(researchers.map(runResearcher));
+  assertRunning();
+  const okCount = reports.filter((report) => report.ok).length;
+  const researcherMeta = reports.map((report) => ({
+    id: report.id,
+    label: report.label,
+    ok: report.ok,
+    stopped: Boolean(report.stopped),
+    counts: report.counts,
+    error: report.error || null,
+  }));
+
+  emit({
+    type: "subagent_status",
+    toolCallId: parentToolCallId,
+    parentToolCallId,
+    agentId: "batch",
+    batch: true,
+    name: "lab_in_search_team",
+    status: okCount ? "done" : "error",
+    description: `Search team · ${okCount}/${researchers.length} reports ready`,
+    text: `done · ${okCount}/${researchers.length} reports`,
+    total: researchers.length,
+    completed: researchers.length,
+    concurrency: researchers.length,
+  });
+  emit({
+    type: "tool_end",
+    toolCallId: parentToolCallId,
+    name: "lab_in_search_team",
+    ok: okCount > 0,
+    status: okCount ? "done" : "error",
+    result: { total: researchers.length, okCount },
+  });
+
+  let knowledgePackage = fallbackResearchPackage(reports);
+  if (!okCount) {
+    return { knowledgePackage, searchPasses, researcherMeta, synthesisCounts, warnings };
+  }
+
+  emit({
+    type: "status",
+    phase: "lab-in-synthesis",
+    label: `LAB-IN · Search Lead merging ${okCount}/${researchers.length} reports · ${modelLabel(searcher.model)}…`,
+  });
+  const perReportLimit = researchReportLimit(searcher.model, reports.length);
+  let sourceReportsTruncated = false;
+  const synthesisReports = reports.map((report) => {
+    const capped = capResearchReport(report.text || report.error || "(empty report)", perReportLimit);
+    if (capped.truncated) sourceReportsTruncated = true;
+    return { ...report, text: capped.text };
+  });
+  if (sourceReportsTruncated) warnings.push("one or more research reports were capped before Search Lead synthesis");
+
+  const synthesisToolCallId = `lab-in-search-synthesis-${runId}`;
+  emit({
+    type: "tool_start",
+    toolCallId: synthesisToolCallId,
+    name: "lab_in_search_synthesis",
+    description: `Search Lead merging ${okCount}/${researchers.length} independent reports`,
+    mode: "explore",
+    status: "running",
+  });
+  try {
+    searchPasses += 1;
+    const synthesized = await runAgentLoop({
+      provider: searcher.provider,
+      model: searcher.model,
+      messages: [{
+        role: "user",
+        content: buildSynthesisPrompt({
+          originalTask,
+          refinedPrompt,
+          knowledgeRoot: paths.root,
+          counts,
+          required,
+          reports: synthesisReports,
+        }),
+      }],
+      systemPrompt: SEARCH_SYNTHESIS_SYSTEM_PROMPT,
+      toolContext: searchToolContext(paths, userDataPath),
+      rootPath: paths.root,
+      userDataPath,
+      signal,
+      tokenCountingMode,
+      ...stageLimits(searcher.model),
+      maxIterations: 30,
+      excludeToolNames: makeSearchExclusions(),
+      builtinToolsOnly: true,
+      isSubagent: true,
+      subagentDepth: 1,
+      onProgress: makeProgressForwarder({ id: "lead-synthesis" }, synthesisCounts, synthesisToolCallId),
+    });
+    if (String(synthesized?.text || "").trim()) knowledgePackage = String(synthesized.text).trim();
+
+    if (!coverageMet(counts, required) && !signal?.aborted) {
+      emit({
+        type: "status",
+        phase: "lab-in-audit",
+        label: `LAB-IN · coverage audit · search ${counts.search}/${required.search}, read ${counts.read}/${required.read}, links ${counts.links}/${required.links}…`,
+      });
+      searchPasses += 1;
+      const audited = await runAgentLoop({
+        provider: searcher.provider,
+        model: searcher.model,
+        messages: [{ role: "user", content: buildAuditPrompt({ counts, required, previousReport: knowledgePackage }) }],
+        systemPrompt: SEARCH_SYNTHESIS_SYSTEM_PROMPT,
+        toolContext: searchToolContext(paths, userDataPath),
+        rootPath: paths.root,
+        userDataPath,
+        signal,
+        tokenCountingMode,
+        ...stageLimits(searcher.model),
+        maxIterations: 24,
+        excludeToolNames: makeSearchExclusions(),
+        builtinToolsOnly: true,
+        isSubagent: true,
+        subagentDepth: 1,
+        onProgress: makeProgressForwarder({ id: "lead-audit" }, synthesisCounts, synthesisToolCallId),
+      });
+      if (String(audited?.text || "").trim()) knowledgePackage = String(audited.text).trim();
+    }
+    emit({
+      type: "tool_end",
+      toolCallId: synthesisToolCallId,
+      name: "lab_in_search_synthesis",
+      ok: true,
+      status: "done",
+      result: { sourceReports: reports.length, sourceReportsOk: okCount, counts: synthesisCounts },
+    });
+  } catch (error) {
+    if (signal?.aborted || error?.name === "AbortError") throw error;
+    warnings.push(`Search Lead synthesis failed: ${error?.message || error}`);
+    emit({
+      type: "tool_end",
+      toolCallId: synthesisToolCallId,
+      name: "lab_in_search_synthesis",
+      ok: false,
+      status: "error",
+      error: error?.message || String(error),
+    });
+  }
+
+  return { knowledgePackage, searchPasses, researcherMeta, synthesisCounts, warnings };
+}
+
 async function runLabInPipeline({
   runAgentLoop,
   config,
@@ -158,6 +537,8 @@ async function runLabInPipeline({
   const required = requiredCoverage(stats.chunkCount);
   let searchPasses = 0;
   let truncated = false;
+  let researcherMeta = [];
+  const synthesisCounts = emptyCounts();
 
   emit({
     type: "status",
@@ -171,102 +552,26 @@ async function runLabInPipeline({
     if (!searcher.provider?.apiKey) {
       warnings.push(`search-agent API key is empty for ${searcher.provider?.name || "provider"}`);
     } else {
-      const parentToolCallId = `lab-in-search-${Date.now().toString(16)}`;
-      const toolInputs = new Map();
-      const forwardProgress = (progress) => {
-        if (!progress) return;
-        if (progress.type === "tool_start" && progress.toolCallId) {
-          toolInputs.set(progress.toolCallId, progress.input || {});
-        }
-        const enriched = progress.type === "tool_end"
-          ? { ...progress, input: toolInputs.get(progress.toolCallId) || {} }
-          : progress;
-        noteToolCall(counts, enriched);
-        if (progress.type === "tool_end" && progress.toolCallId) toolInputs.delete(progress.toolCallId);
-        if (["tool_start", "tool_end", "retry"].includes(progress.type)) {
-          emit({ ...progress, parentToolCallId, agentId: "lab-in-search", unit: true });
-        }
-      };
-      let result = null;
-      try {
-        searchPasses += 1;
-        result = await runAgentLoop({
-          provider: searcher.provider,
-          model: searcher.model,
-          messages: [{
-            role: "user",
-            content: buildSearchPrompt({
-              originalTask,
-              refinedPrompt,
-              conversationContext,
-              knowledgeRoot: paths.root,
-              chunkCount: stats.chunkCount,
-            }),
-          }],
-          systemPrompt: SEARCH_AGENT_SYSTEM_PROMPT,
-          toolContext: {
-            rootPath: paths.root,
-            projectName: "LAB-IN shared knowledge",
-            userDataPath,
-            allowedRoot: paths.root,
-            knowledgeReadOnly: true,
-          },
-          rootPath: paths.root,
-          userDataPath,
-          signal,
-          tokenCountingMode,
-          ...stageLimits(searcher.model),
-          maxIterations: 36,
-          excludeToolNames: makeSearchExclusions(),
-          builtinToolsOnly: true,
-          isSubagent: true,
-          subagentDepth: 1,
-          onProgress: forwardProgress,
-        });
-        knowledgePackage = String(result?.text || "").trim() || knowledgePackage;
-
-        if (!coverageMet(counts, required) && !signal?.aborted) {
-          emit({
-            type: "status",
-            phase: "lab-in-audit",
-            label: `LAB-IN · coverage audit · search ${counts.search}/${required.search}, read ${counts.read}/${required.read}, links ${counts.links}/${required.links}…`,
-          });
-          searchPasses += 1;
-          const auditMessages = [
-            ...(Array.isArray(result?.messages) ? result.messages : []),
-            { role: "user", content: buildAuditPrompt({ counts, required, previousReport: knowledgePackage }) },
-          ];
-          const audited = await runAgentLoop({
-            provider: searcher.provider,
-            model: searcher.model,
-            messages: auditMessages,
-            systemPrompt: SEARCH_AGENT_SYSTEM_PROMPT,
-            toolContext: {
-              rootPath: paths.root,
-              projectName: "LAB-IN shared knowledge",
-              userDataPath,
-              allowedRoot: paths.root,
-              knowledgeReadOnly: true,
-            },
-            rootPath: paths.root,
-            userDataPath,
-            signal,
-            tokenCountingMode,
-            ...stageLimits(searcher.model),
-            maxIterations: 24,
-            excludeToolNames: makeSearchExclusions(),
-            builtinToolsOnly: true,
-            isSubagent: true,
-            subagentDepth: 1,
-            onProgress: forwardProgress,
-          });
-          if (String(audited?.text || "").trim()) knowledgePackage = String(audited.text).trim();
-        }
-      } catch (error) {
-        if (signal?.aborted || error?.name === "AbortError") throw error;
-        warnings.push(`search agent failed: ${error?.message || error}`);
-        if (!knowledgePackage.trim()) knowledgePackage = "Knowledge research failed; the main agent must proceed from workspace evidence.";
-      }
+      const team = await runSearchTeam({
+        runAgentLoop,
+        searcher,
+        originalTask,
+        refinedPrompt,
+        conversationContext,
+        paths,
+        stats,
+        userDataPath,
+        signal,
+        tokenCountingMode,
+        counts,
+        required,
+        emit,
+      });
+      knowledgePackage = team.knowledgePackage;
+      searchPasses = team.searchPasses;
+      researcherMeta = team.researcherMeta;
+      Object.assign(synthesisCounts, team.synthesisCounts);
+      warnings.push(...team.warnings);
     }
   }
 
@@ -280,6 +585,12 @@ async function runLabInPipeline({
       `read ${counts.read}/${required.read}, links ${counts.links}/${required.links}. ` +
       "Do not assume the knowledge base was exhaustively covered.]";
   }
+  const handoffSequence = buildHandoffSequence({
+    originalTask,
+    refinedPrompt,
+    knowledgePackage,
+    knowledgeMeta: stats,
+  });
 
   emit({
     type: "status",
@@ -291,6 +602,7 @@ async function runLabInPipeline({
     mode: LAB_IN_MODE_ID,
     refinedPrompt,
     knowledgePackage,
+    handoffMessages: handoffSequence.messages,
     handoffUserMessage: buildHandoff({
       originalTask,
       refinedPrompt,
@@ -309,6 +621,14 @@ async function runLabInPipeline({
       required,
       coverage,
       searchPasses,
+      handoffPartCount: handoffSequence.partCount,
+      segmentedHandoff: handoffSequence.segmented,
+      searchTeam: {
+        researcherCount: researcherMeta.length,
+        helperCount: researcherMeta.filter((researcher) => researcher.id.startsWith("helper-")).length,
+        researchers: researcherMeta,
+        synthesisCounts,
+      },
       truncated,
       warnings,
     },

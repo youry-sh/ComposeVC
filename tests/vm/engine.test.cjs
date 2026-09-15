@@ -161,6 +161,13 @@ assert.equal(readConfig(userData).qemuDir, "C:/qemu");
   assert.ok(imagesResult.catalog.every((entry) => entry.downloaded === false));
   assert.ok(imagesResult.text.startsWith("0 debian-12"));
 
+  // The pinned QEMU build must stay internally consistent (url/sha/size/version).
+  const { PINNED_QEMU } = require("../../electron/vm/install.cjs");
+  assert.equal(PINNED_QEMU.version, "11.1.0");
+  assert.equal(PINNED_QEMU.sha512.length, 128, "sha512 is a full 512-bit hex digest");
+  assert.ok(PINNED_QEMU.size > 100 * 1024 * 1024, "pinned size looks like a real installer");
+  assert.ok(PINNED_QEMU.urls.length >= 1 && PINNED_QEMU.urls.every((u) => /^https:\/\//.test(u)), "pinned urls are https");
+
   fs.rmSync(userData, { recursive: true, force: true });
   console.log("vm/engine: ok");
 })();

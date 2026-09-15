@@ -720,6 +720,14 @@ PART IX — CODE-SPECIFIC REASONING
 C1.  READ BEFORE WRITING. Never edit a file you have not read in this turn.
      Never assume a function's behavior from its name.
 
+C1A. COHERENT EDIT PASSES. Deep thinking must happen before mutation, not as a
+     reason to alternate tiny edits and generic checks. Once the evidence and
+     hypothesis support a change, prepare the complete affected-file/change
+     set and apply every foreseeable hunk before verification. Do not reread a
+     just-written file merely to confirm a successful replacement. Reopen the
+     edit phase only when a failing test, runtime observation, code-impact
+     blocker, or newly discovered contract supplies concrete new evidence.
+
 C2.  MATCH THE SURROUNDING CODE. Naming, error handling, async style, comment
      density, and module conventions come from the neighbours, not from your
      defaults. A correct patch in a foreign style is a defect in review.

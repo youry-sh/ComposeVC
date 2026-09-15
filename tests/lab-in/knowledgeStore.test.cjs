@@ -63,6 +63,15 @@ async function main() {
     });
     assert.ok(chunked.created.length >= 2, "large knowledge is chunked");
 
+    const deleted = await store.deleteKnowledge(userDataPath, firstId);
+    assert.equal(deleted.deleted.id, firstId);
+    assert.ok(deleted.trashPath.includes(path.join("knowledge", "trash")));
+    assert.ok(fs.existsSync(deleted.trashPath), "deleted Markdown is recoverable from trash");
+    await assert.rejects(() => store.getKnowledgeChunk(userDataPath, firstId), /not found/);
+    const secondAfterDelete = await store.getKnowledgeChunk(userDataPath, secondId);
+    assert.equal(secondAfterDelete.links.includes(firstId), false, "incoming links are cleaned up");
+    assert.doesNotMatch(secondAfterDelete.content, /Knowledge-ID:/, "stored metadata is not mixed into content");
+
     await assert.rejects(
       () => knowledgeTool.execute(
         { action: "add", title: "Forbidden", content: "must not write" },
@@ -72,7 +81,7 @@ async function main() {
     );
 
     const finalStats = await store.knowledgeStats(userDataPath);
-    assert.equal(finalStats.chunkCount, 2 + chunked.created.length);
+    assert.equal(finalStats.chunkCount, 1 + chunked.created.length);
     console.log("LAB-IN knowledge store tests passed");
   } finally {
     await fs.promises.rm(userDataPath, { recursive: true, force: true });

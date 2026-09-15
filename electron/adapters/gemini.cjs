@@ -1,4 +1,4 @@
-const { parseJsonOrSse, readResponseText, fetchWithRetry } = require("./utils.cjs");
+const { readResponseEvents, fetchWithRetry } = require("./utils.cjs");
 const { normalizeModelOutput } = require("./thinking.cjs");
 const {
   contentToText,
@@ -89,10 +89,10 @@ function buildPayload({ model, messages, tools }) {
   return payload;
 }
 
-async function execute({ provider, model, messages, tools, onRetry, signal }) {
+async function execute({ provider, model, messages, tools, onRetry, signal, onDelta }) {
   const baseUrl = provider.baseUrl.replace(/\/$/, "");
   const response = await fetchWithRetry(
-    `${baseUrl}/v1beta/models/${model.name}:generateContent?key=${provider.apiKey}`,
+    `${baseUrl}/v1beta/models/${model.name}:streamGenerateContent?alt=sse&key=${provider.apiKey}`,
     {
       method: "POST",
       headers: {
@@ -104,16 +104,13 @@ async function execute({ provider, model, messages, tools, onRetry, signal }) {
     { providerName: "Gemini", onRetry }
   );
 
-  const text = await readResponseText(response, "Gemini");
-  const chunks = parseJsonOrSse(text);
-
   let content = "";
   let reasoning = "";
   let usage = null;
   const toolCalls = [];
   const imageParts = [];
 
-  for (const chunk of chunks) {
+  const consumeChunk = (chunk) => {
     if (chunk.usageMetadata) {
       usage = {
         promptTokens: chunk.usageMetadata.promptTokenCount || 0,
@@ -122,13 +119,21 @@ async function execute({ provider, model, messages, tools, onRetry, signal }) {
       };
     }
 
+    let textDelta = "";
+    let reasoningDelta = "";
     for (const candidate of chunk.candidates || []) {
       for (const part of candidate.content?.parts || []) {
         if (part.thought === true || part.thought) {
-          if (part.text) reasoning += part.text;
+          if (part.text) {
+            reasoning += part.text;
+            reasoningDelta += part.text;
+          }
           continue;
         }
-        if (part.text) content += part.text;
+        if (part.text) {
+          content += part.text;
+          textDelta += part.text;
+        }
         const inline = part.inlineData || part.inline_data;
         if (inline?.data) {
           imageParts.push({
@@ -148,7 +153,10 @@ async function execute({ provider, model, messages, tools, onRetry, signal }) {
         }
       }
     }
-  }
+    if (textDelta || reasoningDelta) onDelta?.({ text: textDelta, reasoning: reasoningDelta });
+  };
+
+  await readResponseEvents(response, "Gemini", consumeChunk, { collectEvents: false });
 
   // Answer text is clean; reasoning is ephemeral for live UI only (not saved).
   const normalized = normalizeModelOutput({ content, reasoning });

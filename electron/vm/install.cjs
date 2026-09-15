@@ -8,6 +8,24 @@ const images = require("./images.cjs");
 
 const WEILNETZ_INDEX = "https://qemu.weilnetz.de/w64/";
 
+/**
+ * The exact QEMU build ComposeVC is tested against. Pinned so every install is the same
+ * 11.1.0, not "whatever weilnetz calls latest today". The archive url is permanent; the
+ * bare index url is a faster mirror that rotates, and the index scrape is the last resort.
+ * sha512 is verified before anything is extracted — a truncated installer never runs.
+ */
+const PINNED_QEMU = {
+  version: "11.1.0",
+  file: "qemu-w64-setup-20260811.exe",
+  size: 206_615_928,
+  sha512:
+    "5bcf9eed634e8575a37b74f445af41a2fe4106da512d0c30c368301d4c105037fdfab40a5287367a28a957624cddebbc8c07e16c88ab6634f554cdf3d16bf543",
+  urls: [
+    "https://qemu.weilnetz.de/w64/2026/qemu-w64-setup-20260811.exe",
+    "https://qemu.weilnetz.de/w64/qemu-w64-setup-20260811.exe",
+  ],
+};
+
 let job = null;
 
 function which(binary) {
@@ -92,12 +110,32 @@ function jobView() {
   };
 }
 
+/** Download the pinned installer (verified), falling back to the index only if it 404s. */
+async function fetchInstaller(userDataPath, log) {
+  const [primary, ...mirrors] = PINNED_QEMU.urls;
+  log(`downloading QEMU ${PINNED_QEMU.version} (${Math.round(PINNED_QEMU.size / (1024 * 1024))} MB, verified)`);
+  try {
+    const pulled = await images.pull(userDataPath, {
+      url: primary,
+      mirrors,
+      file: PINNED_QEMU.file,
+      sha512: PINNED_QEMU.sha512,
+      size: PINNED_QEMU.size,
+      wait: true,
+    });
+    log(pulled.alreadyPresent ? "installer already downloaded and verified" : "installer downloaded and sha512-verified");
+    return pulled.path;
+  } catch (err) {
+    log(`pinned build unavailable (${err.message}); falling back to the newest build on the index`);
+    const url = await latestWindowsInstallerUrl();
+    const pulled = await images.pull(userDataPath, { url, wait: true });
+    return pulled.path;
+  }
+}
+
 async function installWindows(userDataPath, log) {
   const targetDir = ensureDir(layout.qemu(userDataPath));
-  log(`downloading the QEMU installer from ${WEILNETZ_INDEX}`);
-  const url = await latestWindowsInstallerUrl();
-  const pulled = await images.pull(userDataPath, { url, wait: true });
-  const installer = pulled.path;
+  const installer = await fetchInstaller(userDataPath, log);
   log(`installer: ${installer}`);
 
   const zip = sevenZip();
@@ -181,7 +219,11 @@ function install(userDataPath, { wait = false } = {}) {
     const found = detect(userDataPath, { force: true });
     if (found.installed) {
       if (outcome.dir && found.qemu?.dir === outcome.dir) writeConfig(userDataPath, { qemuDir: outcome.dir });
-      log(`QEMU ${found.qemu.version || ""} ready at ${found.qemu.dir}`);
+      const version = found.qemu.version || "?";
+      if (version !== PINNED_QEMU.version) {
+        log(`note: installed QEMU ${version}, expected ${PINNED_QEMU.version} (found on PATH). It should still work.`);
+      }
+      log(`QEMU ${version} ready at ${found.qemu.dir}`);
       job.state = "done";
     } else {
       job.state = "error";
@@ -205,4 +247,4 @@ function install(userDataPath, { wait = false } = {}) {
   return job.promise.then((found) => ({ installed: found.installed, qemu: found.qemu, job: jobView() }));
 }
 
-module.exports = { install, jobView, which, sevenZip };
+module.exports = { install, jobView, which, sevenZip, PINNED_QEMU };

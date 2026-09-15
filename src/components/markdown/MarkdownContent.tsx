@@ -1,6 +1,12 @@
-import React, { useMemo, useCallback, useState } from "react";
+import React, { useMemo, useCallback, useRef, useState } from "react";
 import { Check, Copy } from "lucide-react";
-import { parseMarkdown, type MdAlign, type MdBlock } from "./parseMarkdown";
+import {
+  EMPTY_INCREMENTAL_MARKDOWN,
+  updateIncrementalMarkdown,
+  type IncrementalMarkdownState,
+  type MdAlign,
+  type MdBlock,
+} from "./parseMarkdown";
 
 function openExternalLink(url: string) {
   void window.lopster?.openExternal?.(url);
@@ -310,15 +316,35 @@ function renderBlock(block: MdBlock, index: number, onOpenNote?: (title: string)
   }
 }
 
+const MarkdownBlockView: React.FC<{
+  block: MdBlock;
+  index: number;
+  onOpenNote?: (title: string) => void;
+}> = React.memo(({ block, index, onOpenNote }) => renderBlock(block, index, onOpenNote));
+
+MarkdownBlockView.displayName = "MarkdownBlockView";
+
 const MarkdownContent: React.FC<{ content: string; onOpenNote?: (title: string) => void }> = React.memo(
   ({ content, onOpenNote }) => {
-    const blocks = useMemo(() => parseMarkdown(content || ""), [content]);
+    const parseStateRef = useRef<IncrementalMarkdownState>(EMPTY_INCREMENTAL_MARKDOWN);
+    const blocks = useMemo(() => {
+      const next = updateIncrementalMarkdown(parseStateRef.current, content || "");
+      parseStateRef.current = next;
+      return next.blocks;
+    }, [content]);
 
     if (!content) return null;
 
     return (
       <div className="md-ai min-w-0">
-        {blocks.map((block, index) => renderBlock(block, index, onOpenNote))}
+        {blocks.map((block, index) => (
+          <MarkdownBlockView
+            key={`b${index}`}
+            block={block}
+            index={index}
+            onOpenNote={onOpenNote}
+          />
+        ))}
       </div>
     );
   }

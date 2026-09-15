@@ -27,6 +27,14 @@ const {
 const { ensureFreshToken } = require("./accounts.cjs");
 const { createStreamWatchdog, isRetryableOutcome } = require("./streamWatchdog.cjs");
 const accountRouter = require("./routing/accountRouter.cjs");
+const {
+  MAX_POOL_RECYCLES,
+  poolRecycleLimit,
+  canRecyclePool,
+  transientPoolWaitMs,
+  poolRecycleDelayMs,
+  waitForRetry,
+} = require("./routing/retryPolicy.cjs");
 const storeApi = require("./store.cjs");
 const guard = require("./guard/index.cjs");
 const {
@@ -47,12 +55,7 @@ const MAX_FAILOVER_ATTEMPTS = 10000;
 const DEFAULT_MAX_RETRY_CREDENTIALS = 50;
 /** Min attempts even with a tiny account pool (allows multi-round recycle). */
 const MIN_FAILOVER_ATTEMPTS = 8;
-/** Max full pool recycles after every unique credential was tried once. */
-const MAX_POOL_RECYCLES = 6;
 const MAX_CLEAN_EMPTY_RETRIES = 5;
-/** Backoff between pool recycles (ms), grows with recycle count. */
-const POOL_RECYCLE_BASE_MS = 400;
-const POOL_RECYCLE_MAX_MS = 4_000;
 
 function ensureBoot() {
   bootstrapConverters();
@@ -419,19 +422,29 @@ async function handleChatCompletions({ store, body, res, onLog, signal, userData
       ? Math.max(1, Math.ceil((soonest.t - Date.now()) / 1000))
       : 60;
     const label = soonest.cand?.account?.email || soonest.cand?.account?.name || "?";
-    onLog?.({
-      level: "warn",
-      msg: `All ${blocked.length} accounts blocked. Soonest unblock: ${label} in ${retryAfterSec}s`,
-    });
-    sendJson(res, 429, {
-      error: {
-        message: `All accounts are rate-limited or quota-exhausted. Soonest available in ${retryAfterSec}s (${label}).`,
-        type: "rate_limit_exceeded",
-        param: null,
-        code: "all_accounts_blocked",
-      },
-    }, { "Retry-After": String(retryAfterSec) });
-    return;
+    const transientWaitMs = transientPoolWaitMs(blocked);
+    if (transientWaitMs != null) {
+      onLog?.({
+        level: "warn",
+        msg: `All ${blocked.length} accounts in transient cooldown. Proxy retry: ${label} in ${Math.ceil(transientWaitMs / 1000)}s`,
+      });
+      const retryReady = await waitForRetry(transientWaitMs, signal);
+      if (!retryReady) return;
+    } else {
+      onLog?.({
+        level: "warn",
+        msg: `All ${blocked.length} accounts blocked. Soonest unblock: ${label} in ${retryAfterSec}s`,
+      });
+      sendJson(res, 429, {
+        error: {
+          message: `All accounts are rate-limited or quota-exhausted. Soonest available in ${retryAfterSec}s (${label}).`,
+          type: "rate_limit_exceeded",
+          param: null,
+          code: "all_accounts_blocked",
+        },
+      }, { "Retry-After": String(retryAfterSec) });
+      return;
+    }
   }
 
   const ordered = available.length ? available : [...blocked].sort(
@@ -503,7 +516,7 @@ async function handleChatCompletions({ store, body, res, onLog, signal, userData
         const id = c.account?.id;
         if (!id || triedIds.has(id)) continue;
         const live = accountRouter.getStatus(id);
-        if (!allowBlocked && available.length && live && live.available === false) continue;
+        if (!allowBlocked && live && live.available === false) continue;
         const inFlight = live?.inFlightCount || 0;
         const maxInf =
           accountRouter.maxInFlightFor?.(c.account) || maxInFlightDefault;
@@ -690,7 +703,7 @@ async function handleChatCompletions({ store, body, res, onLog, signal, userData
       continue;
     }
 
-    const wasAvailable = cand.available !== false;
+    const wasAvailable = accountRouter.getStatus(prepared.connection.id)?.available !== false;
     onLog?.({
       level: "info",
       msg: `→ ${provider.id}/${prepared.mode} ${route.upstreamModel} [${i + 1}/${maxAttempts}] ${prepared.label}${wasAvailable ? "" : " (blocked fallback)"}`,
@@ -1079,30 +1092,36 @@ async function handleChatCompletions({ store, body, res, onLog, signal, userData
     }
 
     if (triedIds.size >= ordered.length) {
-      // A generic upstream 5xx means this request has already had one chance on
-      // every credential. Reusing the same accounts in this request only hammers
-      // healthy credentials while the upstream is failing (e.g. 2 keys × 7 rounds
-      // produced 14 identical server/500 errors). The normal 5-second per-account
-      // cooldown still lets a later, independent request retry them. Capacity is
-      // classified as rate_limit above and retains its controlled recycle behavior.
-      const canRecycle =
-        continueFailover &&
-        lastErr?.kind !== "server" &&
-        i + 1 < maxAttempts &&
-        poolRecycles < MAX_POOL_RECYCLES;
+      // A generic upstream 5xx is retryable inside this same client request. Use
+      // fewer rounds than normal failover and wait through the router's short
+      // cooldown, so one transient 500 does not escape and a real outage cannot
+      // recreate the old unbounded retry storm.
+      const recycleLimit = poolRecycleLimit(lastErr?.kind);
+      const canRecycle = canRecyclePool({
+        kind: lastErr?.kind,
+        continueFailover,
+        nextAttempt: i + 1,
+        maxAttempts,
+        poolRecycles,
+      });
       if (!canRecycle) break;
       poolRecycles += 1;
       triedIds.clear();
-      const backoffMs = Math.min(
-        POOL_RECYCLE_MAX_MS,
-        POOL_RECYCLE_BASE_MS * poolRecycles
+      const blockedUntilValues = ordered.map((candidate) =>
+        accountRouter.getStatus(candidate.account?.id)?.blockedUntil
+      );
+      const backoffMs = poolRecycleDelayMs(
+        lastErr?.kind,
+        poolRecycles,
+        blockedUntilValues
       );
       onLog?.({
         level: "warn",
-        msg: `↻ pool exhausted (${errors.length} fails) → recycle #${poolRecycles}/${MAX_POOL_RECYCLES} after ${backoffMs}ms`,
+        msg: `↻ pool exhausted (${errors.length} fails) → ${lastErr?.kind === "server" ? "server retry" : "recycle"} #${poolRecycles}/${recycleLimit} after ${backoffMs}ms`,
         model: openaiBody.model,
       });
-      await new Promise((r) => setTimeout(r, backoffMs));
+      const retryReady = await waitForRetry(backoffMs, signal);
+      if (!retryReady) break;
     }
 
     if (i + 1 < maxAttempts) {

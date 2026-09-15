@@ -250,3 +250,97 @@ export function parseMarkdown(content: string): MdBlock[] {
   }
   return parts;
 }
+
+export type IncrementalMarkdownState = {
+  content: string;
+  /** Prefix ending at a blank line outside a code fence. */
+  stableEnd: number;
+  /** Parsed once and retained by reference across future stream updates. */
+  stableBlocks: MdBlock[];
+  blocks: MdBlock[];
+};
+
+export const EMPTY_INCREMENTAL_MARKDOWN: IncrementalMarkdownState = Object.freeze({
+  content: "",
+  stableEnd: 0,
+  stableBlocks: [],
+  blocks: [],
+});
+
+/**
+ * Find the newest block boundary that cannot be changed by appending more text.
+ * Blank lines outside fenced code terminate every block shape supported by this
+ * parser (paragraph, list, quote, table, heading). Scanning starts at the prior
+ * stable boundary, so old response text is never revisited.
+ */
+function findStableMarkdownEnd(content: string, start: number): number {
+  let cursor = Math.max(0, Math.min(start, content.length));
+  let stableEnd = cursor;
+  let insideFence = false;
+
+  while (cursor < content.length) {
+    const newline = content.indexOf("\n", cursor);
+    if (newline === -1) break;
+    let line = content.slice(cursor, newline);
+    if (line.endsWith("\r")) line = line.slice(0, -1);
+    const trimmed = line.trim();
+    if (trimmed.startsWith("```")) insideFence = !insideFence;
+    if (!insideFence && trimmed.length === 0) stableEnd = newline + 1;
+    cursor = newline + 1;
+  }
+
+  return stableEnd;
+}
+
+/** Render an unfinished fenced block as code instead of reparsing it as prose. */
+function parseStreamingTail(content: string): MdBlock[] {
+  if (!content) return [];
+  const fence = /^```([\w+-]*)[^\r\n]*\r?\n?/gm;
+  let match: RegExpExecArray | null;
+  let open: { index: number; bodyStart: number; lang: string } | null = null;
+  while ((match = fence.exec(content)) !== null) {
+    if (open) open = null;
+    else open = { index: match.index, bodyStart: fence.lastIndex, lang: match[1] || "" };
+  }
+  if (!open) return parseMarkdown(content);
+
+  const before = content.slice(0, open.index);
+  const blocks = before ? parseMarkdown(before) : [];
+  blocks.push({
+    type: "code",
+    lang: open.lang,
+    code: content.slice(open.bodyStart),
+  });
+  return blocks;
+}
+
+/**
+ * Append-aware Markdown conversion for live SSE text. Only the mutable tail is
+ * parsed again; completed blocks and their object identities are retained.
+ */
+export function updateIncrementalMarkdown(
+  previous: IncrementalMarkdownState | null | undefined,
+  nextContent: string
+): IncrementalMarkdownState {
+  const content = nextContent || "";
+  const prior = previous || EMPTY_INCREMENTAL_MARKDOWN;
+  if (content === prior.content) return prior;
+
+  const isAppend = content.startsWith(prior.content);
+  const baseEnd = isAppend ? prior.stableEnd : 0;
+  let stableBlocks = isAppend ? prior.stableBlocks : [];
+  const stableEnd = findStableMarkdownEnd(content, baseEnd);
+
+  if (stableEnd > baseEnd) {
+    const promoted = parseMarkdown(content.slice(baseEnd, stableEnd));
+    stableBlocks = stableBlocks.length ? [...stableBlocks, ...promoted] : promoted;
+  }
+
+  const tailBlocks = parseStreamingTail(content.slice(stableEnd));
+  return {
+    content,
+    stableEnd,
+    stableBlocks,
+    blocks: tailBlocks.length ? [...stableBlocks, ...tailBlocks] : stableBlocks,
+  };
+}

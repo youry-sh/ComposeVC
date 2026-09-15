@@ -41,9 +41,16 @@ if not exist "node_modules" (
   pause
   exit /b 1
 )
+rem --- Electron ships a ~200 MB binary via a postinstall download that often does
+rem     not finish on the first npm install. If it is missing, fetch it here instead
+rem     of forcing a full reinstall. ---
+if not exist "node_modules\electron\dist\electron.exe" call :ensure_electron
 if not exist "node_modules\electron\dist\electron.exe" (
-  echo [ERROR] Electron is incomplete; electron.exe is missing.
-  echo         Run build-sc\install.bat to reinstall the libraries.
+  echo.
+  echo [ERROR] The Electron binary could not be downloaded.
+  echo         Check that github.com is reachable ^(disable VPN/firewall/proxy^),
+  echo         then run start.bat again, or run build-sc\install.bat to reinstall.
+  echo.
   pause
   exit /b 1
 )
@@ -72,3 +79,30 @@ echo.
 echo App exited. The proxy window stays open - close it with Ctrl+C.
 pause
 endlocal
+exit /b 0
+
+
+rem ============================================================================
+rem  :ensure_electron - download the Electron binary (node_modules\electron\dist)
+rem  via Electron's own installer, with retries. Runs only when it is missing.
+rem ============================================================================
+:ensure_electron
+echo [setup] The Electron binary is missing - downloading it once ^(~200 MB^)...
+set "npm_config_fetch_retries=5"
+if not defined electron_config_cache set "electron_config_cache=%LOCALAPPDATA%\electron\Cache"
+set "ETRY=0"
+:ensure_electron_try
+set /a ETRY+=1
+echo [setup] download attempt %ETRY%/3 ...
+node "%PROJ%\node_modules\electron\install.js"
+if exist "node_modules\electron\dist\electron.exe" (
+  echo [setup] Electron is ready.
+  exit /b 0
+)
+if %ETRY% LSS 3 (
+  echo [setup] attempt %ETRY% did not finish - retrying in 3s...
+  timeout /t 3 /nobreak >nul
+  goto :ensure_electron_try
+)
+echo [setup] Electron download failed after %ETRY% attempts.
+exit /b 1

@@ -61,6 +61,15 @@ export const IcoTerminal: React.FC<IconProps> = ({ className }) => (
   </svg>
 );
 
+/** Knowledge — stacked memory pages with a relation node */
+export const IcoKnowledge: React.FC<IconProps> = ({ className }) => (
+  <svg {...base} className={className}>
+    <path d="M3 3.2 h7.7 a1.3 1.3 0 0 1 1.3 1.3 v7.7 H4.3A1.3 1.3 0 0 1 3 10.9Z" />
+    <path d="M5 1.5 h7.5A1.5 1.5 0 0 1 14 3v7.5 M5.2 6 h4.6 M5.2 8.5 h3.1" />
+    <circle cx="10.8" cy="10.8" r="1.7" fill="currentColor" fillOpacity="0.28" />
+  </svg>
+);
+
 /** Settings — sliders */
 export const IcoSettings: React.FC<IconProps> = ({ className }) => (
   <svg {...base} className={className}>

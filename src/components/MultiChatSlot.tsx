@@ -300,9 +300,10 @@ function applyProgressToLiveState(state: SessionLiveState, progress: AgentToolPr
       if (last?.kind === "text") {
         next = {
           ...next,
-          assistantDrafts: next.assistantDrafts.length
-            ? [...next.assistantDrafts.slice(0, -1), `${next.assistantDrafts[next.assistantDrafts.length - 1]}${text}`]
-            : [text],
+          // liveTimeline is authoritative while streaming. Keeping a second
+          // ever-growing copy in assistantDrafts doubled string allocation for
+          // every delta; the initial draft remains as a legacy/fallback value.
+          assistantDrafts: next.assistantDrafts,
           liveTimeline: [...next.liveTimeline.slice(0, -1), { ...last, text: `${last.text}${text}` }],
         };
       } else {

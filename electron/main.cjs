@@ -34,6 +34,7 @@ const {
   runSoviet7Council,
 } = require("./soviet7/index.cjs");
 const { LAB_IN_MODE_ID, runLabInPipeline } = require("./labIn/index.cjs");
+const knowledgeStore = require("./labIn/knowledgeStore.cjs");
 
 const { TOOLS, getToolSchemas, getToolSchemasAsync } = require("./tools/registry.cjs");
 const { createTelegramBot, normalizeTelegramConfig } = require("./telegramBot.cjs");
@@ -2273,6 +2274,31 @@ function buildLabInConversationContext(messages, currentUserMessage) {
 
 function restoreLabInUserMessage(messages, originalMessage) {
   if (!Array.isArray(messages) || !originalMessage) return messages;
+  const segmentedIndexes = [];
+  for (let index = 0; index < messages.length; index += 1) {
+    const message = messages[index];
+    const text = contentPartsToText(message?.content);
+    const segmentedUser = message?.role === "user" && (
+      text.includes("[LAB-IN KNOWLEDGE PART ") ||
+      text.includes("[LAB-IN EXECUTE AFTER KNOWLEDGE PARTS]")
+    );
+    const segmentedAck = message?.role === "assistant" && text.startsWith("[LAB-IN PART ACK ");
+    if (segmentedUser || segmentedAck) segmentedIndexes.push(index);
+  }
+  if (segmentedIndexes.length) {
+    const firstSynthetic = segmentedIndexes[0];
+    const syntheticSet = new Set(segmentedIndexes);
+    const insertionIndex = messages.slice(0, firstSynthetic).filter((_message, index) => !syntheticSet.has(index)).length;
+    const restored = {
+      role: "user",
+      content: originalMessage.content,
+      ...(Array.isArray(originalMessage.images) && originalMessage.images.length
+        ? { images: originalMessage.images }
+        : {}),
+    };
+    const clean = messages.filter((_message, index) => !syntheticSet.has(index));
+    return [...clean.slice(0, insertionIndex), restored, ...clean.slice(insertionIndex)];
+  }
   let targetIndex = -1;
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const message = messages[index];
@@ -2548,17 +2574,54 @@ async function executeChatRequest(event, request, overrides = {}) {
         ok: true,
         ...(pipeline?.meta || {}),
       };
-      const handoff = String(pipeline?.handoffUserMessage || lastUserText);
-      let replacedLab = false;
-      requestMessages = requestMessages.map((message, index, all) => {
-        if (replacedLab) return message;
-        const isLastUser =
-          message?.role === "user" && !all.slice(index + 1).some((item) => item?.role === "user");
-        if (!isLastUser) return message;
-        replacedLab = true;
-        return { ...message, content: handoff };
-      });
-      if (!replacedLab) requestMessages = [...requestMessages, { role: "user", content: handoff }];
+      const stagedHandoff = Array.isArray(pipeline?.handoffMessages)
+        ? pipeline.handoffMessages.filter((message) =>
+            (message?.role === "user" || message?.role === "assistant") &&
+            typeof message?.content === "string" &&
+            message.content.trim()
+          )
+        : [];
+      if (stagedHandoff.length > 1) {
+        let lastUserIndex = -1;
+        for (let index = requestMessages.length - 1; index >= 0; index -= 1) {
+          if (requestMessages[index]?.role === "user") {
+            lastUserIndex = index;
+            break;
+          }
+        }
+        const staged = stagedHandoff.map((message, index) => {
+          const isFinalUser = message.role === "user" &&
+            !stagedHandoff.slice(index + 1).some((later) => later?.role === "user");
+          return isFinalUser && Array.isArray(lastUserMsg?.images) && lastUserMsg.images.length
+            ? { ...message, images: lastUserMsg.images }
+            : { ...message };
+        });
+        requestMessages = lastUserIndex >= 0
+          ? [
+              ...requestMessages.slice(0, lastUserIndex),
+              ...staged,
+              ...requestMessages.slice(lastUserIndex + 1),
+            ]
+          : [...requestMessages, ...staged];
+        mainProgress({
+          type: "status",
+          phase: "lab-in-handoff",
+          label: `LAB-IN · staged handoff · ${pipeline?.meta?.handoffPartCount || Math.floor(staged.length / 2)} knowledge parts acknowledged · main agent executing…`,
+          agentMode: LAB_IN_MODE_ID,
+        });
+      } else {
+        const handoff = String(pipeline?.handoffUserMessage || lastUserText);
+        let replacedLab = false;
+        requestMessages = requestMessages.map((message, index, all) => {
+          if (replacedLab) return message;
+          const isLastUser =
+            message?.role === "user" && !all.slice(index + 1).some((item) => item?.role === "user");
+          if (!isLastUser) return message;
+          replacedLab = true;
+          return { ...message, content: handoff };
+        });
+        if (!replacedLab) requestMessages = [...requestMessages, { role: "user", content: handoff }];
+      }
       historyUserMessages = requestMessages;
       effectiveAgentMode = LAB_IN_MODE_ID;
     }
@@ -2762,6 +2825,7 @@ async function executeChatRequest(event, request, overrides = {}) {
               // window may be gone
             }
           },
+          onKnowledgeChanged: (payload) => broadcastKnowledgeChanged(payload),
           onMcpChanged: (payload) => {
             try { event.sender.send("mcp:changed", payload || { type: "changed" }); } catch {}
           },
@@ -2775,7 +2839,10 @@ async function executeChatRequest(event, request, overrides = {}) {
         excludeToolNames,
         onMessagesChange: async (messages) => {
           if (!persistSession) return;
-          await memory.saveSession(app, rootPath, sessionId, messages, {
+          const messagesToSave = isLabIn
+            ? restoreLabInUserMessage(messages, originalLastUserMsg)
+            : messages;
+          await memory.saveSession(app, rootPath, sessionId, messagesToSave, {
             usage: result?.usage,
             contextTokens: result?.contextTokens,
             throttle: true,
@@ -3278,6 +3345,46 @@ ipcMain.handle("memory:clearSessionTranscript", async (_event, rootPath, session
   return memory.clearSessionTranscript(app, rootPath || null, sessionId, options || {});
 });
 
+ipcMain.handle("knowledge:list", async () => {
+  const userDataPath = app.getPath("userData");
+  const [manifest, stats] = await Promise.all([
+    knowledgeStore.readManifest(userDataPath),
+    knowledgeStore.knowledgeStats(userDataPath),
+  ]);
+  return {
+    ...stats,
+    chunks: manifest.chunks.slice().sort((a, b) => b.updatedAt - a.updatedAt || b.id.localeCompare(a.id)),
+  };
+});
+
+ipcMain.handle("knowledge:read", async (_event, id) => {
+  return knowledgeStore.getKnowledgeChunk(app.getPath("userData"), id);
+});
+
+ipcMain.handle("knowledge:create", async (_event, input) => {
+  const result = await knowledgeStore.addKnowledge(app.getPath("userData"), {
+    ...(input || {}),
+    source: input?.source || "knowledge-workspace",
+  });
+  broadcastKnowledgeChanged({ type: "added", chunks: result.created || [] });
+  return result;
+});
+
+ipcMain.handle("knowledge:update", async (_event, id, patch) => {
+  const chunk = await knowledgeStore.updateKnowledge(app.getPath("userData"), {
+    ...(patch || {}),
+    id,
+  });
+  broadcastKnowledgeChanged({ type: "updated", chunk });
+  return chunk;
+});
+
+ipcMain.handle("knowledge:delete", async (_event, id) => {
+  const result = await knowledgeStore.deleteKnowledge(app.getPath("userData"), id);
+  broadcastKnowledgeChanged({ type: "deleted", chunkId: id });
+  return result;
+});
+
 // Real token count of the current system prompt (project tree, git status, etc.)
 // for this rootPath — used by the renderer for context-usage estimate.
 ipcMain.handle("context:estimateTokens", async (_event, rootPath, projectName) => {
@@ -3289,6 +3396,16 @@ function broadcastCustomToolsChanged(payload) {
   for (const win of BrowserWindow.getAllWindows()) {
     try {
       win.webContents.send("customTools:changed", payload || { type: "changed" });
+    } catch {
+      // ignore
+    }
+  }
+}
+
+function broadcastKnowledgeChanged(payload) {
+  for (const win of BrowserWindow.getAllWindows()) {
+    try {
+      win.webContents.send("knowledge:changed", payload || { type: "changed" });
     } catch {
       // ignore
     }

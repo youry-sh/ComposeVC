@@ -8,6 +8,7 @@ import {
   IcoSettings,
   IcoProviders,
   IcoTerminal,
+  IcoKnowledge,
 } from "./topIcons";
 import {
   CONTEXT_METRICS_EVENT,
@@ -18,7 +19,7 @@ import {
   formatUptime,
 } from "./StatusBar";
 
-type Panel = "multiide" | "proxy" | "settings" | "customtools" | "runner" | "terminal";
+type Panel = "multiide" | "proxy" | "settings" | "customtools" | "runner" | "terminal" | "knowledge";
 
 interface TitleBarProps {
   subtitle?: string;
@@ -161,6 +162,7 @@ const TitleBar: React.FC<TitleBarProps> = ({
     { id: "proxy", title: labels?.proxy || "Proxy", icon: <IcoProxy className="topbar-tab-ico" /> },
     { id: "runner", title: "Runner", icon: <IcoRunner className="topbar-tab-ico" /> },
     { id: "terminal", title: "Terminal", icon: <IcoTerminal className="topbar-tab-ico" /> },
+    { id: "knowledge", title: "Knowledge", icon: <IcoKnowledge className="topbar-tab-ico" /> },
     { id: "customtools", title: "Custom Tools", icon: <IcoTools className="topbar-tab-ico" /> },
   ];
 

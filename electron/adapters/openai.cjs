@@ -509,7 +509,7 @@ async function execute({ provider, model, messages, tools, onRetry, signal, onDe
     }
   };
 
-  await readResponseEvents(response, "OpenAI", consumeChunk);
+  await readResponseEvents(response, "OpenAI", consumeChunk, { collectEvents: false });
 
   const toolCalls = Array.from(toolCallsMap.values())
     .filter((call) => call.name)

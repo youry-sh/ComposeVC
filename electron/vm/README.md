@@ -92,10 +92,43 @@ virtio-win guest tools (`image_pull image=virtio-win`, attached as a second CD) 
 - `disposeAll` deliberately keeps machines running when an agent run is stopped; stopping
   a VM is always an explicit action.
 
+## Install (one shot)
+
+`Setup-VM.bat` on Windows does the whole thing and never hangs:
+
+```
+Setup-VM.bat            npm deps + QEMU 11.1.0 + Debian 12 base image
+Setup-VM.bat noimage    deps + QEMU only
+Setup-VM.bat run        everything, then launch the IDE
+Setup-VM.bat ubuntu     use ubuntu-24.04 as the base image
+```
+
+It calls `scripts/vm-setup.cjs`, which you can also run directly:
+
+```
+node scripts/vm-setup.cjs                 QEMU 11.1.0 + debian-12
+node scripts/vm-setup.cjs --no-image      QEMU only
+node scripts/vm-setup.cjs --timeout=45    overall budget in minutes (default 40)
+```
+
+**QEMU is pinned to 11.1.0.** The exact installer (url, size, sha512) lives in
+`install.cjs → PINNED_QEMU`; every download is sha512-verified before it is extracted, so
+a truncated or tampered installer never runs. The build comes from the permanent weilnetz
+archive first, its rotating index second, and only if both 404 does it scrape the index
+for the newest build.
+
+**Downloads never hang.** `images.cjs` gives every download a 45s idle watchdog (a stalled
+stream is aborted, not waited on forever), resume-from-partial with a `Range` request, up
+to 4 retries per source before the next mirror, and size + sha512 verification. A corrupt
+file is deleted and restarted; a good one is reused without re-downloading. `vm-setup.cjs`
+renders a live progress bar so the console shows movement the whole time, and enforces an
+overall time budget so a dead network fails loudly instead of freezing.
+
 ## Tests
 
 ```
-npm run test:vm      # ISO writer, registry/args/store, and the QMP/QGA/console protocols
-                     # against simulated servers — no QEMU needed
+npm run test:vm      # ISO writer; registry/args/store; the QMP/QGA/console protocols;
+                     # and download robustness (idle-abort, resume, sha512, wrong-size)
+                     # — all against simulated servers, no QEMU needed
 node scripts/vm-cli.cjs host_status    # same tool, from a terminal
 ```
