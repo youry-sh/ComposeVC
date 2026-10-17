@@ -4325,6 +4325,16 @@ app.whenReady().then(async () => {
     console.error("Runner engine failed:", error?.message || error);
   }
 
+  try {
+    require("./deskBridge.cjs").start(() => {
+      const focused = BrowserWindow.getFocusedWindow();
+      if (focused && !focused.isDestroyed()) return focused;
+      return BrowserWindow.getAllWindows().find((win) => !win.isDestroyed()) || null;
+    });
+  } catch (error) {
+    console.error("[desk] bridge failed:", error?.message || error);
+  }
+
   createWindow();
 
   app.on("activate", () => {

@@ -568,6 +568,9 @@ declare global {
         messages: string[];
       }>;
       saveAutoInsert: (data: { enabled: boolean; messages: string[] }) => Promise<boolean>;
+      onDeskPrompt: (callback: (payload: { text?: string }) => void) => () => void;
+      onDeskClear: (callback: () => void) => () => void;
+      deskReply: (payload: { text?: string; context?: string }) => void;
       onAgentProgress: (callback: (progress: AgentToolProgress) => void) => () => void;
       openFolder: () => Promise<FileNode | null>;
       readFolder: (rootPath: string) => Promise<FileNode>;

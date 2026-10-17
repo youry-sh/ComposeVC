@@ -623,6 +623,7 @@ interface MultiChatSlotProps {
   onRemoveCustomTool: (toolId: string) => Promise<void>;
   labels: Labels;
   index: number;
+  focused?: boolean;
 }
 
 function projectNameFromPath(path: string | null, emptyLabel = "No folder"): string {
@@ -911,6 +912,7 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
   onRemoveCustomTool,
   labels,
   index,
+  focused = false,
 }) => {
   const [rootPath, setRootPath] = useState<string | null>(initialRootPath);
   const [projectName, setProjectName] = useState(() => projectNameFromPath(initialRootPath));
@@ -1711,6 +1713,55 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
     persist(rootPathRef.current, pasted.sessionId);
   };
 
+  const deskWaitingRef = useRef(false);
+  const deskSessionIdRef = useRef<string | null>(null);
+  const reportDesk = (text: string) => {
+    if (!deskWaitingRef.current) return;
+    deskWaitingRef.current = false;
+    const sid = deskSessionIdRef.current;
+    const live = sid ? sessionLiveRef.current.get(sid) : undefined;
+    const tail = (live?.messages || [])
+      .filter((message) => message.role === "user")
+      .slice(-4)
+      .map((message) => String(message.content || "").replace(/\s+/g, " ").slice(0, 160))
+      .join("\n");
+    window.lopster?.deskReply?.({ text, context: tail });
+  };
+
+  const ensureDeskSession = async () => {
+    if (deskSessionIdRef.current) return deskSessionIdRef.current;
+    const created = await window.lopster?.createChatSession(rootPathRef.current);
+    const sid = created?.sessionId || null;
+    if (!sid) return null;
+    deskSessionIdRef.current = sid;
+    sessionLiveRef.current.set(sid, emptyLiveState());
+    await refreshSessions(rootPathRef.current);
+    return sid;
+  };
+
+  useEffect(() => {
+    if (!focused) return;
+    const offPrompt = window.lopster?.onDeskPrompt?.((payload) => {
+      const text = String(payload?.text || "").trim();
+      if (!text) return;
+      void (async () => {
+        const sid = await ensureDeskSession();
+        if (!sid) return;
+        deskWaitingRef.current = true;
+        void executeSendMessage(text, { sessionId: sid });
+      })();
+    });
+    const offClear = window.lopster?.onDeskClear?.(() => {
+      deskWaitingRef.current = false;
+      deskSessionIdRef.current = null;
+      window.lopster?.deskReply?.({ text: "", context: "" });
+    });
+    return () => {
+      offPrompt?.();
+      offClear?.();
+    };
+  }, [focused]);
+
   const handleNewChat = async () => {
     const created = await window.lopster?.createChatSession(rootPath);
     if (!created) return;
@@ -2366,9 +2417,11 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
         // Clear running AFTER messages are staged — proxy may already be done; do not await list refresh.
       markSessionRunning(runSessionId, false);
       completedSuccessfully = true;
+      reportDesk(response?.text || "");
       void refreshSessions(rootPath);
     } catch (error) {
       markSessionRunning(runSessionId, false);
+      reportDesk(error instanceof Error ? error.message : "failed");
       if (modeAtSend === "soviet-7" || soviet7ActiveRunRef.current) {
         // After council fan-out (or fail mid-run) leave UI on normal ComposeVC — no sticky mode.
         soviet7ActiveRunRef.current = false;

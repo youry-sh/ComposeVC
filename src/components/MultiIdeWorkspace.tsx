@@ -527,6 +527,7 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
               <MultiChatSlot
                 slotId={slot.id}
                 index={index}
+                focused={slot.id === activeSlotId}
                 rootPath={slot.rootPath}
                 sessionId={slot.sessionId}
                 selectedModelId={slot.selectedModelId}

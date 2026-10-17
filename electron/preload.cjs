@@ -160,6 +160,25 @@ contextBridge.exposeInMainWorld("lopster", {
   readAutoInsertStore: () => ipcRenderer.invoke("autoInsert:read"),
   saveAutoInsert: (data) => ipcRenderer.invoke("autoInsert:save", data),
 
+  onDeskPrompt: (callback) => {
+    const listener = (_event, payload) => callback(payload || {});
+    ipcRenderer.on("desk:prompt", listener);
+    return () => ipcRenderer.removeListener("desk:prompt", listener);
+  },
+  onDeskClear: (callback) => {
+    const listener = () => callback();
+    ipcRenderer.on("desk:clear", listener);
+    return () => ipcRenderer.removeListener("desk:clear", listener);
+  },
+  deskReply: (payload) => {
+    try {
+      fetch("http://127.0.0.1:47741/reply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload || {}),
+      }).catch(() => {});
+    } catch { /* wallpaper bridge is optional */ }
+  },
   onAgentProgress: (callback) => {
     const listener = (_event, progress) => callback(progress);
     ipcRenderer.on("agent:progress", listener);
