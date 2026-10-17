@@ -1729,7 +1729,14 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
   };
 
   const ensureDeskSession = async () => {
-    if (deskSessionIdRef.current) return deskSessionIdRef.current;
+    const existing = deskSessionIdRef.current
+      ? sessionLiveRef.current.get(deskSessionIdRef.current)
+      : undefined;
+    const polluted = (existing?.messages || []).some((message) =>
+      String(message.content || "").includes("CLEAR")
+    );
+    if (deskSessionIdRef.current && !polluted) return deskSessionIdRef.current;
+    deskSessionIdRef.current = null;
     const created = await window.lopster?.createChatSession(rootPathRef.current, {
       setActive: false,
       title: "Wallpaper",
@@ -1750,7 +1757,7 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
         const sid = await ensureDeskSession();
         if (!sid) return;
         deskWaitingRef.current = true;
-        void executeSendMessage(text, { sessionId: sid });
+        void executeSendMessage(text, { sessionId: sid, agentMode: "lopster", isolated: true });
       })();
     });
     const offClear = window.lopster?.onDeskClear?.(() => {
@@ -1972,7 +1979,12 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
 
   const executeSendMessage = async (
     content: string,
-    options?: { sessionId?: string | null; images?: ChatImageAttachment[] }
+    options?: {
+      sessionId?: string | null;
+      images?: ChatImageAttachment[];
+      agentMode?: MainAgentMode;
+      isolated?: boolean;
+    }
   ) => {
     let effectiveContent = content;
     const sendImages = options?.images?.length ? options.images : undefined;
@@ -2086,7 +2098,7 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
         messages: isViewingRunSession() ? messagesRef.current : [userMsg],
       });
     }
-    const modeAtSend = agentModeRef.current;
+    const modeAtSend = options?.agentMode || agentModeRef.current;
     // Soviet-7 run: after handoff UI stays on lopster (no restore).
     soviet7ActiveRunRef.current = modeAtSend === "soviet-7";
     // Keep unfinished agent todos across fail/abort/retry — except one-shot fresh turns.
@@ -2168,7 +2180,15 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
       }
       // Rebuild tool calls/results from toolSteps so send/merge never drops tool history
       // that only exists in the UI projection after rehydrate.
-      const requestMessages = isViewingRunSession()
+      const requestMessages = options?.isolated
+        ? [
+            {
+              role: "user" as const,
+              content: buildUserRequestContent(effectiveContent, sendImages),
+              images: sendImages,
+            },
+          ]
+        : isViewingRunSession()
         ? toRequestMessages(messagesRef.current)
         : [
             {
