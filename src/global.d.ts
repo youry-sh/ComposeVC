@@ -312,7 +312,10 @@ declare global {
         rootPath: string | null,
         options?: { page?: number; pageSize?: number; query?: string }
       ) => Promise<ChatSessionPage>;
-      createChatSession: (rootPath: string | null) => Promise<ChatSession>;
+      createChatSession: (
+        rootPath: string | null,
+        options?: { setActive?: boolean; title?: string }
+      ) => Promise<ChatSession>;
       listChatBookmarks: () => Promise<Array<{ id: string; chatId: string; name: string; createdAt: number; updatedAt: number }>>;
       saveChatBookmark: (bookmark: { chatId: string; name: string }) => Promise<{ id: string; chatId: string; name: string; createdAt: number; updatedAt: number }>;
       deleteChatBookmark: (bookmarkId: string) => Promise<{ deleted: boolean }>;

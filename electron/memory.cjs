@@ -478,6 +478,7 @@ async function listSessionsPage(app, rootPath, options = {}) {
       for (const session of sessions) {
         if (!session || seen.has(session.sessionId)) continue;
         seen.add(session.sessionId);
+        if (session.title === "Wallpaper") continue;
         if (query && !session.title.toLowerCase().includes(query)) continue;
         allSessions.push(session);
       }

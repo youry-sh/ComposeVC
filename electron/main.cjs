@@ -3460,8 +3460,8 @@ ipcMain.handle("memory:listSessionsPage", async (_event, rootPath, options) => {
   return memory.listSessionsPage(app, rootPath || null, options || {});
 });
 
-ipcMain.handle("memory:createSession", async (_event, rootPath) => {
-  return memory.createSession(app, rootPath || null);
+ipcMain.handle("memory:createSession", async (_event, rootPath, options) => {
+  return memory.createSession(app, rootPath || null, options || {});
 });
 
 ipcMain.handle("memory:listChatBookmarks", async () => {

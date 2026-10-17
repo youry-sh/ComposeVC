@@ -1730,12 +1730,14 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
 
   const ensureDeskSession = async () => {
     if (deskSessionIdRef.current) return deskSessionIdRef.current;
-    const created = await window.lopster?.createChatSession(rootPathRef.current);
+    const created = await window.lopster?.createChatSession(rootPathRef.current, {
+      setActive: false,
+      title: "Wallpaper",
+    });
     const sid = created?.sessionId || null;
     if (!sid) return null;
     deskSessionIdRef.current = sid;
     sessionLiveRef.current.set(sid, emptyLiveState());
-    await refreshSessions(rootPathRef.current);
     return sid;
   };
 

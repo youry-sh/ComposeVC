@@ -102,7 +102,7 @@ contextBridge.exposeInMainWorld("lopster", {
   listChatSessions: (rootPath) => ipcRenderer.invoke("memory:listSessions", rootPath),
   listChatSessionsPage: (rootPath, options) =>
     ipcRenderer.invoke("memory:listSessionsPage", rootPath, options || {}),
-  createChatSession: (rootPath) => ipcRenderer.invoke("memory:createSession", rootPath),
+  createChatSession: (rootPath, options) => ipcRenderer.invoke("memory:createSession", rootPath, options || {}),
   listChatBookmarks: () => ipcRenderer.invoke("memory:listChatBookmarks"),
   saveChatBookmark: (bookmark) => ipcRenderer.invoke("memory:saveChatBookmark", bookmark),
   deleteChatBookmark: (bookmarkId) => ipcRenderer.invoke("memory:deleteChatBookmark", bookmarkId),
