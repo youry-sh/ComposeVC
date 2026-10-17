@@ -11,7 +11,6 @@ const {
   buildSearchPrompt,
   buildHelperSearchPrompt,
   buildSynthesisPrompt,
-  buildAuditPrompt,
   buildHandoffSequence,
   buildHandoff,
 } = require("./prompts.cjs");
@@ -57,11 +56,7 @@ function truncatePackage(text, maxChars = LAB_IN_MAX_HANDOFF_CHARS) {
 
 function requiredCoverage(chunkCount) {
   if (chunkCount <= 0) return { search: 0, read: 0, links: 0 };
-  return {
-    search: Math.min(3, chunkCount),
-    read: Math.min(3, chunkCount),
-    links: Math.min(2, chunkCount),
-  };
+  return { search: 1, read: 1, links: 0 };
 }
 
 function emptyCounts() {
@@ -164,13 +159,13 @@ async function runSearchTeam({
       id: "lead",
       label: "Search Lead",
       prompt: buildSearchPrompt(commonPromptInput),
-      maxIterations: 36,
+      maxIterations: 6,
     },
     ...SEARCH_HELPERS.map((helper) => ({
       id: `helper-${helper.id}`,
       label: helper.label,
       prompt: buildHelperSearchPrompt({ ...commonPromptInput, helper }),
-      maxIterations: 28,
+      maxIterations: 4,
     })),
   ];
 
@@ -407,42 +402,13 @@ async function runSearchTeam({
       signal,
       tokenCountingMode,
       ...stageLimits(searcher.model),
-      maxIterations: 30,
-      excludeToolNames: makeSearchExclusions(),
-      builtinToolsOnly: true,
+      maxIterations: 2,
+      disableTools: true,
       isSubagent: true,
       subagentDepth: 1,
       onProgress: makeProgressForwarder({ id: "lead-synthesis" }, synthesisCounts, synthesisToolCallId),
     });
     if (String(synthesized?.text || "").trim()) knowledgePackage = String(synthesized.text).trim();
-
-    if (!coverageMet(counts, required) && !signal?.aborted) {
-      emit({
-        type: "status",
-        phase: "lab-in-audit",
-        label: `LAB-IN · coverage audit · search ${counts.search}/${required.search}, read ${counts.read}/${required.read}, links ${counts.links}/${required.links}…`,
-      });
-      searchPasses += 1;
-      const audited = await runAgentLoop({
-        provider: searcher.provider,
-        model: searcher.model,
-        messages: [{ role: "user", content: buildAuditPrompt({ counts, required, previousReport: knowledgePackage }) }],
-        systemPrompt: SEARCH_SYNTHESIS_SYSTEM_PROMPT,
-        toolContext: searchToolContext(paths, userDataPath),
-        rootPath: paths.root,
-        userDataPath,
-        signal,
-        tokenCountingMode,
-        ...stageLimits(searcher.model),
-        maxIterations: 24,
-        excludeToolNames: makeSearchExclusions(),
-        builtinToolsOnly: true,
-        isSubagent: true,
-        subagentDepth: 1,
-        onProgress: makeProgressForwarder({ id: "lead-audit" }, synthesisCounts, synthesisToolCallId),
-      });
-      if (String(audited?.text || "").trim()) knowledgePackage = String(audited.text).trim();
-    }
     emit({
       type: "tool_end",
       toolCallId: synthesisToolCallId,

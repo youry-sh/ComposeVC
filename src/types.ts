@@ -170,6 +170,12 @@ export interface AiRuntimeConfig {
   labInPromptModelId?: string;
   /** LAB-IN stage 2 shared-knowledge search model. Empty = active main model. */
   labInSearchModelId?: string;
+  /** FoRtani follow-up agent. Empty = active main model. */
+  fortaniModelId?: string;
+  /** Cloudflare account id for generate_image. */
+  cloudflareAccountId?: string;
+  /** Cloudflare API token for Workers AI image generation. */
+  cloudflareApiToken?: string;
 }
 
 export interface ProviderConfig {
@@ -219,8 +225,8 @@ export interface KnowledgeListResponse {
   chunks: KnowledgeChunkSummary[];
 }
 
-/** lopster = ComposeVC; soviet-7 = council; lab-in = refine + memory research + execute */
-export type MainAgentMode = "lopster" | "soviet-7" | "lab-in";
+/** lopster = ComposeVC; soviet-7 = council; lab-in = refine + research + execute; fortani = lab-in then a follow-up agent */
+export type MainAgentMode = "lopster" | "soviet-7" | "lab-in" | "fortani";
 
 export interface ChatExecutionRequest {
   modelId: string;

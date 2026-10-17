@@ -370,6 +370,9 @@ const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, 
     soviet7ModelId: "",
     labInPromptModelId: "",
     labInSearchModelId: "",
+    fortaniModelId: "",
+    cloudflareAccountId: "",
+    cloudflareApiToken: "",
   };
   const soviet7ModelId =
     typeof aiRuntime.soviet7ModelId === "string" ? aiRuntime.soviet7ModelId.trim() : "";
@@ -390,6 +393,12 @@ const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, 
     : null;
   const labInPromptSelectValue = labInPromptModelMatch ? labInPromptModelMatch.id : "";
   const labInSearchSelectValue = labInSearchModelMatch ? labInSearchModelMatch.id : "";
+  const fortaniModelId =
+    typeof aiRuntime.fortaniModelId === "string" ? aiRuntime.fortaniModelId.trim() : "";
+  const fortaniModelMatch = fortaniModelId
+    ? draft.models.find((m) => m.id === fortaniModelId || m.name === fortaniModelId)
+    : null;
+  const fortaniSelectValue = fortaniModelMatch ? fortaniModelMatch.id : "";
   const modelOptions = [
     { value: "", label: "Same as main model (default)" },
     ...draft.models.map((model) => {
@@ -683,6 +692,50 @@ const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, 
                         </p>
                       ) : null}
                     </div>
+                  </div>
+                </div>
+
+                <div className="settings-card">
+                  <div className="settings-card-title">FoRtani model</div>
+                  <div className="grid gap-2">
+                    <p className="text-[11px] leading-snug text-ink-500">
+                      Model that reviews the task and the agent's diff, then sends corrections back. It does not edit files. Empty = active chat model. The main agent still applies the fixes.
+                    </p>
+                    <UiSelect
+                      ariaLabel="FoRtani follow-up model"
+                      value={fortaniSelectValue}
+                      options={modelOptions}
+                      onChange={(next) => updateAiRuntime({ fortaniModelId: next || "" })}
+                    />
+                    {fortaniModelId && !fortaniModelMatch ? (
+                      <p className="text-[11px] leading-snug" style={{ color: "var(--danger)" }}>
+                        Saved FoRtani model &quot;{fortaniModelId}&quot; is missing — falls back to main model.
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="settings-card">
+                  <div className="settings-card-title">Cloudflare image</div>
+                  <div className="grid gap-2">
+                    <p className="text-[11px] leading-snug text-ink-500">
+                      Used by generate_image. Flux 2 Dev draws the subject on a flat green screen, then the tool removes only that green.
+                    </p>
+                    <Field
+                      label="Account ID"
+                      mono
+                      value={typeof aiRuntime.cloudflareAccountId === "string" ? aiRuntime.cloudflareAccountId : ""}
+                      placeholder="account id"
+                      onChange={(next) => updateAiRuntime({ cloudflareAccountId: next.trim() })}
+                    />
+                    <Field
+                      label="API token"
+                      mono
+                      type="password"
+                      value={typeof aiRuntime.cloudflareApiToken === "string" ? aiRuntime.cloudflareApiToken : ""}
+                      placeholder="cfut_…"
+                      onChange={(next) => updateAiRuntime({ cloudflareApiToken: next.trim() })}
+                    />
                   </div>
                 </div>
 

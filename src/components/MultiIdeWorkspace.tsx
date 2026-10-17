@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import MultiChatSlot, { MultiSlotPersist } from "./MultiChatSlot";
-import AsideBrowser from "./AsideBrowser";
 import ChatAside from "./ChatAside";
 import ChatSwitcherModal from "./ChatSwitcherModal";
 import GitBadge from "./GitBadge";
@@ -20,8 +19,11 @@ const SWITCHER_HOTKEY: HotkeyDefinition = { code: "KeyH", modifiers: ["mod"] };
  */
 export const MULTIIDE_STORAGE_KEY = "lopster-multiide-slots";
 export const MULTIIDE_ACTIVE_KEY = "lopster-multiide-active";
+const MULTIIDE_ROWS_KEY = "lopster-multiide-rows";
 /** Hard ceiling — each panel holds a live agent session. */
 export const MULTIIDE_MAX_SLOTS = 12;
+/** How many chats can sit stacked in the centre at once. */
+const MAX_ROWS = 3;
 
 export type MultiIdeSlotState = {
   id: string;
@@ -69,7 +71,8 @@ function isAgentMode(value: unknown): value is MainAgentMode {
   return (
     value === "lopster" ||
     value === "soviet-7" ||
-    value === "lab-in"
+    value === "lab-in" ||
+    value === "fortani"
   );
 }
 
@@ -150,6 +153,23 @@ function folderName(path: string | null): string | null {
 /** Live per-panel status pushed up by MultiChatSlot. */
 type SlotStatus = { running: boolean; sessionCount: number };
 
+const SLOT_DRAG = "application/x-composevc-slot";
+
+function hasSlotDrag(data: DataTransfer): boolean {
+  return Array.from(data.types).includes(SLOT_DRAG);
+}
+
+function loadOpenRows(validIds: string[], fallback: string): string[] {
+  try {
+    const raw = JSON.parse(window.localStorage.getItem(MULTIIDE_ROWS_KEY) || "null") as unknown;
+    if (!Array.isArray(raw)) return [fallback];
+    const ids = raw.filter((id): id is string => typeof id === "string" && validIds.includes(id)).slice(0, MAX_ROWS);
+    return ids.length ? ids : [fallback];
+  } catch {
+    return [fallback];
+  }
+}
+
 const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
   providerConfig,
   customTools,
@@ -174,6 +194,11 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
   const [statusBySlot, setStatusBySlot] = useState<Record<string, SlotStatus>>({});
   /** Ctrl+H list — the only way to switch panels while the dock covers the rail. */
   const [switcherOpen, setSwitcherOpen] = useState(false);
+  /** Chats stacked in the centre. Drag from the rail adds a row, up to three. */
+  const [openIds, setOpenIds] = useState<string[]>(() =>
+    loadOpenRows(slots.map((s) => s.id), slots[0]?.id || "multi-1")
+  );
+  const [dropOn, setDropOn] = useState<string | null>(null);
   const seqRef = useRef(0);
 
   useEffect(() => {
@@ -206,6 +231,69 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
       /* ignore */
     }
   }, [activeId]);
+
+  useEffect(() => {
+    setOpenIds((prev) => {
+      const ids = prev.filter((id) => slots.some((s) => s.id === id)).slice(0, MAX_ROWS);
+      if (ids.length === prev.length && ids.every((id, i) => id === prev[i])) return prev;
+      return ids.length ? ids : [slots[0]?.id].filter((id): id is string => Boolean(id));
+    });
+  }, [slots]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(MULTIIDE_ROWS_KEY, JSON.stringify(openIds));
+    } catch {
+      /* ignore */
+    }
+  }, [openIds]);
+
+  const focusSlot = useCallback(
+    (id: string) => {
+      setActiveId(id);
+      setOpenIds((prev) => {
+        if (prev.includes(id)) return prev;
+        const idx = Math.max(0, prev.indexOf(activeId));
+        const next = prev.slice();
+        if (!next.length) return [id];
+        next[Math.min(idx, next.length - 1)] = id;
+        return next;
+      });
+    },
+    [activeId]
+  );
+
+  /** Drop a rail chat onto the centre. A free row is added; the third drop replaces the row under the cursor. */
+  const placeSlot = useCallback((dragged: string, targetId: string | null) => {
+    if (!slots.some((s) => s.id === dragged)) return;
+    setOpenIds((prev) => {
+      const from = prev.indexOf(dragged);
+      if (targetId && from >= 0 && dragged !== targetId && prev.includes(targetId)) {
+        const next = prev.slice();
+        const to = next.indexOf(targetId);
+        const held = next[from];
+        next[from] = next[to];
+        next[to] = held;
+        return next;
+      }
+      if (from >= 0) return prev;
+      if (!targetId || !prev.includes(targetId)) {
+        return prev.length >= MAX_ROWS ? prev : [...prev, dragged];
+      }
+      if (prev.length < MAX_ROWS) {
+        const next = prev.slice();
+        next.splice(prev.indexOf(targetId) + 1, 0, dragged);
+        return next;
+      }
+      return prev.map((id) => (id === targetId ? dragged : id));
+    });
+    setActiveId(dragged);
+    setDropOn(null);
+  }, [slots]);
+
+  const unpinSlot = useCallback((id: string) => {
+    setOpenIds((prev) => (prev.length <= 1 ? prev : prev.filter((item) => item !== id)));
+  }, []);
 
   const handlePersist = useCallback(
     (next: MultiSlotPersist) => {
@@ -264,6 +352,7 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
         const fallback = next[Math.max(0, index - 1)] || next[0];
         if (fallback) setActiveId(fallback.id);
       }
+      setOpenIds((prev) => prev.filter((id) => id !== slotId));
     },
     [activeId, onSlotsChange, slots]
   );
@@ -314,17 +403,23 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
             const running = Boolean(status?.running);
             const sessionCount = status?.sessionCount ?? 0;
             const isActive = slot.id === activeSlotId;
+            const isOpen = openIds.includes(slot.id);
             const name = folderName(slot.rootPath);
             return (
               <div
                 key={slot.id}
-                className={`chat-rail-item${isActive ? " is-active" : ""}${running ? " is-running" : ""}`}
+                className={`chat-rail-item${isActive ? " is-active" : ""}${running ? " is-running" : ""}${isOpen ? " is-open" : ""}`}
+                draggable
+                onDragStart={(event) => {
+                  event.dataTransfer.setData(SLOT_DRAG, slot.id);
+                  event.dataTransfer.effectAllowed = "copy";
+                }}
               >
                 <div className="chat-rail-main">
                 <button
                   type="button"
                   className="chat-rail-btn"
-                  onClick={() => setActiveId(slot.id)}
+                  onClick={() => focusSlot(slot.id)}
                   title={slot.rootPath || undefined}
                 >
                   <span className="chat-rail-head-row">
@@ -367,21 +462,68 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
         <footer className="chat-rail-foot">
           {stableSlots.length}/{MULTIIDE_MAX_SLOTS}
         </footer>
-
-        {/* Bottom dock: open a film page or a video by link, right in the rail. */}
-        <AsideBrowser />
       </aside>
 
       {/* ── Centre: exactly one visible chat panel ──
           The others stay mounted (hidden) so their run never dies. */}
-      <main className="chat-stage">
-        {stableSlots.map((slot, index) => (
+      <main
+        className={`chat-stage${openIds.length > 1 ? " is-split" : ""}`}
+        onDragOver={(event) => {
+          if (!hasSlotDrag(event.dataTransfer)) return;
+          event.preventDefault();
+          event.dataTransfer.dropEffect = "copy";
+        }}
+        onDrop={(event) => {
+          const id = event.dataTransfer.getData(SLOT_DRAG);
+          if (!id) return;
+          event.preventDefault();
+          placeSlot(id, null);
+        }}
+      >
+        {stableSlots.map((slot, index) => {
+          const row = openIds.indexOf(slot.id);
+          const visible = row >= 0;
+          return (
           <div
             key={slot.id}
-            className={`chat-stage-pane${slot.id === activeSlotId ? " is-visible" : ""}`}
-            aria-hidden={slot.id !== activeSlotId}
+            className={`chat-stage-pane${visible ? " is-visible" : ""}${dropOn === slot.id ? " is-drop" : ""}`}
+            aria-hidden={!visible}
+            onDragOver={
+              visible
+                ? (event) => {
+                    if (!hasSlotDrag(event.dataTransfer)) return;
+                    event.preventDefault();
+                    event.stopPropagation();
+                    event.dataTransfer.dropEffect = "copy";
+                    if (dropOn !== slot.id) setDropOn(slot.id);
+                  }
+                : undefined
+            }
+            onDragLeave={visible ? () => setDropOn((current) => (current === slot.id ? null : current)) : undefined}
+            onDrop={
+              visible
+                ? (event) => {
+                    const id = event.dataTransfer.getData(SLOT_DRAG);
+                    if (!id) return;
+                    event.preventDefault();
+                    event.stopPropagation();
+                    placeSlot(id, slot.id);
+                  }
+                : undefined
+            }
           >
-            <div className="chat-stage-frame">
+            <div className="chat-stage-frame" style={row > 0 ? { borderLeft: "1px solid var(--border)" } : undefined}>
+              {openIds.length > 1 && visible && (
+                <button
+                  type="button"
+                  className="chat-stage-unpin"
+                  title="Убрать ряд"
+                  aria-label="Убрать ряд"
+                  onClick={() => unpinSlot(slot.id)}
+                >
+                  ×
+                </button>
+              )}
               <MultiChatSlot
                 slotId={slot.id}
                 index={index}
@@ -400,7 +542,8 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
               />
             </div>
           </div>
-        ))}
+          );
+        })}
       </main>
 
       {/* ── Right: shell stats + configured runners ── */}
@@ -420,7 +563,7 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
             sessionCount: statusBySlot[slot.id]?.sessionCount ?? 0,
           }))}
           activeId={activeSlotId}
-          onPick={setActiveId}
+          onPick={focusSlot}
           onClose={() => setSwitcherOpen(false)}
         />
       )}

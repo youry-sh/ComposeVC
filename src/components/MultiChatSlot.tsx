@@ -967,7 +967,9 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
     () => initialSelectedModelId || providerConfig.selectedModelId || null
   );
   const [agentMode, setAgentMode] = useState<MainAgentMode>(() =>
-    initialAgentMode === "soviet-7" || initialAgentMode === "lab-in" ? initialAgentMode : "lopster"
+    initialAgentMode === "soviet-7" || initialAgentMode === "lab-in" || initialAgentMode === "fortani"
+      ? initialAgentMode
+      : "lopster"
   );
   const [agentStatusLabel, setAgentStatusLabel] = useState<string | null>(null);
   const [retryInfo, setRetryInfo] = useState<{ attempt: number; maxRetries: number } | null>(null);
@@ -1553,7 +1555,7 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
 
       if (
         progress.type === "status" &&
-        (progress.agentMode === "lopster" || progress.agentMode === "soviet-7" || progress.agentMode === "lab-in")
+        (progress.agentMode === "lopster" || progress.agentMode === "soviet-7" || progress.agentMode === "lab-in" || progress.agentMode === "fortani")
       ) {
         pendingModeBySession.set(sid, progress.agentMode as MainAgentMode);
         if (typeof progress.label === "string" && progress.label) {
@@ -2052,7 +2054,9 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
             ? "Soviet-7 · council starting…"
             : modeAtSend === "lab-in"
               ? "LAB-IN · improving prompt…"
-              : null;
+              : modeAtSend === "fortani"
+                ? "FoRtani · LAB-IN starting…"
+                : null;
       const liveStatus = initialStatus || (thinkingMaxRef.current ? "Thinking-max" : null);
       if (liveStatus) setAgentStatusLabel(liveStatus);
       sessionLiveRef.current.set(runSessionRef.current, {
@@ -2084,7 +2088,9 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
             ? "Soviet-7 · council starting…"
             : modeAtSend === "lab-in"
               ? "LAB-IN · improving prompt…"
-              : null,
+              : modeAtSend === "fortani"
+                ? "FoRtani · LAB-IN starting…"
+                : null,
         thinkingMaxLocked: thinkingMaxRef.current,
         thinkingTokens: 0,
         compacting: false,
@@ -2102,7 +2108,9 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
               ? "Soviet-7 · council starting…"
               : modeAtSend === "lab-in"
                 ? "LAB-IN · improving prompt…"
-                : null
+                : modeAtSend === "fortani"
+                  ? "FoRtani · LAB-IN starting…"
+                  : null
         );
       }
       // Rebuild tool calls/results from toolSteps so send/merge never drops tool history
@@ -2118,7 +2126,7 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
           ];
 
       const requestAgentMode: MainAgentMode =
-        modeAtSend === "soviet-7" || modeAtSend === "lab-in" ? modeAtSend : "lopster";
+        modeAtSend === "soviet-7" || modeAtSend === "lab-in" || modeAtSend === "fortani" ? modeAtSend : "lopster";
 
       const response = await window.lopster?.sendChatRequest({
         modelId: modelIdAtSend,

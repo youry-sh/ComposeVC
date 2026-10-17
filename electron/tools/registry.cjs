@@ -25,6 +25,7 @@ const gitTool = require("./gitTool.cjs");
 const runnerTool = require("./runnerTool.cjs");
 const vmTool = require("./vmTool.cjs");
 const knowledgeTool = require("./knowledge.cjs");
+const generateImage = require("./generateImage.cjs");
 
 const TOOLS = [
   readFile,
@@ -54,6 +55,7 @@ const TOOLS = [
         runnerTool,
         vmTool,
 		knowledgeTool,
+        generateImage,
 				];/** Common aliases the model may emit */const TOOL_ALIASES = {  timer: "work_timer",  worktimer: "work_timer",
   minimum_work_timer: "work_timer",
   glob: "grep",
@@ -440,7 +442,7 @@ function normalizeToolInput(name, input, context) {
     if ((!next.path || typeof next.path !== "string") && rootPath) next.path = rootPath;
     if (typeof next.path === "string" && next.path && rootPath) next.path = resolveAgainstRoot(next.path, rootPath);
     if (!next.include && next.file_pattern) next.include = next.file_pattern;
-  } else if (["read_file", "edit_file", "create_file", "list_dir"].includes(name)) {
+  } else if (["read_file", "edit_file", "create_file", "list_dir", "generate_image"].includes(name)) {
     next.path =
       next.path ||
       next.filePath ||

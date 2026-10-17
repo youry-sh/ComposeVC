@@ -258,6 +258,7 @@ const TOOL_META: Record<string, { label: string }> = {
   soviet_7_council: { label: "soviet_7_council" },
   swarm_council: { label: "swarm_council" },
   cf_mail: { label: "cf_mail" },
+  generate_image: { label: "generate_image" },
   restore_backup: { label: "restore_backup" },
   timezone: { label: "timezone" },
 };
@@ -1414,6 +1415,13 @@ const ToolActivityRow: React.FC<{
     step.name === "web_fetch";
 
   const [open, setOpen] = useState(false);
+  const [imageHidden, setImageHidden] = useState(false);
+  const [imageOpen, setImageOpen] = useState(false);
+  const generated =
+    step.name === "generate_image" && step.type === "tool_end" && step.ok && step.result && typeof step.result === "object"
+      ? (step.result as { __image?: { dataUrl?: string; name?: string }; path?: string })
+      : undefined;
+  const generatedSrc = generated?.__image?.dataUrl || "";
 
   return (
     <div
@@ -1464,6 +1472,30 @@ const ToolActivityRow: React.FC<{
           </span>
         )}
       </div>
+
+      {generatedSrc && (
+        <div className="gen-image-card">
+          {imageHidden ? (
+            <button type="button" className="gen-image-toggle" onClick={() => setImageHidden(false)}>
+              Show image
+            </button>
+          ) : (
+            <>
+              <button type="button" className="gen-image-frame" onClick={() => setImageOpen(true)} title="Open">
+                <img src={generatedSrc} alt={generated?.__image?.name || "generated"} draggable={false} />
+              </button>
+              <button type="button" className="gen-image-toggle" onClick={() => setImageHidden(true)}>
+                Hide
+              </button>
+            </>
+          )}
+          {imageOpen && !imageHidden && (
+            <div className="gen-image-lightbox" onClick={() => setImageOpen(false)} role="presentation">
+              <img src={generatedSrc} alt={generated?.__image?.name || "generated"} draggable={false} />
+            </div>
+          )}
+        </div>
+      )}
 
       {step.name === "ask_user" && (
         <AskUserCard
@@ -3811,6 +3843,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   const [instructionsModalOpen, setInstructionsModalOpen] = useState(false);
   const [telegramModalOpen, setTelegramModalOpen] = useState(false);
   const [projectTasksModalOpen, setProjectTasksModalOpen] = useState(false);
+  const [hasProjectInstructions, setHasProjectInstructions] = useState(false);
   const [telegramHeaderStatus, setTelegramHeaderStatus] = useState<TelegramBotStatus | null>(null);
   const [chatWidth, setChatWidth] = useState(loadChatWidth);
   const [isResizing, setIsResizing] = useState(false);
@@ -3830,7 +3863,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   /** Draft saved when user first presses ArrowUp from live input */
   const draftBeforeHistoryRef = useRef("");
   const selectedAgentModeLabel =
-    agentMode === "soviet-7" ? "Soviet-7" : agentMode === "lab-in" ? "LAB-IN" : "ComposeVC";
+    agentMode === "soviet-7" ? "Soviet-7" : agentMode === "lab-in" ? "LAB-IN" : agentMode === "fortani" ? "FoRtani" : "ComposeVC";
 
   useEffect(() => {
     chatWidthRef.current = chatWidth;
@@ -3898,6 +3931,20 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
       window.clearInterval(id);
     };
   }, [telegramSlotId, telegramModalOpen]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!rootPath) {
+      setHasProjectInstructions(false);
+      return;
+    }
+    window.lopster?.readInstructions(rootPath).then((data) => {
+      if (!cancelled) setHasProjectInstructions(Boolean(String(data?.project || "").trim()));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [rootPath, instructionsModalOpen]);
 
   const startChatResize = (event: React.PointerEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -4036,6 +4083,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
 
   const applyHistoryEntry = (value: string) => {
     setInput(value);
+    window.dispatchEvent(new CustomEvent("composevc-draft", { detail: { text: value } }));
     // Put caret at end after React paints the new value
     window.requestAnimationFrame(() => {
       const el = inputRef.current;
@@ -4078,6 +4126,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
     stickToBottomRef.current = true;
     onSend(text, images);
     setInput("");
+    window.dispatchEvent(new CustomEvent("composevc-draft", { detail: { text: "" } }));
     setPendingImages([]);
     const pin = () => messagesScrollRef.current?.scrollToBottom({ smooth: false });
     pin();
@@ -4287,6 +4336,24 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
           >
             <ListPlus className="w-3.5 h-3.5" />
           </button>
+          </div>
+          <div className="chat-status-rings" aria-hidden>
+            <span
+              className={`chat-status-ring${hasProjectInstructions ? " is-on" : ""}`}
+              title={hasProjectInstructions ? "Project instructions are set" : "No project instructions"}
+            />
+            <span
+              className={`chat-status-ring${thinking ? " is-on is-live" : ""}`}
+              title={thinking ? "Working" : "Idle"}
+            />
+            <span
+              className={`chat-status-ring${messageQueue.length > 0 ? " is-on" : ""}`}
+              title={messageQueue.length ? `${messageQueue.length} queued` : "Queue empty"}
+            />
+            <span
+              className={`chat-status-ring${telegramHeaderStatus?.running ? " is-on is-live" : ""}`}
+              title={telegramHeaderStatus?.running ? "Telegram bot is on" : "Telegram is off"}
+            />
           </div>
 	      </div>
       {showHistory && (
@@ -4647,7 +4714,10 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
           <textarea
             ref={inputRef}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value);
+              window.dispatchEvent(new CustomEvent("composevc-draft", { detail: { text: e.target.value } }));
+            }}
             onKeyDown={handleKeyDown}
             onPaste={handlePasteImages}
             placeholder={labels.askAnything}
@@ -4778,7 +4848,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                 <ChevronDown className={`w-3 h-3 flex-shrink-0 transition-transform ${showAgentModeMenu ? "rotate-180" : ""}`} />
               </button>
               {showAgentModeMenu && (
-                <div className="agent-mode-menu absolute left-0 bottom-[calc(100%+6px)] z-40 w-[min(250px,calc(100vw-24px))] max-w-full rounded-xl border border-ink-200 bg-ink-100 shadow-2xl overflow-x-hidden overflow-y-auto animate-fade-in">
+                <div className="agent-mode-menu absolute right-0 bottom-[calc(100%+6px)] z-40 w-[248px] rounded-xl border border-ink-200 bg-ink-100 shadow-2xl overflow-hidden animate-fade-in">
                   <div className="px-3 py-2 border-b border-ink-200 bg-ink-150 text-[10px] font-medium uppercase tracking-wider text-ink-500">
                     Agent mode
                   </div>
@@ -4786,17 +4856,22 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                     {
                       mode: "lopster" as MainAgentMode,
                       title: "ComposeVC",
-                      hint: "Default coding agent",
+                      hint: "Default agent",
                     },
                     {
                       mode: "soviet-7" as MainAgentMode,
                       title: "Soviet-7",
-                      hint: "7 advisors research → main executes",
+                      hint: "7 advisors, then the agent",
                     },
                     {
                       mode: "lab-in" as MainAgentMode,
                       title: "LAB-IN",
-                      hint: "Refine → memory research → execute",
+                      hint: "Refine, research, execute",
+                    },
+                    {
+                      mode: "fortani" as MainAgentMode,
+                      title: "FoRtani + LAB-IN",
+                      hint: "Review, then the agent fixes",
                     },
                   ]).map((item) => (
                     <button
@@ -4815,15 +4890,15 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                       }`}>
                         {item.mode === "soviet-7" ? (
                           <Users className="w-3.5 h-3.5" />
-                        ) : item.mode === "lab-in" ? (
+                        ) : item.mode === "lab-in" || item.mode === "fortani" ? (
                           <BrainCircuit className="w-3.5 h-3.5" />
                         ) : (
                           <Sparkles className="w-3.5 h-3.5" />
                         )}
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block text-[12px] font-medium truncate">{item.title}</span>
-                        <span className="block text-[10px] text-ink-500 truncate">{item.hint}</span>
+                        <span className="block text-[12px] font-medium leading-tight">{item.title}</span>
+                        <span className="block text-[10px] leading-snug text-ink-500 whitespace-normal">{item.hint}</span>
                       </span>
                       {agentMode === item.mode && <Check className="w-3.5 h-3.5 text-ink-700 flex-shrink-0" />}
                     </button>

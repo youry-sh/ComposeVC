@@ -34,6 +34,14 @@ const {
   runSoviet7Council,
 } = require("./soviet7/index.cjs");
 const { LAB_IN_MODE_ID, runLabInPipeline } = require("./labIn/index.cjs");
+const {
+  FORTANI_MODE_ID,
+  resolveFortaniModel,
+  collectChangePacket,
+  reviewExclusions,
+  buildReviewMessage,
+  buildFixMessage,
+} = require("./fortani/index.cjs");
 const knowledgeStore = require("./labIn/knowledgeStore.cjs");
 
 const { TOOLS, getToolSchemas, getToolSchemasAsync } = require("./tools/registry.cjs");
@@ -240,6 +248,9 @@ const defaultProviderConfig = {
     soviet7ModelId: "",
     labInPromptModelId: "",
     labInSearchModelId: "",
+    fortaniModelId: "",
+    cloudflareAccountId: "",
+    cloudflareApiToken: "",
   },
 };
 
@@ -346,6 +357,16 @@ function normalizeAiRuntimeConfig(config) {
       : typeof config?.lab_in_search_model_id === "string"
         ? config.lab_in_search_model_id.trim()
         : "";
+  const fortaniModelId =
+    typeof config?.fortaniModelId === "string"
+      ? config.fortaniModelId.trim()
+      : typeof config?.fortani_model_id === "string"
+        ? config.fortani_model_id.trim()
+        : "";
+  const cloudflareAccountId =
+    typeof config?.cloudflareAccountId === "string" ? config.cloudflareAccountId.trim() : "";
+  const cloudflareApiToken =
+    typeof config?.cloudflareApiToken === "string" ? config.cloudflareApiToken.trim() : "";
   return {
     agentCompletionNotifications: config?.agentCompletionNotifications !== false,
     maxContextTokens,
@@ -353,6 +374,9 @@ function normalizeAiRuntimeConfig(config) {
     soviet7ModelId,
     labInPromptModelId,
     labInSearchModelId,
+    fortaniModelId,
+    cloudflareAccountId,
+    cloudflareApiToken,
   };
 }
 
@@ -2435,18 +2459,24 @@ async function executeChatRequest(event, request, overrides = {}) {
   const excludeToolNames = [];
   let systemPrompt;
   // Removed modes normalize to the default lopster mode.
-  // Modes: lopster | soviet-7 | lab-in
+  // Modes: lopster | soviet-7 | lab-in | fortani (LAB-IN, then a follow-up agent)
   const rawAgentMode = String(overrides.agentMode || request.agentMode || "lopster")
     .trim()
     .toLowerCase();
   const agentMode =
     rawAgentMode === SOVIET7_MODE_ID || rawAgentMode === "soviet7" || rawAgentMode === "soviet_7"
       ? SOVIET7_MODE_ID
-      : rawAgentMode === LAB_IN_MODE_ID || rawAgentMode === "labin" || rawAgentMode === "lab_in"
-        ? LAB_IN_MODE_ID
-        : "lopster";
+      : rawAgentMode === FORTANI_MODE_ID ||
+          rawAgentMode === "fortani+lab-in" ||
+          rawAgentMode === "fortani-lab" ||
+          rawAgentMode === "fortani_lab"
+        ? FORTANI_MODE_ID
+        : rawAgentMode === LAB_IN_MODE_ID || rawAgentMode === "labin" || rawAgentMode === "lab_in"
+          ? LAB_IN_MODE_ID
+          : "lopster";
   const isSoviet7 = agentMode === SOVIET7_MODE_ID;
-  const isLabIn = agentMode === LAB_IN_MODE_ID;
+  const isFortani = agentMode === FORTANI_MODE_ID;
+  const isLabIn = agentMode === LAB_IN_MODE_ID || isFortani;
   /** After soviet-7, execute path reports normal mode (lopster). */
   let effectiveAgentMode = agentMode;
   let soviet7Meta = null;
@@ -2508,6 +2538,7 @@ async function executeChatRequest(event, request, overrides = {}) {
   let mainProgress = null;
   let historyUserMessages = requestMessages;
   let labInMeta = null;
+  let fortaniMeta = null;
   try {
     // ── LAB-IN: prompt refiner → audited shared-memory search → main execution ──
     if (isLabIn && typeof lastUserText === "string" && lastUserText.trim()) {
@@ -2623,7 +2654,7 @@ async function executeChatRequest(event, request, overrides = {}) {
         if (!replacedLab) requestMessages = [...requestMessages, { role: "user", content: handoff }];
       }
       historyUserMessages = requestMessages;
-      effectiveAgentMode = LAB_IN_MODE_ID;
+      effectiveAgentMode = isFortani ? FORTANI_MODE_ID : LAB_IN_MODE_ID;
     }
 
     // ── Soviet-7: fan-out 7 identical advisors → handoff → auto-switch to lopster ──
@@ -2850,6 +2881,128 @@ async function executeChatRequest(event, request, overrides = {}) {
         },
         onProgress: mainProgress,
       });
+      if (isFortani && result && !result.stopped && !abortController.signal.aborted) {
+        const picked = resolveFortaniModel(config, model, provider);
+        const fortaniContext = clampTokenSetting(
+          picked.model?.contextLimit,
+          modelContextTokens,
+          { min: 8_000, max: ABSOLUTE_MAX_CONTEXT_TOKENS }
+        );
+        const fortaniModel = { ...picked.model, contextLimit: fortaniContext };
+        try {
+          mainProgress({
+            type: "status",
+            phase: "fortani",
+            label: `FoRtani · checking what changed · ${picked.model?.name || picked.model?.id || "main"}…`,
+            agentMode: FORTANI_MODE_ID,
+          });
+          const changes = await collectChangePacket(rootPath);
+          const priorMessages = Array.isArray(result.messages) ? result.messages : requestMessages;
+          const reviewRun = await runAgentLoop({
+            provider: picked.provider,
+            model: fortaniModel,
+            messages: [
+              ...priorMessages,
+              { role: "user", content: buildReviewMessage(lastUserText, result.text, changes) },
+            ],
+            systemPrompt,
+            sessionId: runSessionId,
+            customToolQuery: customToolQueryText,
+            thinkingMax: false,
+            toolContext: {
+              rootPath,
+              projectName: request.projectName || null,
+              userDataPath: app.getPath("userData"),
+              customToolQuery: customToolQueryText,
+              invalidateContext: () => invalidateContextCache(rootPath),
+            },
+            signal: abortController.signal,
+            tokenCountingMode: config.tokenCountingMode || "provider",
+            maxContextTokens: fortaniContext,
+            autoCompactTokens: Math.max(4000, Math.floor(fortaniContext * 0.8)),
+            rootPath,
+            userDataPath: app.getPath("userData"),
+            excludeToolNames: reviewExclusions(),
+            onProgress: mainProgress,
+          });
+          if (reviewRun?.stopped || abortController.signal.aborted) {
+            fortaniMeta = {
+              ok: false,
+              modelId: fortaniModel.id || null,
+              modelName: fortaniModel.name || null,
+              source: picked.source,
+              warning: picked.warning,
+              stopped: true,
+            };
+            result = { ...result, stopped: true };
+          } else {
+            const reviewText = String(reviewRun?.text || "").trim();
+            mainProgress({
+              type: "status",
+              phase: "fortani-fix",
+              label: "FoRtani · main agent applying the review…",
+              agentMode: FORTANI_MODE_ID,
+            });
+            const fixRun = await runAgentLoop({
+              provider,
+              model,
+              messages: [
+                ...(Array.isArray(reviewRun?.messages) ? reviewRun.messages : priorMessages),
+                { role: "user", content: buildFixMessage(lastUserText, reviewText) },
+              ],
+              systemPrompt,
+              sessionId: runSessionId,
+              customToolQuery: customToolQueryText,
+              thinkingMax: request.thinkingMax === true,
+              toolContext: {
+                rootPath,
+                projectName: request.projectName || null,
+                userDataPath: app.getPath("userData"),
+                customToolQuery: customToolQueryText,
+                invalidateContext: () => invalidateContextCache(rootPath),
+                onCustomToolsChanged: (payload) => {
+                  try { event.sender.send("customTools:changed", payload || { type: "changed" }); } catch { /* window may be gone */ }
+                },
+                onKnowledgeChanged: (payload) => broadcastKnowledgeChanged(payload),
+                onMcpChanged: (payload) => {
+                  try { event.sender.send("mcp:changed", payload || { type: "changed" }); } catch { /* ignore */ }
+                },
+              },
+              signal: abortController.signal,
+              tokenCountingMode: config.tokenCountingMode || "provider",
+              maxContextTokens: modelContextTokens,
+              autoCompactTokens: modelCompactTokens,
+              rootPath,
+              userDataPath: app.getPath("userData"),
+              excludeToolNames,
+              onProgress: mainProgress,
+            });
+            fortaniMeta = {
+              ok: !fixRun?.stopped,
+              modelId: fortaniModel.id || null,
+              modelName: fortaniModel.name || null,
+              source: picked.source,
+              warning: picked.warning,
+              stopped: Boolean(fixRun?.stopped),
+            };
+            if (fixRun) result = fixRun;
+          }
+        } catch (fortaniError) {
+          const aborted = abortController.signal.aborted || fortaniError?.name === "AbortError" || fortaniError?.stopped;
+          fortaniMeta = {
+            ok: false,
+            modelId: fortaniModel.id || null,
+            modelName: fortaniModel.name || null,
+            source: picked.source,
+            warning: picked.warning,
+            stopped: Boolean(aborted),
+            error: fortaniError?.message || String(fortaniError),
+          };
+          if (aborted) {
+            result = { ...result, stopped: true };
+          }
+        }
+      }
     } catch (error) {
       // All retries were exhausted (or a non-retryable error occurred). Safety net:
       // never leave the conversation in a broken/lost state — record what happened
@@ -2985,6 +3138,7 @@ async function executeChatRequest(event, request, overrides = {}) {
       agentMode: responseAgentMode,
       soviet7: soviet7Meta || undefined,
       labIn: labInMeta || undefined,
+      fortani: fortaniMeta || undefined,
       compactedMessages: result.compactionResult ? result.compactionResult.compactedMessages : undefined,
       compactionInfo: result.compactionResult
         ? {
@@ -4034,6 +4188,11 @@ app.on("before-quit", (event) => {
     if (runtimeSaveTimer) {
       clearInterval(runtimeSaveTimer);
       runtimeSaveTimer = null;
+    }
+    try {
+      terminalManager.dispose();
+    } catch {
+      /* ignore */
     }
     event.preventDefault();
     quitSavePromise = memory

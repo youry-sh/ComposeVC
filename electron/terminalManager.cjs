@@ -1,4 +1,4 @@
-const os = require("os");
+const { spawnSync } = require("child_process");
 const pty = require("node-pty");
 
 const sessions = new Map();
@@ -60,10 +60,18 @@ function register(ipcMain, app) {
   });
 }
 
-function dispose() {
-  for (const session of sessions.values()) {
-    try { session.process.kill(); } catch { /* already stopped */ }
+function killTree(session) {
+  const pid = session.process && session.process.pid;
+  try { session.process.kill(); } catch { /* already stopped */ }
+  if (process.platform === "win32" && pid) {
+    try {
+      spawnSync("taskkill", ["/PID", String(pid), "/T", "/F"], { windowsHide: true, stdio: "ignore" });
+    } catch { /* already gone */ }
   }
+}
+
+function dispose() {
+  for (const session of sessions.values()) killTree(session);
   sessions.clear();
 }
 

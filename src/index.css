@@ -3667,6 +3667,32 @@
     min-width: 0;
     overflow: hidden;
   }
+  .chat-status-rings {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding-right: 2px;
+  }
+  .chat-status-ring {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    border: 1px solid var(--ink-400);
+    background: transparent;
+    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--ink-300) 35%, transparent);
+    opacity: .4;
+  }
+  .chat-status-ring.is-on {
+    opacity: 1;
+    border-color: var(--ink-950);
+    box-shadow:
+      inset 0 0 0 2px var(--ink-800),
+      0 0 0 3px color-mix(in srgb, var(--ink-950) 12%, transparent);
+  }
+  .chat-status-ring.is-live {
+    animation: chat-rail-pulse 1.6s ease-in-out infinite;
+  }
   .chat-header-icon {
     width: 26px;
     height: 26px;
@@ -7813,7 +7839,7 @@
 .chat-shell {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(234px, 1fr) minmax(0, 940px) minmax(260px, 1fr);
+  grid-template-columns: 188px minmax(0, 1fr) 188px;
   background: var(--bg);
   font-feature-settings: "tnum" 0;
 }
@@ -7829,12 +7855,12 @@
 }
 .chat-rail-head {
   flex: 0 0 auto;
-  height: 38px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 0 8px 0 14px;
+  gap: 6px;
+  padding: 0 6px 0 10px;
   border-bottom: 1px solid var(--border);
 }
 .chat-rail-title {
@@ -7872,10 +7898,10 @@
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 6px;
+  padding: 4px;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
 }
 .chat-rail-item {
   position: relative;
@@ -7884,7 +7910,12 @@
   align-items: stretch;
   border-radius: 0;
   color: var(--ink-600);
+  cursor: grab;
   transition: background .12s ease, color .12s ease;
+}
+.chat-rail-item:active { cursor: grabbing; }
+.chat-rail-item.is-open:not(.is-active) {
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--ink-500) 70%, transparent);
 }
 /* Row 1 — the panel button and its close control; row 2 is the git badge. */
 .chat-rail-main {
@@ -7894,8 +7925,9 @@
 }
 .chat-rail-item:hover { background: var(--hover-bg); color: var(--ink-800); }
 .chat-rail-item.is-active {
-  background: var(--active-bg);
+  background: color-mix(in srgb, var(--ink-950) 10%, var(--surface));
   color: var(--ink-950);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink-950) 28%, var(--border));
 }
 .chat-rail-item.is-active::before {
   content: "";
@@ -7903,9 +7935,9 @@
   left: 0;
   top: 0;
   bottom: 0;
-  width: 2px;
+  width: 3px;
   border-radius: 0;
-  background: var(--ink-800);
+  background: var(--ink-950);
 }
 .chat-rail-btn {
   flex: 1 1 auto;
@@ -7913,8 +7945,8 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 3px;
-  padding: 7px 4px 8px 11px;
+  gap: 1px;
+  padding: 5px 2px 5px 10px;
   border: 0;
   background: transparent;
   color: inherit;
@@ -7956,11 +7988,13 @@
   flex: 1 1 auto;
   min-width: 0;
   font-size: 12px;
+  font-weight: 500;
   line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.chat-rail-item.is-active .chat-rail-name { font-weight: 650; }
 /* How many saved chats this panel holds. */
 .chat-rail-count {
   flex: none;
@@ -8176,6 +8210,8 @@
   min-width: 0;
   min-height: 0;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 /* Hidden panes keep their layout (visibility, not display: none) so a
    streaming panel still measures its viewport and its scroll position is
@@ -8192,11 +8228,46 @@
   transition: opacity .13s ease;
 }
 .chat-stage-pane.is-visible {
+  position: relative;
+  inset: auto;
+  flex: 1 1 0;
+  height: auto;
+  min-height: 0;
   visibility: visible;
   opacity: 1;
   pointer-events: auto;
   z-index: 1;
 }
+.chat-stage.is-split {
+  flex-direction: row;
+}
+.chat-stage.is-split .chat-stage-pane.is-visible {
+  min-width: 0;
+  height: 100%;
+}
+.chat-stage-pane.is-drop .chat-stage-frame {
+  outline: 1px solid var(--ink-400);
+  outline-offset: -1px;
+}
+.chat-stage-frame { position: relative; }
+.chat-stage-unpin {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  z-index: 4;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink-600);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+.chat-stage-unpin:hover { color: var(--ink-950); border-color: var(--border-strong); }
 /* Fills its grid column edge to edge — the hairlines are the only separation
    between the rail, the chat and the reserved column. */
 .chat-stage-frame {
@@ -8412,6 +8483,7 @@
    Square and quiet: no rounded corners, no bold type, one hairline rule
    between blocks. Everything lines up on the same left edge. */
 .chat-aside {
+  width: 100%;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -8422,7 +8494,7 @@
 .aside-block {
   flex: 0 0 auto;
   min-width: 0;
-  padding: 10px 12px 12px;
+  padding: 8px 8px 10px;
   border-bottom: 1px solid var(--border);
 }
 .aside-block-grow {
@@ -8598,10 +8670,11 @@
 /* ── Idle ASCII skirmish at the bottom of the aside ── */
 .aside-block-war {
   flex: 0 0 auto;
+  margin-top: auto;
   border-top: 1px solid var(--border);
   border-bottom: 0;
   /* No side padding: the bases sit flush with the panel edges. */
-  padding: 8px 0 10px;
+  padding: 8px 0 8px;
   overflow: hidden;
 }
 .aside-block-war .ascii-war-hud { padding: 0 12px; }
@@ -8859,6 +8932,7 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   white-space: pre;
   overflow: hidden;
   user-select: none;
+  cursor: crosshair;
 }
 /* Off-screen ruler for one character of the field font. */
 .ascii-war-probe {
@@ -9439,14 +9513,115 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
 .chat-composer-actions > button { border-radius: 6px !important; }
 .chat-send-fab { border-radius: 6px !important; }
 
+.gen-image-card { margin: 6px 8px 8px 22px; }
+.gen-image-frame {
+  display: block;
+  padding: 0;
+  border: 1px solid var(--border);
+  background:
+    linear-gradient(45deg, var(--ink-200) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--ink-200) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--ink-200) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--ink-200) 75%);
+  background-size: 12px 12px;
+  background-position: 0 0, 0 6px, 6px -6px, -6px 0;
+  background-color: var(--surface);
+  cursor: zoom-in;
+}
+.gen-image-frame img { display: block; max-width: min(280px, 100%); height: auto; }
+.gen-image-toggle {
+  margin-top: 4px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-500);
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.gen-image-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+  background: rgba(0, 0, 0, .72);
+  cursor: zoom-out;
+}
+.gen-image-lightbox img { max-width: min(920px, 100%); max-height: 100%; object-fit: contain; }
+
+/* Three columns are narrow: chips on their own line, send and its neighbours
+   in one even row on the right so they do not wrap into the chips. */
+.chat-stage.is-split .chat-chip-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  flex: 1 0 100%;
+  width: 100%;
+  padding: 0 6px 4px;
+  gap: 4px;
+  overflow: visible;
+}
+.chat-stage.is-split .model-picker {
+  max-width: none;
+  min-width: 0;
+  width: 100%;
+}
+.chat-stage.is-split .chat-chip-model {
+  max-width: none;
+  width: 100%;
+  min-width: 0;
+}
+.chat-stage.is-split .model-picker-trigger-text {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+}
+.chat-stage.is-split .model-picker-trigger-provider,
+.chat-stage.is-split .model-picker-trigger-sep,
+.chat-stage.is-split .model-picker-ico {
+  display: none;
+}
+.chat-stage.is-split .model-picker-trigger-model {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
+}
+.chat-stage.is-split .chat-composer-actions {
+  flex: 1 0 100%;
+  width: 100%;
+  margin-left: 0;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  gap: 4px;
+  padding: 0 6px 6px;
+}
+.chat-stage.is-split .chat-composer-icon-btn,
+.chat-stage.is-split .context-ring,
+.chat-stage.is-split .context-ring-btn,
+.chat-stage.is-split .chat-send-fab {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+}
+.chat-stage.is-split .chat-composer-actions > button:not(.chat-composer-icon-btn):not(.chat-send-fab) {
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
 /* Narrow windows: give the chat the room instead of the reserved column. */
 @media (max-width: 1320px) {
   .chat-shell {
-    grid-template-columns: minmax(210px, 1fr) minmax(0, 940px) minmax(200px, 1fr);
+    grid-template-columns: 176px minmax(0, 1fr) 176px;
   }
 }
 @media (max-width: 1080px) {
-  .chat-shell { grid-template-columns: 210px minmax(0, 1fr); }
+  .chat-shell { grid-template-columns: 176px minmax(0, 1fr); }
   .chat-aside { display: none; }
 }
 

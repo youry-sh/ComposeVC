@@ -87,7 +87,12 @@ parentPort.on("message", (msg) => {
         break;
       case "formatToolResult": {
         const value = payload?.value;
-        const text = typeof value === "string" ? value : JSON.stringify(value);
+        const text =
+          value && typeof value === "object" && typeof value.__toolText === "string"
+            ? value.__toolText
+            : typeof value === "string"
+              ? value
+              : JSON.stringify(value);
         const limit = Number(payload?.limit) > 0 ? Number(payload.limit) : 6000;
         parentPort.postMessage({ result: text.length <= limit ? text : `${text.slice(0, limit)}\\n…[TRUNCATED]` });
         break;

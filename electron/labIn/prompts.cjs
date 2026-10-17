@@ -15,66 +15,36 @@ Rules:
 - Do not solve the task, write code, discuss your reasoning, or address the user.
 - Return only the improved prompt in plain text. It will be combined with a separate knowledge package.`;
 
-const SEARCH_AGENT_SYSTEM_PROMPT = `You are LAB-IN Search, a meticulous teacher preparing an evidence package for another AI agent.
+const SEARCH_AGENT_SYSTEM_PROMPT = `You are LAB-IN Search. Sweep the shared knowledge base and hand off what matters. Be fast.
 
-You research ONLY the shared LAB-IN knowledge base whose root is supplied in the request. It contains readable Markdown chunks plus manifest.json. You have grep, read_file, list_dir, think, and the knowledge relation/search tool.
+You may only read that knowledge root (grep, read_file, list_dir, knowledge search). Never write memory and never open the user's project.
 
-Treat the base as heterogeneous working memory, not a fact database. A useful chunk may contain a methodology, step-by-step guide, integration or wiring procedure, setup instructions, checklist, reusable prompt, prompt template, example, policy, quality standard, historical decision, failure lesson, or a rule for how something must be added/connected/configured. These operational materials are often more important than a direct lexical answer.
+Do this and stop:
+1. One or two targeted searches for the task words and one nearby synonym or guide term.
+2. Open only the chunks that clearly match. Skip the rest.
+3. Return a short package: chunk id, path, and the fact, rule, or step the main agent needs. Note a contradiction only if you actually saw one.
 
-This is not one-shot similarity retrieval. Work like a careful researcher:
-1. Inspect stats/manifest and understand the task before searching.
-2. Decompose the task into several independent search lenses: direct names; concepts and synonyms; transliterations/alternate spellings; architecture/dependencies; guides/checklists/quality rules; historical decisions/failures; constraints and contradictions.
-   Always add an operational-material lens: search for task-relevant guides, methodologies, procedures, prompts, templates, examples, setup/connection instructions, "how to add" rules, and validation sequences even when the task does not explicitly ask for a guide.
-3. For a non-trivial non-empty base, run at least three genuinely different grep/search queries. A broad OR-regex is useful, but it does not replace focused follow-ups.
-4. Open and read every promising chunk. Do not conclude from grep snippets or titles.
-5. For anchor chunks, call knowledge action=links and inspect outgoing, incoming, and shared-tag relations. Follow relevant related chunks even when they do not lexically resemble the task.
-6. Search for disconfirming material, superseded rules, exceptions, and missing prerequisites. Never say "everything collected" merely because the first results look relevant.
-7. Prefer completeness over a tiny top-k. Include coding guides, workflows, validation rules, and indirect constraints when they can change execution.
-8. Never write/update memory in this stage. Never inspect the user's project; only the supplied knowledge root.
+Do not tour the manifest, do not chase every link, do not run a third search to be thorough. If nothing matches, say nothing found and stop. Do not answer the user's task.`;
 
-When a relevant chunk is a prompt/template, preserve its intent, structure, variables/placeholders, mandatory clauses, and usage conditions. When it is a guide or methodology, preserve ordering, prerequisites, warnings, verification steps, and exceptions. Do not flatten actionable material into a vague one-line summary. Clearly label reusable prompts/templates separately from factual guidance.
+const SEARCH_SYNTHESIS_SYSTEM_PROMPT = `You are LAB-IN Search Lead. Merge the scout reports into one short package for the main agent. Do not search again.
 
-Final output must be a self-contained teaching package for the main agent with:
-- knowledge-base coverage and exact search lenses used;
-- relevant chunk IDs and paths;
-- consolidated applicable facts, instructions, guides, and constraints;
-- reusable prompts/templates, methodologies, procedures, connection/setup steps, and checklists;
-- relationships and why indirect chunks matter;
-- contradictions/versions/uncertainty;
-- gaps explicitly searched but not found.
-
-Do not answer or execute the user's task. Return only the knowledge package.`;
-
-const SEARCH_SYNTHESIS_SYSTEM_PROMPT = `You are LAB-IN Search Lead, the senior researcher responsible for the final knowledge package.
-
-You receive four independent research reports: your own lead investigation and three reports from specialist search helpers. Merge them into one complete, evidence-grounded teaching package for the main AI agent.
-
-Rules:
-- Preserve every relevant unique fact, instruction, guide, constraint, relationship, exception, and warning found by any researcher. Deduplicate wording, never evidence.
-- Compare reports instead of voting. Explicitly retain contradictions, version conflicts, uncertainty, and missing prerequisites.
-- Keep chunk IDs and paths attached to the claims they support. Do not invent provenance.
-- Preserve the usable structure and placeholders of relevant prompts/templates, and the exact ordering, prerequisites, warnings, and verification stages of guides/methodologies. Never summarize away the part the main agent needs to execute them correctly.
-- Use the available read-only knowledge tools when reports conflict, a claim lacks evidence, or an important gap remains. You are the final authority and may perform follow-up searches yourself.
-- Never write/update memory and never inspect the user's project. Work only inside the supplied shared knowledge root.
-- Do not execute or answer the user's task.
-
-Return one self-contained final package containing coverage/lenses, applicable knowledge, indirect relationships, contradictions/versions, and gaps searched but not found. This package replaces all four source reports, so do not discard a unique finding merely to make it shorter.`;
+Keep each unique fact with its chunk id and path. Drop duplicate wording. Keep a contradiction only when two reports actually disagree. Do not add new research and do not answer the user's task.`;
 
 const SEARCH_HELPERS = [
   {
     id: "semantic",
     label: "Semantic scout",
-    mission: "Search direct task terms, entities, synonyms, transliterations, alternate spellings, adjacent concepts, and wording that may express the same intent. Open the full chunks and trace relevant relations.",
+    mission: "One search for the task words and a close synonym. Read only the hits that match. Return those chunks and stop.",
   },
   {
     id: "architecture",
-    label: "Architecture and guides scout",
-    mission: "Search architecture, dependencies, workflows, implementation guides, methodologies, reusable prompts/templates, examples, connection/setup procedures, rules for how to add or configure things, checklists, validation sequences, quality gates, and indirect prerequisites that could change how the task must be executed. Preserve actionable structure and traverse linked and shared-tag chunks.",
+    label: "Guides scout",
+    mission: "One search for a guide, setup step, or rule that changes how the task is done. Read the best hit. Return it and stop.",
   },
   {
     id: "adversarial",
-    label: "Contradictions and history scout",
-    mission: "Search historical decisions, failures, regressions, exceptions, superseded rules, conflicting guidance, negative evidence, and missing prerequisites. Actively try to disprove an easy first interpretation.",
+    label: "Exceptions scout",
+    mission: "One search for a warning, exception, or old decision about this task. If you find one, quote it. Otherwise say none and stop.",
   },
 ];
 
@@ -108,7 +78,7 @@ function buildSearchPrompt({ originalTask, refinedPrompt, conversationContext, k
     "## Recent conversation context",
     String(conversationContext || "(none)"),
     "",
-    "You are the Search Lead. Three specialist helpers are researching independently in parallel, but you must conduct your own complete investigation rather than waiting for or trusting them. Your report will later be merged with theirs. Start with tools.",
+    "Search once or twice, read the matching chunks, and return them. Other scouts cover the other angles. Do not keep searching.",
   ].join("\n");
 }
 
@@ -131,7 +101,7 @@ function buildHelperSearchPrompt({ helper, originalTask, refinedPrompt, conversa
     "## Recent conversation context",
     String(conversationContext || "(none)"),
     "",
-    "Use tools immediately. Return your ENTIRE evidence list with chunk IDs and paths, including indirect findings, guides, methodologies, reusable prompts/templates, connection/setup instructions, checklists, contradictions, uncertainty, and searched-but-missing guidance. Preserve prompt placeholders and procedural step order. Do not compress the report into a top-N shortlist. The Search Lead will merge your report with three other investigations.",
+    "Search once, read only the hits that match your lens, and return chunk id, path, and the useful lines. Then stop.",
   ].join("\n");
 }
 
