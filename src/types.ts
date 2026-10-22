@@ -160,12 +160,6 @@ export interface AiRuntimeConfig {
   maxContextTokens?: number;
   /** Legacy field retained for config migration; runtime compacts automatically at 80%. */
   autoCompactTokens?: number;
-  /**
-   * Model id for soviet-7 council only (all 7 advisors share this).
-   * Empty / missing → runtime uses the main chat model.
-   * Does not change the main agent model.
-   */
-  soviet7ModelId?: string;
   /** LAB-IN stage 1 prompt-refiner model. Empty = active main model. */
   labInPromptModelId?: string;
   /** LAB-IN stage 2 shared-knowledge search model. Empty = active main model. */
@@ -225,8 +219,8 @@ export interface KnowledgeListResponse {
   chunks: KnowledgeChunkSummary[];
 }
 
-/** lopster = ComposeVC; soviet-7 = council; lab-in = refine + research + execute; fortani = lab-in then a follow-up agent */
-export type MainAgentMode = "lopster" | "soviet-7" | "lab-in" | "fortani";
+/** lopster = ComposeVC; lab-in = refine + research + execute; fortani = lab-in then a follow-up agent */
+export type MainAgentMode = "lopster" | "lab-in" | "fortani";
 
 export interface ChatExecutionRequest {
   modelId: string;
@@ -320,18 +314,6 @@ export interface ChatExecutionResponse {
   compactionInfo?: CompactionInfo;
   stopped?: boolean;
   agentMode?: MainAgentMode | string;
-  /** soviet-7 council summary after fan-in (execution continues as lopster). */
-  soviet7?: {
-    ok?: boolean;
-    runId?: string;
-    okCount?: number;
-    errorCount?: number;
-    stoppedCount?: number;
-    modelId?: string;
-    warning?: string | null;
-    stopped?: boolean;
-    error?: string;
-  };
   /** LAB-IN preparation summary (prompt refinement + audited shared-memory research). */
   labIn?: {
     ok?: boolean;
@@ -407,23 +389,6 @@ export interface AgentToolProgress {
   thinkCycle?: number;
   thinkCycleTarget?: number;
   agentMode?: MainAgentMode | string;
-  /** soviet-7 council live meta (phase, seats, model). */
-  soviet7?: {
-    phase?: string;
-    runId?: string;
-    total?: number;
-    completed?: number;
-    okCount?: number;
-    errorCount?: number;
-    stoppedCount?: number;
-    modelId?: string;
-    /** API model name (what the provider receives). */
-    modelName?: string;
-    /** Human label for UI — prefer name over stale id. */
-    displayLabel?: string;
-    source?: string;
-    warning?: string | null;
-  };
   /** swarm subagent-batch live meta (phase, workers). */
   swarm?: {
     phase?: string;
