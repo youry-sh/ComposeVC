@@ -2275,8 +2275,8 @@ const PROGRESS_COALESCE_TYPES = new Set([
 ]);
 
 /**
- * Batch high-frequency agent:progress IPC (context_usage / noise) so Soviet-7
- * multi-advisor + multi-chat does not flood the renderer into a freeze.
+ * Batch high-frequency agent:progress IPC (context_usage / noise) so multi-chat
+ * does not flood the renderer into a freeze.
  * Lifecycle events (tools / status / text) always deliver immediately —
  * never coalesce into a single pending slot (that dropped tool_start/tool_end).
  */
@@ -2850,165 +2850,6 @@ async function executeChatRequest(event, request, overrides = {}) {
       effectiveAgentMode = isFortani ? FORTANI_MODE_ID : LAB_IN_MODE_ID;
     }
 
-    // ── Soviet-7: fan-out 7 identical advisors → handoff → auto-switch to lopster ──
-    // Research uses council model (aiRuntime.soviet7ModelId || main). Execution uses main model.
-    if (isSoviet7 && typeof lastUserText === "string" && lastUserText.trim()) {
-      mainProgress = createThrottledProgressSender(event, {
-        sessionId: runSessionId,
-        agentId: overrides.agentId,
-        progressChannel: overrides.progressChannel,
-        telegramChatId: overrides.telegramChatId,
-        telegramSlotId: overrides.telegramSlotId,
-        onProgress: (progress) => {
-          if (typeof overrides.onProgress === "function") {
-            try {
-              overrides.onProgress(progress);
-            } catch {
-              /* */
-            }
-          }
-        },
-      });
-      const sendProgress = mainProgress;
-
-      let councilResult;
-      try {
-        councilResult = await runSoviet7Council({
-          runAgentLoop,
-          config,
-          mainProvider: provider,
-          mainModel: model,
-          userTask: lastUserText,
-          toolContext: {
-            rootPath,
-            projectName: request.projectName || null,
-            userDataPath: app.getPath("userData"),
-            invalidateContext: () => invalidateContextCache(rootPath),
-          },
-          signal: abortController.signal,
-          tokenCountingMode: config.tokenCountingMode || "provider",
-           maxContextTokens: modelContextTokens,
-           autoCompactTokens: modelCompactTokens,
-          onProgress: (progress) => {
-            if (!progress) return;
-            // Attribute streams; do not forward advisor assistant_text into main chat draft.
-            if (progress.type === "assistant_text" && !progress.parentToolCallId) return;
-            sendProgress(progress);
-          },
-          sessionId: runSessionId,
-        });
-      } catch (s7Err) {
-        if (abortController.signal.aborted || s7Err?.name === "AbortError" || s7Err?.stopped) {
-          stoppedFlag = true;
-          return {
-            text: s7Err?.message || "[Stopped by user]",
-            provider,
-            model,
-            sessionId: runSessionId,
-            stopped: true,
-            agentMode: SOVIET7_NORMAL_MODE_ID,
-            soviet7: { ok: false, stopped: true, error: s7Err?.message || "stopped" },
-          };
-        }
-        // Soft-fail: continue main agent with original task + error note
-        councilResult = {
-          aborted: false,
-          okCount: 0,
-          errorCount: 7,
-          stoppedCount: 0,
-          modelId: model?.id,
-          warning: s7Err?.message || String(s7Err),
-          advices: [],
-          handoffUserMessage:
-            `【Soviet-7 council failed】\n${s7Err?.message || s7Err}\n\n` +
-            `Proceed carefully as main ComposeVC and execute the original user task:\n\n${lastUserText}`,
-          runId: `s7-fail-${Date.now().toString(16)}`,
-        };
-        sendProgress({
-          type: "status",
-          label: `Soviet-7 · council error — continuing as ComposeVC…`,
-          phase: "soviet7-fallback",
-          agentMode: SOVIET7_NORMAL_MODE_ID,
-        });
-      }
-
-      if (councilResult?.aborted || abortController.signal.aborted) {
-        stoppedFlag = true;
-        return {
-          text: "[Stopped by user]",
-          provider,
-          model,
-          sessionId: runSessionId,
-          stopped: true,
-          agentMode: SOVIET7_NORMAL_MODE_ID,
-          soviet7: {
-            ok: false,
-            stopped: true,
-            runId: councilResult?.runId,
-            okCount: councilResult?.okCount,
-          },
-        };
-      }
-
-      soviet7Meta = {
-        ok: (councilResult?.okCount || 0) > 0,
-        runId: councilResult?.runId,
-        okCount: councilResult?.okCount ?? 0,
-        errorCount: councilResult?.errorCount ?? 0,
-        stoppedCount: councilResult?.stoppedCount ?? 0,
-        modelId: councilResult?.modelId,
-        modelName: councilResult?.modelName,
-        displayLabel: councilResult?.displayLabel || councilResult?.modelName || councilResult?.modelId,
-        source: councilResult?.source,
-        warning: councilResult?.warning || null,
-      };
-
-      // Replace last user turn with handoff package (original task + 7 advices).
-      const handoff = String(councilResult?.handoffUserMessage || lastUserText);
-      let replacedS7 = false;
-      requestMessages = requestMessages.map((m, idx, arr) => {
-        if (replacedS7) return m;
-        const isLastUser =
-          m?.role === "user" && !arr.slice(idx + 1).some((x) => x?.role === "user");
-        if (!isLastUser) return m;
-        replacedS7 = true;
-        return { ...m, content: handoff };
-      });
-      if (!replacedS7) {
-        requestMessages = [...requestMessages, { role: "user", content: handoff }];
-      }
-      historyUserMessages = requestMessages;
-
-      if (persistSession && sessionId) {
-        try {
-          await memory.saveSession(app, rootPath, sessionId, requestMessages);
-        } catch {
-          /* */
-        }
-      }
-
-      // Auto-switch to normal ComposeVC for execution (UI + return path).
-      effectiveAgentMode = SOVIET7_NORMAL_MODE_ID;
-      const councilLabel =
-        soviet7Meta.displayLabel || soviet7Meta.modelName || soviet7Meta.modelId || "main";
-      sendProgress({
-        type: "status",
-        label: `ComposeVC · executing from council (advisors used ${councilLabel})…`,
-        phase: "soviet7-execute",
-        agentMode: SOVIET7_NORMAL_MODE_ID,
-        soviet7: {
-          phase: "normal_exec",
-          runId: soviet7Meta.runId,
-          okCount: soviet7Meta.okCount,
-          errorCount: soviet7Meta.errorCount,
-          modelId: soviet7Meta.modelId,
-          modelName: soviet7Meta.modelName,
-          displayLabel: soviet7Meta.displayLabel,
-          source: soviet7Meta.source,
-        },
-      });
-    }
-
     if (!mainProgress) {
       mainProgress = createThrottledProgressSender(event, {
         sessionId: runSessionId,
@@ -3312,9 +3153,7 @@ async function executeChatRequest(event, request, overrides = {}) {
     // No full-tree timeline snapshots after each turn.
 
     stoppedFlag = Boolean(result.stopped);
-    const responseAgentMode = isSoviet7
-      ? SOVIET7_NORMAL_MODE_ID
-      : effectiveAgentMode || agentMode;
+    const responseAgentMode = effectiveAgentMode || agentMode;
     return {
       text: result.text,
       provider,
@@ -3329,7 +3168,6 @@ async function executeChatRequest(event, request, overrides = {}) {
         Array.isArray(result.images) && result.images.length ? result.images : undefined,
       stopped: result.stopped,
       agentMode: responseAgentMode,
-      soviet7: soviet7Meta || undefined,
       labIn: labInMeta || undefined,
       fortani: fortaniMeta || undefined,
       compactedMessages: result.compactionResult ? result.compactionResult.compactedMessages : undefined,
