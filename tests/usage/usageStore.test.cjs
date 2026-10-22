@@ -99,19 +99,21 @@ function ok(name) {
     ok("daily time-series buckets populated");
   }
 
-  // 5. newer schema is not silently mangled — safe defaults are kept
+  // 5. newer schema is handled explicitly: known-shape counters preserved, unknown fields dropped
   {
     const dir = tmpDir();
     const file = path.join(dir, "usage.json");
     fs.writeFileSync(
       file,
-      JSON.stringify({ v: 999, counters: { toolCalls: 42 }, tools: {}, daily: {} }),
+      JSON.stringify({ v: 999, counters: { toolCalls: 42, futureField: 7 }, tools: {}, daily: {} }),
       "utf8"
     );
     const store = makeStore(dir);
-    assert.strictEqual(store.snapshot().counters.toolCalls, 0, "unknown newer schema → safe defaults");
+    const snap = store.snapshot();
+    assert.strictEqual(snap.counters.toolCalls, 42, "known counter preserved from newer schema");
+    assert.ok(!("futureField" in snap.counters), "unknown field dropped");
     store.dispose();
-    ok("newer schema handled explicitly (safe defaults)");
+    ok("newer schema handled explicitly (compatible subset + no unknown fields)");
   }
 
   console.log(`\nusageStore: ${pass} tests passed`);
