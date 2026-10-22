@@ -2918,12 +2918,6 @@ const ChatTelegramModal: React.FC<{
                 />
               </label>
 
-              <div className="space-y-1 font-mono text-[11px] leading-5 text-ink-600">
-                <div>/new — new IDE session for this chat</div>
-                <div>/context · /sessions · /tools · /stop</div>
-                <div>plain text — send to this chat’s agent</div>
-              </div>
-
               {error && <div className="text-[11px] text-status-err">{error}</div>}
               {saveNote && !error && <div className="text-[11px] text-ink-800">{saveNote}</div>}
             </>
