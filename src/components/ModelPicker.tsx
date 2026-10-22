@@ -129,16 +129,12 @@ const ModelPicker: React.FC<ModelPickerProps> = ({
         onOpenChange(false);
       }
     };
-    const onDown = (e: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
-        onOpenChange(false);
-      }
-    };
     document.addEventListener("keydown", onKey, true);
-    document.addEventListener("mousedown", onDown);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKey, true);
-      document.removeEventListener("mousedown", onDown);
+      document.body.style.overflow = prevOverflow;
     };
   }, [open, onOpenChange]);
 
