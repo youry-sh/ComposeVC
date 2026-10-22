@@ -1868,7 +1868,6 @@ ipcMain.handle("webengine:clearCache", async () => {
   try {
     const ses = session.fromPartition("persist:composevc-webengine");
     await ses.clearCache();
-    await ses.clearStorageData();
     return { ok: true };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : String(error) };
