@@ -81,6 +81,16 @@ export type GitBranch = { name: string; current: boolean };
 export type GitChangedFile = { code: string; staged: boolean; path: string };
 export type GitCommit = { hash: string; subject: string; author: string; when: string };
 
+export type CfMailConfig = {
+  cfworker_api_url: string;
+  cfworker_admin_token: string;
+  cfworker_domain: string;
+  cfworker_fingerprint: string;
+  enable_prefix: boolean;
+  configured?: boolean;
+  config_path?: string;
+};
+
 declare global {
   type LocalAgentState = {
     agentDir: string;
@@ -188,6 +198,14 @@ declare global {
       ) => () => void;
       readProviderConfig: () => Promise<ProviderConfig>;
       writeProviderConfig: (config: ProviderConfig) => Promise<ProviderConfig>;
+      readCfMailConfig: () => Promise<CfMailConfig>;
+      writeCfMailConfig: (config: Partial<CfMailConfig>) => Promise<CfMailConfig>;
+      testCfMail: () => Promise<{
+        ok: boolean;
+        configured?: boolean;
+        status?: number;
+        reason?: string;
+      }>;
       listRunners: () => Promise<{ ok: boolean; runners?: RunnerJob[]; error?: string }>;
       getRunner: (id: string) => Promise<{ ok: boolean; runner?: RunnerJob; error?: string }>;
       createRunner: (input: {

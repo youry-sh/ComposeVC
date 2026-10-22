@@ -44,6 +44,7 @@ const {
 } = require("./fortani/index.cjs");
 const knowledgeStore = require("./labIn/knowledgeStore.cjs");
 const docsStore = require("./docs/docsStore.cjs");
+const cfMailConfig = require("./cfMailConfig.cjs");
 
 const { TOOLS, getToolSchemas, getToolSchemasAsync } = require("./tools/registry.cjs");
 const { createTelegramBot, normalizeTelegramConfig } = require("./telegramBot.cjs");
@@ -1991,6 +1992,30 @@ registerLocalAgentHandlers(ipcMain, () => app.getPath("userData"));
 
 ipcMain.handle("config:write", async (_event, config) => {
   return writeProviderConfig(config);
+});
+
+// CF Mail (cf_mail tool) credentials — shared JSON store under runtime-app/data/config.json.
+ipcMain.handle("cfmail:read", async () => {
+  const cfg = await cfMailConfig.readConfig();
+  return {
+    ...cfg,
+    configured: Boolean(cfg.cfworker_api_url && cfg.cfworker_admin_token),
+    config_path: cfMailConfig.configPath(),
+  };
+});
+
+ipcMain.handle("cfmail:write", async (_event, patch) => {
+  const cfg = await cfMailConfig.writeConfig(patch && typeof patch === "object" ? patch : {});
+  return {
+    ...cfg,
+    configured: Boolean(cfg.cfworker_api_url && cfg.cfworker_admin_token),
+    config_path: cfMailConfig.configPath(),
+  };
+});
+
+ipcMain.handle("cfmail:test", async () => {
+  const cfg = await cfMailConfig.readConfig();
+  return cfMailConfig.testConfig(cfg);
 });
 
 global.__lopsterReadProviderConfig = async () => {

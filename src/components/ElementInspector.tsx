@@ -14,7 +14,6 @@ interface Props {
 }
 
 const ROOT_ATTR = "data-cvc-inspector";
-const ROOT_SELECTOR = `[${ROOT_ATTR}]`;
 
 interface BoxRect {
   x: number;
@@ -219,7 +218,7 @@ const ElementInspector: React.FC<Props> = ({ active, onExit }) => {
       {/* highlight box */}
       {rect && (
         <div
-          {...{ [ROOT_ATTR]: "true" }}
+          data-cvc-inspector="true"
           className="cvc-inspector-highlight"
           style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }}
         />
@@ -228,7 +227,7 @@ const ElementInspector: React.FC<Props> = ({ active, onExit }) => {
       {/* floating tag near the hovered element */}
       {rect && tagLabel && (
         <div
-          {...{ [ROOT_ATTR]: "true" }}
+          data-cvc-inspector="true"
           className="cvc-inspector-tag"
           style={{
             left: Math.max(4, rect.x),
@@ -243,7 +242,7 @@ const ElementInspector: React.FC<Props> = ({ active, onExit }) => {
       )}
 
       {/* info panel */}
-      <div {...{ [ROOT_ATTR]: "true" }} className="cvc-inspector-panel">
+      <div data-cvc-inspector="true" className="cvc-inspector-panel">
         <div className="cvc-inspector-head">
           <span className="cvc-inspector-title">INSPECTOR</span>
           <span className="cvc-inspector-mode">{pinned ? "pinned" : "hover"}</span>
