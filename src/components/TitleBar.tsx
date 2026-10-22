@@ -266,6 +266,27 @@ const TitleBar: React.FC<TitleBarProps> = ({
           <X className="w-4 h-4" />
         </button>
       </div>
+
+      {/* ── ШТОРЫ (blinds) drawer ──────────────────────────────────────────
+          Drop-down panel under the top bar, reserved for FUTURE tabs.
+          This is the single canonical place to register new tabs later:
+          add a <button className="topbar-tab"> (or a .titlebar-blinds-slot)
+          inside .titlebar-blinds-slots below. */}
+      <div
+        className={`titlebar-blinds-panel ${blindsOpen ? "is-open" : ""}`}
+        aria-hidden={!blindsOpen}
+      >
+        <div className="titlebar-blinds-panel-head">
+          <span className="titlebar-blinds-panel-title">ШТОРЫ</span>
+          <span className="titlebar-blinds-panel-hint">// future tabs land here</span>
+        </div>
+        <div className="titlebar-blinds-slots">
+          <span className="titlebar-blinds-slot" />
+          <span className="titlebar-blinds-slot" />
+          <span className="titlebar-blinds-slot" />
+          <span className="titlebar-blinds-slot" />
+        </div>
+      </div>
     </div>
   );
 };
