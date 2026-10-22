@@ -732,13 +732,13 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
       <ChatAside
         chatCount={totalChats}
         runningPanels={runningPanels}
-        activeRootPath={stableSlots.find((s) => s.id === activeSlotId)?.rootPath || null}
+        activeRootPath={activeWorkspaceSlots.find((s) => s.id === activeSlotId)?.rootPath || null}
         onOpenRunners={onOpenRunners}
       />
 
       {switcherOpen && (
         <ChatSwitcherModal
-          slots={stableSlots.map((slot) => ({
+          slots={activeWorkspaceSlots.map((slot) => ({
             id: slot.id,
             rootPath: slot.rootPath,
             running: Boolean(statusBySlot[slot.id]?.running),
