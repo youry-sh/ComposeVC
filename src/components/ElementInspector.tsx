@@ -121,7 +121,7 @@ const ElementInspector: React.FC<Props> = ({ active, onExit }) => {
       e.preventDefault();
       e.stopPropagation();
       e.stopImmediatePropagation();
-      const report = hoveredRef.current ?? resolve(e.clientX, e.clientY);
+      const report = resolve(e.clientX, e.clientY) ?? hoveredRef.current;
       if (report) {
         pinnedRef.current = report;
         setPinned(report);
