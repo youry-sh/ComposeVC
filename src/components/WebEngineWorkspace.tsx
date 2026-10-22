@@ -706,10 +706,94 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({
           onClick={openExternal} disabled={!url}>
           <ExternalLink className="w-3.5 h-3.5" />
         </button>
+
+        <span className="webengine-bar-sep" />
+
+        <button
+          type="button"
+          className={`webengine-btn ${deviceWidth ? "is-active" : ""}`}
+          data-tooltip="Режим устройства: мобильный → планшет → десктоп"
+          aria-label="Режим устройства"
+          aria-pressed={deviceWidth !== null}
+          onClick={cycleDevice}
+          disabled={!url}
+        >
+          <Smartphone className="w-3.5 h-3.5" />
+        </button>
+        <button
+          type="button"
+          className="webengine-btn"
+          data-tooltip="Уменьшить масштаб страницы"
+          aria-label="Уменьшить"
+          onClick={zoomOut}
+          disabled={!isDesktop || !url}
+        >
+          <ZoomOut className="w-3.5 h-3.5" />
+        </button>
+        <button
+          type="button"
+          className="webengine-btn"
+          data-tooltip="Увеличить масштаб страницы"
+          aria-label="Увеличить"
+          onClick={zoomIn}
+          disabled={!isDesktop || !url}
+        >
+          <ZoomIn className="w-3.5 h-3.5" />
+        </button>
+        <button
+          type="button"
+          className="webengine-btn webengine-btn-hideable"
+          data-tooltip={`Сбросить масштаб (${Math.round(zoomFactor * 100)}%)`}
+          aria-label="Сбросить масштаб"
+          onClick={zoomReset}
+          disabled={!isDesktop || !url}
+        >
+          <Maximize className="w-3.5 h-3.5" />
+        </button>
+        <button
+          type="button"
+          className="webengine-btn webengine-btn-hideable"
+          data-tooltip="Скриншот страницы в буфер обмена"
+          aria-label="Скриншот"
+          onClick={captureScreenshot}
+          disabled={!isDesktop || !url}
+        >
+          <Camera className="w-3.5 h-3.5" />
+        </button>
+        <button
+          type="button"
+          className="webengine-btn webengine-btn-hideable"
+          data-tooltip="Очистить кэш и жёстко перезагрузить"
+          aria-label="Очистить кэш"
+          onClick={clearCache}
+          disabled={!isDesktop || !url}
+        >
+          <Eraser className="w-3.5 h-3.5" />
+        </button>
+        <button
+          type="button"
+          className="webengine-btn"
+          data-tooltip="Скопировать все ошибки консоли"
+          aria-label="Скопировать ошибки"
+          onClick={copyErrors}
+          disabled={!hasErrors}
+        >
+          <AlertCircle className="w-3.5 h-3.5" />
+        </button>
+        <button
+          type="button"
+          className="webengine-btn webengine-btn-hideable"
+          data-tooltip="Скопировать HTML выбранного элемента"
+          aria-label="Скопировать HTML элемента"
+          onClick={copyElementHtml}
+          disabled={!selectedEl}
+        >
+          <Code2 className="w-3.5 h-3.5" />
+        </button>
       </div>
 
       <div className="webengine-main">
-        <div className="webengine-stage">
+        <div className={`webengine-stage ${deviceWidth ? "is-device" : ""}`}>
           {mountUrl ? (
             isDesktop ? (
               <webview
@@ -718,6 +802,7 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({
                 src={mountUrl}
                 partition="persist:composevc-webengine"
                 useragent={chromeUserAgent()}
+                style={deviceWidth ? { width: deviceWidth, flex: "0 0 auto" } : undefined}
               />
             ) : (
               <iframe
@@ -726,6 +811,7 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({
                 title="Web Engine"
                 allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
                 allowFullScreen
+                style={deviceWidth ? { width: deviceWidth, flex: "0 0 auto" } : undefined}
               />
             )
           ) : (

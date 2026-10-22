@@ -969,7 +969,7 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
     () => initialSelectedModelId || providerConfig.selectedModelId || null
   );
   const [agentMode, setAgentMode] = useState<MainAgentMode>(() =>
-    initialAgentMode === "soviet-7" || initialAgentMode === "lab-in" || initialAgentMode === "fortani"
+    initialAgentMode === "lab-in" || initialAgentMode === "fortani"
       ? initialAgentMode
       : "lopster"
   );
@@ -981,11 +981,6 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
   const rootPathRef = useRef<string | null>(initialRootPath);
   const selectedModelIdRef = useRef<string | null>(selectedModelId);
   const agentModeRef = useRef<MainAgentMode>(agentMode);
-  /**
-   * soviet-7: after council, main auto-switches UI to lopster and KEEPS it there
-   * (unlike HO which restores). Next turn is normal unless user picks soviet-7 again.
-   */
-  const soviet7ActiveRunRef = useRef(false);
   /** Coalesce delayed queue drains so the next turn waits for paint of the finished answer. */
   const queueDrainTimersRef = useRef<Map<string, number>>(new Map());
 
@@ -1481,7 +1476,6 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
   useEffect(() => {
     let flushTimer: number | null = null;
     const dirtySessions = new Set<string>();
-    const pendingModeBySession = new Map<string, MainAgentMode>();
 
     const flushUi = () => {
       flushTimer = null;
@@ -1511,25 +1505,6 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
         }
       }
       dirtySessions.clear();
-
-      if (activeSid && pendingModeBySession.has(activeSid)) {
-        const mode = pendingModeBySession.get(activeSid)!;
-        pendingModeBySession.delete(activeSid);
-        if (mode === "soviet-7") {
-          soviet7ActiveRunRef.current = true;
-          if (agentModeRef.current !== "lopster") {
-            setAgentMode("lopster");
-            agentModeRef.current = "lopster";
-          }
-        } else if (mode === "lopster" && soviet7ActiveRunRef.current) {
-          if (agentModeRef.current !== "lopster") {
-            setAgentMode("lopster");
-            agentModeRef.current = "lopster";
-          }
-        }
-      } else {
-        pendingModeBySession.clear();
-      }
     };
 
     const scheduleFlush = () => {
@@ -1557,24 +1532,12 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
 
       if (
         progress.type === "status" &&
-        (progress.agentMode === "lopster" || progress.agentMode === "soviet-7" || progress.agentMode === "lab-in" || progress.agentMode === "fortani")
+        (progress.agentMode === "lopster" || progress.agentMode === "lab-in" || progress.agentMode === "fortani")
       ) {
-        pendingModeBySession.set(sid, progress.agentMode as MainAgentMode);
         if (typeof progress.label === "string" && progress.label) {
           const live = sessionLiveRef.current.get(sid);
           if (live) {
             sessionLiveRef.current.set(sid, { ...live, agentStatusLabel: progress.label });
-          }
-        } else if (
-          progress.agentMode === "lopster" &&
-          soviet7ActiveRunRef.current
-        ) {
-          const live = sessionLiveRef.current.get(sid);
-          if (live) {
-            sessionLiveRef.current.set(sid, {
-              ...live,
-              agentStatusLabel: "ComposeVC · executing from council…",
-            });
           }
         }
       }
@@ -2100,8 +2063,6 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
       });
     }
     const modeAtSend = options?.agentMode || agentModeRef.current;
-    // Soviet-7 run: after handoff UI stays on lopster (no restore).
-    soviet7ActiveRunRef.current = modeAtSend === "soviet-7";
     // Keep unfinished agent todos across fail/abort/retry — except one-shot fresh turns.
     const liveBeforeTurn = sessionLiveRef.current.get(runSessionRef.current) || emptyLiveState();
     const keptTodos = oneShotEnabled
