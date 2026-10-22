@@ -628,6 +628,20 @@ declare global {
         remainingMinutes: number;
         elapsedSeconds: number;
       }>;
+      getBackgroundTasks: (sessionId: string | null) => Promise<{
+        ok: boolean;
+        tasks: Array<{
+          id: string;
+          pid: number;
+          command: string;
+          cwd: string;
+          sessionId: string | null;
+          startedAt: number;
+          logFile: string | null;
+        }>;
+      }>;
+      killBackgroundTask: (id: string) => Promise<{ ok: boolean; id?: string; pid?: number; error?: string }>;
+      onBackgroundTasksChanged: (callback: (payload: unknown) => void) => () => void;
       openFolder: () => Promise<FileNode | null>;
       readFolder: (rootPath: string) => Promise<FileNode>;
       searchProject: (rootPath: string, query: string) => Promise<ProjectSearchResult[]>;

@@ -22,6 +22,7 @@ const memory = require("./memory.cjs");
 const gitService = require("./gitService.cjs");
 const storageStore = require("./storageStore.cjs");
 const workTimerStore = require("./workTimerStore.cjs");
+const backgroundTasks = require("./backgroundTasks.cjs");
 const telegramTool = require("./tools/telegram.cjs");
 const customTools = require("./customTools.cjs");
 const mcpManager = require("./mcpManager.cjs");
@@ -1696,6 +1697,33 @@ ipcMain.handle("shell:openExternal", (_event, url) => {
 
 ipcMain.handle("worktimer:get", () => workTimerStore.get());
 
+let backgroundTasksReady = false;
+function broadcastBackgroundTasks(payload) {
+  for (const win of BrowserWindow.getAllWindows()) {
+    try { win.webContents.send("bgterm:changed", payload); } catch { /* ignore */ }
+  }
+}
+function ensureBackgroundTasks() {
+  if (!backgroundTasksReady) {
+    backgroundTasks.init({
+      userDataPath: app.getPath("userData"),
+      broadcast: broadcastBackgroundTasks,
+    });
+    backgroundTasksReady = true;
+  }
+  return backgroundTasks;
+}
+
+ipcMain.handle("bgterm:list", async (_event, sessionId) => {
+  ensureBackgroundTasks();
+  return { ok: true, tasks: backgroundTasks.list(sessionId || null) };
+});
+
+ipcMain.handle("bgterm:kill", async (_event, id) => {
+  ensureBackgroundTasks();
+  return backgroundTasks.kill(id);
+});
+
 ipcMain.handle("config:read", async () => {
   const config = await readProviderConfig();
   configureTelegramFromProviderConfig(config);
@@ -2381,6 +2409,7 @@ function restoreLabInUserMessage(messages, originalMessage) {
 }
 
 async function executeChatRequest(event, request, overrides = {}) {
+  ensureBackgroundTasks();
   const config = await readProviderConfig();
   const modelId = overrides.modelId || request.modelId;
   let model = config.models.find((item) => item.id === modelId);

@@ -191,6 +191,13 @@ contextBridge.exposeInMainWorld("lopster", {
     return () => ipcRenderer.removeListener("agent:progress", listener);
   },
   getWorkTimer: () => ipcRenderer.invoke("worktimer:get"),
+  getBackgroundTasks: (sessionId) => ipcRenderer.invoke("bgterm:list", sessionId || null),
+  killBackgroundTask: (id) => ipcRenderer.invoke("bgterm:kill", id),
+  onBackgroundTasksChanged: (callback) => {
+    const listener = (_event, payload) => callback(payload);
+    ipcRenderer.on("bgterm:changed", listener);
+    return () => ipcRenderer.removeListener("bgterm:changed", listener);
+  },
   onAgentRunState: (callback) => {
     const listener = (_event, state) => callback(state);
     ipcRenderer.on("agent:run-state", listener);

@@ -170,6 +170,85 @@ function folderName(path: string | null): string | null {
   return parts.length ? parts[parts.length - 1] : path;
 }
 
+function normalizeWorkspace(raw: unknown, index: number): WorkspaceState {
+  const item = (raw ?? {}) as Partial<WorkspaceState>;
+  return {
+    id: typeof item.id === "string" && item.id ? item.id : `ws-${index + 1}`,
+    activeId: typeof item.activeId === "string" ? item.activeId : null,
+    openIds: Array.isArray(item.openIds)
+      ? item.openIds.filter((x): x is string => typeof x === "string")
+      : [],
+  };
+}
+
+/** Legacy pre-workspace view state (active panel + open rows) seeds the default workspace,
+ *  so existing chats land in workspace #1 and nothing is lost on upgrade. */
+function seedDefaultWorkspace(slots: MultiIdeSlotState[]): {
+  workspaces: WorkspaceState[];
+  activeWorkspaceId: string;
+} {
+  const firstId = slots[0]?.id || "multi-1";
+  let legacyActive: string | null = null;
+  let legacyOpen: string[] = [];
+  try {
+    legacyActive = window.localStorage.getItem(MULTIIDE_ACTIVE_KEY);
+    const rawRows = JSON.parse(window.localStorage.getItem(MULTIIDE_ROWS_KEY) || "null") as unknown;
+    if (Array.isArray(rawRows)) legacyOpen = rawRows.filter((x): x is string => typeof x === "string");
+  } catch {
+    /* ignore */
+  }
+  const activeId =
+    legacyActive && slots.some((s) => s.id === legacyActive) ? legacyActive : firstId;
+  const openIds = (legacyOpen.length ? legacyOpen : [firstId]).filter((id) =>
+    slots.some((s) => s.id === id)
+  );
+  return {
+    workspaces: [
+      {
+        id: DEFAULT_WORKSPACE_ID,
+        activeId,
+        openIds: openIds.length ? openIds.slice(0, MAX_ROWS) : [firstId],
+      },
+    ],
+    activeWorkspaceId: DEFAULT_WORKSPACE_ID,
+  };
+}
+
+/** Workspace store + active id, persisted alongside the slots array. */
+export function loadWorkspaceState(slots: MultiIdeSlotState[]): {
+  workspaces: WorkspaceState[];
+  activeWorkspaceId: string;
+} {
+  try {
+    const raw = JSON.parse(window.localStorage.getItem(WORKSPACES_KEY) || "null") as unknown;
+    const rawActive = window.localStorage.getItem(WORKSPACE_ACTIVE_KEY);
+    if (Array.isArray(raw) && raw.length) {
+      const workspaces = raw.map(normalizeWorkspace).filter((w) => Boolean(w.id));
+      if (!workspaces.length) return seedDefaultWorkspace(slots);
+      const active =
+        rawActive && workspaces.some((w) => w.id === rawActive) ? rawActive : workspaces[0].id;
+      return { workspaces, activeWorkspaceId: active };
+    }
+  } catch {
+    /* fall through to migration */
+  }
+  return seedDefaultWorkspace(slots);
+}
+
+export function saveWorkspaceState(workspaces: WorkspaceState[], activeWorkspaceId: string) {
+  try {
+    window.localStorage.setItem(
+      WORKSPACES_KEY,
+      JSON.stringify(
+        workspaces.map((w) => ({ id: w.id, activeId: w.activeId, openIds: w.openIds }))
+      )
+    );
+    window.localStorage.setItem(WORKSPACE_ACTIVE_KEY, activeWorkspaceId);
+  } catch {
+    /* ignore */
+  }
+}
+
 /** Live per-panel status pushed up by MultiChatSlot. */
 type SlotStatus = { running: boolean; sessionCount: number };
 
@@ -201,23 +280,16 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
   onSlotsChange,
   onOpenRunners,
 }) => {
-  const [activeId, setActiveId] = useState<string>(() => {
-    try {
-      const saved = window.localStorage.getItem(MULTIIDE_ACTIVE_KEY);
-      if (saved && slots.some((s) => s.id === saved)) return saved;
-    } catch {
-      /* ignore */
-    }
-    return slots[0]?.id || "multi-1";
-  });
+  const [workspaceState, setWorkspaceState] = useState(() => loadWorkspaceState(slots));
+  const workspaces = workspaceState.workspaces;
+  const activeWorkspaceId = workspaceState.activeWorkspaceId;
+  const activeWorkspace = workspaces.find((w) => w.id === activeWorkspaceId) || workspaces[0];
+  const activeId = activeWorkspace?.activeId ?? null;
+  const openIds = activeWorkspace?.openIds ?? [];
   /** slotId → live status reported by the panel (streaming + chat count). */
   const [statusBySlot, setStatusBySlot] = useState<Record<string, SlotStatus>>({});
   /** Ctrl+H list — the only way to switch panels while the dock covers the rail. */
   const [switcherOpen, setSwitcherOpen] = useState(false);
-  /** Chats stacked in the centre. Drag from the rail adds a row, up to three. */
-  const [openIds, setOpenIds] = useState<string[]>(() =>
-    loadOpenRows(slots.map((s) => s.id), slots[0]?.id || "multi-1")
-  );
   const [dropOn, setDropOn] = useState<string | null>(null);
   const seqRef = useRef(0);
 
