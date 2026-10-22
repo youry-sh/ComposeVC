@@ -378,8 +378,11 @@ async function dispatch(name, input, context) {
     assertAllowedRoot(execName, normalizedInput, ctx);
     const data = await tool.execute(normalizedInput, ctx);
     if (ctx.signal?.aborted) {
+      usage()?.recordToolCall(execName);
       return { ok: false, error: "Stopped by user", aborted: true };
     }
+    usage()?.recordToolCall(execName);
+    recordFileMutation(execName, normalizedInput, data);
     return { ok: true, data };
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
@@ -387,7 +390,36 @@ async function dispatch(name, input, context) {
       error?.name === "AbortError" ||
       ctx.signal?.aborted ||
       /Stopped by user/i.test(msg);
+    usage()?.recordToolCall(execName, { error: !aborted });
     return { ok: false, error: msg, aborted };
+  }
+}
+
+let usageStoreRef;
+function usage() {
+  if (usageStoreRef === undefined) {
+    try {
+      usageStoreRef = require("../usageStore.cjs");
+    } catch {
+      usageStoreRef = null;
+    }
+  }
+  return usageStoreRef;
+}
+
+/** Count files created / lines changed by the file-mutation tools (success only). */
+function recordFileMutation(name, input, data) {
+  if (!usageStoreRef) return;
+  const countLines = (text) => String(text == null ? "" : text).split("\n").length;
+  if (name === "create_file" && data && data.created) {
+    usageStoreRef.recordFileCreate(countLines(input && input.content));
+    return;
+  }
+  if (name === "edit_file" && data && typeof data.replacements === "number") {
+    const n = Math.max(1, Math.floor(data.replacements));
+    const removed = countLines(input && input.old_string) * n;
+    const added = countLines(input && input.new_string) * n;
+    usageStoreRef.recordLineChange(added, removed);
   }
 }
 

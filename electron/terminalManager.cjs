@@ -36,6 +36,11 @@ function ensure(id, owner, cwd) {
   });
   const session = { process: terminal, owner, cwd };
   sessions.set(key, session);
+  try {
+    require("./usageStore.cjs").recordTerminalOpen();
+  } catch {
+    /* usage tracking must never break terminal spawn */
+  }
   terminal.onData((data) => send(session, "terminal:data", { id: key, data }));
   terminal.onExit(({ exitCode }) => {
     send(session, "terminal:exit", { id: key, exitCode });
