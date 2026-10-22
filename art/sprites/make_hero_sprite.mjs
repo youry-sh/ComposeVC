@@ -47,12 +47,12 @@ const px = (l, mid, r) => '.'.repeat(l) + mid + '.'.repeat(r);
 const GRID = [
   /* 00 */ px(0, '.'.repeat(32), 0),
   /* 01 */ px(0, '.'.repeat(32), 0),
-  /* 02 */ px(13, 'a'.repeat(6), 13),                                   // hair crown
-  /* 03 */ px(12, 'a' + 'c'.repeat(6) + 'a', 12),
-  /* 04 */ px(11, 'a' + 'c'.repeat(8) + 'a', 11),
+  /* 02 */ px(14, 'aaaa', 14),                                          // hair crown (dome)
+  /* 03 */ px(13, 'acccca', 13),
+  /* 04 */ px(12, 'acccccca', 12),
   /* 05 */ px(11, 'a' + 'c' + 'd'.repeat(6) + 'c' + 'a', 11),          // fringe
-  /* 06 */ px(11, 'a' + 'c' + 'f'.repeat(6) + 'c' + 'a', 11),          // forehead
-  /* 07 */ px(11, 'a' + 'c' + 'f'.repeat(6) + 'c' + 'a', 11),
+  /* 06 */ px(11, 'acffggffca', 11),                                    // forehead + shine
+  /* 07 */ px(11, 'acfffcffca', 11),                                    // hair lock
   /* 08 */ px(11, 'acfaffafca', 11),                                    // eyes
   /* 09 */ px(11, 'acffefffca', 11),                                    // nose shadow
   /* 10 */ px(11, 'acfffffeca', 11),                                    // cheek shadow
