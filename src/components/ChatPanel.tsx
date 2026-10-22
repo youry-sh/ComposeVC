@@ -4785,6 +4785,24 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             >
               <Globe className="w-3.5 h-3.5" />
             </button>
+            <button
+              type="button"
+              onClick={() => setAutoInsertModalOpen(true)}
+              title={labels.autoInsert}
+              aria-label={labels.autoInsert}
+              className="chat-composer-icon-btn"
+            >
+              <ListPlus className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setInstructionsModalOpen(true)}
+              title={labels.instructions}
+              aria-label={labels.instructions}
+              className="chat-composer-icon-btn"
+            >
+              <FileText className="w-3.5 h-3.5" />
+            </button>
             {thinking ? (
               <>
                 <button
