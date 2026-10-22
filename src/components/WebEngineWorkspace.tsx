@@ -226,11 +226,15 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({
   const [selectedLogIds, setSelectedLogIds] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<string | null>(null);
   const [devtoolsOpen, setDevtoolsOpen] = useState(false);
+  /** Device-emulation viewport width; null = full desktop width. */
+  const [deviceWidth, setDeviceWidth] = useState<number | null>(null);
+  const [zoomFactor, setZoomFactorState] = useState(1);
 
   const seqRef = useRef(0);
   const inspectorOnRef = useRef(false);
   const toastTimer = useRef<number | null>(null);
   const cancelledRef = useRef(false);
+  const zoomRef = useRef(1);
 
   const showToast = useCallback((message: string) => {
     setToast(message);
