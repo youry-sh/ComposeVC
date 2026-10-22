@@ -10,6 +10,7 @@ import CustomToolsWorkspace from "./components/CustomToolsWorkspace";
 import TerminalWorkspace from "./components/TerminalWorkspace";
 import StorageModal from "./components/StorageModal";
 import KnowledgeWorkspace from "./components/KnowledgeWorkspace";
+import DocsWorkspace from "./components/DocsWorkspace";
 import WebEngineWorkspace from "./components/WebEngineWorkspace";
 import MultiIdeWorkspace, {
   loadMultiIdeSlots,
@@ -25,7 +26,7 @@ import {
 import { CustomTool, ProjectSearchResult, ProviderConfig } from "./types";
 import { dispatchInsertChatInput, loadMouseSnippets, textForMouseButton } from "./utils/mouseSnippets";
 
-type Panel = "multiide" | "webengine" | "proxy" | "settings" | "customtools" | "runner" | "terminal" | "knowledge";
+type Panel = "multiide" | "webengine" | "proxy" | "settings" | "customtools" | "runner" | "terminal" | "knowledge" | "docs";
 
 const App: React.FC = () => {
   const [rootPath, setRootPath] = useState<string | null>(null);
@@ -44,6 +45,7 @@ const App: React.FC = () => {
       if (saved === "runner") return "runner";
       if (saved === "terminal") return "terminal";
       if (saved === "knowledge") return "knowledge";
+      if (saved === "docs") return "docs";
       if (saved === "customtools") return "customtools";
     } catch {
       /* ignore */
@@ -540,6 +542,11 @@ const App: React.FC = () => {
           {activePanel === "knowledge" && (
             <div className="flex-1 min-w-0 min-h-0 flex overflow-hidden">
               <KnowledgeWorkspace />
+            </div>
+          )}
+          {activePanel === "docs" && (
+            <div className="flex-1 min-w-0 min-h-0 flex overflow-hidden">
+              <DocsWorkspace />
             </div>
           )}
         </div>

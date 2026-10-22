@@ -10,6 +10,7 @@ import {
   IcoTerminal,
   IcoKnowledge,
   IcoWebEngine,
+  IcoDocs,
 } from "./topIcons";
 import {
   CONTEXT_METRICS_EVENT,
@@ -20,7 +21,7 @@ import {
   formatUptime,
 } from "./StatusBar";
 
-type Panel = "multiide" | "webengine" | "proxy" | "settings" | "customtools" | "runner" | "terminal" | "knowledge";
+type Panel = "multiide" | "webengine" | "proxy" | "settings" | "customtools" | "runner" | "terminal" | "knowledge" | "docs";
 
 interface TitleBarProps {
   subtitle?: string;
@@ -165,6 +166,7 @@ const TitleBar: React.FC<TitleBarProps> = ({
     { id: "runner", title: "Runner", icon: <IcoRunner className="topbar-tab-ico" /> },
     { id: "terminal", title: "Terminal", icon: <IcoTerminal className="topbar-tab-ico" /> },
     { id: "knowledge", title: "Knowledge", icon: <IcoKnowledge className="topbar-tab-ico" /> },
+    { id: "docs", title: "Docs", icon: <IcoDocs className="topbar-tab-ico" /> },
     { id: "customtools", title: "Custom Tools", icon: <IcoTools className="topbar-tab-ico" /> },
   ];
 

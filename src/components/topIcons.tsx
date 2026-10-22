@@ -97,3 +97,12 @@ export const IcoWebEngine: React.FC<IconProps> = ({ className }) => (
     <path d="M6 12.5 v-2.5 a2 2 0 0 1 2 -2 h0 a2 2 0 0 1 2 2 v2.5 M8 10.5 v2" />
   </svg>
 );
+
+/** Docs — open book with a marker line */
+export const IcoDocs: React.FC<IconProps> = ({ className }) => (
+  <svg {...base} className={className}>
+    <path d="M8 3 C6 1.8 4 1.8 2.4 2.1 v10.6 C4 12.5 6 12.5 8 13.7 C10 12.5 12 12.5 13.6 12.7 V2.1 C12 1.8 10 1.8 8 3 Z" />
+    <path d="M8 3 v10.7" />
+    <path d="M5.5 5.5 h2.2 M5.5 8 h2.2" />
+  </svg>
+);
