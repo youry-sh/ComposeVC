@@ -58,6 +58,7 @@ import McpConnector from "./McpConnector";
 import { ThinkingIndicator } from "./ThinkingIndicator";
 import ChatMonoScroll, { type ChatMonoScrollHandle } from "./ChatMonoScroll";
 import ModelPicker from "./ModelPicker";
+import WorkTimer from "./WorkTimer";
 import MarkdownContent from "./markdown/MarkdownContent";
 import { computeLineDiff } from "../utils/diff";
 import { INSERT_INPUT_EVENT, InsertChatInputDetail } from "../utils/mouseSnippets";
