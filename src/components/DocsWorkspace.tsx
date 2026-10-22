@@ -157,26 +157,28 @@ const DocsWorkspace: React.FC = () => {
           </div>
         </header>
 
-        <div className="docs-content">
-          {error ? (
-            <div className="docs-state is-error">
-              <X className="h-8 w-8" />
-              <p>{error}</p>
-            </div>
-          ) : !selectedId ? (
-            <div className="docs-state">
-              <BookOpen className="h-10 w-10" aria-hidden />
-              <h2>Documentation</h2>
-              <p>Выберите раздел слева, чтобы прочитать его.</p>
-            </div>
-          ) : (
-            <article className="docs-article">
-              <h1 className="docs-article-title">{title}</h1>
-              {summary ? <p className="docs-article-summary">{summary}</p> : null}
-              <MarkdownContent content={content} />
-            </article>
-          )}
-        </div>
+        <ChatMonoScroll className="docs-content">
+          <div className="docs-content-inner">
+            {error ? (
+              <div className="docs-state is-error">
+                <X className="h-8 w-8" />
+                <p>{error}</p>
+              </div>
+            ) : !selectedId ? (
+              <div className="docs-state">
+                <BookOpen className="h-10 w-10" aria-hidden />
+                <h2>Documentation</h2>
+                <p>Выберите раздел слева, чтобы прочитать его.</p>
+              </div>
+            ) : (
+              <article className="docs-article">
+                <h1 className="docs-article-title">{title}</h1>
+                {summary ? <p className="docs-article-summary">{summary}</p> : null}
+                <MarkdownContent content={content} />
+              </article>
+            )}
+          </div>
+        </ChatMonoScroll>
       </main>
     </section>
   );
