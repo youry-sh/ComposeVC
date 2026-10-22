@@ -350,8 +350,8 @@ const UsageWorkspace: React.FC = () => {
               ) : (
                 <div className="usage-daily-chart">
                   {daily.map((row) => {
-                    const toolPct = (row.toolCalls / dailyMax) * 100;
-                    const promptPct = (row.promptChars / dailyMax) * 100;
+                    const toolPct = (row.toolCalls / toolMax) * 100;
+                    const promptPct = (row.promptChars / promptMax) * 100;
                     return (
                       <div key={row.date} className="usage-daily-col" title={`${row.date}\ntool calls ${formatCount(row.toolCalls)}\nprompt chars ${formatCount(row.promptChars)}`}>
                         <div className="usage-daily-bars">
