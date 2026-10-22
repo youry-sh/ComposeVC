@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { normalizeUrl } from "../utils/webEngineUrl";
 import {
   ArrowLeft,
   ArrowRight,
@@ -47,6 +48,8 @@ type ElementInfo = { sel: string; tag: string; id: string; cls: string; html: st
 interface WebEngineWorkspaceProps {
   /** Stable per-chat key (session id or project-folder fallback). */
   chatKey: string;
+  /** Secondary key used while a chat has no session id yet (`folder:<path>`). */
+  fallbackChatKey: string;
   rootPath: string | null;
   projectName: string;
 }
@@ -68,23 +71,8 @@ const LEVEL_LABEL: Record<LogLevel, string> = {
  * localhost / 127.0.0.1 / any host-with-port defaults to http://; a bare host
  * without a port (a public site) defaults to https://. Anything else is rejected
  * at this boundary so the rest of the workspace only ever sees a valid URL.
+ * (Logic lives in src/utils/webEngineUrl.ts so it is unit-testable.)
  */
-export function normalizeUrl(raw: string): string | null {
-  const input = String(raw || "").trim();
-  if (!input) return null;
-  if (/^https?:\/\//i.test(input)) return input;
-  if (/^\/\//.test(input)) {
-    const rest = input.slice(2);
-    const local = /^(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?([/?#].*)?$/i.test(rest);
-    return `${local ? "http" : "https"}:${input}`;
-  }
-  if (/^(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?([/?#].*)?$/i.test(input)) return `http://${input}`;
-  // host with a port → dev server; host without a port → public site.
-  if (!/\s/.test(input) && /^[\w-]+(\.[\w-]+)+(:\d+)?([/?#].*)?$/.test(input)) {
-    return /:\d+/.test(input) ? `http://${input}` : `https://${input}`;
-  }
-  return null;
-}
 
 /** Clipboard write via main-process clipboard, with a DOM fallback for `vite`. */
 async function copyText(text: string): Promise<boolean> {

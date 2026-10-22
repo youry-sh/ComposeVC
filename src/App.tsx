@@ -351,6 +351,16 @@ const App: React.FC = () => {
     });
   }, [multiIdeSlots, rootPath]);
 
+  // When the Web Engine was restored as the active tab (or opened without an
+  // explicit chat), point its fallback context at the loaded project once known.
+  useEffect(() => {
+    setWebEngineTarget((prev) => {
+      if (prev.chatKey !== "default" || prev.rootPath) return prev;
+      const key = rootPath ? `folder:${rootPath}` : "default";
+      return { chatKey: key, fallbackChatKey: key, rootPath, projectName };
+    });
+  }, [rootPath, projectName]);
+
   const chatPanelLabels = {
     chat: t.chat,
     askAnything: t.askAnything,
@@ -514,15 +524,22 @@ const App: React.FC = () => {
             </div>
           )}
 
-          {activePanel === "webengine" && (
-            <div className="flex-1 min-w-0 min-h-0 flex overflow-hidden">
+          <div
+            className={
+              activePanel === "webengine"
+                ? "flex-1 min-w-0 min-h-0 flex overflow-hidden"
+                : "hidden"
+            }
+          >
+            {webEngineMounted && (
               <WebEngineWorkspace
                 chatKey={webEngineTarget.chatKey}
+                fallbackChatKey={webEngineTarget.fallbackChatKey}
                 rootPath={webEngineTarget.rootPath}
                 projectName={webEngineTarget.projectName}
               />
-            </div>
-          )}
+            )}
+          </div>
 
           {activePanel === "proxy" && <ProxyWorkspace labels={t} />}
           {activePanel === "runner" && (
