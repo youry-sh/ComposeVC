@@ -1061,7 +1061,14 @@ declare global {
           sessions: number;
         };
       }>;
-			};  }
-	}
+      captureFullScreenshot: () => Promise<{
+        ok: boolean;
+        error?: string;
+        width?: number;
+        height?: number;
+        displays?: number;
+        watermark?: boolean;
+      }>;
+				};  }	}
 
 	export {};
