@@ -8018,15 +8018,9 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
   min-width: 0;
-  padding: 5px 6px 5px 10px;
-  border: 0;
   border-radius: 0;
-  background: transparent;
   color: var(--ink-600);
-  text-align: left;
-  cursor: pointer;
   transition: background .12s ease, color .12s ease;
 }
 .chat-workspace-item:hover {
@@ -8052,6 +8046,19 @@
   background: var(--ink-950);
   animation: chat-rail-pulse 1.4s ease-in-out infinite;
 }
+.chat-workspace-btn {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 4px 5px 10px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
 .chat-workspace-name {
   flex: 1 1 auto;
   min-width: 0;
@@ -8061,12 +8068,39 @@
   font-size: 11px;
 }
 .chat-workspace-item.is-active .chat-workspace-name { font-weight: 650; }
-.chat-workspace-count {
+.chat-workspace-stats {
   flex: none;
-  font-size: 10px;
-  color: var(--ink-500);
+  display: flex;
+  align-items: center;
+  gap: 3px;
   font-variant-numeric: tabular-nums;
 }
+.chat-workspace-stat { font-size: 10px; line-height: 1; }
+.chat-workspace-stat.is-working { color: var(--ink-950); font-weight: 600; }
+.chat-workspace-stat.is-done { color: var(--ink-500); }
+.chat-workspace-stat-divider { font-size: 10px; line-height: 1; color: var(--ink-400); }
+.chat-workspace-close {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin-right: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink-500);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .12s ease, background .12s ease, color .12s ease;
+}
+.chat-workspace-item:hover .chat-workspace-close,
+.chat-workspace-item.is-active .chat-workspace-close { opacity: 1; }
+.chat-workspace-close:focus-visible { opacity: 1; }
+.chat-workspace-close:hover { background: var(--hover-bg); color: var(--ink-950); }
 .chat-rail-subhead {
   height: 24px;
   border-bottom: 1px solid var(--border);
