@@ -22,6 +22,7 @@ import {
   PenLine,
   Pencil,
   Plus,
+  RotateCcw,
   Save,
   Search,
   Send,
@@ -183,6 +184,7 @@ interface ChatPanelProps {
     queue: string;
     queueClear: string;
     queueWaiting: string;
+    retry: string;
     tools: string;
     autoInsert: string;
     autoInsertHint: string;
@@ -3475,7 +3477,14 @@ const CompactedSummaryCard: React.FC<{ count: string; summary: string }> = ({ co
   );
 };
 
-const MessageActions: React.FC<{ content: string }> = ({ content }) => {
+const MessageActions: React.FC<{
+  content: string;
+  role: ChatMessage["role"];
+  images?: ChatImageAttachment[];
+  retryLabel: string;
+  retryDisabled?: boolean;
+  onRetry: (content: string, images?: ChatImageAttachment[]) => void;
+}> = ({ content, role, images, retryLabel, retryDisabled = false, onRetry }) => {
   const [copied, setCopied] = useState(false);
 
   const copyMessage = async () => {
@@ -3493,6 +3502,17 @@ const MessageActions: React.FC<{ content: string }> = ({ content }) => {
         <Copy className="w-3.5 h-3.5" />
         {copied && <span className="text-[11px]">Copied</span>}
       </button>
+      {role === "user" && (
+        <button
+          onClick={() => onRetry(content, images)}
+          disabled={retryDisabled}
+          aria-label={retryLabel}
+          title={retryLabel}
+          className="h-6 px-1.5 flex items-center gap-1 rounded-md outline-none hover:bg-ink-100 hover:text-ink-950 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+        </button>
+      )}
     </div>
   );
 };

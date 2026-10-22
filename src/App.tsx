@@ -388,6 +388,7 @@ const App: React.FC = () => {
     instructionsSave: t.instructionsSave,
     instructionsSaved: t.instructionsSaved,
     retrying: t.retrying,
+    retry: t.retry,
     nothingToCompact: t.nothingToCompact,
     compactFailed: t.compactFailed,
     more: t.more,
