@@ -7,6 +7,7 @@ type WorkTimerSnapshot = {
   startedAt?: number | null;
   deadlineAt?: number | null;
   totalMinutes?: number | null;
+  sessionId?: string | null;
   remainingSeconds?: number;
   remainingMinutes?: number;
   elapsedSeconds?: number;
@@ -23,7 +24,7 @@ function formatRemaining(totalSeconds: number): string {
   return `${m}:${String(sec).padStart(2, "0")}`;
 }
 
-const WorkTimer: React.FC = () => {
+const WorkTimer: React.FC<{ sessionId?: string | null }> = ({ sessionId }) => {
   const [deadlineAt, setDeadlineAt] = useState<number | null>(null);
   const [totalMinutes, setTotalMinutes] = useState<number | null>(null);
   const [now, setNow] = useState<number>(() => Date.now());

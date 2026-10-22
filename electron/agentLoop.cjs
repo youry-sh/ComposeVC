@@ -805,7 +805,7 @@ async function runAgentLoopInner({
     modelName: model?.name || toolContext?.modelName || null,
     workTimer,
     onWorkTimer: () => {
-      workTimerStore.set(workTimer);
+      workTimerStore.set(workTimer, sessionId);
       onProgress?.({ type: "work_timer", ...workTimerStore.get() });
     },
     isSubagent: Boolean(isSubagent),

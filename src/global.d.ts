@@ -623,6 +623,7 @@ declare global {
         startedAt: number | null;
         deadlineAt: number | null;
         totalMinutes: number | null;
+        sessionId: string | null;
         remainingSeconds: number;
         remainingMinutes: number;
         elapsedSeconds: number;
