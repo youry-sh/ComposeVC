@@ -901,10 +901,10 @@ const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, 
 
                 <div className="settings-card">
                   <div className="settings-card-title">LAB-IN models</div>
-                  <div className="grid gap-3">
-                    <p className="text-[11px] leading-snug text-ink-500">
-                      Stage models inherit the active chat model when left empty. The main task always executes with the active chat model.
-                    </p>
+                  <p className="mb-3 text-[11px] leading-snug text-ink-500">
+                    Stage models inherit the active chat model when left empty. The main task always executes with the active chat model.
+                  </p>
+                  <div className="settings-grid-2">
                     <div className="grid gap-1.5">
                       <span className="text-[10px] font-medium uppercase tracking-[0.1em] text-ink-500">
                         Prompt refiner
@@ -962,10 +962,10 @@ const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, 
 
                 <div className="settings-card">
                   <div className="settings-card-title">Cloudflare image</div>
-                  <div className="grid gap-2">
-                    <p className="text-[11px] leading-snug text-ink-500">
-                      Used by generate_image. Flux 2 Dev draws the subject on a flat green screen, then the tool removes only that green.
-                    </p>
+                  <p className="mb-3 text-[11px] leading-snug text-ink-500">
+                    Used by generate_image. Flux 2 Dev draws the subject on a flat green screen, then the tool removes only that green.
+                  </p>
+                  <div className="settings-grid-2">
                     <Field
                       label="Account ID"
                       mono
