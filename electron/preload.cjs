@@ -51,6 +51,13 @@ contextBridge.exposeInMainWorld("lopster", {
     const listener = () => callback(); ipcRenderer.on("storage:open", listener);
     return () => ipcRenderer.removeListener("storage:open", listener);
   },
+  // Workspace hotkeys routed from the main process (Ctrl/Cmd+1…9, Ctrl+P,
+  // Ctrl+,, Ctrl+`) — works even while the terminal/webview owns the keyboard.
+  onShellHotkey: (callback) => {
+    const listener = (_event, payload) => callback(payload || {});
+    ipcRenderer.on("shell:hotkey", listener);
+    return () => ipcRenderer.removeListener("shell:hotkey", listener);
+  },
   readProviderConfig: () => ipcRenderer.invoke("config:read"),
   writeProviderConfig: (config) => ipcRenderer.invoke("config:write", config),
   listRunners: () => ipcRenderer.invoke("runner:list"),

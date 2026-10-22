@@ -994,6 +994,19 @@ async function loadWindowContent(win, options = {}) {
 function installPackagedWindowHardening(win) {
   const wc = win.webContents;
 
+  // Physical key code → workspace tab, for the Ctrl/Cmd+1…9 panel shortcuts.
+  const PANEL_BY_DIGIT = {
+    Digit1: "multiide",
+    Digit2: "webengine",
+    Digit3: "proxy",
+    Digit4: "runner",
+    Digit5: "terminal",
+    Digit6: "customtools",
+    Digit7: "knowledge",
+    Digit8: "docs",
+    Digit9: "usage",
+  };
+
   // In-app guests are allowed for the aside media dock only, and only on plain
   // http(s). Whatever the markup asks for, the guest gets no preload and no
   // node access — it stays a sandboxed page, never a bridge into the app.
@@ -1115,6 +1128,26 @@ function installPackagedWindowHardening(win) {
       event.preventDefault();
       try { if (!wc.isDestroyed()) wc.send("storage:open", {}); } catch {}
       return;
+    }
+    // Workspace hotkeys: Ctrl/Cmd+1…9 (tabs), Ctrl+P (search), Ctrl+, (settings),
+    // Ctrl+` (terminal). Handled here so they keep working while the terminal or
+    // a webview guest owns the keyboard; the renderer routes them via shell:hotkey.
+    if (ctrl && !shift && !alt) {
+      let payload = null;
+      if (Object.prototype.hasOwnProperty.call(PANEL_BY_DIGIT, code)) {
+        payload = { type: "panel", panel: PANEL_BY_DIGIT[code] };
+      } else if (code === "Backquote") {
+        payload = { type: "panel", panel: "terminal" };
+      } else if (code === "KeyP") {
+        payload = { type: "toggle", target: "search" };
+      } else if (code === "Comma") {
+        payload = { type: "toggle", target: "settings" };
+      }
+      if (payload) {
+        event.preventDefault();
+        try { if (!wc.isDestroyed()) wc.send("shell:hotkey", payload); } catch {}
+        return;
+      }
     }
     // F12, Ctrl+Shift+I/J/C, Ctrl+Shift+U, Ctrl+U (view source)
     const block =
