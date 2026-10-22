@@ -11362,7 +11362,8 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   align-items: flex-end;
   gap: 6px;
   padding: 16px 14px 6px;
-  height: 150px;
+  flex: 1;
+  min-height: 150px;
 }
 .usage-daily-col {
   flex: 1;
@@ -11444,9 +11445,11 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
 }
 
 .usage-detail {
+  flex: 1;
   padding: 12px 14px;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
 }
 .usage-detail-row {
   display: flex;
