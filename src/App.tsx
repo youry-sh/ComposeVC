@@ -112,6 +112,27 @@ const App: React.FC = () => {
     return () => openSend?.();
   }, []);
 
+  // Chat → Web Engine: the icon button next to Send asks to open this chat's site.
+  useEffect(() => {
+    const onOpenWebEngine = (event: Event) => {
+      const detail = (event as CustomEvent<{ rootPath: string | null; sessionId: string | null }>)
+        .detail;
+      if (!detail) return;
+      const rp = detail.rootPath ?? rootPath;
+      const chatKey = detail.sessionId
+        ? `session:${detail.sessionId}`
+        : rp
+          ? `folder:${rp}`
+          : "default";
+      const name = rp ? rp.split(/[\\/]/).filter(Boolean).pop() || rp : projectName;
+      setWebEngineTarget({ chatKey, rootPath: rp, projectName: name });
+      setMultiIdeMounted(true);
+      setActivePanel("webengine");
+    };
+    window.addEventListener("composevc-open-webengine", onOpenWebEngine as EventListener);
+    return () => window.removeEventListener("composevc-open-webengine", onOpenWebEngine as EventListener);
+  }, [rootPath, projectName]);
+
   // Mouse side buttons → insert snippet into the active chat input only
   // (ChatPanel filters by focus/hover so MultiIDE never fills all 4 columns).
   useEffect(() => {
@@ -289,6 +310,18 @@ const App: React.FC = () => {
     if (panel === "multiide") {
       setMultiIdeMounted(true);
     }
+    if (panel === "webengine") {
+      // Direct tab click without an explicit chat context: fall back to the
+      // current project folder so the localhost probe still has something to use.
+      setWebEngineTarget((prev) => {
+        if (prev.chatKey !== "default" || prev.rootPath) return prev;
+        return {
+          chatKey: rootPath ? `folder:${rootPath}` : "default",
+          rootPath,
+          projectName,
+        };
+      });
+    }
     setActivePanel(panel);
   };
 
@@ -464,6 +497,16 @@ const App: React.FC = () => {
                 slots={multiIdeSlots}
                 onSlotsChange={setMultiIdeSlots}
                 onOpenRunners={() => setActivePanel("runner")}
+              />
+            </div>
+          )}
+
+          {activePanel === "webengine" && (
+            <div className="flex-1 min-w-0 min-h-0 flex overflow-hidden">
+              <WebEngineWorkspace
+                chatKey={webEngineTarget.chatKey}
+                rootPath={webEngineTarget.rootPath}
+                projectName={webEngineTarget.projectName}
               />
             </div>
           )}
