@@ -398,7 +398,7 @@ module.exports = {
       background: {
         type: "boolean",
         description:
-          "If true, launch the command as a detached background process and return immediately without waiting for it to finish. Use for long-running servers/daemons (npm run dev, a local server, etc.) that should keep running while the agent continues. The process keeps running after this turn and after the app closes; it is shown as a per-chat badge in the composer with a stop button.",
+          "If true, launch the command as a detached background process and return immediately without waiting for it to finish. Use for long-running servers/daemons (npm run dev, a local server, etc.) that should keep running while the agent continues. The process keeps running after this turn and after the app closes; it is shown as a per-chat badge in the composer with a stop button. Its stdout+stderr are written live to a log file, and the result returns the absolute `logFile` path — read that file (read_file, tail with offset/limit) to confirm the process started and to watch output.",
       },
     },
     required: ["command"],
@@ -439,7 +439,9 @@ module.exports = {
         background: true,
         ...task,
         note:
-          "Started in the background and detached from this turn — it keeps running while you work and survives an app restart. Stop it with the per-chat composer badge (X).",
+          "Started in the background and detached from this turn — it keeps running while you work and survives an app restart. " +
+          "Its stdout+stderr are written live to the `logFile` path above; read that file (read_file, tail with offset/limit) to confirm it started and to watch output. " +
+          "Stop it with the per-chat composer badge (X).",
       };
     }
 
