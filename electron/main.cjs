@@ -4339,6 +4339,11 @@ app.on("before-quit", (event) => {
     } catch {
       /* ignore */
     }
+    try {
+      usageStore.flushSync();
+    } catch {
+      /* ignore */
+    }
     if (runtimeSaveTimer) {
       clearInterval(runtimeSaveTimer);
       runtimeSaveTimer = null;
@@ -4413,6 +4418,11 @@ app.whenReady().then(async () => {
     loadRuntimeFile();
   } catch {
     /* ignore */
+  }
+  try {
+    usageStore.init(app.getPath("userData"));
+  } catch (error) {
+    console.error("[usage] init failed:", error?.message || error);
   }
   runtimeSaveTimer = setInterval(() => {
     try {
