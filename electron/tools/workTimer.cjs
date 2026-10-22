@@ -59,6 +59,13 @@ module.exports = {
     timer.startedAt = Date.now();
     timer.deadlineAt = timer.startedAt + minutes * 60_000;
     timer.totalMinutes = minutes;
+    if (typeof context?.onWorkTimer === "function") {
+      try {
+        context.onWorkTimer();
+      } catch {
+        /* notification is best-effort */
+      }
+    }
     return { ...snapshot(timer), immutable: true, set: true };
   },
 };

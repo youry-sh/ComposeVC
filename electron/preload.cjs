@@ -190,6 +190,7 @@ contextBridge.exposeInMainWorld("lopster", {
     ipcRenderer.on("agent:progress", listener);
     return () => ipcRenderer.removeListener("agent:progress", listener);
   },
+  getWorkTimer: () => ipcRenderer.invoke("worktimer:get"),
   onAgentRunState: (callback) => {
     const listener = (_event, state) => callback(state);
     ipcRenderer.on("agent:run-state", listener);

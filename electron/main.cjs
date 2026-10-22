@@ -21,6 +21,7 @@ const { contentToText: contentPartsToText } = require("./adapters/contentParts.c
 const memory = require("./memory.cjs");
 const gitService = require("./gitService.cjs");
 const storageStore = require("./storageStore.cjs");
+const workTimerStore = require("./workTimerStore.cjs");
 const telegramTool = require("./tools/telegram.cjs");
 const customTools = require("./customTools.cjs");
 const mcpManager = require("./mcpManager.cjs");

@@ -15,6 +15,7 @@ const { createSpawnSubagentHandler } = require("./subagent.cjs");
 const codeImpactHost = require("./codeImpactHost.cjs");
 const chatSessions = require("./chatSessionRegistry.cjs");
 const { REQUIRED_CYCLES, getCycleDirective } = require("./thinkingMaxPrompt.cjs");
+const workTimerStore = require("./workTimerStore.cjs");
 
 const ITERATIONS_PER_CONTINUE = 7;
 /** Root agent turn budget (chat). Subagents may request higher via maxIterations. */
