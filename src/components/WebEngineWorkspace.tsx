@@ -434,7 +434,7 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({
       const reason = describeLoadError(detail.errorCode, detail.errorDescription);
       const failedUrl = detail.validatedURL || url || "";
       setError(failedUrl ? `Не удалось открыть ${failedUrl} — ${reason}` : `Не удалось открыть страницу — ${reason}`);
-      appendLog("error", `Failed to load ${failedUrl}: ${detail.errorDescription || detail.errorCode ?? "?"}`, "navigation");
+      appendLog("error", `Failed to load ${failedUrl}: ${detail.errorDescription || String(detail.errorCode ?? "?")}`, "navigation");
     };
     const onConsole = (event: Event) => {
       const detail = event as Event & {
