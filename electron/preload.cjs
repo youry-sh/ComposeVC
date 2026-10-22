@@ -33,6 +33,8 @@ contextBridge.exposeInMainWorld("lopster", {
   webEngineSetBinding: (chatKey, url) => ipcRenderer.invoke("webengine:setBinding", chatKey || "", url),
   webEngineProbeLocalhost: (rootPath) => ipcRenderer.invoke("webengine:probeLocalhost", rootPath || null),
   webEngineCopyText: (text) => ipcRenderer.invoke("webengine:copyText", text || ""),
+  webEngineCaptureScreenshot: (webContentsId) => ipcRenderer.invoke("webengine:captureScreenshot", webContentsId),
+  webEngineClearCache: () => ipcRenderer.invoke("webengine:clearCache"),
   // Ctrl+H pressed while a <webview> had focus — the shell opens its switcher.
   onOpenChatSwitcher: (callback) => {
     const listener = () => callback();

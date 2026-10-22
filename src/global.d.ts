@@ -162,6 +162,8 @@ declare global {
       webEngineSetBinding: (chatKey: string, url: string) => Promise<{ ok: boolean; url?: string; error?: string }>;
       webEngineProbeLocalhost: (rootPath: string | null) => Promise<{ ok: boolean; url: string | null; error?: string }>;
       webEngineCopyText: (text: string) => Promise<{ ok: boolean; error?: string }>;
+      webEngineCaptureScreenshot: (webContentsId: number) => Promise<{ ok: boolean; error?: string }>;
+      webEngineClearCache: () => Promise<{ ok: boolean; error?: string }>;
       onOpenChatSwitcher: (callback: () => void) => () => void;
       onFoldWebDock: (callback: () => void) => () => void;
       onStorageOpen: (callback: () => void) => () => void;

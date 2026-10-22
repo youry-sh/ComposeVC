@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { normalizeUrl } from "../utils/webEngineUrl";
+import { clampZoomFactor, nextDeviceWidth } from "../utils/webEngineTools";
 import {
   ArrowLeft,
   ArrowRight,
@@ -12,6 +13,14 @@ import {
   Trash2,
   Search,
   Bug,
+  Camera,
+  Eraser,
+  Smartphone,
+  ZoomIn,
+  ZoomOut,
+  Maximize,
+  AlertCircle,
+  Code2,
 } from "lucide-react";
 import ChatMonoScroll from "./ChatMonoScroll";
 
@@ -37,6 +46,9 @@ type WebviewElement = HTMLElement & {
   stop: () => void;
   executeJavaScript: (code: string, userGesture?: boolean) => Promise<unknown>;
   insertCSS: (css: string) => Promise<string>;
+  getWebContentsId: () => number;
+  reloadIgnoringCache: () => void;
+  setZoomFactor: (factor: number) => void;
   openDevTools: () => void;
   closeDevTools: () => void;
   isDevToolsOpened: () => boolean;
