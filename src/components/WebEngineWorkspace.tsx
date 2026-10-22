@@ -154,7 +154,12 @@ function chromeUserAgent(): string {
   return ua.replace(/\s?(Electron|ComposeVC)\/[^\s]+/gi, "").replace(/\s{2,}/g, " ").trim();
 }
 
-const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({ chatKey, rootPath, projectName }) => {
+const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({
+  chatKey,
+  fallbackChatKey,
+  rootPath,
+  projectName,
+}) => {
   const viewRef = useRef<WebviewElement | null>(null);
   const [draft, setDraft] = useState("");
   /** The page actually loaded; null until the first URL is opened. */
@@ -166,7 +171,7 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({ chatKey, rootPa
   const [error, setError] = useState<string | null>(null);
   const [probing, setProbing] = useState(false);
   const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [consoleOpen, setConsoleOpen] = useState(false);
+  const [consoleOpen, setConsoleOpen] = useState(true);
   const [inspectorOn, setInspectorOn] = useState(false);
   const [selectedEl, setSelectedEl] = useState<ElementInfo | null>(null);
   const [hoverEl, setHoverEl] = useState<ElementInfo | null>(null);
