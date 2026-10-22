@@ -493,9 +493,10 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
   );
 
   const stableSlots = useMemo(() => slots.slice(0, MULTIIDE_MAX_SLOTS), [slots]);
-  const activeSlotId = activeWorkspaceSlots.some((s) => s.id === activeId)
-    ? activeId
-    : activeWorkspaceSlots[0]?.id;
+  const activeSlotId: string | undefined =
+    activeId && activeWorkspaceSlots.some((s) => s.id === activeId)
+      ? activeId
+      : activeWorkspaceSlots[0]?.id;
 
   // Chat history is stored per project folder, so two panels on the same folder
   // report the SAME chats — count each folder once instead of double-counting.
