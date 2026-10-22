@@ -381,6 +381,17 @@ declare global {
         chunks?: KnowledgeChunkSummary[];
         chunkId?: string;
       }) => void) => () => void;
+      docsList: () => Promise<{
+        version: number;
+        sectionCount: number;
+        updatedAt: number;
+        sections: Array<{ id: string; title: string; summary: string; order: number; createdAt: number; updatedAt: number }>;
+      }>;
+      docsRead: (id: string) => Promise<{ id: string; title: string; summary: string; order: number; content: string; createdAt: number; updatedAt: number }>;
+      docsCreate: (input: { title: string; content: string; summary?: string; order?: number }) => Promise<{ id: string; title: string; summary: string; order: number; content: string; createdAt: number; updatedAt: number }>;
+      docsUpdate: (id: string, patch: { title?: string; content?: string; summary?: string; order?: number }) => Promise<{ id: string; title: string; summary: string; order: number; content: string; createdAt: number; updatedAt: number }>;
+      docsDelete: (id: string) => Promise<{ deleted: boolean; id?: string }>;
+      onDocsChanged: (callback: (payload: { type?: string }) => void) => () => void;
       estimateContextTokens: (rootPath: string | null, projectName?: string) => Promise<number>;
       listMcpServers: () => Promise<import("./types").McpServer[]>;
       addMcpServer: (input: Partial<import("./types").McpServer> & { name: string }) => Promise<import("./types").McpServer>;

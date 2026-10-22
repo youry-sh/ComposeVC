@@ -43,6 +43,13 @@ function get(userDataPath, key) {
   const entry = read(userDataPath)[key];
   // Parse, don't trust: only keep a well-formed http(s) URL on read.
   if (entry && typeof entry === "object" && typeof entry.url === "string" && entry.url) {
+    let parsed;
+    try {
+      parsed = new URL(entry.url);
+    } catch {
+      return { url: null };
+    }
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return { url: null };
     return {
       url: entry.url,
       updatedAt: typeof entry.updatedAt === "number" ? entry.updatedAt : null,

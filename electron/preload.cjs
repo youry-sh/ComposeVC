@@ -130,6 +130,16 @@ contextBridge.exposeInMainWorld("lopster", {
     ipcRenderer.on("knowledge:changed", listener);
     return () => ipcRenderer.removeListener("knowledge:changed", listener);
   },
+  docsList: () => ipcRenderer.invoke("docs:list"),
+  docsRead: (id) => ipcRenderer.invoke("docs:read", id),
+  docsCreate: (input) => ipcRenderer.invoke("docs:create", input || {}),
+  docsUpdate: (id, patch) => ipcRenderer.invoke("docs:update", id, patch || {}),
+  docsDelete: (id) => ipcRenderer.invoke("docs:delete", id),
+  onDocsChanged: (callback) => {
+    const listener = (_event, payload) => callback(payload || { type: "changed" });
+    ipcRenderer.on("docs:changed", listener);
+    return () => ipcRenderer.removeListener("docs:changed", listener);
+  },
 
 		  estimateContextTokens: (rootPath, projectName) => ipcRenderer.invoke("context:estimateTokens", rootPath, projectName),
 

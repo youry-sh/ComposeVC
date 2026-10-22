@@ -8,6 +8,7 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const net = require("net");
+const http = require("http");
 const { pathToFileURL } = require("url");
 const {
   buildSystemPrompt,
@@ -47,6 +48,7 @@ const {
   buildFixMessage,
 } = require("./fortani/index.cjs");
 const knowledgeStore = require("./labIn/knowledgeStore.cjs");
+const docsStore = require("./docs/docsStore.cjs");
 
 const { TOOLS, getToolSchemas, getToolSchemasAsync } = require("./tools/registry.cjs");
 const { createTelegramBot, normalizeTelegramConfig } = require("./telegramBot.cjs");
@@ -1749,16 +1751,93 @@ function probePort(host, port, timeoutMs) {
   });
 }
 
-ipcMain.handle("webengine:probeLocalhost", async (_event, _rootPath) => {
-  try {
-    const results = await Promise.all(
-      WEBENGINE_DEV_PORTS.map((port) => probePort("127.0.0.1", port, 350))
+/** Confirm the port actually serves HTTP — a TCP listener is not enough. */
+function probeHttp(port, timeoutMs) {
+  return new Promise((resolve) => {
+    const req = http.request(
+      { host: "127.0.0.1", port, path: "/", method: "HEAD", timeout: timeoutMs },
+      (res) => {
+        res.resume();
+        resolve(true);
+      }
     );
-    const idx = results.findIndex(Boolean);
-    if (idx >= 0) return { ok: true, url: `http://localhost:${WEBENGINE_DEV_PORTS[idx]}` };
-    return { ok: true, url: null };
+    req.on("timeout", () => {
+      req.destroy();
+      resolve(false);
+    });
+    req.on("error", () => resolve(false));
+    req.end();
+  });
+}
+
+/** Pull the project's own dev port from package.json scripts / vite config / .env,
+ *  so "this project's localhost" wins over any other open port on the machine. */
+function detectProjectPorts(rootPath) {
+  const ports = new Set();
+  if (typeof rootPath !== "string" || !rootPath) return [];
+  try {
+    const pkgPath = path.join(rootPath, "package.json");
+    if (fs.existsSync(pkgPath)) {
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
+      const scripts = pkg && pkg.scripts && typeof pkg.scripts === "object" ? pkg.scripts : {};
+      for (const cmd of Object.values(scripts)) {
+        const m = String(cmd).match(/(?:--port|--port=|-p)\s+['"]?(\d{2,5})/);
+        if (m) ports.add(Number(m[1]));
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  try {
+    for (const name of ["vite.config.js", "vite.config.ts", "vite.config.mjs", "vite.config.cjs"]) {
+      const cfg = path.join(rootPath, name);
+      if (!fs.existsSync(cfg)) continue;
+      const text = fs.readFileSync(cfg, "utf8");
+      const m = text.match(/(?:port\s*:|port\s*=|port)\s*['"]?(\d{2,5})/);
+      if (m) ports.add(Number(m[1]));
+    }
+  } catch {
+    /* ignore */
+  }
+  try {
+    const envPath = path.join(rootPath, ".env");
+    if (fs.existsSync(envPath)) {
+      const text = fs.readFileSync(envPath, "utf8");
+      const m = text.match(/^PORT\s*=\s*['"]?(\d{2,5})/m);
+      if (m) ports.add(Number(m[1]));
+    }
+  } catch {
+    /* ignore */
+  }
+  return [...ports];
+}
+
+ipcMain.handle("webengine:probeLocalhost", async (_event, rootPath) => {
+  try {
+    const projectPorts = detectProjectPorts(rootPath);
+    const candidates = [
+      ...projectPorts,
+      ...WEBENGINE_DEV_PORTS.filter((p) => !projectPorts.includes(p)),
+    ];
+    // TCP-open ports in priority order, then confirm they answer HTTP.
+    const openResults = await Promise.all(
+      candidates.map((port) => probePort("127.0.0.1", port, 250))
+    );
+    const openPorts = candidates.filter((_, i) => openResults[i]);
+    const tried = openPorts.map((port) => ({ port, http: null }));
+    const httpResults = await Promise.all(openPorts.map((port) => probeHttp(port, 700)));
+    for (let i = 0; i < openPorts.length; i += 1) {
+      tried[i].http = httpResults[i];
+      if (httpResults[i]) return { ok: true, url: `http://localhost:${openPorts[i]}`, tried };
+    }
+    return { ok: true, url: null, tried };
   } catch (error) {
-    return { ok: false, url: null, error: error instanceof Error ? error.message : String(error) };
+    return {
+      ok: false,
+      url: null,
+      tried: [],
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 });
 
@@ -3671,6 +3750,34 @@ ipcMain.handle("knowledge:delete", async (_event, id) => {
   return result;
 });
 
+ipcMain.handle("docs:list", async () => {
+  await docsStore.seedIfEmpty(app.getPath("userData"));
+  return docsStore.listDocs(app.getPath("userData"));
+});
+
+ipcMain.handle("docs:read", async (_event, id) => {
+  await docsStore.seedIfEmpty(app.getPath("userData"));
+  return docsStore.getDocsSection(app.getPath("userData"), id);
+});
+
+ipcMain.handle("docs:create", async (_event, input) => {
+  const section = await docsStore.upsertDocsSection(app.getPath("userData"), input || {});
+  broadcastDocsChanged({ type: "changed" });
+  return section;
+});
+
+ipcMain.handle("docs:update", async (_event, id, patch) => {
+  const section = await docsStore.upsertDocsSection(app.getPath("userData"), { ...(patch || {}), id });
+  broadcastDocsChanged({ type: "changed" });
+  return section;
+});
+
+ipcMain.handle("docs:delete", async (_event, id) => {
+  const result = await docsStore.deleteDocsSection(app.getPath("userData"), id);
+  broadcastDocsChanged({ type: "changed" });
+  return result;
+});
+
 // Real token count of the current system prompt (project tree, git status, etc.)
 // for this rootPath — used by the renderer for context-usage estimate.
 ipcMain.handle("context:estimateTokens", async (_event, rootPath, projectName) => {
@@ -3692,6 +3799,16 @@ function broadcastKnowledgeChanged(payload) {
   for (const win of BrowserWindow.getAllWindows()) {
     try {
       win.webContents.send("knowledge:changed", payload || { type: "changed" });
+    } catch {
+      // ignore
+    }
+  }
+}
+
+function broadcastDocsChanged(payload) {
+  for (const win of BrowserWindow.getAllWindows()) {
+    try {
+      win.webContents.send("docs:changed", payload || { type: "changed" });
     } catch {
       // ignore
     }
