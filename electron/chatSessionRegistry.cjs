@@ -2,7 +2,7 @@
  * Tracks in-flight chat agent runs by sessionId so Stop only affects one chat
  * when multiple MultiIDE sessions run in parallel.
  *
- * Hard caps keep Soviet-7 + multi-chat from stampeding main process / renderer.
+ * Hard caps keep multi-chat from stampeding main process / renderer.
  */
 
 const controllers = new Map(); // sessionId -> AbortController

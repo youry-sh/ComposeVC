@@ -1,6 +1,6 @@
 module.exports = {
   name: "wait_subagents",
-  description: "Wait for asynchronously started subagents or Soviet-7 background jobs and return all completed results.",
+  description: "Wait for asynchronously started subagents and return all completed results.",
   isReadOnly: true,
   inputSchema: {
     type: "object",
