@@ -7571,41 +7571,45 @@
 }
 
 .titlebar-root {
-  height: 42px;
-  gap: 4px;
-  padding-right: 2px;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--ink-50) 94%, transparent), color-mix(in srgb, var(--ink-0) 92%, transparent));
-  border-bottom-color: color-mix(in srgb, var(--accent) 20%, var(--border));
-  font-family: var(--terminal-font);
+  height: 46px;
+  gap: 6px;
+  padding-right: 4px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--ink-50) 92%, transparent), color-mix(in srgb, var(--ink-0) 90%, transparent));
+  border-bottom-color: color-mix(in srgb, var(--border) 80%, transparent);
+  font-family: "Inter", system-ui, sans-serif;
 }
 .titlebar-brand-block {
-  gap: 7px;
-  padding: 0 11px 0 9px;
-  border-right: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border));
+  gap: 8px;
+  padding: 0 13px 0 11px;
+  border-right: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
 }
 .titlebar-brand-copy {
-  color: var(--ink-800);
-  font: 600 10px/1 var(--terminal-font);
-  letter-spacing: .08em;
+  color: var(--ink-850);
+  font: 700 11px/1 var(--terminal-font);
+  letter-spacing: .14em;
   white-space: nowrap;
 }
-.topbar-tabs { gap: 0; padding: 0 3px; }
+.topbar-tabs { gap: 2px; padding: 0 4px; }
 .topbar-tab {
-  height: 26px;
-  padding: 0 9px;
-  border-radius: 2px;
-  font-family: var(--terminal-font);
-  font-size: 10px;
-  letter-spacing: .04em;
-  text-transform: uppercase;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .01em;
+  text-transform: none;
 }
 .topbar-tab:hover { background: var(--hover-bg); color: var(--ink-950); }
 .topbar-tab.is-active {
-  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
-  background: color-mix(in srgb, var(--accent-muted) 55%, transparent);
-  color: var(--accent-soft);
-  box-shadow: inset 2px 0 0 var(--accent);
+  border-color: color-mix(in srgb, var(--active-border) 32%, transparent);
+  background: var(--active-bg);
+  color: var(--active-fg);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--active-border) 22%, transparent);
 }
+.topbar-tab-icon { padding: 0 8px; }
+.topbar-tab-ico { width: 13px; height: 13px; opacity: .95; }
 .topbar-metrics { gap: 12px; font-family: var(--terminal-font); }
 .topbar-wave-group {
   position: relative;
