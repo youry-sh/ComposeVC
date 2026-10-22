@@ -177,7 +177,6 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
 }) => {
   const [panelMode, setPanelMode] = useState<PanelMode>("create");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [name, setName] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [runtime, setRuntime] = useState("node");
@@ -210,7 +209,6 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
     if (selectedId && !tools.some((t) => t.id === selectedId)) {
       setSelectedId(null);
       setPanelMode("create");
-      setName("");
       setTitle("");
       setDescription("");
       setRuntime("node");
@@ -222,7 +220,6 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
   }, [tools, selectedId]);
 
   const resetCreateForm = () => {
-    setName("");
     setTitle("");
     setDescription("");
     setRuntime("node");
@@ -241,7 +238,6 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
   const openEdit = async (tool: CustomTool) => {
     setPanelMode("edit");
     setSelectedId(tool.id);
-    setName(tool.name);
     setTitle(tool.title || "");
     setDescription(tool.description || "");
     const rt =
