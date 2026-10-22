@@ -154,6 +154,24 @@ function chromeUserAgent(): string {
   return ua.replace(/\s?(Electron|ComposeVC)\/[^\s]+/gi, "").replace(/\s{2,}/g, " ").trim();
 }
 
+/** Short, plain-language reason for the common Chromium load error codes. */
+function describeLoadError(code?: number, desc?: string): string {
+  switch (code) {
+    case -102:
+      return "соединение отклонено — сервер не запущен или порт неверный";
+    case -105:
+      return "не удалось разрешить адрес";
+    case -106:
+      return "нет подключения к интернету";
+    case -109:
+      return "адрес недоступен";
+    case -118:
+      return "таймаут соединения";
+    default:
+      return desc || `ошибка загрузки (${code ?? "?"})`;
+  }
+}
+
 const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({
   chatKey,
   fallbackChatKey,
@@ -413,9 +431,10 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({
       // -3 is ABORTED — a redirect or a cancelled load, not a real failure.
       if (detail.isMainFrame === false || detail.errorCode === -3) return;
       setLoading(false);
-      const message = detail.errorDescription || `Load failed (${detail.errorCode ?? "?"})`;
-      setError(message);
-      appendLog("error", `Failed to load ${detail.validatedURL || url || ""}: ${message}`, "navigation");
+      const reason = describeLoadError(detail.errorCode, detail.errorDescription);
+      const failedUrl = detail.validatedURL || url || "";
+      setError(failedUrl ? `Не удалось открыть ${failedUrl} — ${reason}` : `Не удалось открыть страницу — ${reason}`);
+      appendLog("error", `Failed to load ${failedUrl}: ${detail.errorDescription || detail.errorCode ?? "?"}`, "navigation");
     };
     const onConsole = (event: Event) => {
       const detail = event as Event & {
