@@ -121,27 +121,29 @@ const DocsWorkspace: React.FC = () => {
           ) : null}
         </label>
 
-        <div className="docs-section-list">
-          {loading && !sections.length ? (
-            <div className="docs-list-empty">Loading documentation…</div>
-          ) : !filtered.length ? (
-            <div className="docs-list-empty">{search ? "No matching sections" : "No sections yet"}</div>
-          ) : (
-            filtered.map((section) => (
-              <button
-                type="button"
-                key={section.id}
-                className={`docs-section-card${selectedId === section.id ? " is-active" : ""}`}
-                onClick={() => void openSection(section.id)}
-              >
-                <span className="docs-section-title">{section.title}</span>
-                {section.summary ? (
-                  <span className="docs-section-summary">{section.summary}</span>
-                ) : null}
-              </button>
-            ))
-          )}
-        </div>
+        <ChatMonoScroll className="docs-section-scroll">
+          <div className="docs-section-list">
+            {loading && !sections.length ? (
+              <div className="docs-list-empty">Loading documentation…</div>
+            ) : !filtered.length ? (
+              <div className="docs-list-empty">{search ? "No matching sections" : "No sections yet"}</div>
+            ) : (
+              filtered.map((section) => (
+                <button
+                  type="button"
+                  key={section.id}
+                  className={`docs-section-card${selectedId === section.id ? " is-active" : ""}`}
+                  onClick={() => void openSection(section.id)}
+                >
+                  <span className="docs-section-title">{section.title}</span>
+                  {section.summary ? (
+                    <span className="docs-section-summary">{section.summary}</span>
+                  ) : null}
+                </button>
+              ))
+            )}
+          </div>
+        </ChatMonoScroll>
       </aside>
 
       <main className="docs-main">
