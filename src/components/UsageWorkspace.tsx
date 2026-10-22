@@ -273,7 +273,7 @@ const UsageWorkspace: React.FC = () => {
             />
             <KpiCard
               label="Lines changed"
-              value={formatCount(linesNet)}
+              value={formatSigned(linesNet)}
               hint={`+${formatCount(counters?.linesAdded)} / −${formatCount(counters?.linesRemoved)}`}
               icon={<GitCommitHorizontal className="w-3.5 h-3.5" />}
               accent="var(--accent-2)"
@@ -403,7 +403,7 @@ const UsageWorkspace: React.FC = () => {
                 </div>
                 <div className="usage-detail-row">
                   <span className="usage-detail-key">Net lines</span>
-                  <span className="usage-detail-val">{formatCount(linesNet)}</span>
+                  <span className="usage-detail-val">{formatSigned(linesNet)}</span>
                 </div>
                 <div className="usage-detail-row">
                   <span className="usage-detail-key">Terminals opened</span>
