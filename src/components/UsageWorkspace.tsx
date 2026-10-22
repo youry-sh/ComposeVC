@@ -2,9 +2,12 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   Activity,
   BarChart3,
+  Camera,
+  Check,
   Clock,
   FilePlus,
   GitCommitHorizontal,
+  Loader2,
   MessageSquare,
   RefreshCw,
   Terminal,
@@ -142,6 +145,38 @@ const UsageWorkspace: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [lastSync, setLastSync] = useState<number | null>(null);
   const mountedRef = useRef(true);
+  const [shotState, setShotState] = useState<"idle" | "busy" | "ok" | "error">("idle");
+  const shotBusyRef = useRef(false);
+  const shotTimerRef = useRef<number | null>(null);
+
+  const handleScreenshot = async () => {
+    if (shotBusyRef.current) return;
+    shotBusyRef.current = true;
+    setShotState("busy");
+    try {
+      const res = await window.lopster?.captureFullScreenshot?.();
+      if (res && res.ok) {
+        setShotState("ok");
+      } else {
+        setShotState("error");
+        console.error("Screenshot failed:", res?.error);
+      }
+    } catch (e) {
+      setShotState("error");
+      console.error("Screenshot failed:", e);
+    } finally {
+      shotBusyRef.current = false;
+      if (shotTimerRef.current) window.clearTimeout(shotTimerRef.current);
+      shotTimerRef.current = window.setTimeout(() => setShotState("idle"), 1600);
+    }
+  };
+
+  useEffect(
+    () => () => {
+      if (shotTimerRef.current) window.clearTimeout(shotTimerRef.current);
+    },
+    []
+  );
 
   const refresh = useCallback(async () => {
     try {
