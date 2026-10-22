@@ -9544,6 +9544,12 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   .webengine-side { flex-basis: 240px; }
 }
 
+@media (max-width: 720px) {
+  .webengine-btn-hideable { display: none; }
+  .webengine-side { flex-basis: 210px; }
+  .webengine-bar { padding: 0 5px; gap: 2px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .webengine-spin, .webengine-live-dot { animation: none; }
 }
