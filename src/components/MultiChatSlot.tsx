@@ -1966,7 +1966,7 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
     });
   }, []);
 
-  const handleSendMessage = (content: string, images?: ChatImageAttachment[]) => {	    const trimmed = content.trim();
+  const handleSendMessage = (content: string, images?: ChatImageAttachment[], options?: { skipAutoInsert?: boolean }) => {	    const trimmed = content.trim();
 	    const imgs = images?.length ? images : undefined;
 	    if (!trimmed && !imgs?.length) return;
 	    const sid = activeSessionIdRef.current;
@@ -1974,8 +1974,7 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
 	      enqueueMessage(trimmed, sid, imgs);
 	      return;
 	    }
-	    void executeSendMessage(trimmed, { images: imgs });
-	  };
+		    void executeSendMessage(trimmed, { images: imgs, skipAutoInsert: options?.skipAutoInsert });	  };
 
   const executeSendMessage = async (
     content: string,
@@ -1984,6 +1983,7 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
       images?: ChatImageAttachment[];
       agentMode?: MainAgentMode;
       isolated?: boolean;
+      skipAutoInsert?: boolean;
     }
   ) => {
     let effectiveContent = content;
@@ -1991,7 +1991,7 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
 
     const autoInsert = autoInsertStoreRef.current;
     const enabled = autoInsert.enabled;
-    if (enabled && autoInsert && autoInsert.messages.length > 0) {
+    if (!options?.skipAutoInsert && enabled && autoInsert && autoInsert.messages.length > 0) {
       effectiveContent = [effectiveContent, ...autoInsert.messages].filter(Boolean).join("\n\n");
     }
 

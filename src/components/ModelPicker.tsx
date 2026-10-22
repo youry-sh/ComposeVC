@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Check, ChevronDown, Search, Sparkles, X } from "lucide-react";
 import { AIModel, AIProvider } from "../types";
 
