@@ -2122,7 +2122,7 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
 
     let completedSuccessfully = false;
     try {
-      // lopster — council fan-out happens in the main process.
+      // lopster — no local pre-processing; LAB-IN/FoRtani pipelines run in the main process.
       if (isViewingRunSession()) {
         setAgentStatusLabel(
           thinkingMaxRef.current
