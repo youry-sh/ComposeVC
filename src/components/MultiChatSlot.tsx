@@ -2077,13 +2077,11 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
       setRetryInfo(null);
       setAgentTodos(todos);
       const initialStatus =
-          modeAtSend === "soviet-7"
-            ? "Soviet-7 · council starting…"
-            : modeAtSend === "lab-in"
-              ? "LAB-IN · improving prompt…"
-              : modeAtSend === "fortani"
-                ? "FoRtani · LAB-IN starting…"
-                : null;
+          modeAtSend === "lab-in"
+            ? "LAB-IN · improving prompt…"
+            : modeAtSend === "fortani"
+              ? "FoRtani · LAB-IN starting…"
+              : null;
       const liveStatus = initialStatus || (thinkingMaxRef.current ? "Thinking-max" : null);
       if (liveStatus) setAgentStatusLabel(liveStatus);
       sessionLiveRef.current.set(runSessionRef.current, {
@@ -2111,13 +2109,11 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
         retryInfo: null,
         agentStatusLabel: thinkingMaxRef.current
           ? "Thinking-max"
-          : modeAtSend === "soviet-7"
-            ? "Soviet-7 · council starting…"
-            : modeAtSend === "lab-in"
-              ? "LAB-IN · improving prompt…"
-              : modeAtSend === "fortani"
-                ? "FoRtani · LAB-IN starting…"
-                : null,
+          : modeAtSend === "lab-in"
+            ? "LAB-IN · improving prompt…"
+            : modeAtSend === "fortani"
+              ? "FoRtani · LAB-IN starting…"
+              : null,
         thinkingMaxLocked: thinkingMaxRef.current,
         thinkingTokens: 0,
         compacting: false,
