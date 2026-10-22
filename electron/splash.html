@@ -16,13 +16,7 @@
       width: 100%;
       height: 100%;
     }
-    @font-face {
-      font-family: "Caveat";
-      src: url("./fonts/Caveat.ttf") format("truetype");
-      font-weight: 400 700;
-      font-style: normal;
-      font-display: block;
-    }
+    /* The ASCII banner uses the system monospace stack — no webfont required. */
   </style>
 </head>
 <body>
@@ -30,7 +24,16 @@
   <script>
     const canvas = document.getElementById("stage");
     const ctx = canvas.getContext("2d", { alpha: false });
-    const WORD = "ComposeVC";
+    // Same COMPOSEVC ASCII banner that stands in the middle of the chat.
+    const BANNER = [
+      " ██████╗ ██████╗ ███╗   ███╗██████╗  ██████╗ ███████╗███████╗██╗   ██╗ ██████╗",
+      "██╔════╝██╔═══██╗████╗ ████║██╔══██╗██╔═══██╗██╔════╝██╔════╝██║   ██║██╔════╝",
+      "██║     ██║   ██║██╔████╔██║██████╔╝██║   ██║███████╗█████╗  ██║   ██║██║     ",
+      "██║     ██║   ██║██║╚██╔╝██║██╔═══╝ ██║   ██║╚════██║██╔══╝  ╚██╗ ██╔╝██║     ",
+      "╚██████╗╚██████╔╝██║ ╚═╝ ██║██║     ╚██████╔╝███████║███████╗ ╚████╔╝ ╚██████╗",
+      " ╚═════╝ ╚═════╝ ╚═╝     ╚═╝╚═╝      ╚═════╝ ╚══════╝╚══════╝  ╚═══╝   ╚═════╝",
+    ];
+    const MONO = "'Cascadia Code', Consolas, ui-monospace, 'SFMono-Regular', Menlo, monospace";
     let finished = false;
     let started = false;
     let holdUntil = 0;
