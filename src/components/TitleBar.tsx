@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Camera, Check, Loader2, Minus, Square, X } from "lucide-react";
+import { Minus, Square, X } from "lucide-react";
 import {
   IcoMulti,
   IcoProxy,
