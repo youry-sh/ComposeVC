@@ -74,7 +74,11 @@ interface MultiIdeWorkspaceProps {
     }
   ) => Promise<void>;
   onRemoveCustomTool: (toolId: string) => Promise<void>;
-  labels: ChatLabels;
+  labels: ChatLabels & {
+    workspaces: string;
+    newWorkspace: string;
+    workspace: string;
+  };
   slots: MultiIdeSlotState[];
   onSlotsChange: (slots: MultiIdeSlotState[]) => void;
   /** Jump to the Runner workspace from the aside table. */
