@@ -440,6 +440,7 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
 
   // Create a new workspace with one fresh empty panel, then switch to it.
   const handleAddWorkspace = useCallback(() => {
+    if (slots.length >= MULTIIDE_MAX_SLOTS) return;
     const usedWs = new Set(workspaces.map((w) => w.id));
     let wsId = "";
     let n = workspaces.length + 1;
@@ -526,6 +527,7 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
               type="button"
               className="chat-rail-add"
               onClick={handleAddWorkspace}
+              disabled={stableSlots.length >= MULTIIDE_MAX_SLOTS}
               title={labels.newWorkspace || "New workspace"}
               aria-label={labels.newWorkspace || "New workspace"}
             >

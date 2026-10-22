@@ -8011,6 +8011,8 @@
   gap: 2px;
   padding: 4px;
   border-bottom: 1px solid var(--border);
+  max-height: 40vh;
+  overflow-y: auto;
 }
 .chat-workspace-item {
   position: relative;
