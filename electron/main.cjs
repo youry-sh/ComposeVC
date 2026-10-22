@@ -1,4 +1,4 @@
-const { app, BrowserWindow, clipboard, dialog, ipcMain, shell, nativeImage, session } = require("electron");
+const { app, BrowserWindow, clipboard, dialog, ipcMain, shell, nativeImage, session, webContents } = require("electron");
 // Broken GPU drivers (e.g. nouveau on Linux) can render a black window.
 // Must be set before app is ready / any window is created.
 app.disableHardwareAcceleration();
@@ -1825,6 +1825,36 @@ ipcMain.handle("webengine:probeLocalhost", async (_event, rootPath) => {
       tried: [],
       error: error instanceof Error ? error.message : String(error),
     };
+  }
+});
+
+// Capture the guest page and put it on the clipboard (image). The renderer hands
+// over the webview's guest webContents id — never a path or arbitrary JS.
+ipcMain.handle("webengine:captureScreenshot", async (_event, webContentsId) => {
+  try {
+    const id = Number(webContentsId);
+    if (!Number.isInteger(id) || id <= 0) return { ok: false, error: "bad-webcontents-id" };
+    const wc = webContents.fromId(id);
+    if (!wc || wc.isDestroyed()) return { ok: false, error: "page-not-found" };
+    const image = await wc.capturePage();
+    if (!image || image.isEmpty()) return { ok: false, error: "empty-capture" };
+    clipboard.writeImage(image);
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+// Clear the Web Engine guest partition's cache + storage, so the renderer can
+// follow with a hard (cache-bypassing) reload.
+ipcMain.handle("webengine:clearCache", async () => {
+  try {
+    const ses = session.fromPartition("persist:composevc-webengine");
+    await ses.clearCache();
+    await ses.clearStorageData();
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
   }
 });
 
