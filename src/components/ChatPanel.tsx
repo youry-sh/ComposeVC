@@ -4079,12 +4079,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   useEffect(() => {
     if (!showToolsMenu && !showAgentModeMenu && !showModelMenu) return;
     const handleClick = (event: MouseEvent) => {
-      const target = event.target as Element | null;
-      // The model picker is a full-screen portal now — clicks inside it must not
-      // count as "outside" the composer row.
-      if (target && typeof target.closest === "function" && target.closest(".model-picker-overlay")) {
-        return;
-      }
       if (toolsMenuRef.current && !toolsMenuRef.current.contains(event.target as Node)) {
         setShowToolsMenu(false);
         setShowAgentModeMenu(false);
