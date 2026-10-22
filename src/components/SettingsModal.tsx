@@ -20,7 +20,7 @@ import React, {
 } from "react";
 import { Check, ChevronDown, Cpu, Keyboard, Mail, Mouse, Palette, X } from "lucide-react";
 import { AppLanguage, languageNames, Translation } from "../i18n";
-import { ProviderConfig } from "../types";
+import { ProviderConfig, CfMailConfig } from "../types";
 import {
   DEFAULT_MOUSE_SNIPPETS,
   loadMouseSnippets,

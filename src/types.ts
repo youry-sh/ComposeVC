@@ -181,6 +181,17 @@ export interface ProviderConfig {
   aiRuntime?: AiRuntimeConfig;
 }
 
+/** CF Mail (cf_mail) tool credentials — persisted under runtime-app/data/config.json. */
+export interface CfMailConfig {
+  cfworker_api_url: string;
+  cfworker_admin_token: string;
+  cfworker_domain: string;
+  cfworker_fingerprint: string;
+  enable_prefix: boolean;
+  configured?: boolean;
+  config_path?: string;
+}
+
 export interface ProjectSearchResult {
   id: string;
   type: "file" | "content";

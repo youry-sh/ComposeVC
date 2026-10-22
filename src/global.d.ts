@@ -25,7 +25,7 @@ type SizeworkoutUpdate = {
   payload?: unknown;
 };
 
-import { AgentToolProgress, ChatExecutionRequest, ChatExecutionResponse, ChatMessage, ChatRequestMessage, ChatSession, ChatSessionPage, ChatSessionSummary, CompactChatRequest, CompactChatResponse, FileNode, KnowledgeChunk, KnowledgeChunkSummary, KnowledgeListResponse, ProblemItem, ProjectSearchResult, ProjectTask, ProviderConfig, RunnerJob, RunnerReport, RunnerReportSummary } from "./types";
+import { AgentToolProgress, CfMailConfig, ChatExecutionRequest, ChatExecutionResponse, ChatMessage, ChatRequestMessage, ChatSession, ChatSessionPage, ChatSessionSummary, CompactChatRequest, CompactChatResponse, FileNode, KnowledgeChunk, KnowledgeChunkSummary, KnowledgeListResponse, ProblemItem, ProjectSearchResult, ProjectTask, ProviderConfig, RunnerJob, RunnerReport, RunnerReportSummary } from "./types";
 
 /** Snapshot of a chat folder's repository — see electron/gitService.cjs */
 export type GitStatus =
@@ -80,16 +80,6 @@ export type StorageItem = { id: string; phone: string; name: string; path: strin
 export type GitBranch = { name: string; current: boolean };
 export type GitChangedFile = { code: string; staged: boolean; path: string };
 export type GitCommit = { hash: string; subject: string; author: string; when: string };
-
-export type CfMailConfig = {
-  cfworker_api_url: string;
-  cfworker_admin_token: string;
-  cfworker_domain: string;
-  cfworker_fingerprint: string;
-  enable_prefix: boolean;
-  configured?: boolean;
-  config_path?: string;
-};
 
 declare global {
   type LocalAgentState = {
