@@ -1017,17 +1017,51 @@ declare global {
         };
       }>;
       getSystemMetrics: () => Promise<{
-	    ok: boolean;
-	    rss?: number;
-	    heapUsed?: number;
-	    heapTotal?: number;
-	    external?: number;
-	    workingSetBytes?: number;
-	    uptimeSec?: number;
-	    totalRuntimeSec?: number;
-	    error?: string;
-		  }>;
-		};  }
+		    ok: boolean;
+		    rss?: number;
+		    heapUsed?: number;
+		    heapTotal?: number;
+		    external?: number;
+		    workingSetBytes?: number;
+		    uptimeSec?: number;
+		    totalRuntimeSec?: number;
+		    error?: string;
+			  }>;
+      usageGetSnapshot: () => Promise<{
+        ok: boolean;
+        error?: string;
+        usage: {
+          v: number;
+          createdAt: string;
+          updatedAt: string;
+          counters: {
+            filesCreated: number;
+            linesAdded: number;
+            linesRemoved: number;
+            terminalsOpened: number;
+            toolCalls: number;
+            toolErrors: number;
+            userPromptChars: number;
+            userPrompts: number;
+          };
+          tools: Array<{ name: string; calls: number; errors: number }>;
+          daily: Array<{
+            date: string;
+            toolCalls: number;
+            promptChars: number;
+            filesCreated: number;
+            linesAdded: number;
+            linesRemoved: number;
+            terminals: number;
+          }>;
+        };
+        runtime: {
+          totalRuntimeSec: number;
+          uptimeSec: number;
+          sessions: number;
+        };
+      }>;
+			};  }
 	}
 
 	export {};

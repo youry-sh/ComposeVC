@@ -12,6 +12,7 @@ import StorageModal from "./components/StorageModal";
 import KnowledgeWorkspace from "./components/KnowledgeWorkspace";
 import DocsWorkspace from "./components/DocsWorkspace";
 import WebEngineWorkspace from "./components/WebEngineWorkspace";
+import UsageWorkspace from "./components/UsageWorkspace";
 import MultiIdeWorkspace, {
   loadMultiIdeSlots,
   saveMultiIdeSlots,
@@ -26,7 +27,7 @@ import {
 import { CustomTool, ProjectSearchResult, ProviderConfig } from "./types";
 import { dispatchInsertChatInput, loadMouseSnippets, textForMouseButton } from "./utils/mouseSnippets";
 
-type Panel = "multiide" | "webengine" | "proxy" | "settings" | "customtools" | "runner" | "terminal" | "knowledge" | "docs";
+type Panel = "multiide" | "webengine" | "proxy" | "settings" | "customtools" | "runner" | "terminal" | "knowledge" | "docs" | "usage";
 
 const App: React.FC = () => {
   const [rootPath, setRootPath] = useState<string | null>(null);
@@ -48,6 +49,7 @@ const App: React.FC = () => {
       if (saved === "webengine") return "webengine";
       if (saved === "docs") return "docs";
       if (saved === "customtools") return "customtools";
+      if (saved === "usage") return "usage";
     } catch {
       /* ignore */
     }
