@@ -371,35 +371,37 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
 
   /** Drop a rail chat onto the centre. A free row is added; the third drop replaces the row under the cursor. */
   const placeSlot = useCallback((dragged: string, targetId: string | null) => {
-    if (!slots.some((s) => s.id === dragged)) return;
-    setOpenIds((prev) => {
-      const from = prev.indexOf(dragged);
-      if (targetId && from >= 0 && dragged !== targetId && prev.includes(targetId)) {
-        const next = prev.slice();
-        const to = next.indexOf(targetId);
-        const held = next[from];
-        next[from] = next[to];
-        next[to] = held;
-        return next;
-      }
-      if (from >= 0) return prev;
-      if (!targetId || !prev.includes(targetId)) {
-        return prev.length >= MAX_ROWS ? prev : [...prev, dragged];
-      }
-      if (prev.length < MAX_ROWS) {
-        const next = prev.slice();
-        next.splice(prev.indexOf(targetId) + 1, 0, dragged);
-        return next;
-      }
-      return prev.map((id) => (id === targetId ? dragged : id));
-    });
-    setActiveId(dragged);
+    if (!activeWorkspaceSlots.some((s) => s.id === dragged)) return;
+    const prev = openIds;
+    let nextOpenIds: string[] = prev;
+    const from = prev.indexOf(dragged);
+    if (targetId && from >= 0 && dragged !== targetId && prev.includes(targetId)) {
+      const next = prev.slice();
+      const to = next.indexOf(targetId);
+      const held = next[from];
+      next[from] = next[to];
+      next[to] = held;
+      nextOpenIds = next;
+    } else if (from >= 0) {
+      nextOpenIds = prev;
+    } else if (!targetId || !prev.includes(targetId)) {
+      nextOpenIds = prev.length >= MAX_ROWS ? prev : [...prev, dragged];
+    } else if (prev.length < MAX_ROWS) {
+      const next = prev.slice();
+      next.splice(prev.indexOf(targetId) + 1, 0, dragged);
+      nextOpenIds = next;
+    } else {
+      nextOpenIds = prev.map((id) => (id === targetId ? dragged : id));
+    }
+    patchActiveWorkspace({ activeId: dragged, openIds: nextOpenIds });
     setDropOn(null);
-  }, [slots]);
+  }, [activeWorkspaceSlots, openIds, patchActiveWorkspace]);
 
   const unpinSlot = useCallback((id: string) => {
-    setOpenIds((prev) => (prev.length <= 1 ? prev : prev.filter((item) => item !== id)));
-  }, []);
+    const prev = openIds;
+    if (prev.length <= 1) return;
+    patchActiveWorkspace({ openIds: prev.filter((item) => item !== id) });
+  }, [openIds, patchActiveWorkspace]);
 
   const handlePersist = useCallback(
     (next: MultiSlotPersist) => {
