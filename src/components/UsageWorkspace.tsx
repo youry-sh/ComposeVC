@@ -182,15 +182,36 @@ const UsageWorkspace: React.FC = () => {
   const toolsUsed = useMemo(() => data?.usage?.tools?.length ?? 0, [data]);
 
   const daily = useMemo(() => {
-    const all = data?.usage?.daily ?? [];
-    return all.slice(-DAYS_IN_CHART);
+    const byDate = new Map((data?.usage?.daily ?? []).map((d) => [d.date, d]));
+    const out: UsageDailyRow[] = [];
+    const today = new Date();
+    for (let i = DAYS_IN_CHART - 1; i >= 0; i -= 1) {
+      const dt = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
+      const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+      out.push(
+        byDate.get(key) ?? {
+          date: key,
+          toolCalls: 0,
+          promptChars: 0,
+          filesCreated: 0,
+          linesAdded: 0,
+          linesRemoved: 0,
+          terminals: 0,
+        }
+      );
+    }
+    return out;
   }, [data]);
 
-  const dailyMax = useMemo(() => {
+  const toolMax = useMemo(() => {
     let m = 1;
-    for (const d of daily) {
-      m = Math.max(m, d.toolCalls, d.promptChars, d.filesCreated, d.linesAdded, d.linesRemoved, d.terminals);
-    }
+    for (const d of daily) m = Math.max(m, d.toolCalls);
+    return m;
+  }, [daily]);
+
+  const promptMax = useMemo(() => {
+    let m = 1;
+    for (const d of daily) m = Math.max(m, d.promptChars);
     return m;
   }, [daily]);
 
@@ -437,7 +458,7 @@ const UsageWorkspace: React.FC = () => {
                       <span className="flex-1 truncate font-mono" title={tool.name}>{tool.name}</span>
                       <span className="w-16 text-right font-mono tabular-nums">{formatCount(tool.calls)}</span>
                       <span className="w-14 text-right font-mono tabular-nums" style={{ color: tool.errors ? "var(--warn)" : "var(--text-muted)" }}>{tool.errors || "—"}</span>
-                      <span className="w-14 text-right font-mono tabular-nums" style={{ color: "var(--text-muted)" }}>{sharePct(tool.calls, totalCalls)}%</span>
+                      <span className="w-14 text-right font-mono tabular-nums" style={{ color: "var(--text-muted)" }}>{truePct(tool.calls, totalCalls)}%</span>
                     </div>
                   ))}
                 </div>
