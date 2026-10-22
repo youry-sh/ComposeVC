@@ -579,6 +579,11 @@ const App: React.FC = () => {
               <DocsWorkspace />
             </div>
           )}
+          {activePanel === "usage" && (
+            <div className="flex-1 min-w-0 min-h-0 flex overflow-hidden">
+              <UsageWorkspace />
+            </div>
+          )}
         </div>
       </div>
 
