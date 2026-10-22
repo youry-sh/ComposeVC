@@ -564,7 +564,7 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({
         </button>
         <button
           type="button"
-          className={`webengine-btn ${devtoolsOpen ? "is-active" : ""}`}
+          className={`webengine-btn webengine-btn-hideable ${devtoolsOpen ? "is-active" : ""}`}
           title="F12 — DevTools"
           aria-label="DevTools"
           onClick={toggleDevTools}
@@ -583,7 +583,7 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({
         >
           <TerminalSquare className="w-3.5 h-3.5" />
         </button>
-        <button type="button" className="webengine-btn" title="Открыть во внешнем браузере" aria-label="Открыть снаружи"
+        <button type="button" className="webengine-btn webengine-btn-hideable" title="Открыть во внешнем браузере" aria-label="Открыть снаружи"
           onClick={openExternal} disabled={!url}>
           <ExternalLink className="w-3.5 h-3.5" />
         </button>
