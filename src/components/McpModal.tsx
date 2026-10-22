@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Cable, Check, ChevronLeft, ChevronRight, Download, ExternalLink, Search, Trash2, X } from "lucide-react";
 import { McpServer } from "../types";
+import ChatMonoScroll from "./ChatMonoScroll";
 
 interface Props {
   open: boolean;
@@ -211,10 +212,10 @@ const McpModal: React.FC<Props> = ({ open, onClose }) => {
         )}
 
         <div className="flex min-h-0 flex-1">
-          <div className="min-w-0 flex-1 overflow-y-auto p-3">
-            {tab === "browse" && loading && <div className="p-8 text-center font-mono text-[10px] text-ink-500">LOADING REGISTRY…</div>}
+          <ChatMonoScroll className="min-w-0 flex-1 mcp-market-list">
+            {tab === "browse" && loading && <LoadingGrid />}
             {tab === "browse" && !loading && !cards.length && <div className="p-8 text-center font-mono text-[10px] text-ink-500">NO SERVERS ON THIS PAGE</div>}
-            {tab === "browse" && (
+            {tab === "browse" && !loading && (
               <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
                 {cards.map((card) => {
                   const owned = installedByRegistry.get(card.name);
@@ -259,7 +260,7 @@ const McpModal: React.FC<Props> = ({ open, onClose }) => {
                 <span className="shrink-0 text-[10px] text-ink-500">{server.tools?.length || 0} tools</span>
               </button>
             ))}
-          </div>
+          </ChatMonoScroll>
 
           <aside className="flex w-[300px] shrink-0 flex-col border-l border-ink-200" style={{ background: "var(--sidebar-tint)" }}>
             {tab === "browse" && selectedCard && (
