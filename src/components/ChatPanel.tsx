@@ -5015,6 +5015,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
               </div>
             )}
         </div>
+        <WorkTimer />
         </div>
       </div>
 
