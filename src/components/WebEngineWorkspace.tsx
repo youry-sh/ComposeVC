@@ -220,23 +220,48 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({
     setMountUrl(null);
     setTitle("");
     setLoading(false);
+    setProbing(false);
     setDevtoolsOpen(false);
     inspectorOnRef.current = false;
     setInspectorOn(false);
 
+    const persist = (u: string) => {
+      void window.lopster?.webEngineSetBinding(chatKey, u).catch(() => undefined);
+      if (fallbackChatKey && fallbackChatKey !== chatKey) {
+        void window.lopster?.webEngineSetBinding(fallbackChatKey, u).catch(() => undefined);
+      }
+    };
+
     (async () => {
       let targetUrl: string | null = null;
+      let source: "primary" | "fallback" | "probe" = "primary";
       try {
         const binding = await window.lopster?.webEngineGetBinding(chatKey);
         if (!cancelled && binding && typeof binding.url === "string") targetUrl = binding.url;
       } catch {
         /* binding read is best-effort */
       }
+      // A draft chat binds under `folder:`; once it has a session id the key is
+      // `session:`. Try the folder key as a fallback so the URL is not lost.
+      if (!cancelled && !targetUrl && fallbackChatKey && fallbackChatKey !== chatKey) {
+        try {
+          const binding = await window.lopster?.webEngineGetBinding(fallbackChatKey);
+          if (!cancelled && binding && typeof binding.url === "string") {
+            targetUrl = binding.url;
+            source = "fallback";
+          }
+        } catch {
+          /* binding read is best-effort */
+        }
+      }
       if (!cancelled && !targetUrl) {
         setProbing(true);
         try {
           const res = await window.lopster?.webEngineProbeLocalhost(rootPath);
-          if (!cancelled && res?.ok && typeof res.url === "string") targetUrl = res.url;
+          if (!cancelled && res?.ok && typeof res.url === "string") {
+            targetUrl = res.url;
+            source = "probe";
+          }
         } catch {
           /* probe is best-effort */
         }
@@ -247,6 +272,8 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({
         setDraft(targetUrl);
         setUrl(targetUrl);
         setMountUrl(targetUrl);
+        // Remember the auto-found / migrated URL so the chat reopens the same site.
+        if (source !== "primary") persist(targetUrl);
       } else {
         setMountUrl(null);
         setUrl(null);
@@ -258,7 +285,7 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({
       cancelled = true;
       cancelledRef.current = true;
     };
-  }, [chatKey, rootPath]);
+  }, [chatKey, fallbackChatKey, rootPath]);
 
   const go = useCallback(
     (raw: string) => {
@@ -273,6 +300,9 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({
       setSelectedEl(null);
       setHoverEl(null);
       void window.lopster?.webEngineSetBinding(chatKey, next).catch(() => undefined);
+      if (fallbackChatKey && fallbackChatKey !== chatKey) {
+        void window.lopster?.webEngineSetBinding(fallbackChatKey, next).catch(() => undefined);
+      }
       const view = viewRef.current;
       if (view && typeof view.loadURL === "function") {
         void view.loadURL(next).catch(() => undefined);
@@ -280,7 +310,7 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({
         setMountUrl(next);
       }
     },
-    [chatKey, showToast]
+    [chatKey, fallbackChatKey, showToast]
   );
 
   const copyUrl = useCallback(async () => {
