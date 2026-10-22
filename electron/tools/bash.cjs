@@ -422,6 +422,27 @@ module.exports = {
       throw buildBlacklistError(blacklistHit, command);
     }
 
+    if (input.background) {
+      const sessionId = context?.sessionId || context?.chatId || null;
+      let task;
+      try {
+        task = backgroundTasks.launch({ command, cwd, sessionId });
+      } catch (error) {
+        throw Object.assign(
+          new Error(`Background launch failed: ${error?.message || String(error)}`),
+          { name: "BackgroundError" }
+        );
+      }
+      return {
+        command,
+        cwd,
+        background: true,
+        ...task,
+        note:
+          "Started in the background and detached from this turn — it keeps running while you work and survives an app restart. Stop it with the per-chat composer badge (X).",
+      };
+    }
+
     const execOpts = { cwd, timeout, maxBuffer: 10 * 1024 * 1024, encoding: "utf8" };
 
     return new Promise((resolve, reject) => {
