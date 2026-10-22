@@ -440,14 +440,44 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
       seqRef.current += 1;
       id = `multi-${slots.length + seqRef.current}`;
     } while (used.has(id));
-    onSlotsChange([...slots, emptySlot(id)]);
-    setActiveId(id);
-  }, [onSlotsChange, slots]);
+    onSlotsChange([...slots, emptySlot(id, activeWorkspaceId)]);
+    patchActiveWorkspace({ activeId: id });
+  }, [onSlotsChange, slots, activeWorkspaceId, patchActiveWorkspace]);
+
+  // Create a new workspace with one fresh empty panel, then switch to it.
+  const handleAddWorkspace = useCallback(() => {
+    const usedWs = new Set(workspaces.map((w) => w.id));
+    let wsId = "";
+    let n = workspaces.length + 1;
+    do {
+      wsId = `ws-${n}`;
+      n += 1;
+    } while (usedWs.has(wsId));
+    const usedSlots = new Set(slots.map((s) => s.id));
+    let slotId = "";
+    let m = slots.length + 1;
+    do {
+      slotId = `multi-${m}`;
+      m += 1;
+    } while (usedSlots.has(slotId));
+    const slot = emptySlot(slotId, wsId);
+    onSlotsChange([...slots, slot]);
+    setWorkspaceState((prev) => ({
+      activeWorkspaceId: wsId,
+      workspaces: [...prev.workspaces, { id: wsId, activeId: slotId, openIds: [slotId] }],
+    }));
+  }, [workspaces, slots, onSlotsChange]);
+
+  const switchWorkspace = useCallback((id: string) => {
+    setWorkspaceState((prev) =>
+      prev.activeWorkspaceId === id ? prev : { ...prev, activeWorkspaceId: id }
+    );
+  }, []);
 
   const handleCloseSlot = useCallback(
     (slotId: string) => {
-      if (slots.length <= 1) return;
-      const index = slots.findIndex((s) => s.id === slotId);
+      if (activeWorkspaceSlots.length <= 1) return;
+      const remaining = activeWorkspaceSlots.filter((s) => s.id !== slotId);
       const next = slots.filter((s) => s.id !== slotId);
       onSlotsChange(next);
       setStatusBySlot((prev) => {
@@ -456,26 +486,29 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
         delete copy[slotId];
         return copy;
       });
-      if (slotId === activeId) {
-        const fallback = next[Math.max(0, index - 1)] || next[0];
-        if (fallback) setActiveId(fallback.id);
-      }
-      setOpenIds((prev) => prev.filter((id) => id !== slotId));
+      const nextOpenIds = openIds.filter((id) => id !== slotId);
+      const nextActiveId = slotId === activeId ? remaining[0]?.id ?? null : activeId;
+      patchActiveWorkspace({
+        activeId: nextActiveId,
+        openIds: nextOpenIds.length
+          ? nextOpenIds
+          : [remaining[0]?.id].filter((id): id is string => Boolean(id)),
+      });
     },
-    [activeId, onSlotsChange, slots]
+    [activeWorkspaceSlots, slots, onSlotsChange, openIds, activeId, patchActiveWorkspace]
   );
 
   const stableSlots = useMemo(() => slots.slice(0, MULTIIDE_MAX_SLOTS), [slots]);
-  const activeSlotId = stableSlots.some((s) => s.id === activeId)
+  const activeSlotId = activeWorkspaceSlots.some((s) => s.id === activeId)
     ? activeId
-    : stableSlots[0]?.id;
+    : activeWorkspaceSlots[0]?.id;
 
   // Chat history is stored per project folder, so two panels on the same folder
   // report the SAME chats — count each folder once instead of double-counting.
   const { totalChats, runningPanels } = useMemo(() => {
     const byFolder = new Map<string, number>();
     let running = 0;
-    for (const slot of stableSlots) {
+    for (const slot of activeWorkspaceSlots) {
       const status = statusBySlot[slot.id];
       if (!status) continue;
       if (status.running) running += 1;
@@ -485,7 +518,7 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
     let chats = 0;
     for (const count of byFolder.values()) chats += count;
     return { totalChats: chats, runningPanels: running };
-  }, [stableSlots, statusBySlot]);
+  }, [activeWorkspaceSlots, statusBySlot]);
 
   return (
     <div className="chat-shell theme-workspace flex-1 min-w-0 min-h-0 overflow-hidden">
