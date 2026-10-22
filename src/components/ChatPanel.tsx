@@ -2841,22 +2841,23 @@ const ChatTelegramModal: React.FC<{
               <button
                 type="button"
                 onClick={() => setDraft((d) => ({ ...d, enabled: !d.enabled }))}
-                className="group relative py-1.5 text-left outline-none"
+                className="flex w-full items-center justify-between gap-3 py-1.5 text-left outline-none"
               >
                 <span
-                  className={`flex items-center gap-2 text-[12px] font-medium ${
+                  className={`text-[12px] font-medium ${
                     draft.enabled ? "text-ink-950" : "text-ink-700"
                   }`}
                 >
-                  <span
-                    className={`h-1.5 w-1.5 rounded-full ${
-                      draft.enabled ? "bg-ink-950" : "bg-ink-500"
-                    }`}
-                  />
                   {draft.enabled ? "Enabled" : "Disabled"}
-                  <Check
-                    className={`h-3 w-3 text-ink-800 transition-all ${
-                      draft.enabled ? "opacity-100 scale-100" : "opacity-0 scale-75"
+                </span>
+                <span
+                  className={`relative h-5 w-9 shrink-0 rounded-full border transition-colors ${
+                    draft.enabled ? "theme-toggle-on" : "border-ink-300 bg-ink-300"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-[3px] h-3.5 w-3.5 rounded-full theme-toggle-thumb shadow-sm transition-transform ${
+                      draft.enabled ? "translate-x-4" : "translate-x-0.5"
                     }`}
                   />
                 </span>
@@ -2928,7 +2929,7 @@ const ChatTelegramModal: React.FC<{
           <button
             type="button"
             onClick={onClose}
-            className="h-7 px-3 rounded-md text-[11px] font-medium text-ink-600 hover:bg-ink-100 hover:text-ink-950 transition-colors"
+            className="ui-btn-ghost"
           >
             Cancel
           </button>
@@ -2936,7 +2937,7 @@ const ChatTelegramModal: React.FC<{
             type="button"
             disabled={loading || saving}
             onClick={() => void handleSave()}
-            className="h-7 px-3 rounded-md text-[11px] font-medium text-ink-950 bg-ink-100 hover:bg-ink-200 disabled:opacity-50 transition-colors"
+            className="ui-btn-primary"
           >
             {saving ? "Saving…" : "Save"}
           </button>
