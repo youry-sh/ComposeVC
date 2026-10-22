@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { BookOpen, FileText, Search, X } from "lucide-react";
 import MarkdownContent from "./markdown/MarkdownContent";
+import ChatMonoScroll from "./ChatMonoScroll";
 
 /** Section metadata — no body — returned by docs:list. */
 type DocsSectionMeta = {

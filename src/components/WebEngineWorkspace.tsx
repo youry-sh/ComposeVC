@@ -491,12 +491,14 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({
     };
     const onFinish = () => {
       setLoading(false);
+      void view.insertCSS(GUEST_SCROLLBAR_CSS).catch(() => undefined);
       if (inspectorOnRef.current) {
         runInGuest(INSPECTOR_INSTALL);
         runInGuest(INSPECTOR_ON);
       }
     };
     const onDomReady = () => {
+      void view.insertCSS(GUEST_SCROLLBAR_CSS).catch(() => undefined);
       if (inspectorOnRef.current) {
         runInGuest(INSPECTOR_INSTALL);
         runInGuest(INSPECTOR_ON);
