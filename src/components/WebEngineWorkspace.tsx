@@ -435,6 +435,81 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({
     void window.lopster?.openExternal?.(current);
   }, [url, draft]);
 
+  // ── New toolbar tools ──────────────────────────────────────────────────────
+
+  const cycleDevice = useCallback(() => {
+    setDeviceWidth((prev) => nextDeviceWidth(prev));
+  }, []);
+
+  const applyZoom = useCallback((factor: number) => {
+    const next = clampZoomFactor(factor);
+    zoomRef.current = next;
+    setZoomFactorState(next);
+    const view = viewRef.current;
+    if (view && typeof view.setZoomFactor === "function") {
+      try {
+        view.setZoomFactor(next);
+      } catch {
+        /* zoom not available yet */
+      }
+    }
+  }, []);
+
+  const zoomIn = useCallback(() => applyZoom(zoomRef.current * 1.25), [applyZoom]);
+  const zoomOut = useCallback(() => applyZoom(zoomRef.current / 1.25), [applyZoom]);
+  const zoomReset = useCallback(() => applyZoom(1), [applyZoom]);
+
+  const captureScreenshot = useCallback(async () => {
+    const view = viewRef.current;
+    if (!view || typeof view.getWebContentsId !== "function") {
+      showToast("Скриншот недоступен");
+      return;
+    }
+    try {
+      const id = view.getWebContentsId();
+      const res = await window.lopster?.webEngineCaptureScreenshot(id);
+      showToast(res?.ok ? "Скриншот скопирован" : "Не удалось сделать скриншот");
+    } catch {
+      showToast("Не удалось сделать скриншот");
+    }
+  }, [showToast]);
+
+  const clearCache = useCallback(async () => {
+    const view = viewRef.current;
+    if (!view) return;
+    try {
+      const res = await window.lopster?.webEngineClearCache();
+      if (res?.ok) {
+        view.reloadIgnoringCache?.();
+        showToast("Кэш очищен — перезагрузка");
+      } else {
+        showToast("Не удалось очистить кэш");
+      }
+    } catch {
+      showToast("Не удалось очистить кэш");
+    }
+  }, [showToast]);
+
+  const copyErrors = useCallback(async () => {
+    const errors = logs.filter((l) => l.level === "error");
+    if (!errors.length) {
+      showToast("Ошибок в консоли нет");
+      return;
+    }
+    const text = errors.map((l) => `[ERROR]${l.source ? ` ${l.source}` : ""} ${l.text}`).join("\n");
+    const ok = await copyText(text);
+    showToast(ok ? "Ошибки скопированы" : "Не удалось скопировать");
+  }, [logs, showToast]);
+
+  const copyElementHtml = useCallback(async () => {
+    if (!selectedEl) {
+      showToast("Сначала выберите элемент (⦿)");
+      return;
+    }
+    const ok = await copyText(selectedEl.html || selectedEl.sel);
+    showToast(ok ? "HTML скопирован" : "Не удалось скопировать");
+  }, [selectedEl, showToast]);
+
   // Wire the guest's lifecycle to the toolbar + console + inspector.
   useEffect(() => {
     const view = viewRef.current;
@@ -509,6 +584,13 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({
     const onFinish = () => {
       setLoading(false);
       void view.insertCSS(GUEST_SCROLLBAR_CSS).catch(() => undefined);
+      if (typeof view.setZoomFactor === "function") {
+        try {
+          view.setZoomFactor(zoomRef.current);
+        } catch {
+          /* ignore */
+        }
+      }
       if (inspectorOnRef.current) {
         runInGuest(INSPECTOR_INSTALL);
         runInGuest(INSPECTOR_ON);
@@ -550,6 +632,7 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({
   };
 
   const selectedInfo = selectedEl || hoverEl;
+  const hasErrors = logs.some((l) => l.level === "error");
 
   return (
     <div className="webengine-root">
