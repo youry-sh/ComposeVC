@@ -167,6 +167,25 @@ declare global {
       onOpenChatSwitcher: (callback: () => void) => () => void;
       onFoldWebDock: (callback: () => void) => () => void;
       onStorageOpen: (callback: () => void) => () => void;
+      onShellHotkey: (
+        callback: (
+          payload:
+            | {
+                type: "panel";
+                panel:
+                  | "multiide"
+                  | "webengine"
+                  | "proxy"
+                  | "runner"
+                  | "terminal"
+                  | "customtools"
+                  | "knowledge"
+                  | "docs"
+                  | "usage";
+              }
+            | { type: "toggle"; target: "search" | "settings" }
+        ) => void
+      ) => () => void;
       readProviderConfig: () => Promise<ProviderConfig>;
       writeProviderConfig: (config: ProviderConfig) => Promise<ProviderConfig>;
       listRunners: () => Promise<{ ok: boolean; runners?: RunnerJob[]; error?: string }>;

@@ -26,27 +26,8 @@ import {
 } from "./i18n";
 import { CustomTool, ProjectSearchResult, ProviderConfig } from "./types";
 import { dispatchInsertChatInput, loadMouseSnippets, textForMouseButton } from "./utils/mouseSnippets";
-import { HotkeyDefinition, matchesHotkey } from "./utils/hotkeys";
 
 type Panel = "multiide" | "webengine" | "proxy" | "settings" | "customtools" | "runner" | "terminal" | "knowledge" | "docs" | "usage";
-
-/** Workspace tabs bound to Ctrl/Cmd+1…9. Matched by physical KeyboardEvent.code,
- *  so the digits keep working on Russian/Ukrainian and other keyboard layouts. */
-const PANEL_HOTKEYS: Array<{ code: string; panel: Panel }> = [
-  { code: "Digit1", panel: "multiide" },
-  { code: "Digit2", panel: "webengine" },
-  { code: "Digit3", panel: "proxy" },
-  { code: "Digit4", panel: "runner" },
-  { code: "Digit5", panel: "terminal" },
-  { code: "Digit6", panel: "customtools" },
-  { code: "Digit7", panel: "knowledge" },
-  { code: "Digit8", panel: "docs" },
-  { code: "Digit9", panel: "usage" },
-];
-
-const SEARCH_HOTKEY: HotkeyDefinition = { code: "KeyP", modifiers: ["mod"] };
-const SETTINGS_HOTKEY: HotkeyDefinition = { code: "Comma", modifiers: ["mod"] };
-const TERMINAL_HOTKEY: HotkeyDefinition = { code: "Backquote", modifiers: ["mod"] };
 
 const App: React.FC = () => {
   const [rootPath, setRootPath] = useState<string | null>(null);
@@ -359,45 +340,27 @@ const App: React.FC = () => {
     setActivePanel(panel);
   };
 
-  // Keep the latest handler reachable from the stable global keydown listener.
+  // Keep the latest handler reachable from the stable shell-hotkey subscription.
   const handlePanelSelectRef = useRef(handlePanelSelect);
   useEffect(() => {
     handlePanelSelectRef.current = handlePanelSelect;
   }, [handlePanelSelect]);
 
-  // Global workspace hotkeys — Ctrl/Cmd+1…9 (tabs), Ctrl+P (search),
-  // Ctrl+, (settings), Ctrl+` (terminal). Skipped when the terminal/editor has
-  // already handled the key, and never fired for AltGr (Ctrl+Alt) typing.
+  // Workspace hotkeys arrive from the main process (Ctrl/Cmd+1…9, Ctrl+P search,
+  // Ctrl+, settings, Ctrl+` terminal), so they fire even while the terminal or a
+  // webview guest owns the keyboard.
   useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.defaultPrevented) return;
-      if (event.altKey) return;
-
-      for (const { code, panel } of PANEL_HOTKEYS) {
-        if (matchesHotkey(event, { code, modifiers: ["mod"] })) {
-          event.preventDefault();
-          handlePanelSelectRef.current(panel);
-          return;
-        }
-      }
-      if (matchesHotkey(event, TERMINAL_HOTKEY)) {
-        event.preventDefault();
-        handlePanelSelectRef.current("terminal");
-        return;
-      }
-      if (matchesHotkey(event, SEARCH_HOTKEY)) {
-        event.preventDefault();
+    const unsubscribe = window.lopster?.onShellHotkey?.((payload) => {
+      if (!payload) return;
+      if (payload.type === "panel") {
+        handlePanelSelectRef.current(payload.panel);
+      } else if (payload.type === "toggle" && payload.target === "search") {
         setSearchOpen((open) => !open);
-        return;
-      }
-      if (matchesHotkey(event, SETTINGS_HOTKEY)) {
-        event.preventDefault();
+      } else if (payload.type === "toggle" && payload.target === "settings") {
         setSettingsOpen((open) => !open);
-        return;
       }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    });
+    return () => unsubscribe?.();
   }, []);
 
   // First MultiIDE slot folder (if any) drives shared shell project context.
