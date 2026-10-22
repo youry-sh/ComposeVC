@@ -13,6 +13,7 @@ import {
   IcoDocs,
   IcoUsage,
   IcoBlinds,
+  IcoInspector,
 } from "./topIcons";
 import {
   CONTEXT_METRICS_EVENT,
@@ -28,6 +29,8 @@ interface TitleBarProps {
   active: Panel;
   onSelect: (panel: Panel) => void;
   onOpenProviders?: () => void;
+  inspectorActive?: boolean;
+  onToggleInspector?: () => void;
   labels?: {
     multiIde?: string;
     proxy?: string;
@@ -61,6 +64,8 @@ const TitleBar: React.FC<TitleBarProps> = ({
   active,
   onSelect,
   onOpenProviders,
+  inspectorActive,
+  onToggleInspector,
   labels,
 }) => {
   const [memoryLabel, setMemoryLabel] = useState("—");
@@ -204,6 +209,15 @@ const TitleBar: React.FC<TitleBarProps> = ({
           className={`topbar-tab topbar-tab-icon ${active === "settings" ? "is-active" : ""}`}
         >
           <IcoSettings className="topbar-tab-ico" />
+        </button>
+        <button
+          type="button"
+          title="Инспектор элементов (Inspect DOM / React)"
+          aria-pressed={inspectorActive === true}
+          onClick={onToggleInspector}
+          className={`topbar-tab topbar-tab-icon ${inspectorActive ? "is-active" : ""}`}
+        >
+          <IcoInspector className="topbar-tab-ico" />
         </button>
       </nav>
 
