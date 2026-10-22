@@ -43,7 +43,24 @@ type NavTab = "ai" | "shortcuts" | "appearance";
 
 function keyboardShortcuts(labels: Translation): Array<{ keys: string; action: string }> {
   return [
+    { keys: "Ctrl+1", action: labels.shortcutAgent },
+    { keys: "Ctrl+2", action: labels.shortcutWebEngine },
+    { keys: "Ctrl+3", action: labels.shortcutProxy },
+    { keys: "Ctrl+4", action: labels.shortcutRunner },
+    { keys: "Ctrl+5", action: labels.shortcutTerminal },
+    { keys: "Ctrl+6", action: labels.shortcutCustomTools },
+    { keys: "Ctrl+7", action: labels.shortcutKnowledge },
+    { keys: "Ctrl+8", action: labels.shortcutDocs },
+    { keys: "Ctrl+9", action: labels.shortcutUsage },
+    { keys: "Ctrl+`", action: labels.shortcutTerminal },
+    { keys: "Ctrl+P", action: labels.shortcutSearch },
+    { keys: "Ctrl+,", action: labels.shortcutOpenSettings },
     { keys: "Ctrl+L", action: labels.shortcutFocusChat },
+    { keys: "Ctrl+H", action: labels.shortcutChatSwitcher },
+    { keys: "Ctrl+T", action: labels.shortcutStorage },
+    { keys: "Ctrl+R", action: labels.shortcutRunnerSend },
+    { keys: "Ctrl+S", action: labels.shortcutSave },
+    { keys: "Ctrl+Shift+W", action: labels.shortcutFoldDock },
     { keys: "Mouse ◀", action: labels.shortcutSnippet1 },
     { keys: "Mouse ▶", action: labels.shortcutSnippet2 },
   ];
