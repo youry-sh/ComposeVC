@@ -361,6 +361,32 @@ function specsFromRaw(raw: unknown): Array<SpecField & { key: string }> {
   return specs;
 }
 
+function LoadingGrid() {
+  return (
+    <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3" aria-hidden>
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="mcp-skeleton-card">
+          <div className="flex items-start gap-2">
+            <div className="min-w-0 flex-1 space-y-2">
+              <div className="mcp-skeleton-line w-3/4" />
+              <div className="mcp-skeleton-line w-1/2 opacity-70" />
+            </div>
+            <div className="mcp-skeleton-line w-10 opacity-60" />
+          </div>
+          <div className="mt-2 space-y-1.5">
+            <div className="mcp-skeleton-line w-full opacity-50" />
+            <div className="mcp-skeleton-line w-2/3 opacity-50" />
+          </div>
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <div className="mcp-skeleton-line w-16 opacity-60" />
+            <div className="mcp-skeleton-line w-14 opacity-80" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function EmptyDetail({ text }: { text: string }) {
   return <div className="flex flex-1 items-center p-6 text-[12px] leading-5 text-ink-500">{text}</div>;
 }

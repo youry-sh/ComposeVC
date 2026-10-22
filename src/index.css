@@ -10841,6 +10841,30 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
 .mcp-market { box-shadow: 0 28px 90px rgba(0,0,0,.55), 0 0 0 1px var(--accent-muted); }
 .mcp-market-card { min-height: 108px; transition: border-color .15s ease, background .15s ease; }
 .mcp-market-card:hover { border-color: var(--ink-400); background: var(--accent-muted); }
+/* Marketplace list/detail share the chat's mono scroller (glowing thumb). */
+.mcp-market-list .chat-mono-scroll-viewport { padding: 12px; }
+.mcp-market-detail .chat-mono-scroll-viewport { padding: 16px; }
+/* Registry loading skeletons — shimmering cards in the same grid as the results. */
+.mcp-skeleton-card { min-height: 108px; border: 1px solid var(--border); padding: 10px 12px; }
+.mcp-skeleton-line {
+  position: relative;
+  height: 9px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: var(--ink-150);
+}
+.mcp-skeleton-line::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, var(--ink-300), transparent);
+  animation: mcp-shimmer 1.2s ease-in-out infinite;
+}
+@keyframes mcp-shimmer { 100% { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) {
+  .mcp-skeleton-line::after { animation: none; }
+}
 .mcp-connector-pop {
   position: fixed;
   z-index: 80;
