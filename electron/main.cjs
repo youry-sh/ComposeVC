@@ -57,6 +57,7 @@ const { runtime: sizeworkout } = require("./sizeworkout.cjs");
 const workerPool = require("./workerPool.cjs");
 const terminalManager = require("./terminalManager.cjs");
 const usageStore = require("./usageStore.cjs");
+const screenshot = require("./screenshot.cjs");
 terminalManager.register(ipcMain, app);
 sizeworkout.on("changed", (workspace) => {
   for (const win of BrowserWindow.getAllWindows()) {
@@ -1857,6 +1858,15 @@ ipcMain.handle("webengine:captureScreenshot", async (_event, webContentsId) => {
     if (!image || image.isEmpty()) return { ok: false, error: "empty-capture" };
     clipboard.writeImage(image);
     return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+// Full virtual desktop screenshot (all monitors) → clipboard, with watermark.
+ipcMain.handle("screenshot:captureFull", async () => {
+  try {
+    return await screenshot.captureFullDesktop();
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : String(error) };
   }
