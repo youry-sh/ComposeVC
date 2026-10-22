@@ -78,6 +78,9 @@ interface MultiIdeWorkspaceProps {
     workspaces: string;
     newWorkspace: string;
     workspace: string;
+    workspaceWorking: string;
+    workspaceDone: string;
+    deleteWorkspace: string;
   };
   slots: MultiIdeSlotState[];
   onSlotsChange: (slots: MultiIdeSlotState[]) => void;
