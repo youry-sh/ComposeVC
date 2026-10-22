@@ -45,6 +45,7 @@ const App: React.FC = () => {
       if (saved === "runner") return "runner";
       if (saved === "terminal") return "terminal";
       if (saved === "knowledge") return "knowledge";
+      if (saved === "webengine") return "webengine";
       if (saved === "docs") return "docs";
       if (saved === "customtools") return "customtools";
     } catch {
@@ -70,9 +71,19 @@ const App: React.FC = () => {
   /** Which chat/project the Web Engine tab is showing right now. */
   const [webEngineTarget, setWebEngineTarget] = useState<{
     chatKey: string;
+    fallbackChatKey: string;
     rootPath: string | null;
     projectName: string;
-  }>({ chatKey: "default", rootPath: null, projectName: "" });
+  }>({ chatKey: "default", fallbackChatKey: "default", rootPath: null, projectName: "" });
+  /** Keep the Web Engine mounted once opened, like MultiIDE/Terminal — the page
+   *  and console stay alive when the user switches to another tab. */
+  const [webEngineMounted, setWebEngineMounted] = useState<boolean>(() => {
+    try {
+      return window.localStorage.getItem("lopster-active-panel") === "webengine";
+    } catch {
+      return false;
+    }
+  });
   const t = translations[appLanguage];
 
   useEffect(() => {
@@ -126,8 +137,10 @@ const App: React.FC = () => {
         : rp
           ? `folder:${rp}`
           : "default";
+      const fallbackChatKey = rp ? `folder:${rp}` : "default";
       const name = rp ? rp.split(/[\\/]/).filter(Boolean).pop() || rp : projectName;
-      setWebEngineTarget({ chatKey, rootPath: rp, projectName: name });
+      setWebEngineTarget({ chatKey, fallbackChatKey, rootPath: rp, projectName: name });
+      setWebEngineMounted(true);
       setMultiIdeMounted(true);
       setActivePanel("webengine");
     };
@@ -313,15 +326,13 @@ const App: React.FC = () => {
       setMultiIdeMounted(true);
     }
     if (panel === "webengine") {
+      setWebEngineMounted(true);
       // Direct tab click without an explicit chat context: fall back to the
       // current project folder so the localhost probe still has something to use.
       setWebEngineTarget((prev) => {
         if (prev.chatKey !== "default" || prev.rootPath) return prev;
-        return {
-          chatKey: rootPath ? `folder:${rootPath}` : "default",
-          rootPath,
-          projectName,
-        };
+        const key = rootPath ? `folder:${rootPath}` : "default";
+        return { chatKey: key, fallbackChatKey: key, rootPath, projectName };
       });
     }
     setActivePanel(panel);
