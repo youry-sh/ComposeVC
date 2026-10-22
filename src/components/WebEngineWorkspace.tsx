@@ -13,6 +13,7 @@ import {
   Search,
   Bug,
 } from "lucide-react";
+import ChatMonoScroll from "./ChatMonoScroll";
 
 /**
  * Web Engine — a full workspace tab for opening and testing a localhost (or any
@@ -681,7 +682,7 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({
               {inspectorOn && <span className="webengine-live-dot" title="Активен" />}
             </header>
             {selectedInfo ? (
-              <div className="webengine-inspector-body">
+              <ChatMonoScroll className="webengine-inspector-body">
                 <div className="webengine-el-row">
                   <code className="webengine-el-sel">{selectedInfo.sel || "—"}</code>
                   <button type="button" className="webengine-btn" title="Скопировать селектор" aria-label="Скопировать селектор"
@@ -707,7 +708,7 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({
                     <pre>{selectedInfo.text}</pre>
                   </div>
                 )}
-              </div>
+              </ChatMonoScroll>
             ) : (
               <div className="webengine-inspector-empty">
                 {inspectorOn
@@ -729,7 +730,7 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({
                 </button>
               </span>
             </header>
-            <div className="webengine-console-list" role="log">
+            <ChatMonoScroll className="webengine-console-list">
               {logs.length === 0 ? (
                 <div className="webengine-console-empty">Логи появятся здесь</div>
               ) : (
@@ -746,7 +747,7 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({
                   </button>
                 ))
               )}
-            </div>
+            </ChatMonoScroll>
           </section>
         </aside>
       </div>
