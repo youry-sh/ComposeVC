@@ -5,7 +5,6 @@ import {
   Clock,
   FilePlus,
   GitCommitHorizontal,
-  Loader2,
   MessageSquare,
   RefreshCw,
   Terminal,
