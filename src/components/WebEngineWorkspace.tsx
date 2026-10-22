@@ -497,6 +497,7 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({ chatKey, rootPa
             placeholder={probing ? "Ищу localhost…" : "http://localhost:3000"}
             spellCheck={false}
             aria-label="Адрес"
+            title={title || undefined}
           />
           <button type="button" className="webengine-btn" title="Скопировать URL" aria-label="Скопировать URL" onClick={copyUrl}>
             <Copy className="w-3.5 h-3.5" />
