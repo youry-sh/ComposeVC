@@ -4754,21 +4754,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             >
               <BrainCircuit className="w-3.5 h-3.5" />
             </button>
-            <ContextRing
-              usedTokens={usedTokens}
-              limitTokens={contextLimit}
-              compacting={compacting}
-              onCompact={onCompact}
-              labels={{
-                contextUsage: labels.contextUsage,
-                compacting: labels.compacting,
-                clickToCompact: labels.clickToCompact,
-                justNow: labels.justNow,
-                minutesAgo: labels.minutesAgo,
-                hoursAgo: labels.hoursAgo,
-                daysAgo: labels.daysAgo,
-              }}
-            />
             <McpConnector rootPath={rootPath} />
             <button
               type="button"
@@ -4803,6 +4788,21 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             >
               <FileText className="w-3.5 h-3.5" />
             </button>
+            <ContextRing
+              usedTokens={usedTokens}
+              limitTokens={contextLimit}
+              compacting={compacting}
+              onCompact={onCompact}
+              labels={{
+                contextUsage: labels.contextUsage,
+                compacting: labels.compacting,
+                clickToCompact: labels.clickToCompact,
+                justNow: labels.justNow,
+                minutesAgo: labels.minutesAgo,
+                hoursAgo: labels.hoursAgo,
+                daysAgo: labels.daysAgo,
+              }}
+            />
             {thinking ? (
               <>
                 <button
