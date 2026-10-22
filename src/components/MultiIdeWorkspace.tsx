@@ -579,21 +579,53 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
           {workspaces.map((ws, i) => {
             const active = ws.id === activeWorkspaceId;
             const wsSlots = slots.filter((s) => s.workspaceId === ws.id);
-            const wsRunning = wsSlots.some((s) => Boolean(statusBySlot[s.id]?.running));
+            const working = wsSlots.filter((s) => statusBySlot[s.id]?.running === true).length;
+            const completed = wsSlots.filter((s) => {
+              const st = statusBySlot[s.id];
+              return Boolean(st) && st.running === false && st.sessionCount > 0;
+            }).length;
+            const wsRunning = working > 0;
             return (
-              <button
+              <div
                 key={ws.id}
-                type="button"
                 className={`chat-workspace-item${active ? " is-active" : ""}${wsRunning ? " is-running" : ""}`}
-                onClick={() => switchWorkspace(ws.id)}
-                title={`${labels.workspace} ${i + 1}`}
               >
-                <span className="chat-rail-dot" aria-hidden />
-                <span className="chat-workspace-name">
-                  {labels.workspace} {i + 1}
-                </span>
-                <span className="chat-workspace-count">{wsSlots.length}</span>
-              </button>
+                <button
+                  type="button"
+                  className="chat-workspace-btn"
+                  onClick={() => switchWorkspace(ws.id)}
+                  title={`${labels.workspace} ${i + 1}`}
+                >
+                  <span className="chat-rail-dot" aria-hidden />
+                  <span className="chat-workspace-name">
+                    {labels.workspace} {i + 1}
+                  </span>
+                  <span
+                    className="chat-workspace-stats"
+                    title={`${labels.workspaceWorking}: ${working} · ${labels.workspaceDone}: ${completed}`}
+                  >
+                    <span className="chat-workspace-stat is-working">{working}</span>
+                    <span className="chat-workspace-stat-divider" aria-hidden>
+                      ·
+                    </span>
+                    <span className="chat-workspace-stat is-done">{completed}</span>
+                  </span>
+                </button>
+                {workspaces.length > 1 && (
+                  <button
+                    type="button"
+                    className="chat-workspace-close"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteWorkspace(ws.id);
+                    }}
+                    title={labels.deleteWorkspace}
+                    aria-label={labels.deleteWorkspace}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
             );
           })}
         </div>
