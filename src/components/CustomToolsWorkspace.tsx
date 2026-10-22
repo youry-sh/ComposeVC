@@ -792,38 +792,25 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
 
         <section className="ide-library-editor flex min-h-0 min-w-0 flex-1 flex-col bg-ink-0">
           <div className="ide-library-editor-body min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4 scrollbar-thin">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <label className="grid min-w-0 gap-1.5">
-                <span className={labelClass}>{labels.customToolName}</span>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder={labels.customToolNamePlaceholder}
-                  className={fieldClass}
-                  style={fieldStyle}
-                />
-              </label>
-              <label className="grid min-w-0 gap-1.5">
-                <span className={labelClass}>{labels.customToolTitle}</span>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder={labels.customToolTitlePlaceholder}
-                  className={fieldClass}
-                  style={fieldStyle}
-                />
-              </label>
-            </div>
             <label className="grid min-w-0 gap-1.5">
-              <span className={labelClass}>{labels.customToolDescription}</span>
+              <span className={labelClass}>{labels.customToolTitle}</span>
               <input
                 type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder={labels.customToolTitlePlaceholder}
+                className={fieldClass}
+                style={fieldStyle}
+              />
+            </label>
+            <label className="grid min-w-0 gap-1.5">
+              <span className={labelClass}>{labels.customToolDescription}</span>
+              <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder={labels.customToolDescriptionPlaceholder}
-                className={fieldClass}
+                rows={3}
+                className="ide-field w-full min-w-0 resize-y px-3 py-2 text-[12px] leading-5 text-ink-950 placeholder-ink-500 outline-none"
                 style={fieldStyle}
               />
             </label>
@@ -839,7 +826,7 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
               />
             </label>
             <label className="grid min-w-0 gap-1.5">
-              <span className={labelClass}>Runtime</span>
+              <span className={labelClass}>{labels.customToolRuntime}</span>
               <select
                 value={runtime}
                 onChange={(e) => {
