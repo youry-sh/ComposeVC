@@ -518,6 +518,8 @@ const App: React.FC = () => {
         active={activePanel}
         onSelect={handlePanelSelect}
         onOpenProviders={() => setProvidersOpen(true)}
+        inspectorActive={inspectorActive}
+        onToggleInspector={() => setInspectorActive((v) => !v)}
         labels={{
           multiIde: t.multiIde,
           proxy: t.activityProxy,
@@ -656,6 +658,11 @@ const App: React.FC = () => {
         config={providerConfig}
         labels={t}
         onChange={saveProviderConfig}
+      />
+
+      <ElementInspector
+        active={inspectorActive}
+        onExit={() => setInspectorActive(false)}
       />
     </div>
   );
