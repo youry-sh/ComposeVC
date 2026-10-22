@@ -4835,7 +4835,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             )}
           </div>
 
-        {/* Model / agent mode / tools live INSIDE the composer, on the same
+        {/* Model / agent mode live INSIDE the composer, on the same
             row as the send controls — one card instead of a stack of bars. */}
         <div className="chat-chip-row relative" ref={toolsMenuRef}>
             <ModelPicker
