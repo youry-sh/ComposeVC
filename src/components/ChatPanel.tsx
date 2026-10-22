@@ -4533,19 +4533,30 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                   />
                 </div>
               )}
-              {msg.content?.trim() ? (
+              {msg.content?.trim() || (msg.role === "user" && msg.images?.length) ? (
                 <>
-                  <MarkdownContent content={msg.content} />
-                  {summarySteps && summarySteps.length > 0 && (
-                    <ChangedFilesSummary steps={summarySteps} rootPath={rootPath} />
-                  )}
+                  {msg.content?.trim() ? (
+                    <>
+                      <MarkdownContent content={msg.content} />
+                      {summarySteps && summarySteps.length > 0 && (
+                        <ChangedFilesSummary steps={summarySteps} rootPath={rootPath} />
+                      )}
+                    </>
+                  ) : null}
                   <MessageActions
                     content={msg.content}
                     role={msg.role}
                     images={msg.images}
                     retryLabel={labels.retry}
                     retryDisabled={thinking}
-                    onRetry={(text, imgs) => onSend(text, imgs)}
+                    showCopy={Boolean(msg.content?.trim())}
+                    onRetry={(text, imgs) => {
+                      stickToBottomRef.current = true;
+                      onSend(text, imgs, { skipAutoInsert: true });
+                      const pin = () => messagesScrollRef.current?.scrollToBottom({ smooth: false });
+                      pin();
+                      requestAnimationFrame(pin);
+                    }}
                   />
                 </>
               ) : null}
