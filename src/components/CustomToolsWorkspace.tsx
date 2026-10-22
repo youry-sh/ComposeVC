@@ -267,10 +267,16 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
       .filter(Boolean)
       .slice(0, 20);
 
-  const canSave = Boolean(name.trim() && codeText.trim());
+  const selectedTool = selectedId ? tools.find((t) => t.id === selectedId) : undefined;
+  // Identity: derived once from the title on create; the persisted name is preserved
+  // verbatim on edit (renaming the title must never rename the folder).
+  const derivedName =
+    panelMode === "edit" && selectedTool ? selectedTool.name : slugifyName(title);
+
+  const canSave = Boolean(derivedName && codeText.trim());
 
   const handleSave = async () => {
-    const trimmedName = name.trim();
+    const trimmedName = derivedName;
     const trimmedTitle = title.trim();
     const trimmedDescription = description.trim();
     const trimmedCode = codeText;
