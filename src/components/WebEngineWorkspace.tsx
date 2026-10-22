@@ -512,7 +512,7 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({
       showToast("Сначала выберите элемент (⦿)");
       return;
     }
-    const ok = await copyText(selectedEl.html || selectedEl.sel);
+    const ok = await copyText(selectedEl.fullHtml || selectedEl.html || selectedEl.sel);
     showToast(ok ? "HTML скопирован" : "Не удалось скопировать");
   }, [selectedEl, showToast]);
 
