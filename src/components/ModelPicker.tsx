@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, Search, Sparkles, X } from "lucide-react";
 import { AIModel, AIProvider } from "../types";
+import ChatMonoScroll from "./ChatMonoScroll";
 
 export type ModelPickerLabels = {
   selectModel: string;
@@ -199,7 +200,7 @@ const ModelPicker: React.FC<ModelPickerProps> = ({
             ) : null}
           </div>
 
-          <div className="model-picker-list scrollbar-thin">
+          <ChatMonoScroll className="model-picker-list">
             {models.length === 0 ? (
               <div className="model-picker-empty">{labels.noModelsConfigured}</div>
             ) : totalVisible === 0 ? (
@@ -236,7 +237,7 @@ const ModelPicker: React.FC<ModelPickerProps> = ({
                 </div>
               ))
             )}
-          </div>
+          </ChatMonoScroll>
         </div>
       )}
     </div>
