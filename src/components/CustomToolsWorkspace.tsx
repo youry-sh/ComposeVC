@@ -123,6 +123,16 @@ const RUNTIME_ENTRY: Record<string, string> = {
   powershell: "main.ps1",
 };
 
+/** Mirror of the backend `normalizeToolName`: derives a folder-safe slug from a title. */
+const slugifyName = (raw: string) =>
+  String(raw || "")
+    .trim()
+    .toLowerCase()
+    .replace(/^\/+/, "")
+    .replace(/[^a-z0-9_]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 64);
+
 type PanelMode = "create" | "edit";
 type ImportMode = "skip" | "overwrite" | "rename";
 
