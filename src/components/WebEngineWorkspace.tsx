@@ -35,6 +35,7 @@ type WebviewElement = HTMLElement & {
   reload: () => void;
   stop: () => void;
   executeJavaScript: (code: string, userGesture?: boolean) => Promise<unknown>;
+  insertCSS: (css: string) => Promise<string>;
   openDevTools: () => void;
   closeDevTools: () => void;
   isDevToolsOpened: () => boolean;
@@ -148,6 +149,22 @@ const INSPECTOR_OFF = `(function () {
     window.__cvcLast = null;
   }
 })(); void 0;`;
+
+/* Injected into the guest page so the viewed site gets the same visible white
+   scrollbar the app's chat uses (instead of the OS/default one). */
+const GUEST_SCROLLBAR_CSS = `
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background-color: #e8e8e8;
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover { background-color: #ffffff; }
+  ::-webkit-scrollbar-corner { background: transparent; }
+  html { scrollbar-width: thin; scrollbar-color: #e8e8e8 transparent; }
+`;
 
 function chromeUserAgent(): string {
   const ua = typeof navigator === "undefined" ? "" : navigator.userAgent;
