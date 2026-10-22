@@ -105,7 +105,7 @@
       size();
       const points = sampleBanner();
       const now = performance.now();
-      if (!started) holdUntil = now + 3900;
+      if (!started) holdUntil = now + 1900;
       particles.length = 0;
       const cx = window.innerWidth / 2;
       const cy = window.innerHeight / 2;
@@ -174,7 +174,7 @@
     reveal();
     window.addEventListener("resize", layout);
     requestAnimationFrame(frame);
-    setTimeout(finish, 9000);
+    setTimeout(finish, 6000);
   </script>
 </body>
 </html>
