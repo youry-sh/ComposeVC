@@ -15,6 +15,7 @@ import {
   EyeOff,
   FileText,
   FolderTree,
+  Globe,
   History,
   ImagePlus,
   Layers,
@@ -4823,6 +4824,21 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
               }}
             />
             <McpConnector rootPath={rootPath} />
+            <button
+              type="button"
+              onClick={() => {
+                window.dispatchEvent(
+                  new CustomEvent("composevc-open-webengine", {
+                    detail: { rootPath, sessionId: activeSessionId ?? null },
+                  })
+                );
+              }}
+              title="Открыть сайт в Web Engine"
+              aria-label="Открыть сайт в Web Engine"
+              className="chat-composer-icon-btn"
+            >
+              <Globe className="w-3.5 h-3.5" />
+            </button>
             {thinking ? (
               <>
                 <button
