@@ -1129,17 +1129,15 @@ function installPackagedWindowHardening(win) {
       try { if (!wc.isDestroyed()) wc.send("storage:open", {}); } catch {}
       return;
     }
-    // Workspace hotkeys: Ctrl/Cmd+1…9 (tabs), Ctrl+P (search), Ctrl+, (settings),
-    // Ctrl+` (terminal). Handled here so they keep working while the terminal or
-    // a webview guest owns the keyboard; the renderer routes them via shell:hotkey.
+    // Workspace hotkeys: Ctrl/Cmd+1…9 (tabs), Ctrl+Shift+F (search files),
+    // Ctrl+, (settings), Ctrl+` (terminal). Handled here so they keep working
+    // while the terminal or a webview guest owns the keyboard.
     if (ctrl && !shift && !alt) {
       let payload = null;
       if (Object.prototype.hasOwnProperty.call(PANEL_BY_DIGIT, code)) {
         payload = { type: "panel", panel: PANEL_BY_DIGIT[code] };
       } else if (code === "Backquote") {
         payload = { type: "panel", panel: "terminal" };
-      } else if (code === "KeyP") {
-        payload = { type: "toggle", target: "search" };
       } else if (code === "Comma") {
         payload = { type: "toggle", target: "settings" };
       }
@@ -1148,6 +1146,13 @@ function installPackagedWindowHardening(win) {
         try { if (!wc.isDestroyed()) wc.send("shell:hotkey", payload); } catch {}
         return;
       }
+    }
+    // Ctrl+Shift+F is a separate chord (Shift is part of it); kept off Ctrl+P so
+    // the terminal keeps its readline "previous command" binding.
+    if (ctrl && shift && !alt && code === "KeyF") {
+      event.preventDefault();
+      try { if (!wc.isDestroyed()) wc.send("shell:hotkey", { type: "toggle", target: "search" }); } catch {}
+      return;
     }
     // F12, Ctrl+Shift+I/J/C, Ctrl+Shift+U, Ctrl+U (view source)
     const block =

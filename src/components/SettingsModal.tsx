@@ -53,7 +53,7 @@ function keyboardShortcuts(labels: Translation): Array<{ keys: string; action: s
     { keys: "Ctrl+8", action: labels.shortcutDocs },
     { keys: "Ctrl+9", action: labels.shortcutUsage },
     { keys: "Ctrl+`", action: labels.shortcutTerminal },
-    { keys: "Ctrl+P", action: labels.shortcutSearch },
+    { keys: "Ctrl+Shift+F", action: labels.shortcutSearch },
     { keys: "Ctrl+,", action: labels.shortcutOpenSettings },
     { keys: "Ctrl+L", action: labels.shortcutFocusChat },
     { keys: "Ctrl+H", action: labels.shortcutChatSwitcher },
