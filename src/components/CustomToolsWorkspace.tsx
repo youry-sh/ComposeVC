@@ -883,7 +883,7 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
                     onClick={() =>
                       void handleExport({
                         ids: [selectedId],
-                        names: name.trim() ? [name.trim()] : undefined,
+                        names: derivedName ? [derivedName] : undefined,
                       })
                     }
                     disabled={busyShare}
@@ -898,7 +898,7 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
                     onClick={() =>
                       void handleCopyPack({
                         ids: [selectedId],
-                        names: name.trim() ? [name.trim()] : undefined,
+                        names: derivedName ? [derivedName] : undefined,
                       })
                     }
                     disabled={busyShare}
@@ -920,7 +920,7 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
                   className={primaryBtn}
                 >
                   <Save className="h-3.5 w-3.5" />
-                  {saving ? "Saving…" : labels.customToolSave}
+                  {saving ? labels.customToolSaving : labels.customToolSave}
                 </button>
               </div>
             ) : null}
