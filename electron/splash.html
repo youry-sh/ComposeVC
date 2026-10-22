@@ -57,9 +57,9 @@
 
     function layoutMetrics(w, h) {
       // 78-column banner; a mono glyph is ~0.6em wide, line-height ~1.05em.
-      const sizeByWidth = (w * 0.94) / (78 * 0.6);
-      const sizeByHeight = (h * 0.74) / (BANNER.length * 1.05);
-      const fontSize = Math.max(8, Math.min(sizeByWidth, sizeByHeight, 84));
+      const sizeByWidth = (w * 0.66) / (78 * 0.6);
+      const sizeByHeight = (h * 0.5) / (BANNER.length * 1.05);
+      const fontSize = Math.max(8, Math.min(sizeByWidth, sizeByHeight, 60));
       const lineHeight = Math.round(fontSize * 1.05);
       return { fontSize, lineHeight };
     }
@@ -105,7 +105,7 @@
       size();
       const points = sampleBanner();
       const now = performance.now();
-      if (!started) holdUntil = now + 900;
+      if (!started) holdUntil = now + 3900;
       particles.length = 0;
       const cx = window.innerWidth / 2;
       const cy = window.innerHeight / 2;
@@ -174,7 +174,7 @@
     reveal();
     window.addEventListener("resize", layout);
     requestAnimationFrame(frame);
-    setTimeout(finish, 5000);
+    setTimeout(finish, 9000);
   </script>
 </body>
 </html>
