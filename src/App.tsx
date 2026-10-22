@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import TitleBar from "./components/TitleBar";
 import SettingsModal from "./components/SettingsModal";
+import ElementInspector from "./components/ElementInspector";
 import ProvidersModal from "./components/ProvidersModal";
 import SearchOverlay from "./components/SearchOverlay";
 import ProxyWorkspace from "./components/ProxyWorkspace";
@@ -67,6 +68,7 @@ const App: React.FC = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [runnerSendOpen, setRunnerSendOpen] = useState(false);
   const [storageOpen, setStorageOpen] = useState(false);
+  const [inspectorActive, setInspectorActive] = useState(false);
   const [runnerSendTarget, setRunnerSendTarget] = useState<string | null>(null);
   const [customTools, setCustomTools] = useState<CustomTool[]>([]);
   const [appLanguage, setAppLanguage] = useState<AppLanguage>(() => getStoredLanguage());
