@@ -167,7 +167,7 @@ const DocsWorkspace: React.FC = () => {
               <p>Выберите раздел слева, чтобы прочитать его.</p>
             </div>
           ) : (
-            <article className="docs-article prose-editor">
+            <article className="docs-article">
               <h1 className="docs-article-title">{title}</h1>
               {summary ? <p className="docs-article-summary">{summary}</p> : null}
               <MarkdownContent content={content} />

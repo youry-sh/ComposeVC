@@ -17,6 +17,8 @@ const path = require("path");
  */
 
 const STORE_VERSION = 1;
+/** Bump to re-write the built-in starter sections on the next launch. */
+const SEED_VERSION = 2;
 const MAX_TITLE_CHARS = 200;
 const MAX_SUMMARY_CHARS = 320;
 
@@ -36,7 +38,7 @@ function getDocsPaths(userDataPath) {
 }
 
 function emptyManifest() {
-  return { version: STORE_VERSION, createdAt: Date.now(), updatedAt: Date.now(), sections: [] };
+  return { version: STORE_VERSION, seedVersion: SEED_VERSION, createdAt: Date.now(), updatedAt: Date.now(), sections: [] };
 }
 
 function makeSectionId(input) {
@@ -84,6 +86,7 @@ async function readManifest(userDataPath) {
     sections.sort((a, b) => a.order - b.order || a.title.localeCompare(b.title));
     return {
       version: STORE_VERSION,
+      seedVersion: Number(parsed?.seedVersion) || 0,
       createdAt: Number(parsed?.createdAt) || Date.now(),
       updatedAt: Number(parsed?.updatedAt) || Date.now(),
       sections,
@@ -105,6 +108,7 @@ async function writeManifest(userDataPath, manifest) {
   const paths = await ensureStore(userDataPath);
   const next = {
     version: STORE_VERSION,
+    seedVersion: Number(manifest?.seedVersion) || 0,
     createdAt: Number(manifest?.createdAt) || Date.now(),
     updatedAt: Date.now(),
     sections: Array.isArray(manifest?.sections) ? manifest.sections.map(normalizeSection).filter(Boolean) : [],
@@ -198,56 +202,40 @@ const SEED_SECTIONS = [
     title: "Рабочие области (Workspace)",
     summary: "Как устроены рабочие области, чат-панели и переключение между ними.",
     order: 1,
-    content: `# Рабочие области (Workspace)
-
-Рабочая область — это группа чат-панелей, собранных вместе. Она помогает держать
-задачи по разным проектам отдельно: у каждой области свои чаты, свои папки и
-своё расположение окон.
+    content: `Рабочая область — это группа чат-панелей, собранных вместе. Она помогает держать задачи по разным проектам отдельно: у каждой области свои чаты, свои папки и своё расположение окон.
 
 ## Что находится слева
 
 На левой панели два списка:
 
 - **Сверху — рабочие области.** Один клик переключает сразу весь набор чатов.
-- **Снизу — чаты текущей области.** Это отдельные агенты, каждый привязан к своей
-  папке проекта.
+- **Снизу — чаты текущей области.** Это отдельные агенты, каждый привязан к своей папке проекта.
 
 ## Как это работает
 
-- У каждой чат-панели свой агент и своя папка. Переключение между панелями и
-  областями ничего не закрывает — работа, которая уже запущена, продолжается в
-  фоне, и прогресс не теряется.
-- При возврате в область всё восстанавливается ровно в том виде, как вы оставили:
-  активный чат, открытые ряды и их порядок.
+- У каждой чат-панели свой агент и своя папка. Переключение между панелями и областями ничего не закрывает — работа, которая уже запущена, продолжается в фоне, и прогресс не теряется.
+- При возврате в область всё восстанавливается ровно в том виде, как вы оставили: активный чат, открытые ряды и их порядок.
 
 ## Основные действия
 
 - **«+»** — добавить новую чат-панель в текущую область.
-- **Значок сетки** — создать новую рабочую область (в ней сразу будет одна пустая
-  панель).
-- **«×» рядом с областью** — удалить область вместе с её чатами. Запущенная в ней
-  работа сначала останавливается. Последнюю область удалить нельзя.
+- **Значок сетки** — создать новую рабочую область (в ней сразу будет одна пустая панель).
+- **«×» рядом с областью** — удалить область вместе с её чатами. Запущенная в ней работа сначала останавливается. Последнюю область удалить нельзя.
 - **«×» рядом с чатом** — закрыть панель.
-- **Перетаскивание панели** — собрать её в один ряд с другой, чтобы видеть несколько
-  чатов одновременно.
+- **Перетаскивание панели** — собрать её в один ряд с другой, чтобы видеть несколько чатов одновременно.
 - **Ctrl+H** (Cmd+H на Mac) — быстрый список для переключения чатов.
 
 ## Ограничения
 
 - Всего можно держать до 12 чат-панелей.
-- Одновременно в центре видно до 3 панелей в ряд.
-`,
+- Одновременно в центре видно до 3 панелей в ряд.`,
   },
   {
     id: "chats-agent",
     title: "Чаты и работа агента",
     summary: "Что умеет агент, как он выполняет задачу и что есть в чате.",
     order: 2,
-    content: `# Чаты и работа агента
-
-Каждая чат-панель — это разговор с ИИ-агентом, который не только отвечает, но и
-сам выполняет действия: читает файлы, правит код, ищет по проекту и запускает
-команды.
+    content: `Каждая чат-панель — это разговор с ИИ-агентом, который не только отвечает, но и сам выполняет действия: читает файлы, правит код, ищет по проекту и запускает команды.
 
 ## Как начать
 
@@ -255,52 +243,47 @@ const SEED_SECTIONS = [
 2. Напишите, что нужно сделать, обычными словами.
 3. Отправьте сообщение.
 
-Дальше агент работает сам: делает шаги, проверяет результат и продолжает, пока
-задача не будет выполнена. Прогресс виден прямо в чате.
+Дальше агент работает сам: делает шаги, проверяет результат и продолжает, пока задача не будет выполнена. Прогресс виден прямо в чате.
 
 ## Что можно настраивать
 
-- **Модель.** Для каждой панели можно выбрать свою модель — это не зависит от
-  общих настроек.
-- **Режим агента.** Есть основной режим и специальные (например, режим совета,
-  который собирает несколько мнений, или лабораторный режим). Режим выбирается в
-  панели чата.
+- **Модель.** Для каждой панели можно выбрать свою модель — это не зависит от общих настроек.
+- **Режим агента.** Есть основной режим и специальные (например, режим совета, который собирает несколько мнений, или лабораторный режим). Режим выбирается в панели чата.
 - **Stop** — в любой момент прерывает текущую работу агента.
 
 ## Как хранится история
 
-История чатов сохраняется отдельно для каждой папки проекта. Все чаты одной папки
-видны в одной панели, их можно переключать, копировать, вставлять и удалять.
+История чатов сохраняется отдельно для каждой папки проекта. Все чаты одной папки видны в одной панели, их можно переключать, копировать, вставлять и удалять.
 
 ## Полезные мелочи
 
-- **Очередь сообщений** — можно отправить несколько сообщений подряд, они выполнятся
-  по очереди.
-- **Компакция** — когда разговор становится очень длинным, агент сжимает его, чтобы
-  продолжить работу без потери смысла.
+- **Очередь сообщений** — можно отправить несколько сообщений подряд, они выполнятся по очереди.
+- **Компакция** — когда разговор становится очень длинным, агент сжимает его, чтобы продолжить работу без потери смысла.
 - **One-shot** — режим, при котором после ответа чат не сохраняет продолжение.
 - **Список задач агента** — видно, что агент собирается сделать по пунктам.
-- **Инструкции** — можно задать постоянные правила для агента (общие или для проекта).
-`,
+- **Инструкции** — можно задать постоянные правила для агента (общие или для проекта).`,
   },
 ];
 
-/** Create the docs store with the built-in starter manual on first launch. */
+/** Create the docs store on first launch, and re-write the built-in starter
+ *  sections when SEED_VERSION bumps. User-added sections are left untouched. */
 async function seedIfEmpty(userDataPath) {
   const paths = await ensureStore(userDataPath);
   const manifest = await readManifest(userDataPath);
-  if (manifest.sections.length) return manifest;
+  const seedVersion = Number(manifest.seedVersion) || 0;
+  if (manifest.sections.length && seedVersion >= SEED_VERSION) return manifest;
 
   const now = Date.now();
-  const sections = [];
+  const byId = new Map(manifest.sections.map((entry) => [entry.id, entry]));
   for (const seed of SEED_SECTIONS) {
+    const existing = byId.get(seed.id);
     const section = normalizeSection({
       id: seed.id,
       title: seed.title,
       summary: seed.summary,
       order: seed.order,
-      file: `sections/${seed.id}.md`,
-      createdAt: now,
+      file: existing?.file || `sections/${seed.id}.md`,
+      createdAt: existing?.createdAt || now,
       updatedAt: now,
     });
     await fs.promises.writeFile(
@@ -308,9 +291,13 @@ async function seedIfEmpty(userDataPath) {
       seed.content.replace(/\r\n?/g, "\n").trim(),
       "utf8"
     );
-    sections.push(section);
+    if (existing) {
+      manifest.sections = manifest.sections.map((entry) => (entry.id === seed.id ? section : entry));
+    } else {
+      manifest.sections.push(section);
+    }
   }
-  await writeManifest(userDataPath, { ...manifest, sections });
+  await writeManifest(userDataPath, { ...manifest, seedVersion: SEED_VERSION });
   return readManifest(userDataPath);
 }
 
