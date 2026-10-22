@@ -6,9 +6,11 @@ const sharp = require("sharp");
  * the clipboard as a single PNG, with a "ComposeVC" watermark at the bottom.
  *
  * desktopCapturer returns one native thumbnail per monitor, so we composite
- * them onto one canvas with sharp using each display's DIP bounds and the
- * primary display's scale factor. The watermark is rendered from an inline SVG
- * (text glyph) and composited last so it always sits above the screens.
+ * them onto one canvas with sharp using each display's DIP coordinates and the
+ * primary display's scale factor. Each thumbnail is cropped to its workArea so
+ * the OS taskbar (bottom/any side) is excluded from the final image. The
+ * watermark is rendered from an inline SVG (text glyph) and composited last so
+ * it always sits above the screens.
  */
 
 const WATERMARK_TEXT = "ComposeVC";
@@ -39,32 +41,46 @@ async function captureFullDesktop() {
   const primary = screen.getPrimaryDisplay();
   const scale = Math.max(1, Number(primary.scaleFactor) || 1);
 
-  const minX = Math.min(...displays.map((d) => d.bounds.x));
-  const minY = Math.min(...displays.map((d) => d.bounds.y));
-  const maxX = Math.max(...displays.map((d) => d.bounds.x + d.bounds.width));
-  const maxY = Math.max(...displays.map((d) => d.bounds.y + d.bounds.height));
-  const totalW = Math.max(1, Math.round((maxX - minX) * scale));
-  const totalH = Math.max(1, Math.round((maxY - minY) * scale));
+  // Capture at full monitor resolution (thumbnailSize uses the full bounds),
+  // then crop each thumbnail to its workArea so the OS taskbar (bottom/any
+  // side) is excluded from the final image.
+  const boundsMinX = Math.min(...displays.map((d) => d.bounds.x));
+  const boundsMinY = Math.min(...displays.map((d) => d.bounds.y));
+  const boundsMaxX = Math.max(...displays.map((d) => d.bounds.x + d.bounds.width));
+  const boundsMaxY = Math.max(...displays.map((d) => d.bounds.y + d.bounds.height));
+  const boundsW = Math.max(1, Math.round((boundsMaxX - boundsMinX) * scale));
+  const boundsH = Math.max(1, Math.round((boundsMaxY - boundsMinY) * scale));
 
   const sources = await desktopCapturer.getSources({
     types: ["screen"],
-    thumbnailSize: { width: totalW, height: totalH },
+    thumbnailSize: { width: boundsW, height: boundsH },
   });
+
+  const waMinX = Math.min(...displays.map((d) => d.workArea.x));
+  const waMinY = Math.min(...displays.map((d) => d.workArea.y));
+  const waMaxX = Math.max(...displays.map((d) => d.workArea.x + d.workArea.width));
+  const waMaxY = Math.max(...displays.map((d) => d.workArea.y + d.workArea.height));
+  const totalW = Math.max(1, Math.round((waMaxX - waMinX) * scale));
+  const totalH = Math.max(1, Math.round((waMaxY - waMinY) * scale));
 
   const parts = [];
   let captured = 0;
   for (const d of displays) {
     const source = sources.find((s) => String(s.display_id) === String(d.id));
     if (!source || !source.thumbnail || source.thumbnail.isEmpty()) continue;
-    const w = Math.max(1, Math.round(d.bounds.width * scale));
-    const h = Math.max(1, Math.round(d.bounds.height * scale));
-    const left = Math.round((d.bounds.x - minX) * scale);
-    const top = Math.round((d.bounds.y - minY) * scale);
-    const resized = await sharp(source.thumbnail.toPNG())
-      .resize(w, h, { fit: "fill" })
+    const tw = source.thumbnail.getSize().width;
+    const th = source.thumbnail.getSize().height;
+    const cropLeft = Math.max(0, Math.round((d.workArea.x - d.bounds.x) * scale));
+    const cropTop = Math.max(0, Math.round((d.workArea.y - d.bounds.y) * scale));
+    const cropW = Math.max(1, Math.min(tw - cropLeft, Math.round(d.workArea.width * scale)));
+    const cropH = Math.max(1, Math.min(th - cropTop, Math.round(d.workArea.height * scale)));
+    const cropped = await sharp(source.thumbnail.toPNG())
+      .extract({ left: cropLeft, top: cropTop, width: cropW, height: cropH })
       .png()
       .toBuffer();
-    parts.push({ input: resized, left, top });
+    const left = Math.round((d.workArea.x - waMinX) * scale);
+    const top = Math.round((d.workArea.y - waMinY) * scale);
+    parts.push({ input: cropped, left, top });
     captured += 1;
   }
 
