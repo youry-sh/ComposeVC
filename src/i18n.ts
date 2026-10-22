@@ -122,8 +122,6 @@ export const translations = {
     customToolsHint:
       "Agent-authored folder tools: real code in userData/custom-tools/<name>/ (stdin JSON → stdout JSON). The agent can create, search, run and delete them via custom_tool.",
     customToolsEmpty: "No custom tools yet. The agent can create them, or add one below.",
-    customToolName: "Name",
-    customToolNamePlaceholder: "e.g. scan_todos",
     customToolTitle: "Title",
     customToolTitlePlaceholder: "e.g. Scan TODO comments",
     customToolDescription: "Description",
@@ -131,6 +129,12 @@ export const translations = {
     customToolBody: "Entry code",
     customToolBodyPlaceholder:
       '// reads JSON {args, ctx} from stdin, prints JSON result to stdout\nconst fs = require("fs");\nasync function main(args, ctx) {\n  return { ok: true, result: args };\n}\nconst raw = fs.readFileSync(0, "utf8");\nconst p = raw ? JSON.parse(raw) : {};\nmain(p.args || {}, p.ctx || {}).then(r => process.stdout.write(JSON.stringify(r))).catch(e => { process.stderr.write(String(e)); process.exit(1); });',
+    customToolRuntime: "Runtime",
+    customToolSaving: "Saving…",
+    customToolDependencies: "Connected tools",
+    customToolDependenciesEmpty: "Create other tools — you'll be able to connect them here.",
+    customToolDependenciesHint:
+      "The code receives ctx.callTool. Only checked tools can be connected; cycles are blocked.",
     customToolAdd: "Add tool",
     customToolSave: "Save tool",
     customToolDelete: "Delete",
@@ -323,8 +327,6 @@ export const translations = {
     customToolsHint:
       "Кастомные тулы-папки: реальный код в userData/custom-tools/<name>/ (stdin JSON → stdout JSON). Агент создаёт, ищет, вызывает и удаляет через custom_tool.",
     customToolsEmpty: "Пока нет кастомных тулов. Агент может создать, или добавь ниже.",
-    customToolName: "Имя",
-    customToolNamePlaceholder: "напр. scan_todos",
     customToolTitle: "Заголовок",
     customToolTitlePlaceholder: "напр. Скан TODO",
     customToolDescription: "Описание",
@@ -332,6 +334,12 @@ export const translations = {
     customToolBody: "Код энтри-файла",
     customToolBodyPlaceholder:
       '// читает JSON {args, ctx} из stdin, печатает JSON-результат в stdout\nconst fs = require("fs");\nasync function main(args, ctx) {\n  return { ok: true, result: args };\n}\nconst raw = fs.readFileSync(0, "utf8");\nconst p = raw ? JSON.parse(raw) : {};\nmain(p.args || {}, p.ctx || {}).then(r => process.stdout.write(JSON.stringify(r))).catch(e => { process.stderr.write(String(e)); process.exit(1); });',
+    customToolRuntime: "Среда выполнения",
+    customToolSaving: "Сохранение…",
+    customToolDependencies: "Подключённые инструменты",
+    customToolDependenciesEmpty: "Создай другие инструменты — их можно будет подключить сюда.",
+    customToolDependenciesHint:
+      "Код получает ctx.callTool. Подключать можно только отмеченные инструменты; циклы блокируются.",
     customToolAdd: "Добавить тул",
     customToolSave: "Сохранить",
     customToolDelete: "Удалить",
@@ -523,8 +531,6 @@ export const translations = {
     customToolsHint:
       "Кастомні тули-папки: реальний код у userData/custom-tools/<name>/ (stdin JSON → stdout JSON). Агент створює, шукає, викликає і видаляє через custom_tool.",
     customToolsEmpty: "Поки немає кастомних тулів. Агент може створити, або додай нижче.",
-    customToolName: "Ім'я",
-    customToolNamePlaceholder: "напр. scan_todos",
     customToolTitle: "Заголовок",
     customToolTitlePlaceholder: "напр. Скан TODO",
     customToolDescription: "Опис",
@@ -532,6 +538,12 @@ export const translations = {
     customToolBody: "Код ентрі-файлу",
     customToolBodyPlaceholder:
       '// читає JSON {args, ctx} зі stdin, друкує JSON-результат у stdout\nconst fs = require("fs");\nasync function main(args, ctx) {\n  return { ok: true, result: args };\n}\nconst raw = fs.readFileSync(0, "utf8");\nconst p = raw ? JSON.parse(raw) : {};\nmain(p.args || {}, p.ctx || {}).then(r => process.stdout.write(JSON.stringify(r))).catch(e => { process.stderr.write(String(e)); process.exit(1); });',
+    customToolRuntime: "Середовище виконання",
+    customToolSaving: "Збереження…",
+    customToolDependencies: "Підключені інструменти",
+    customToolDependenciesEmpty: "Створи інші інструменти — їх можна буде підключити сюди.",
+    customToolDependenciesHint:
+      "Код отримує ctx.callTool. Підключати можна лише відмічені інструменти; цикли блокуються.",
     customToolAdd: "Додати тул",
     customToolSave: "Зберегти",
     customToolDelete: "Видалити",
