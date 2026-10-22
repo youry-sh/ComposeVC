@@ -263,17 +263,6 @@ function hasSlotDrag(data: DataTransfer): boolean {
   return Array.from(data.types).includes(SLOT_DRAG);
 }
 
-function loadOpenRows(validIds: string[], fallback: string): string[] {
-  try {
-    const raw = JSON.parse(window.localStorage.getItem(MULTIIDE_ROWS_KEY) || "null") as unknown;
-    if (!Array.isArray(raw)) return [fallback];
-    const ids = raw.filter((id): id is string => typeof id === "string" && validIds.includes(id)).slice(0, MAX_ROWS);
-    return ids.length ? ids : [fallback];
-  } catch {
-    return [fallback];
-  }
-}
-
 const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
   providerConfig,
   customTools,
