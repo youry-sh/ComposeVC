@@ -9243,6 +9243,36 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
+/* Tooltips for the toolbar tools — show on hover and keyboard focus, absolutely
+   positioned so they never shift layout, fade in (reduced-motion disables it). */
+.webengine-btn[data-tooltip] {
+  position: relative;
+}
+.webengine-btn[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: calc(100% + 7px);
+  left: 50%;
+  transform: translateX(-50%) translateY(2px);
+  white-space: nowrap;
+  padding: 4px 8px;
+  background: var(--panel-bg);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  color: var(--ink-900);
+  font-family: var(--terminal-font);
+  font-size: 10px;
+  line-height: 1.3;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+  z-index: 80;
+}
+.webengine-btn[data-tooltip]:hover::after,
+.webengine-btn[data-tooltip]:focus-visible::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
 .webengine-bar-sep {
   flex: none;
   width: 1px;
@@ -9303,6 +9333,15 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   min-height: 0;
   border: 0;
   display: inline-flex;
+}
+/* Device-emulation mode: centre a fixed-width viewport on the dark letterbox. */
+.webengine-stage.is-device {
+  justify-content: center;
+  background: var(--surface-2);
+}
+.webengine-stage.is-device .webengine-view {
+  border-left: 1px solid var(--border-strong);
+  border-right: 1px solid var(--border-strong);
 }
 
 .webengine-empty {
@@ -9561,6 +9600,7 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .webengine-spin, .webengine-live-dot { animation: none; }
+  .webengine-btn[data-tooltip]::after { transition: none; }
 }
 .ascii-war {
   position: relative;
@@ -9740,71 +9780,6 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .subagent-bar-spin { animation: none; }
-}
-
-/* ══ Soviet-7 council bar ══════════════════════════════════════════════════
-   Seven advisor seats fill as each finishes, then a spinner for synthesis. */
-.council-bar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
-  padding: 8px 11px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface-2);
-  animation: thinking-label-swap .25s ease-out;
-}
-.council-seats { display: flex; gap: 4px; flex: none; }
-.council-seat {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  border: 1px solid var(--ink-400);
-  background: transparent;
-  transition: background .2s ease, border-color .2s ease;
-}
-.council-seat.is-pending { opacity: .5; }
-.council-seat.is-running {
-  background: var(--ink-800);
-  border-color: var(--ink-800);
-  animation: chat-rail-pulse 1.2s ease-in-out infinite;
-}
-.council-seat.is-done { background: var(--ink-950); border-color: var(--ink-950); }
-.council-seat.is-error { background: var(--danger); border-color: var(--danger); }
-.council-synth-spin {
-  flex: none;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  border: 2px solid var(--ink-300);
-  border-top-color: var(--ink-950);
-  animation: subagent-spin .7s linear infinite;
-}
-.council-text {
-  flex: 1 1 auto;
-  min-width: 0;
-  font-family: var(--terminal-font);
-  font-size: 12px;
-  letter-spacing: .02em;
-  color: var(--ink-800);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.council-count {
-  flex: none;
-  padding: 1px 8px;
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  background: var(--surface);
-  font-family: var(--terminal-font);
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-  color: var(--ink-600);
-}
-@media (prefers-reduced-motion: reduce) {
-  .council-seat.is-running, .council-synth-spin { animation: none; }
 }
 
 /* ══ Git ═══════════════════════════════════════════════════════════════════

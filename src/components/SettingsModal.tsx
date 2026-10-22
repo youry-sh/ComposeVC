@@ -367,20 +367,12 @@ const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, 
   const draft = state.draft;
   const aiRuntime = draft.aiRuntime || {
     agentCompletionNotifications: true,
-    soviet7ModelId: "",
     labInPromptModelId: "",
     labInSearchModelId: "",
     fortaniModelId: "",
     cloudflareAccountId: "",
     cloudflareApiToken: "",
   };
-  const soviet7ModelId =
-    typeof aiRuntime.soviet7ModelId === "string" ? aiRuntime.soviet7ModelId.trim() : "";
-  const soviet7ModelMatch = soviet7ModelId
-    ? draft.models.find((m) => m.id === soviet7ModelId || m.name === soviet7ModelId)
-    : null;
-  // Controlled <select> must only use a value that exists in options — orphan ids look stuck on gpt-4o.
-  const soviet7SelectValue = soviet7ModelMatch ? soviet7ModelMatch.id : "";
   const labInPromptModelId =
     typeof aiRuntime.labInPromptModelId === "string" ? aiRuntime.labInPromptModelId.trim() : "";
   const labInSearchModelId =
@@ -632,26 +624,6 @@ const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, 
                         : labels.finishNotificationsOff}
                     </span>
                   </button>
-                </div>
-
-                <div className="settings-card">
-                  <div className="settings-card-title">Soviet-7 council model</div>
-                  <div className="grid gap-2">
-                    <p className="text-[11px] leading-snug text-ink-500">
-                      Model for all 7 advisors only. Empty = same as active chat model.
-                    </p>
-                    <UiSelect
-                      ariaLabel="Soviet-7 council model"
-                      value={soviet7SelectValue}
-                      options={modelOptions}
-                      onChange={(next) => updateAiRuntime({ soviet7ModelId: next || "" })}
-                    />
-                    {soviet7ModelId && !soviet7ModelMatch ? (
-                      <p className="text-[11px] leading-snug" style={{ color: "var(--danger)" }}>
-                        Saved soviet7 model &quot;{soviet7ModelId}&quot; is missing — falls back to main model.
-                      </p>
-                    ) : null}
-                  </div>
                 </div>
 
                 <div className="settings-card">

@@ -2122,18 +2122,16 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
 
     let completedSuccessfully = false;
     try {
-      // lopster | soviet-7 — council fan-out happens in the main process.
+      // lopster — council fan-out happens in the main process.
       if (isViewingRunSession()) {
         setAgentStatusLabel(
           thinkingMaxRef.current
             ? "Thinking-max"
-            : modeAtSend === "soviet-7"
-              ? "Soviet-7 · council starting…"
-              : modeAtSend === "lab-in"
-                ? "LAB-IN · improving prompt…"
-                : modeAtSend === "fortani"
-                  ? "FoRtani · LAB-IN starting…"
-                  : null
+            : modeAtSend === "lab-in"
+              ? "LAB-IN · improving prompt…"
+              : modeAtSend === "fortani"
+                ? "FoRtani · LAB-IN starting…"
+                : null
         );
       }
       // Rebuild tool calls/results from toolSteps so send/merge never drops tool history
@@ -2157,7 +2155,7 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
           ];
 
       const requestAgentMode: MainAgentMode =
-        modeAtSend === "soviet-7" || modeAtSend === "lab-in" || modeAtSend === "fortani" ? modeAtSend : "lopster";
+        modeAtSend === "lab-in" || modeAtSend === "fortani" ? modeAtSend : "lopster";
 
       const response = await window.lopster?.sendChatRequest({
         modelId: modelIdAtSend,
@@ -2177,20 +2175,7 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
       const resolvedLimit = Number(responseMeta?.contextLimit ?? responseMeta?.model?.contextLimit);
       if (Number.isFinite(resolvedLimit) && resolvedLimit > 0) setResolvedContextLimit(resolvedLimit);
 
-        // Soviet-7: stay on lopster after handoff.
-        if (modeAtSend === "soviet-7" || soviet7ActiveRunRef.current) {
-          soviet7ActiveRunRef.current = false;
-          setAgentMode("lopster");
-          agentModeRef.current = "lopster";
-          persist(
-            rootPathRef.current,
-            activeSessionIdRef.current,
-            selectedModelIdRef.current,
-            "lopster"
-          );
-        }
-
-        if (response?.sessionId) {
+      if (response?.sessionId) {
           const resolvedId = String(response.sessionId);
           const viewingBefore = isViewingRunSession();
           if (pendingRunRef.current) adoptPendingRun(resolvedId);
@@ -2402,18 +2387,6 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
     } catch (error) {
       markSessionRunning(runSessionId, false);
       reportDesk(error instanceof Error ? error.message : "failed");
-      if (modeAtSend === "soviet-7" || soviet7ActiveRunRef.current) {
-        // After council fan-out (or fail mid-run) leave UI on normal ComposeVC — no sticky mode.
-        soviet7ActiveRunRef.current = false;
-        setAgentMode("lopster");
-        agentModeRef.current = "lopster";
-        persist(
-          rootPathRef.current,
-          activeSessionIdRef.current,
-          selectedModelIdRef.current,
-          "lopster"
-        );
-      }
       if (isViewingRunSession()) {
         setRetryInfo(null);
         setAgentStatusLabel(null);

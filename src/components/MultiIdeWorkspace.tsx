@@ -36,7 +36,7 @@ export type MultiIdeSlotState = {
   sessionId: string | null;
   /** Per-panel model — independent of global settings */
   selectedModelId: string | null;
-  /** Per-panel agent mode: lopster | soviet-7 | lab-in */
+  /** Per-panel agent mode: lopster | lab-in | fortani */
   agentMode: MainAgentMode;
   /** Which workspace this chat panel belongs to. */
   workspaceId: string;
@@ -92,7 +92,6 @@ function isAgentMode(value: unknown): value is MainAgentMode {
   // Legacy "planner" falls through to default "lopster".
   return (
     value === "lopster" ||
-    value === "soviet-7" ||
     value === "lab-in" ||
     value === "fortani"
   );
