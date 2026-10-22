@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import AsciiWar from "./AsciiWar";
+import FlowerBloom from "./FlowerBloom";
 import GitPanel from "./GitPanel";
 import { RunnerJob } from "../types";
 import {
@@ -202,9 +202,9 @@ const ChatAside: React.FC<Props> = ({ chatCount, runningPanels, activeRootPath, 
         )}
       </section>
 
-      {/* Idle decoration — runs on its own, nothing to configure. */}
+      {/* Idle decoration — a red spider lily that blooms forever on its own. */}
       <section className="aside-block aside-block-war">
-        <AsciiWar />
+        <FlowerBloom />
       </section>
     </aside>
   );
