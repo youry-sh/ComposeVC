@@ -331,6 +331,7 @@ contextBridge.exposeInMainWorld("lopster", {
   close: () => ipcRenderer.invoke("window:close"),
   getSystemMetrics: () => ipcRenderer.invoke("system:getMetrics"),
   getWorkerPoolStats: () => ipcRenderer.invoke("workerPool:stats"),
+  usageGetSnapshot: () => ipcRenderer.invoke("usage:getSnapshot"),
   sizeworkoutSnapshot: (workspaceId) => ipcRenderer.invoke("sizeworkout:snapshot", workspaceId || null),
   sizeworkoutUpdate: (input) => ipcRenderer.invoke("sizeworkout:update", input || {}),
   sizeworkoutReset: (workspaceId) => ipcRenderer.invoke("sizeworkout:reset", workspaceId || "default"),
