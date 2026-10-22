@@ -91,7 +91,7 @@ const TitleBar: React.FC<TitleBarProps> = ({
     return () => window.clearInterval(id);
   }, []);
 
-  // system metrics: memory + uptime + proxy tokens
+  // system metrics: memory + proxy tokens
   useEffect(() => {
     let cancelled = false;
     const refresh = async () => {
@@ -103,14 +103,6 @@ const TitleBar: React.FC<TitleBarProps> = ({
         const mb = memBytes / (1024 * 1024);
         if (mb > memPeak.current) memPeak.current = mb;
         setMemoryRatio(mb / memPeak.current);
-        if (typeof sys.uptimeSec === "number") {
-          uptimeSecRef.current = sys.uptimeSec;
-          uptimeSyncAtRef.current = Date.now();
-          setUptime(formatUptime(sys.uptimeSec));
-        }
-        if (typeof sys.totalRuntimeSec === "number") {
-          setTotalRuntime(formatTotalRuntime(sys.totalRuntimeSec));
-        }
       } catch {
         /* ignore */
       }
@@ -228,11 +220,9 @@ const TitleBar: React.FC<TitleBarProps> = ({
           </div>
         </div>
 
-        <div className="topbar-clock" title="Uptime">
+        <div className="topbar-clock">
           <span className="topbar-clock-time">{clock}</span>
-          <span className="topbar-clock-date">
-            {dateStr} · up {uptime} · total {totalRuntime}
-          </span>
+          <span className="topbar-clock-date">{dateStr}</span>
         </div>
       </div>
 
