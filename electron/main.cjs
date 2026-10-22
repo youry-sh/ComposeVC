@@ -2644,6 +2644,22 @@ async function executeChatRequest(event, request, overrides = {}) {
   const isExternalRun = isTelegramRun;
   let sessionId = request.sessionId || null;
   const incomingMessages = Array.isArray(request.messages) ? request.messages : [];
+  // Usage metric: characters the user typed in their prompt. Count only the
+  // latest real user turn (never assistant/tool output) and only in-chat runs
+  // (Telegram/remote channels are not "typed in the IDE").
+  if (!isTelegramRun) {
+    try {
+      const lastUser = [...incomingMessages].reverse().find(
+        (m) => m && m.role === "user" && isRealUserMessage(m)
+      );
+      if (lastUser) {
+        const text = (contentPartsToText(lastUser.content) || "").trim();
+        usageStore.recordUserPrompt(text.length);
+      }
+    } catch {
+      /* usage tracking must never break chat send */
+    }
+  }
   let requestMessages = incomingMessages;
   if (persistSession) {
     if (!sessionId) {
