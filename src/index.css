@@ -8892,6 +8892,85 @@
 }
 .aside-block-war .ascii-war-hud { padding: 0 12px; }
 
+/* ── Flower bloom (idle decoration, right column) ──────────────────────
+   A red spider lily that grows and re-blooms forever on a pure CSS loop. */
+.flower-bloom {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 172px;
+  padding: 6px 0 2px;
+}
+.flower-svg {
+  width: 152px;
+  height: 152px;
+  overflow: visible;
+}
+.flower-glow {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: fb-glow-pulse 5s ease-in-out infinite;
+}
+.flower-petal {
+  transform-box: fill-box;
+  transform-origin: bottom center;
+  animation: fb-bloom 8s ease-in-out infinite;
+}
+.flower-stamen {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: fb-stamen 8s ease-in-out infinite;
+}
+.flower-center-dot {
+  animation: fb-center 8s ease-in-out infinite;
+}
+.flower-pollen-dot {
+  fill: rgba(255, 215, 161, 0.85);
+  animation-name: fb-rise;
+  animation-timing-function: ease-out;
+  animation-iteration-count: infinite;
+}
+
+@keyframes fb-bloom {
+  0%   { transform: scale(0.14) rotate(14deg); opacity: 0.25; }
+  30%  { transform: scale(1.10) rotate(-4deg); opacity: 1; }
+  45%  { transform: scale(0.95) rotate(0deg); opacity: 1; }
+  60%  { transform: scale(1.02) rotate(0deg); opacity: 1; }
+  78%  { transform: scale(1) rotate(0deg); opacity: 1; }
+  100% { transform: scale(0.14) rotate(14deg); opacity: 0.25; }
+}
+@keyframes fb-stamen {
+  0%   { transform: scaleY(0.25); opacity: 0; }
+  38%  { transform: scaleY(0.25); opacity: 0; }
+  55%  { transform: scaleY(1.12); opacity: 1; }
+  68%  { transform: scaleY(1); opacity: 1; }
+  100% { transform: scaleY(0.25); opacity: 0; }
+}
+@keyframes fb-glow-pulse {
+  0%, 100% { transform: scale(0.86); opacity: 0.55; }
+  50%      { transform: scale(1.08); opacity: 1; }
+}
+@keyframes fb-center {
+  0%, 100% { opacity: 0.5; }
+  50%      { opacity: 1; }
+}
+@keyframes fb-rise {
+  0%   { transform: translateY(0); opacity: 0; }
+  12%  { opacity: 0.9; }
+  85%  { opacity: 0.35; }
+  100% { transform: translateY(-70px); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flower-glow,
+  .flower-petal,
+  .flower-stamen,
+  .flower-center-dot,
+  .flower-pollen-dot {
+    animation: none;
+  }
+}
+
 /* ── Media dock: a real browser pinned to the bottom of the right column ──
    Square, hairline-framed, same quiet type as the blocks above. Collapsed it
    is just a 30px header — the page underneath stays alive and keeps playing. */
