@@ -958,6 +958,8 @@ const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, 
               </div>
             )}
 
+            {activeTab === "cfmail" && <CfMailSettings />}
+
           </div>
           </div>
         </section>
