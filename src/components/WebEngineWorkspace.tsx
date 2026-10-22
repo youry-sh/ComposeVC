@@ -639,6 +639,11 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({
 
   const selectedInfo = selectedEl || hoverEl;
   const hasErrors = logs.some((l) => l.level === "error");
+  // Tooltip suffixes: state the reason a disabled button is inactive.
+  const noPageSuffix = url ? "" : " — сначала откройте сайт";
+  const desktopTooltipSuffix = !isDesktop ? " — только в приложении" : !url ? " — сначала откройте сайт" : "";
+  const noErrorsSuffix = hasErrors ? "" : " — ошибок в консоли нет";
+  const noElementSuffix = selectedEl ? "" : " — выберите элемент в инспекторе";
 
   return (
     <div className="webengine-root">
