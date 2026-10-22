@@ -111,7 +111,7 @@ async function copyText(text: string): Promise<boolean> {
 const INSPECTOR_INSTALL = `(function () {
   if (window.__cvcInspectorInstalled) return;
   window.__cvcInspectorInstalled = true;
-  var ACCENT = "#7c3aed";
+  var ACCENT = "#4f8cff";
   function describe(el) {
     if (!el || el.nodeType !== 1) return null;
     var tag = el.tagName.toLowerCase();
@@ -423,8 +423,11 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({ chatKey, rootPa
         }
         return;
       }
-      const levelMap: Record<number, LogLevel> = { 0: "verbose", 1: "info", 2: "warning", 3: "error" };
-      const level = levelMap[detail.level ?? 1] ?? "info";
+      const levelMap: Record<string, LogLevel> = {
+        "0": "verbose", "1": "info", "2": "warning", "3": "error",
+        verbose: "verbose", info: "info", warning: "warning", error: "error",
+      };
+      const level = levelMap[String(detail.level ?? 1)] ?? "info";
       appendLog(level, message, typeof detail.sourceId === "string" ? detail.sourceId : "");
     };
     const onFinish = () => {
