@@ -9476,6 +9476,8 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   flex-direction: column;
   gap: 1px;
 }
+/* The «Консоль» toolbar button collapses/expands the log list to its header. */
+.webengine-console:not(.is-open) .webengine-console-list { display: none; }
 .webengine-console-empty {
   padding: 10px 8px;
   font-size: 11px;
