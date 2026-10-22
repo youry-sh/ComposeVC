@@ -335,6 +335,203 @@ const UiSelect: React.FC<{
   );
 };
 
+/**
+ * CF Mail (cf_mail) credentials editor — reads/writes the shared
+ * runtime-app/data/config.json store used by the cf_mail tool.
+ * Self-contained: loads on mount, saves explicitly, can probe the worker.
+ */
+const CfMailSettings: React.FC = () => {
+  const [cfg, setCfg] = useState<CfMailConfig | null>(null);
+  const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ ok: boolean; reason?: string; status?: number } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    window.lopster
+      ?.readCfMailConfig?.()
+      .then((loaded) => {
+        if (!cancelled && loaded) setCfg(loaded);
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) setErrorMsg(error instanceof Error ? error.message : "Failed to load CF Mail config");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const set = (patch: Partial<CfMailConfig>) =>
+    setCfg((prev) => (prev ? { ...prev, ...patch } : (patch as CfMailConfig)));
+
+  const save = useCallback(async () => {
+    if (!cfg) return;
+    setStatus("saving");
+    setErrorMsg(null);
+    try {
+      const saved = await window.lopster?.writeCfMailConfig?.(cfg);
+      if (saved) {
+        setCfg(saved);
+        setStatus("saved");
+      } else {
+        setStatus("error");
+        setErrorMsg("CF Mail bridge is unavailable");
+      }
+    } catch (error: unknown) {
+      setStatus("error");
+      setErrorMsg(error instanceof Error ? error.message : "Failed to save CF Mail config");
+    }
+  }, [cfg]);
+
+  const test = useCallback(async () => {
+    setTesting(true);
+    setTestResult(null);
+    setErrorMsg(null);
+    try {
+      // Persist first so the probe always runs against the latest values.
+      if (cfg) await window.lopster?.writeCfMailConfig?.(cfg);
+      const res = await window.lopster?.testCfMail?.();
+      setTestResult(res || null);
+    } catch (error: unknown) {
+      setErrorMsg(error instanceof Error ? error.message : "CF Mail test failed");
+    } finally {
+      setTesting(false);
+    }
+  }, [cfg]);
+
+  if (!cfg) {
+    return <div className="settings-empty">Loading CF Mail configuration…</div>;
+  }
+
+  const configured = Boolean(cfg.cfworker_api_url && cfg.cfworker_admin_token);
+
+  return (
+    <div className="settings-body-scroll settings-chat-scrollbar">
+      <div className="settings-section">
+        <div className="settings-card">
+          <div className="flex h-7 items-center gap-2">
+            <Mail className="h-3.5 w-3.5 shrink-0 text-ink-600" />
+            <div className="settings-card-title !mb-0">CF Worker temp-mail</div>
+            <span
+              className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full"
+              style={{ backgroundColor: configured ? PRIMARY : "var(--ink-400)" }}
+              title={configured ? "Configured" : "Not configured"}
+            />
+          </div>
+          <p className="mt-1 text-[11px] leading-snug text-ink-500">
+            Credentials for the <span className="font-mono">cf_mail</span> tool. Saved to{" "}
+            <span className="font-mono text-ink-700">runtime-app/data/config.json</span>.
+          </p>
+
+          <div className="mt-3 grid gap-2">
+            <Field
+              label="API URL"
+              mono
+              value={cfg.cfworker_api_url}
+              placeholder="https://…workers.dev"
+              onChange={(next) => set({ cfworker_api_url: next.trim() })}
+            />
+            <Field
+              label="Admin token"
+              mono
+              type="password"
+              value={cfg.cfworker_admin_token}
+              placeholder="x-admin-auth token"
+              onChange={(next) => set({ cfworker_admin_token: next.trim() })}
+            />
+            <div className="grid grid-cols-2 gap-2">
+              <Field
+                label="Domain"
+                mono
+                value={cfg.cfworker_domain}
+                placeholder="default domain"
+                onChange={(next) => set({ cfworker_domain: next.trim() })}
+              />
+              <Field
+                label="Fingerprint"
+                mono
+                value={cfg.cfworker_fingerprint}
+                placeholder="optional"
+                onChange={(next) => set({ cfworker_fingerprint: next.trim() })}
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => set({ enable_prefix: !cfg.enable_prefix })}
+              className="settings-toggle-row"
+            >
+              <span className="text-[12px] leading-none" style={{ color: cfg.enable_prefix ? "var(--ink-950)" : "var(--ink-700)" }}>
+                Enable prefix on new addresses
+              </span>
+              <span
+                className={`relative h-5 w-9 shrink-0 rounded-full border transition-colors ${
+                  cfg.enable_prefix ? "theme-toggle-on" : "border-ink-300 bg-ink-300"
+                }`}
+              >
+                <span
+                  className={`absolute top-[3px] h-3.5 w-3.5 rounded-full theme-toggle-thumb shadow-sm transition-transform ${
+                    cfg.enable_prefix ? "translate-x-4" : "translate-x-0.5"
+                  }`}
+                />
+              </span>
+            </button>
+          </div>
+
+          <div className="mt-4 flex items-center gap-2">
+            <button type="button" onClick={save} disabled={status === "saving"} className="ui-btn-primary">
+              {status === "saving" ? "Saving…" : "Save"}
+            </button>
+            <button
+              type="button"
+              onClick={test}
+              disabled={testing || !configured}
+              className="theme-soft"
+              style={{ color: "var(--ink-800)" }}
+            >
+              {testing ? "Testing…" : "Test connection"}
+            </button>
+            <span className="min-w-0 truncate text-[10px] tracking-[0.03em]" style={{ color: "var(--ink-600)" }}>
+              {status === "saved"
+                ? "Saved to JSON"
+                : status === "error"
+                  ? errorMsg || "Save failed"
+                  : ""}
+            </span>
+          </div>
+
+          {testResult ? (
+            <div
+              className="mt-2 rounded-md border px-2.5 py-2 text-[11px] leading-snug"
+              style={{
+                borderColor: testResult.ok ? "var(--border-strong)" : "var(--danger)",
+                color: testResult.ok ? "var(--ink-800)" : "var(--danger)",
+              }}
+            >
+              {testResult.ok
+                ? `Worker reachable (HTTP ${testResult.status ?? "ok"}).`
+                : testResult.reason === "missing_credentials"
+                  ? "Add API URL and Admin token first."
+                  : testResult.reason === "bad_token"
+                    ? "Worker rejected the admin token (401/403)."
+                    : testResult.reason === "timeout"
+                      ? "Worker timed out — check the API URL."
+                      : `Worker unreachable (${testResult.reason ?? "error"}).`}
+            </div>
+          ) : null}
+
+          {cfg.config_path ? (
+            <p className="mt-2 truncate text-[10px] text-ink-500" title={cfg.config_path}>
+              {cfg.config_path}
+            </p>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, labels, language, onLanguageChange, onChange }) => {
   const [state, dispatch] = useReducer(fsmReducer, { status: "idle", draft: config, errorMsg: null, tx: 0 });
   const [activeTab, setActiveTab] = useState<NavTab>("appearance");
@@ -426,6 +623,7 @@ const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, 
     appearance: labels.appearance,
     ai: labels.settingsAiRuntime,
     shortcuts: labels.settingsShortcuts,
+    cfmail: "CF Mail",
   }[activeTab];
 
   return (
@@ -463,6 +661,13 @@ const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, 
               label={labels.settingsShortcuts}
               hint={labels.mouseSnippets}
               onClick={() => setActiveTab("shortcuts")}
+            />
+            <NavItem
+              active={activeTab === "cfmail"}
+              icon={<Mail className="h-4 w-4" />}
+              label="CF Mail"
+              hint="cf_mail"
+              onClick={() => setActiveTab("cfmail")}
             />
           </nav>
           <div className="settings-rail-foot">
