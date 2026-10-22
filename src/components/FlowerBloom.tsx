@@ -31,18 +31,18 @@ const FlowerBloom: React.FC = () => (
     <svg className="flower-svg" viewBox="0 0 200 200">
       <defs>
         <radialGradient id="fb-glow" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="rgba(226, 62, 92, 0.34)" />
-          <stop offset="60%" stopColor="rgba(226, 62, 92, 0.10)" />
-          <stop offset="100%" stopColor="rgba(226, 62, 92, 0)" />
+          <stop offset="0%" stopColor="rgba(255, 255, 255, 0.30)" />
+          <stop offset="60%" stopColor="rgba(255, 255, 255, 0.10)" />
+          <stop offset="100%" stopColor="rgba(255, 255, 255, 0)" />
         </radialGradient>
         <linearGradient id="fb-petal" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#e85072" />
-          <stop offset="55%" stopColor="#b02440" />
-          <stop offset="100%" stopColor="#75131f" />
+          <stop offset="0%" stopColor="#ffffff" />
+          <stop offset="55%" stopColor="#e6e6e6" />
+          <stop offset="100%" stopColor="#a9a9a9" />
         </linearGradient>
         <linearGradient id="fb-stem" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#4a2c30" />
-          <stop offset="100%" stopColor="#1f1416" />
+          <stop offset="0%" stopColor="#6b6b6b" />
+          <stop offset="100%" stopColor="#2b2b2b" />
         </linearGradient>
       </defs>
 
@@ -59,7 +59,7 @@ const FlowerBloom: React.FC = () => (
       />
       <path
         d="M100 152 C 88 150 79 143 75 134 C 88 139 96 144 100 152 Z"
-        fill="#2b1c20"
+        fill="#3a3a3a"
         className="flower-leaf"
       />
 
@@ -80,8 +80,8 @@ const FlowerBloom: React.FC = () => (
         {Array.from({ length: STAMENS }).map((_, i) => (
           <g key={`s${i}`} transform={`rotate(${(360 / STAMENS) * i + 30})`}>
             <g className="flower-stamen" style={{ animationDelay: `${i * 0.16}s` }}>
-              <path d={STAMEN_PATH} fill="none" stroke="#f3c0cb" strokeWidth="1.4" strokeLinecap="round" />
-              <circle cx="0" cy="-76" r="2.4" fill="#ffd7a1" className="flower-anther" />
+              <path d={STAMEN_PATH} fill="none" stroke="#ededed" strokeWidth="1.3" strokeLinecap="round" />
+              <circle cx="0" cy="-76" r="2.4" fill="#cfcfcf" className="flower-anther" />
             </g>
           </g>
         ))}
