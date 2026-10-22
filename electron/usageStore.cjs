@@ -322,4 +322,6 @@ class UsageStore {
   }
 }
 
-module.exports = new UsageStore();
+const store = new UsageStore();
+module.exports = store;
+module.exports.UsageStore = UsageStore;

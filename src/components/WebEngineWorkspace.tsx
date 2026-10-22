@@ -723,7 +723,8 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({
         <button
           type="button"
           className={`webengine-btn ${deviceWidth ? "is-active" : ""}`}
-          data-tooltip="Режим устройства: мобильный → планшет → десктоп"
+          data-tooltip={`Режим устройства: мобильный → планшет → десктоп${noPageSuffix}`}
+          data-tooltip-align="end"
           aria-label="Режим устройства"
           aria-pressed={deviceWidth !== null}
           onClick={cycleDevice}
@@ -734,7 +735,8 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({
         <button
           type="button"
           className="webengine-btn"
-          data-tooltip="Уменьшить масштаб страницы"
+          data-tooltip={`Уменьшить масштаб страницы${desktopTooltipSuffix}`}
+          data-tooltip-align="end"
           aria-label="Уменьшить"
           onClick={zoomOut}
           disabled={!isDesktop || !url}
@@ -744,7 +746,8 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({
         <button
           type="button"
           className="webengine-btn"
-          data-tooltip="Увеличить масштаб страницы"
+          data-tooltip={`Увеличить масштаб страницы${desktopTooltipSuffix}`}
+          data-tooltip-align="end"
           aria-label="Увеличить"
           onClick={zoomIn}
           disabled={!isDesktop || !url}
@@ -754,7 +757,8 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({
         <button
           type="button"
           className="webengine-btn webengine-btn-hideable"
-          data-tooltip={`Сбросить масштаб (${Math.round(zoomFactor * 100)}%)`}
+          data-tooltip={`Сбросить масштаб (${Math.round(zoomFactor * 100)}%)${desktopTooltipSuffix}`}
+          data-tooltip-align="end"
           aria-label="Сбросить масштаб"
           onClick={zoomReset}
           disabled={!isDesktop || !url}
@@ -764,7 +768,8 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({
         <button
           type="button"
           className="webengine-btn webengine-btn-hideable"
-          data-tooltip="Скриншот страницы в буфер обмена"
+          data-tooltip={`Скриншот страницы в буфер обмена${desktopTooltipSuffix}`}
+          data-tooltip-align="end"
           aria-label="Скриншот"
           onClick={captureScreenshot}
           disabled={!isDesktop || !url}
@@ -774,7 +779,8 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({
         <button
           type="button"
           className="webengine-btn webengine-btn-hideable"
-          data-tooltip="Очистить кэш и жёстко перезагрузить"
+          data-tooltip={`Очистить кэш и жёстко перезагрузить${desktopTooltipSuffix}`}
+          data-tooltip-align="end"
           aria-label="Очистить кэш"
           onClick={clearCache}
           disabled={!isDesktop || !url}
@@ -784,7 +790,8 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({
         <button
           type="button"
           className="webengine-btn"
-          data-tooltip="Скопировать все ошибки консоли"
+          data-tooltip={`Скопировать все ошибки консоли${noErrorsSuffix}`}
+          data-tooltip-align="end"
           aria-label="Скопировать ошибки"
           onClick={copyErrors}
           disabled={!hasErrors}
@@ -794,7 +801,8 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({
         <button
           type="button"
           className="webengine-btn webengine-btn-hideable"
-          data-tooltip="Скопировать HTML выбранного элемента"
+          data-tooltip={`Скопировать HTML выбранного элемента${noElementSuffix}`}
+          data-tooltip-align="end"
           aria-label="Скопировать HTML элемента"
           onClick={copyElementHtml}
           disabled={!selectedEl}

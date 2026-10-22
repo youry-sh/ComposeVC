@@ -9273,6 +9273,17 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
+/* Buttons near the right edge anchor the tooltip to their right so it never
+   overflows (and gets clipped by .webengine-root's overflow:hidden). */
+.webengine-btn[data-tooltip][data-tooltip-align="end"]::after {
+  left: auto;
+  right: 0;
+  transform: translateY(2px);
+}
+.webengine-btn[data-tooltip][data-tooltip-align="end"]:hover::after,
+.webengine-btn[data-tooltip][data-tooltip-align="end"]:focus-visible::after {
+  transform: translateY(0);
+}
 .webengine-bar-sep {
   flex: none;
   width: 1px;
