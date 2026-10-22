@@ -10,6 +10,7 @@ import CustomToolsWorkspace from "./components/CustomToolsWorkspace";
 import TerminalWorkspace from "./components/TerminalWorkspace";
 import StorageModal from "./components/StorageModal";
 import KnowledgeWorkspace from "./components/KnowledgeWorkspace";
+import WebEngineWorkspace from "./components/WebEngineWorkspace";
 import MultiIdeWorkspace, {
   loadMultiIdeSlots,
   saveMultiIdeSlots,
@@ -24,7 +25,7 @@ import {
 import { CustomTool, ProjectSearchResult, ProviderConfig } from "./types";
 import { dispatchInsertChatInput, loadMouseSnippets, textForMouseButton } from "./utils/mouseSnippets";
 
-type Panel = "multiide" | "proxy" | "settings" | "customtools" | "runner" | "terminal" | "knowledge";
+type Panel = "multiide" | "webengine" | "proxy" | "settings" | "customtools" | "runner" | "terminal" | "knowledge";
 
 const App: React.FC = () => {
   const [rootPath, setRootPath] = useState<string | null>(null);
@@ -64,6 +65,12 @@ const App: React.FC = () => {
   const [runnerSendTarget, setRunnerSendTarget] = useState<string | null>(null);
   const [customTools, setCustomTools] = useState<CustomTool[]>([]);
   const [appLanguage, setAppLanguage] = useState<AppLanguage>(() => getStoredLanguage());
+  /** Which chat/project the Web Engine tab is showing right now. */
+  const [webEngineTarget, setWebEngineTarget] = useState<{
+    chatKey: string;
+    rootPath: string | null;
+    projectName: string;
+  }>({ chatKey: "default", rootPath: null, projectName: "" });
   const t = translations[appLanguage];
 
   useEffect(() => {
