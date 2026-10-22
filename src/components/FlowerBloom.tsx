@@ -86,8 +86,8 @@ const FlowerBloom: React.FC = () => (
           </g>
         ))}
 
-        <circle className="flower-center" cx="0" cy="0" r="6.5" fill="#5c0f1f" />
-        <circle className="flower-center-dot" cx="0" cy="0" r="2.4" fill="#ffd7a1" />
+        <circle className="flower-center" cx="0" cy="0" r="6.5" fill="#777777" />
+        <circle className="flower-center-dot" cx="0" cy="0" r="2.4" fill="#ffffff" />
       </g>
 
       {/* Floating pollen */}
