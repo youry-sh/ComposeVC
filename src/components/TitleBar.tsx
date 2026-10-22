@@ -12,6 +12,7 @@ import {
   IcoWebEngine,
   IcoDocs,
   IcoUsage,
+  IcoBlinds,
 } from "./topIcons";
 import {
   CONTEXT_METRICS_EVENT,
@@ -74,6 +75,7 @@ const TitleBar: React.FC<TitleBarProps> = ({
   const memPeak = useRef(1);
   const tokPeak = useRef(1);
   const ctxPeak = useRef(1);
+  const [blindsOpen, setBlindsOpen] = useState(false);
 
   // live clock + date (1s tick)
   useEffect(() => {
@@ -160,6 +162,18 @@ const TitleBar: React.FC<TitleBarProps> = ({
       <div className="titlebar-brand-block">
         <span className="titlebar-brand-copy" aria-label="ComposeVC">COMPOSE//VC</span>
       </div>
+
+      {/* Шторы (blinds) — the arrow that reveals the future-tabs drawer */}
+      <button
+        type="button"
+        title="Шторы (blinds)"
+        aria-label="Toggle blinds"
+        aria-expanded={blindsOpen}
+        onClick={() => setBlindsOpen((v) => !v)}
+        className={`titlebar-blinds-toggle ${blindsOpen ? "is-open" : ""}`}
+      >
+        <IcoBlinds className="titlebar-blinds-ico" />
+      </button>
 
       <nav className="topbar-tabs" aria-label="Workspace panels">
         {tabs.map((tab) => (

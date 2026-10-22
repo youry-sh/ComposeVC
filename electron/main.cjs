@@ -1051,20 +1051,35 @@ function installPackagedWindowHardening(win) {
 
     // While a guest page has focus (a video playing over the rail) it owns the
     // keyboard, so the app's own shortcuts never reach the renderer. Forward
-    // the ones the shell needs: Ctrl+H → chat switcher, Ctrl+Shift+W → fold.
+    // the ones the shell needs: Ctrl+H → chat switcher, Ctrl+Shift+W → fold,
+    // plus the workspace tab / search / settings hotkeys below.
     try {
       guest.on("before-input-event", (event, input) => {
         if (!input || input.type !== "keyDown") return;
         const ctrl = Boolean(input.control || input.meta);
         if (!ctrl || input.alt) return;
         const code = String(input.code || "");
+        const shift = Boolean(input.shift);
         let channel = null;
-        if (code === "KeyH" && !input.shift) channel = "chat:switcher-toggle";
-        else if (code === "KeyW" && input.shift) channel = "web:dock-fold";
-        if (!channel) return;
+        let hotkey = null;
+        if (code === "KeyH" && !shift) channel = "chat:switcher-toggle";
+        else if (code === "KeyW" && shift) channel = "web:dock-fold";
+        else if (code === "KeyF" && shift) hotkey = { type: "toggle", target: "search" };
+        else if (!shift) {
+          if (Object.prototype.hasOwnProperty.call(PANEL_BY_DIGIT, code)) {
+            hotkey = { type: "panel", panel: PANEL_BY_DIGIT[code] };
+          } else if (code === "Backquote") {
+            hotkey = { type: "panel", panel: "terminal" };
+          } else if (code === "Comma") {
+            hotkey = { type: "toggle", target: "settings" };
+          }
+        }
+        if (!channel && !hotkey) return;
         event.preventDefault();
         try {
-          if (!wc.isDestroyed()) wc.send(channel, {});
+          if (wc.isDestroyed()) return;
+          if (channel) wc.send(channel, {});
+          if (hotkey) wc.send("shell:hotkey", hotkey);
         } catch {
           /* ignore */
         }

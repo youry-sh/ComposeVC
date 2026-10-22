@@ -117,3 +117,10 @@ export const IcoUsage: React.FC<IconProps> = ({ className }) => (
     <rect x="12.2" y="2.8" width="1.8" height="10.7" rx="0.4" fill="currentColor" fillOpacity="0.85" />
   </svg>
 );
+
+/** Blinds (Шторы) — chevron that opens/closes the future-tabs drawer under the top bar */
+export const IcoBlinds: React.FC<IconProps> = ({ className }) => (
+  <svg {...base} className={className}>
+    <path d="M3.5 6 L8 10.5 L12.5 6" />
+  </svg>
+);
