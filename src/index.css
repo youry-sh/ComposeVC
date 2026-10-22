@@ -8898,12 +8898,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 172px;
+  height: 122px;
   padding: 6px 0 2px;
 }
 .flower-svg {
-  width: 152px;
-  height: 152px;
+  width: 104px;
+  height: 104px;
   overflow: visible;
 }
 .flower-glow {
@@ -8925,26 +8925,19 @@
   animation: fb-center 8s ease-in-out infinite;
 }
 .flower-pollen-dot {
-  fill: rgba(255, 215, 161, 0.85);
+  fill: rgba(255, 255, 255, 0.72);
   animation-name: fb-rise;
   animation-timing-function: ease-out;
   animation-iteration-count: infinite;
 }
 
 @keyframes fb-bloom {
-  0%   { transform: scale(0.14) rotate(14deg); opacity: 0.25; }
-  30%  { transform: scale(1.10) rotate(-4deg); opacity: 1; }
-  45%  { transform: scale(0.95) rotate(0deg); opacity: 1; }
-  60%  { transform: scale(1.02) rotate(0deg); opacity: 1; }
-  78%  { transform: scale(1) rotate(0deg); opacity: 1; }
-  100% { transform: scale(0.14) rotate(14deg); opacity: 0.25; }
+  0%, 100% { transform: scale(0.97) rotate(-1.5deg); opacity: 1; }
+  50%      { transform: scale(1.045) rotate(1.5deg); opacity: 1; }
 }
 @keyframes fb-stamen {
-  0%   { transform: scaleY(0.25); opacity: 0; }
-  38%  { transform: scaleY(0.25); opacity: 0; }
-  55%  { transform: scaleY(1.12); opacity: 1; }
-  68%  { transform: scaleY(1); opacity: 1; }
-  100% { transform: scaleY(0.25); opacity: 0; }
+  0%, 100% { transform: scaleY(0.97); }
+  50%      { transform: scaleY(1.05); }
 }
 @keyframes fb-glow-pulse {
   0%, 100% { transform: scale(0.86); opacity: 0.55; }
