@@ -219,6 +219,10 @@ async function buildSystemPrompt({ rootPath, projectName, userDataPath }) {
        "PowerShell on Windows, executing commands as-is like a normal terminal — " +
        "but only for real shell work (npm, git, builds, tests, env diagnostics) — " +
        "never as a replacement for grep or read_file on project code.",
+    "BACKGROUND BASH LOGS (read these — do not skip):\n" +
+      "- bash background=true launches the command detached and returns immediately. Its result includes a `logFile` field — the absolute path where that process's stdout+stderr are written live.\n" +
+      "- After starting a server/daemon (npm run dev, a local server, etc.), ALWAYS read_file the returned `logFile` (tail it with offset/limit) to confirm it actually started and to watch its output — never assume it started.\n" +
+      "- All background logs live under <userData>/background-logs/; the `logFile` in the bash result is the exact file. Prefer that path over re-running the command or polling.",
     "You have internet access via 'web_search' and 'web_fetch'.\n" +
       "- Use the web when the user asks for it, the answer depends on current/external facts, a referenced page is not present locally, or an unfamiliar API/standard must be verified. Do not browse for facts already proven by the workspace or for a purely local edit.\n" +
       "- For technical decisions prefer primary sources: official documentation, specifications, release notes, source repositories, and original papers. Search snippets are discovery hints; open the supporting page before relying on a load-bearing claim.\n" +

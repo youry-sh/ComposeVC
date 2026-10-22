@@ -114,7 +114,7 @@ const INSPECTOR_INSTALL = `(function () {
   if (window.__cvcInspectorInstalled) return;
   window.__cvcInspectorInstalled = true;
   var ACCENT = "#4f8cff";
-  function describe(el) {
+  function describe(el, full) {
     if (!el || el.nodeType !== 1) return null;
     var tag = el.tagName.toLowerCase();
     var id = el.id ? "#" + el.id : "";
@@ -124,7 +124,13 @@ const INSPECTOR_INSTALL = `(function () {
     if (html.length > 500) html = html.slice(0, 500) + "…";
     var text = (el.textContent || "").trim().replace(/\\s+/g, " ");
     if (text.length > 200) text = text.slice(0, 200) + "…";
-    return { sel: tag + id + cls, tag: tag, id: el.id || "", cls: cls.slice(1), html: html, text: text };
+    var out = { sel: tag + id + cls, tag: tag, id: el.id || "", cls: cls.slice(1), html: html, text: text };
+    if (full) {
+      var fullHtml = el.outerHTML || "";
+      if (fullHtml.length > 20000) fullHtml = fullHtml.slice(0, 20000) + "…";
+      out.fullHtml = fullHtml;
+    }
+    return out;
   }
   window.__cvcLast = null;
   document.addEventListener("mouseover", function (e) {
@@ -149,7 +155,7 @@ const INSPECTOR_INSTALL = `(function () {
     var el = e.target;
     if (!el || el.nodeType !== 1) return;
     e.preventDefault(); e.stopPropagation();
-    var info = describe(el);
+    var info = describe(el, true);
     if (info) console.log("__CVC_IC__" + JSON.stringify(info));
   }, true);
 })(); void 0;`;
