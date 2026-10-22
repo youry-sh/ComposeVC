@@ -1694,6 +1694,8 @@ ipcMain.handle("shell:openExternal", (_event, url) => {
   return true;
 });
 
+ipcMain.handle("worktimer:get", () => workTimerStore.get());
+
 ipcMain.handle("config:read", async () => {
   const config = await readProviderConfig();
   configureTelegramFromProviderConfig(config);

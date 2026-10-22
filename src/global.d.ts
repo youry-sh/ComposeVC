@@ -617,6 +617,16 @@ declare global {
       onDeskClear: (callback: () => void) => () => void;
       deskReply: (payload: { text?: string; context?: string }) => void;
       onAgentProgress: (callback: (progress: AgentToolProgress) => void) => () => void;
+      getWorkTimer: () => Promise<{
+        set: boolean;
+        active: boolean;
+        startedAt: number | null;
+        deadlineAt: number | null;
+        totalMinutes: number | null;
+        remainingSeconds: number;
+        remainingMinutes: number;
+        elapsedSeconds: number;
+      }>;
       openFolder: () => Promise<FileNode | null>;
       readFolder: (rootPath: string) => Promise<FileNode>;
       searchProject: (rootPath: string, query: string) => Promise<ProjectSearchResult[]>;

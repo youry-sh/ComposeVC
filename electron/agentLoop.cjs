@@ -239,6 +239,7 @@ function toDisplayContent(data, toolName = "") {
 }
 
 async function runAgentLoop(opts) {
+  if (!opts?.isSubagent) workTimerStore.clear();
   await chatSessions.acquireAgentLoopSlot();
   try {
     return await runAgentLoopInner(opts);
@@ -803,6 +804,10 @@ async function runAgentLoopInner({
     modelId: model?.id || toolContext?.modelId || null,
     modelName: model?.name || toolContext?.modelName || null,
     workTimer,
+    onWorkTimer: () => {
+      workTimerStore.set(workTimer);
+      onProgress?.({ type: "work_timer", ...workTimerStore.get() });
+    },
     isSubagent: Boolean(isSubagent),
     // Lets the think tool enforce stricter cycle content while the mode is locked on.
     thinkingMax: Boolean(thinkingMax),

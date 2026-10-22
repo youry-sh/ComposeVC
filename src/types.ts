@@ -391,7 +391,8 @@ export interface AgentToolProgress {
     | "context_usage"
     | "ask_user"
     | "ask_otp"
-    | "status";
+    | "status"
+    | "work_timer";
   toolCallId?: string;
   name?: string;
   text?: string;
