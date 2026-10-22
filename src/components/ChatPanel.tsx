@@ -3487,8 +3487,9 @@ const MessageActions: React.FC<{
   images?: ChatImageAttachment[];
   retryLabel: string;
   retryDisabled?: boolean;
+  showCopy?: boolean;
   onRetry: (content: string, images?: ChatImageAttachment[]) => void;
-}> = ({ content, role, images, retryLabel, retryDisabled = false, onRetry }) => {
+}> = ({ content, role, images, retryLabel, retryDisabled = false, showCopy = true, onRetry }) => {
   const [copied, setCopied] = useState(false);
 
   const copyMessage = async () => {
@@ -3499,13 +3500,15 @@ const MessageActions: React.FC<{
 
   return (
     <div className="mt-2 flex items-center gap-1 text-ink-500">
-      <button
-        onClick={copyMessage}
-        className="h-6 px-1.5 flex items-center gap-1 rounded-md outline-none hover:bg-ink-100 hover:text-ink-950 transition-colors"
-      >
-        <Copy className="w-3.5 h-3.5" />
-        {copied && <span className="text-[11px]">Copied</span>}
-      </button>
+      {showCopy && (
+        <button
+          onClick={copyMessage}
+          className="h-6 px-1.5 flex items-center gap-1 rounded-md outline-none hover:bg-ink-100 hover:text-ink-950 transition-colors"
+        >
+          <Copy className="w-3.5 h-3.5" />
+          {copied && <span className="text-[11px]">Copied</span>}
+        </button>
+      )}
       {role === "user" && (
         <button
           onClick={() => onRetry(content, images)}
