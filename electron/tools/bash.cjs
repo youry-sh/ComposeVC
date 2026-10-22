@@ -1,5 +1,6 @@
 const { execFile } = require("child_process");
 const path = require("path");
+const backgroundTasks = require("../backgroundTasks.cjs");
 
 const MAX_OUTPUT_CHARS = 20000;
 const DEFAULT_TIMEOUT_MS = 300_000;
@@ -393,6 +394,11 @@ module.exports = {
         type: "number",
         description:
           "Timeout in milliseconds. Agent should set this for long-running commands. Default 300000 (300s) when omitted. No hard max cap.",
+      },
+      background: {
+        type: "boolean",
+        description:
+          "If true, launch the command as a detached background process and return immediately without waiting for it to finish. Use for long-running servers/daemons (npm run dev, a local server, etc.) that should keep running while the agent continues. The process keeps running after this turn and after the app closes; it is shown as a per-chat badge in the composer with a stop button.",
       },
     },
     required: ["command"],

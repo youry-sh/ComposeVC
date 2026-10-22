@@ -90,18 +90,19 @@ function isAgentMode(value: unknown): value is MainAgentMode {
   );
 }
 
-function emptySlot(id: string): MultiIdeSlotState {
+function emptySlot(id: string, workspaceId: string): MultiIdeSlotState {
   return {
     id,
     rootPath: null,
     sessionId: null,
     selectedModelId: null,
     agentMode: "lopster" as MainAgentMode,
+    workspaceId,
   };
 }
 
 export function defaultMultiIdeSlots(): MultiIdeSlotState[] {
-  return [emptySlot("multi-1")];
+  return [emptySlot("multi-1", DEFAULT_WORKSPACE_ID)];
 }
 
 export function loadMultiIdeSlots(): MultiIdeSlotState[] {
@@ -131,6 +132,10 @@ export function loadMultiIdeSlots(): MultiIdeSlotState[] {
         sessionId,
         selectedModelId: typeof item?.selectedModelId === "string" ? item.selectedModelId : null,
         agentMode: isAgentMode(item?.agentMode) ? item.agentMode : ("lopster" as MainAgentMode),
+        workspaceId:
+          typeof item?.workspaceId === "string" && item.workspaceId
+            ? item.workspaceId
+            : DEFAULT_WORKSPACE_ID,
       };
     });
     return slots.length ? slots : defaultMultiIdeSlots();
@@ -150,6 +155,7 @@ export function saveMultiIdeSlots(slots: MultiIdeSlotState[]) {
           sessionId: s.sessionId,
           selectedModelId: s.selectedModelId,
           agentMode: s.agentMode,
+          workspaceId: s.workspaceId,
         }))
       )
     );
