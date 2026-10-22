@@ -292,6 +292,36 @@ const UsageWorkspace: React.FC = () => {
         </div>
         <button
           type="button"
+          onClick={() => void handleScreenshot()}
+          className="usage-header-icon"
+          aria-label="Screenshot"
+          title={
+            shotState === "ok"
+              ? "Screenshot copied to clipboard"
+              : shotState === "busy"
+                ? "Capturing…"
+                : shotState === "error"
+                  ? "Screenshot failed"
+                  : "Screenshot full screen"
+          }
+          style={
+            shotState === "ok"
+              ? { color: "var(--ok)" }
+              : shotState === "error"
+                ? { color: "var(--warn)" }
+                : undefined
+          }
+        >
+          {shotState === "busy" ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : shotState === "ok" ? (
+            <Check className="w-3.5 h-3.5" />
+          ) : (
+            <Camera className="w-3.5 h-3.5" />
+          )}
+        </button>
+        <button
+          type="button"
           onClick={() => void refresh()}
           className="usage-header-icon"
           title="Refresh"
