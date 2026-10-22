@@ -4909,67 +4909,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
               )}
             </div>
 
-	            <button
-	              onClick={() => {
-	                setShowToolsMenu((value) => !value);
-	                setShowAgentModeMenu(false);
-	                setShowModelMenu(false);
-	              }}
-	              className={`chat-chip chat-chip-tools ${showToolsMenu ? "is-open" : ""}`}
-	            >
-	              <Wrench className="w-3.5 h-3.5 flex-shrink-0" />
-	              <span className="truncate max-w-[5rem]">{labels.tools}</span>
-		            </button>
-            {showToolsMenu && (
-              <div className="chat-tools-menu absolute left-0 right-0 bottom-9 z-20 rounded-xl border border-ink-200 bg-ink-100 shadow-2xl overflow-hidden animate-fade-in">
-                <div className="px-3 py-2 border-b border-ink-200 text-[10px] font-medium uppercase tracking-wider text-ink-500">
-                  {labels.tools}
-                </div>
-                <div className="p-1">
-                  <button
-                    onClick={() => {
-                      setShowToolsMenu(false);
-                      setAutoInsertModalOpen(true);
-                    }}
-                    className="w-full flex items-center gap-2.5 rounded-md px-2.5 py-2 text-left outline-none transition-colors hover:bg-ink-150"
-                  >
-                    <span className="h-7 w-7 flex-shrink-0 flex items-center justify-center rounded-md bg-ink-150 text-ink-600">
-                      <ListPlus className="w-3.5 h-3.5" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-[12px] font-medium text-ink-950 truncate">{labels.autoInsert}</span>
-                      <span className="block text-[10px] text-ink-500 truncate">
-                        {autoInsertEnabled ? labels.autoInsertOn : labels.autoInsertOff} · {autoInsertMessages.length}
-                      </span>
-                    </span>
-                    <span
-                      className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${
-                        autoInsertEnabled ? "bg-ink-950" : "bg-ink-500"
-                      }`}
-                    />
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowToolsMenu(false);
-                      setInstructionsModalOpen(true);
-                    }}
-                    className="w-full flex items-center gap-2.5 rounded-md px-2.5 py-2 text-left outline-none transition-colors hover:bg-ink-150"
-                  >
-                    <span className="h-7 w-7 flex-shrink-0 flex items-center justify-center rounded-md bg-ink-150 text-ink-600">
-                      <FileText className="w-3.5 h-3.5" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-[12px] font-medium text-ink-950 truncate">{labels.instructions}</span>
-                      <span className="block text-[10px] text-ink-500 truncate">
-                        {labels.instructionsGlobal} · {labels.instructionsProject}
-                      </span>
-                    </span>
-                  </button>
-                </div>
-              </div>
-            )}
-        </div>
-        <WorkTimer sessionId={activeSessionId} />
+        </div>        <WorkTimer sessionId={activeSessionId} />
         <BackgroundTasks sessionId={activeSessionId} />
         </div>
       </div>
