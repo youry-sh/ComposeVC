@@ -496,6 +496,31 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
     [activeWorkspaceSlots, slots, onSlotsChange, openIds, activeId, patchActiveWorkspace]
   );
 
+  // Delete a workspace: close all its chat panels via the same slot-removal path as
+  // handleCloseSlot (drop from `slots` + status), then drop the workspace and re-point
+  // activeWorkspaceId if it was active. Last remaining workspace cannot be deleted.
+  const handleDeleteWorkspace = useCallback(
+    (wsId: string) => {
+      if (workspaces.length <= 1) return;
+      const targetIds = new Set(slots.filter((s) => s.workspaceId === wsId).map((s) => s.id));
+      onSlotsChange(slots.filter((s) => !targetIds.has(s.id)));
+      setStatusBySlot((prev) => {
+        if (!targetIds.size) return prev;
+        const copy = { ...prev };
+        for (const id of targetIds) delete copy[id];
+        return copy;
+      });
+      setWorkspaceState((prev) => {
+        const remaining = prev.workspaces.filter((w) => w.id !== wsId);
+        if (remaining.length === prev.workspaces.length) return prev;
+        const activeWorkspaceId =
+          prev.activeWorkspaceId === wsId ? remaining[0]?.id ?? prev.activeWorkspaceId : prev.activeWorkspaceId;
+        return { activeWorkspaceId, workspaces: remaining };
+      });
+    },
+    [workspaces, slots, onSlotsChange]
+  );
+
   const stableSlots = useMemo(() => slots.slice(0, MULTIIDE_MAX_SLOTS), [slots]);
   const activeSlotId: string | undefined =
     activeId && activeWorkspaceSlots.some((s) => s.id === activeId)
