@@ -33,11 +33,6 @@ const instructions = require("./instructions.cjs");
 const agentPrompts = require("./agentPrompts.cjs");
 const { THINKING_MAX_PROMPT } = require("./thinkingMaxPrompt.cjs");
 const autoInsert = require("./autoInsert.cjs");
-const {
-  SOVIET7_MODE_ID,
-  SOVIET7_NORMAL_MODE_ID,
-  runSoviet7Council,
-} = require("./soviet7/index.cjs");
 const { LAB_IN_MODE_ID, runLabInPipeline } = require("./labIn/index.cjs");
 const {
   FORTANI_MODE_ID,
@@ -252,7 +247,6 @@ const defaultProviderConfig = {
     agentCompletionNotifications: true,
     maxContextTokens: DEFAULT_MAX_CONTEXT_TOKENS,
     autoCompactTokens: DEFAULT_AUTO_COMPACT_TOKENS,
-    soviet7ModelId: "",
     labInPromptModelId: "",
     labInSearchModelId: "",
     fortaniModelId: "",
@@ -346,12 +340,6 @@ function normalizeAiRuntimeConfig(config) {
   // Keep legacy fields normalized for old config files, but do not use their values.
   const maxContextTokens = DEFAULT_MAX_CONTEXT_TOKENS;
   const autoCompactTokens = DEFAULT_AUTO_COMPACT_TOKENS;
-  const soviet7ModelId =
-    typeof config?.soviet7ModelId === "string"
-      ? config.soviet7ModelId.trim()
-      : typeof config?.soviet7_model_id === "string"
-        ? config.soviet7_model_id.trim()
-        : "";
   const labInPromptModelId =
     typeof config?.labInPromptModelId === "string"
       ? config.labInPromptModelId.trim()
@@ -378,7 +366,6 @@ function normalizeAiRuntimeConfig(config) {
     agentCompletionNotifications: config?.agentCompletionNotifications !== false,
     maxContextTokens,
     autoCompactTokens,
-    soviet7ModelId,
     labInPromptModelId,
     labInSearchModelId,
     fortaniModelId,
@@ -2670,27 +2657,22 @@ async function executeChatRequest(event, request, overrides = {}) {
   const excludeToolNames = [];
   let systemPrompt;
   // Removed modes normalize to the default lopster mode.
-  // Modes: lopster | soviet-7 | lab-in | fortani (LAB-IN, then a follow-up agent)
+  // Modes: lopster | lab-in | fortani (LAB-IN, then a follow-up agent)
   const rawAgentMode = String(overrides.agentMode || request.agentMode || "lopster")
     .trim()
     .toLowerCase();
   const agentMode =
-    rawAgentMode === SOVIET7_MODE_ID || rawAgentMode === "soviet7" || rawAgentMode === "soviet_7"
-      ? SOVIET7_MODE_ID
-      : rawAgentMode === FORTANI_MODE_ID ||
-          rawAgentMode === "fortani+lab-in" ||
-          rawAgentMode === "fortani-lab" ||
-          rawAgentMode === "fortani_lab"
-        ? FORTANI_MODE_ID
-        : rawAgentMode === LAB_IN_MODE_ID || rawAgentMode === "labin" || rawAgentMode === "lab_in"
-          ? LAB_IN_MODE_ID
-          : "lopster";
-  const isSoviet7 = agentMode === SOVIET7_MODE_ID;
+    rawAgentMode === FORTANI_MODE_ID ||
+    rawAgentMode === "fortani+lab-in" ||
+    rawAgentMode === "fortani-lab" ||
+    rawAgentMode === "fortani_lab"
+      ? FORTANI_MODE_ID
+      : rawAgentMode === LAB_IN_MODE_ID || rawAgentMode === "labin" || rawAgentMode === "lab_in"
+        ? LAB_IN_MODE_ID
+        : "lopster";
   const isFortani = agentMode === FORTANI_MODE_ID;
   const isLabIn = agentMode === LAB_IN_MODE_ID || isFortani;
-  /** After soviet-7, execute path reports normal mode (lopster). */
   let effectiveAgentMode = agentMode;
-  let soviet7Meta = null;
 
   const lastUserMsg = [...requestMessages].reverse().find((m) => isRealUserMessage(m)) || null;
   const originalLastUserMsg = lastUserMsg ? { ...lastUserMsg } : null;
