@@ -375,8 +375,8 @@ const UsageWorkspace: React.FC = () => {
                         </span>
                       </div>
                       <div className="flex items-center gap-2 pl-6">
-                        <UsageBar pct={sharePct(tool.calls, maxToolCalls)} color="var(--accent)" />
-                        <span className="text-[9px] font-mono tabular-nums w-8 text-right" style={{ color: "var(--text-muted)" }}>{sharePct(tool.calls, totalCalls)}%</span>
+                        <UsageBar pct={barPct(tool.calls, maxToolCalls)} color="var(--accent)" />
+                        <span className="text-[9px] font-mono tabular-nums w-8 text-right" style={{ color: "var(--text-muted)" }}>{truePct(tool.calls, totalCalls)}%</span>
                       </div>
                     </div>
                   ))}
