@@ -772,13 +772,16 @@ const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, 
             {activeTab === "shortcuts" && (
               <div className="settings-body-scroll settings-chat-scrollbar">
               <div className="settings-section">
-                <div className="settings-card space-y-0.5">
-                  {keyboardShortcuts(labels).map((item) => (
-                    <div key={item.keys} className="settings-shortcut-row">
-                      <kbd className="settings-kbd">{item.keys}</kbd>
-                      <div className="min-w-0 text-[12px] leading-5 text-ink-800">{item.action}</div>
-                    </div>
-                  ))}
+                <div className="settings-card">
+                  <div className="settings-card-title">{labels.settingsShortcuts}</div>
+                  <div className="settings-grid-2">
+                    {keyboardShortcuts(labels).map((item) => (
+                      <div key={item.keys} className="settings-shortcut-row">
+                        <kbd className="settings-kbd">{item.keys}</kbd>
+                        <div className="min-w-0 text-[12px] leading-5 text-ink-800">{item.action}</div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="settings-card">
@@ -814,7 +817,7 @@ const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, 
                     </button>
                   </div>
 
-                  <div className="mt-3 grid gap-3">
+                  <div className="mt-3 settings-grid-2">
                     {([1, 2] as const).map((slotNum) => {
                       const key = slotNum === 1 ? "slot1" : "slot2";
                       const slot = mouseSnippets[key];
