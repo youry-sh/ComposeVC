@@ -18,8 +18,6 @@ import {
   ContextMetricsDetail,
   formatBytes,
   formatTokenCount,
-  formatTotalRuntime,
-  formatUptime,
 } from "./StatusBar";
 
 type Panel = "multiide" | "webengine" | "proxy" | "settings" | "customtools" | "runner" | "terminal" | "knowledge" | "docs" | "usage";
@@ -64,10 +62,6 @@ const TitleBar: React.FC<TitleBarProps> = ({
   onOpenProviders,
   labels,
 }) => {
-  const [uptime, setUptime] = useState("00:00:00");
-  const uptimeSecRef = useRef(0);
-  const uptimeSyncAtRef = useRef(Date.now());
-  const [totalRuntime, setTotalRuntime] = useState("0m");
   const [memoryLabel, setMemoryLabel] = useState("—");
   const [memoryRatio, setMemoryRatio] = useState(0);
   const [tokensLabel, setTokensLabel] = useState("0");
@@ -81,7 +75,7 @@ const TitleBar: React.FC<TitleBarProps> = ({
   const tokPeak = useRef(1);
   const ctxPeak = useRef(1);
 
-  // live clock + date + smooth 1s uptime tick (metrics poll re-syncs the base)
+  // live clock + date (1s tick)
   useEffect(() => {
     const tick = () => {
       const d = new Date();
@@ -90,9 +84,6 @@ const TitleBar: React.FC<TitleBarProps> = ({
       );
       setDateStr(
         d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" })
-      );
-      setUptime(
-        formatUptime(uptimeSecRef.current + Math.floor((Date.now() - uptimeSyncAtRef.current) / 1000))
       );
     };
     tick();
