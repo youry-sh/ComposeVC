@@ -702,7 +702,53 @@ const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, 
               <div className="settings-body-scroll">
               <div className="settings-section">
                 <div className="settings-card">
+                  <div className="settings-card-title">Theme</div>
+                  <div className="grid gap-2">
+                    {THEMES.map((t) => {
+                      const active = theme === t.id;
+                      return (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => {
+                            applyTheme(t.id);
+                            setTheme(t.id);
+                          }}
+                          className="settings-theme-row"
+                          aria-pressed={active}
+                        >
+                          <span className="settings-theme-swatches">
+                            {t.swatches.map((c, i) => (
+                              <span
+                                key={i}
+                                className="settings-theme-swatch"
+                                style={{ backgroundColor: c }}
+                              />
+                            ))}
+                          </span>
+                          <span className="min-w-0 flex-1 text-left">
+                            <span className="block text-[13px] font-semibold leading-5 text-ink-950">
+                              {t.name}
+                            </span>
+                            <span className="block text-[11px] leading-snug text-ink-500">
+                              {t.description}
+                            </span>
+                          </span>
+                          <span
+                            className="settings-theme-active-dot"
+                            style={{ backgroundColor: active ? "var(--accent)" : "transparent" }}
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="settings-card">
                   <div className="settings-card-title">{labels.languages}</div>
+                  <p className="mb-3 text-[11px] leading-snug text-ink-500">
+                    Interface language — applies immediately across the whole app.
+                  </p>
                   <div className="settings-lang-row">
                     {(Object.keys(languageNames) as AppLanguage[]).map((code) => {
                       const selected = language === code;
