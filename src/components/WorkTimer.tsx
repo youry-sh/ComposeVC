@@ -51,6 +51,8 @@ const WorkTimer: React.FC<{ sessionId?: string | null }> = ({ sessionId }) => {
     let active = true;
     const apply = (snap: WorkTimerSnapshot | null | undefined) => {
       if (!active || !snap) return;
+      // Only the chat that owns the timer's session shows it.
+      if (snap.sessionId != null && snap.sessionId !== sessionId) return;
       if (typeof snap.deadlineAt === "number" && snap.deadlineAt > 0) {
         setDeadlineAt(snap.deadlineAt);
         setTotalMinutes(typeof snap.totalMinutes === "number" ? snap.totalMinutes : null);
@@ -71,7 +73,7 @@ const WorkTimer: React.FC<{ sessionId?: string | null }> = ({ sessionId }) => {
       active = false;
       unsubscribe?.();
     };
-  }, []);
+  }, [sessionId]);
 
   if (deadlineAt == null) return null;
 
