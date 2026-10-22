@@ -4532,7 +4532,14 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                   {summarySteps && summarySteps.length > 0 && (
                     <ChangedFilesSummary steps={summarySteps} rootPath={rootPath} />
                   )}
-                  <MessageActions content={msg.content} />
+                  <MessageActions
+                    content={msg.content}
+                    role={msg.role}
+                    images={msg.images}
+                    retryLabel={labels.retry}
+                    retryDisabled={thinking}
+                    onRetry={(text, imgs) => onSend(text, imgs)}
+                  />
                 </>
               ) : null}
             </div>
