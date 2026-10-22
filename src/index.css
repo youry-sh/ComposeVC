@@ -1701,6 +1701,58 @@
     color: var(--accent);
   }
 
+  /* Work timer — quiet countdown pill that appears under the model chip when the
+     agent's minimum work time is active, and disappears when it hits zero. */
+  .work-timer {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    align-self: flex-start;
+    margin: 6px 6px 4px;
+    padding: 3px 9px;
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    background: var(--surface-2, var(--surface));
+    color: var(--ink-700);
+    font-family: var(--terminal-font);
+    font-size: 10px;
+    line-height: 1;
+    letter-spacing: 0.04em;
+    font-variant-numeric: tabular-nums;
+  }
+  .work-timer-ico {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+    color: var(--accent);
+    animation: work-timer-pulse 1.6s ease-in-out infinite;
+  }
+  .work-timer-text {
+    color: var(--ink-950);
+    font-weight: 600;
+  }
+  .work-timer-bar {
+    width: 44px;
+    height: 3px;
+    border-radius: 999px;
+    background: var(--border);
+    overflow: hidden;
+  }
+  .work-timer-bar-fill {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--accent);
+    transition: width 0.4s linear;
+  }
+  @keyframes work-timer-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .work-timer-ico { animation: none; }
+  }
+
   .proxy-workspace {
     /* Keep proxy chrome neutral in every theme: dividers must not inherit the accent hue. */
     --proxy-divider: color-mix(in srgb, #a3a3a3 26%, transparent);
