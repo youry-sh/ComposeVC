@@ -82,6 +82,28 @@ export type GitChangedFile = { code: string; staged: boolean; path: string };
 export type GitCommit = { hash: string; subject: string; author: string; when: string };
 
 declare global {
+  type LocalAgentState = {
+    agentDir: string;
+    exists: boolean;
+    busy: boolean;
+    port: number;
+    localOk: boolean;
+    serverPids: number[];
+    tunnelRunning: boolean;
+    publicOk: boolean | null;
+    running: boolean;
+    error: string | null;
+    connector: {
+      name: string;
+      url: string;
+      transport: string;
+      auth: string;
+      prefix: string;
+      token: string;
+      description: string;
+    };
+    instruction: string;
+  };
   /** Electron's <webview> guest — used by the aside media dock. */
   namespace JSX {
     interface IntrinsicElements {
@@ -365,6 +387,26 @@ declare global {
       refreshMcpServer: (id: string) => Promise<{ server: import("./types").McpServer; tools: import("./types").McpToolInfo[] }>;
       inspectMcpServer: (id: string) => Promise<Record<string, unknown>>;
       importMcpConfig: (config: string | Record<string, unknown>, options?: { overwrite?: boolean }) => Promise<{ imported: number; servers: import("./types").McpServer[] }>;
+      searchMcpRegistry: (options?: { query?: string; cursor?: string; limit?: number }) => Promise<{
+        registry: string;
+        servers: Array<{
+          name: string;
+          title: string;
+          description: string;
+          version: string;
+          repository: string;
+          transport: string;
+          packageName: string;
+          runtime: string;
+          remoteUrl: string;
+          raw: unknown;
+        }>;
+        nextCursor: string | null;
+        count: number;
+      }>;
+      installMcpRegistry: (server: unknown, overrides?: { environment?: Record<string, string>; headers?: Record<string, string> }) => Promise<{ installed: boolean; already: boolean; updated?: boolean; server: import("./types").McpServer; warnings?: string[] }>;
+      listProjectMcp: (rootPath: string | null) => Promise<{ rootPath: string | null; serverIds: string[] }>;
+      setProjectMcp: (rootPath: string | null, serverId: string, enabled: boolean) => Promise<{ rootPath: string; serverIds: string[]; server: import("./types").McpServer }>;
       onMcpChanged: (callback: (payload: Record<string, unknown>) => void) => () => void;
       readCustomTools: () => Promise<
         Array<{
@@ -911,6 +953,12 @@ declare global {
       onProxyOauth: (callback: (payload: any) => void) => () => void;
       onProxyConfig: (callback: (payload: any) => void) => () => void;
       onProxyUsage: (callback: (payload: any) => void) => () => void;
+      localAgentGetConfig: () => Promise<{ ok: boolean; agentDir?: string; exists?: boolean }>;
+      localAgentSetDir: (dir: string) => Promise<{ ok: boolean; agentDir?: string; exists?: boolean }>;
+      localAgentPickDir: () => Promise<{ ok: boolean; agentDir?: string; exists?: boolean }>;
+      localAgentStatus: () => Promise<{ ok: boolean; state?: LocalAgentState }>;
+      localAgentStart: () => Promise<{ ok: boolean; state?: LocalAgentState; error?: string }>;
+      localAgentStop: () => Promise<{ ok: boolean; state?: LocalAgentState }>;
       openExternal: (url: string) => Promise<boolean>;
       minimize: () => Promise<void>;
       toggleMaximize: () => Promise<void>;

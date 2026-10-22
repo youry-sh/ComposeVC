@@ -35,5 +35,17 @@ anti/profiles/*.json
 anti/engine/
 anti/bin/
 
+# local-coding-agent MCP: секреты и рантайм не коммитим
+mcp-agent/.env
+mcp-agent/.venv/
+mcp-agent/__pycache__/
+mcp-agent/bin/
+mcp-agent/.backup/
+mcp-agent/approved_zones.json
+mcp-agent/audit.log
+mcp-agent/.server_pid
+mcp-agent/.cf_pid
+mcp-agent/.public_url
+
 # Sensitive research dumps — contain real API keys / credentials, never commit
 docs/litellm-hunt/

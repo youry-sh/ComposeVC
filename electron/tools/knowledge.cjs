@@ -11,8 +11,9 @@ module.exports = {
   description:
     "LAB-IN global persistent knowledge memory shared by every project. " +
     "Use action=add/update ONLY when the user explicitly asks to remember, save, replenish, or update memory. " +
-    "For research use search/read/links/list/stats; do not trust one search query—inspect chunks and traverse connections. " +
-    "Knowledge is stored as readable chunks under Electron userData/lab-in/knowledge.",
+    "action=search returns a ranked list: rank 1 is the best match, with score, strength (strong, partial, or weak), and via (direct, broad, or link). " +
+    "Read strong hits, then partial hits. If the list is empty or the strongest hit is weak, search again with different concrete words and open links. " +
+    "Do not treat the first two files as the answer. Knowledge is stored as readable chunks under Electron userData/lab-in/knowledge.",
   isReadOnly: false,
   inputSchema: {
     type: "object",
@@ -21,7 +22,7 @@ module.exports = {
         type: "string",
         enum: ["stats", "list", "search", "read", "links", "add", "update"],
       },
-      query: { type: "string", description: "Search query for action=search" },
+      query: { type: "string", description: "Search query for action=search. Results come back best-first by rank." },
       id: { type: "string", description: "Chunk id for read/links/update" },
       title: { type: "string", description: "Clear chunk title for add/update" },
       content: { type: "string", description: "Knowledge text for add/update" },
@@ -43,7 +44,15 @@ module.exports = {
     const userDataPath = context.userDataPath;
     if (action === "stats") return dense(await store.knowledgeStats(userDataPath));
     if (action === "list") return dense(await store.listKnowledge(userDataPath, input));
-    if (action === "search") return dense({ query: input.query, results: await store.searchKnowledge(userDataPath, input.query, input) });
+    if (action === "search") {
+      const results = await store.searchKnowledge(userDataPath, input.query, input);
+      return dense({
+        query: input.query,
+        strongest: results.strongest || "none",
+        broadened: Boolean(results.broadened),
+        results,
+      });
+    }
     if (action === "read") return dense(await store.getKnowledgeChunk(userDataPath, input.id));
     if (action === "links") return dense(await store.knowledgeLinks(userDataPath, input.id));
     if (action === "add") {

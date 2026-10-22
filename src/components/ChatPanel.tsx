@@ -53,6 +53,7 @@ import {
   TelegramBotStatus,
 } from "../types";
 import ContextRing from "./ContextRing";
+import McpConnector from "./McpConnector";
 import { ThinkingIndicator } from "./ThinkingIndicator";
 import ChatMonoScroll, { type ChatMonoScrollHandle } from "./ChatMonoScroll";
 import ModelPicker from "./ModelPicker";
@@ -4774,6 +4775,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                 daysAgo: labels.daysAgo,
               }}
             />
+            <McpConnector rootPath={rootPath} />
             {thinking ? (
               <>
                 <button

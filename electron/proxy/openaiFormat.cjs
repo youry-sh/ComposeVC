@@ -402,7 +402,7 @@ function stripWireInternal(body, options = {}) {
 function normalizeOpenAIRequest(body = {}) {
   const rawMessages = Array.isArray(body.messages) ? body.messages : [];
   // Normalize once — the result is reused, not re-mapped (big-chat hot path).
-  const normalized = rawMessages.map((m) => normalizeMessage(m));
+  const normalized = rawMessages.map((m, idx) => normalizeMessage(m, idx));
   const messages = repairToolCallHistory(normalized);
   const tools = normalizeTools(body.tools);
   const stream = Boolean(body.stream);
@@ -429,7 +429,7 @@ function normalizeOpenAIRequest(body = {}) {
   };
 }
 
-function normalizeMessage(m) {
+function normalizeMessage(m, msgIndex = 0) {
   if (!m || typeof m !== "object") return { role: "user", content: "" };
   const role = String(m.role || "user");
   const msg = {
@@ -446,7 +446,9 @@ function normalizeMessage(m) {
   if (Array.isArray(rawToolCalls)) {
     msg.tool_calls = rawToolCalls.map((tc, i) => {
       const out = {
-        id: tc.id || `call_${i}_${Date.now()}`,
+        // Deterministic fallback id: Date.now() changed the history bytes every
+        // turn and broke upstream prefix (prompt) caching on long chats.
+        id: tc.id || `call_m${msgIndex}_${i}`,
         type: tc.type || "function",
         function: {
           name: tc.function?.name || tc.name || "",
@@ -491,12 +493,15 @@ function ensureToolCallIds(body) {
     const msg = body.messages[i];
     if (msg.role !== "assistant" || !Array.isArray(msg.tool_calls)) continue;
     const ids = [];
+    let k = 0;
     for (const tc of msg.tool_calls) {
       if (!tc.type) tc.type = "function";
       if (tc.function?.arguments != null && typeof tc.function.arguments !== "string") {
         tc.function.arguments = JSON.stringify(tc.function.arguments);
       }
-      if (!tc.id) tc.id = `call_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+      // Deterministic (was Date.now()+random → new bytes every turn → cache miss).
+      if (!tc.id) tc.id = `call_m${i}_${k}`;
+      k++;
       ids.push(tc.id);
     }
     // Link following tool messages by order

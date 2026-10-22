@@ -44,6 +44,91 @@ const {
   providerDefaultBare,
 } = require("./modelValidate.cjs");
 const workerPool = require("../workerPool.cjs");
+const cacheAffinity = require("./cacheAffinity.cjs");
+
+/**
+ * Cheap O(messages) size estimate (chars) of a hub-format request — used to scale
+ * timeouts for huge chats without re-serializing the 2+ MB body.
+ */
+function approxRequestChars(openaiBody) {
+  let n = 0;
+  const msgs = Array.isArray(openaiBody?.messages) ? openaiBody.messages : [];
+  for (const m of msgs) {
+    if (!m) continue;
+    const c = m.content;
+    if (typeof c === "string") n += c.length;
+    else if (Array.isArray(c)) {
+      for (const p of c) {
+        if (typeof p === "string") n += p.length;
+        else if (p && typeof p.text === "string") n += p.text.length;
+      }
+    }
+    if (typeof m.reasoning_content === "string") n += m.reasoning_content.length;
+    if (Array.isArray(m.tool_calls)) {
+      for (const tc of m.tool_calls) {
+        const a = tc?.function?.arguments;
+        if (typeof a === "string") n += a.length;
+      }
+    }
+  }
+  return n;
+}
+
+/** Usage → cached prompt tokens (OpenAI / Responses / Anthropic / Gemini shapes). */
+function cachedTokensOf(usage) {
+  if (!usage || typeof usage !== "object") return null;
+  const v =
+    usage.prompt_tokens_details?.cached_tokens ??
+    usage.input_tokens_details?.cached_tokens ??
+    usage.cache_read_input_tokens ??
+    usage.cachedContentTokenCount ??
+    usage.prompt_cache_hit_tokens ??
+    null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * Anthropic prompt caching: mark the stable prefix so turn N+1 only prefills the
+ * delta. Breakpoints: end of system + last two message turns (≤ 4 total, API max).
+ */
+function addAnthropicCacheBreakpoints(body) {
+  if (!body || typeof body !== "object") return body;
+  const CC = { type: "ephemeral" };
+  const markable = (b) =>
+    b && typeof b === "object" && b.type !== "thinking" && b.type !== "redacted_thinking" &&
+    !(b.type === "text" && !b.text);
+  let used = 0;
+  if (typeof body.system === "string" && body.system) {
+    body.system = [{ type: "text", text: body.system, cache_control: CC }];
+    used++;
+  } else if (Array.isArray(body.system) && body.system.length) {
+    const last = body.system[body.system.length - 1];
+    if (last && typeof last === "object") {
+      if (!last.cache_control) last.cache_control = CC;
+      used++;
+    }
+  }
+  const msgs = Array.isArray(body.messages) ? body.messages : [];
+  let marks = 0;
+  for (let i = msgs.length - 1; i >= 0 && marks < 2 && used + marks < 4; i--) {
+    const m = msgs[i];
+    if (!m) continue;
+    if (typeof m.content === "string") {
+      if (!m.content) continue;
+      m.content = [{ type: "text", text: m.content }];
+    }
+    if (!Array.isArray(m.content)) continue;
+    for (let j = m.content.length - 1; j >= 0; j--) {
+      const b = m.content[j];
+      if (!markable(b)) continue;
+      if (!b.cache_control) b.cache_control = CC;
+      marks++;
+      break;
+    }
+  }
+  return body;
+}
 
 /** Max wait for upstream headers before rotating to next account (ms). */
 const FAILOVER_CONNECT_TIMEOUT_MS = 60_000;
@@ -472,7 +557,7 @@ async function handleChatCompletions({ store, body, res, onLog, signal, userData
     )
   );
   const failoverAny = Boolean(provider.failoverOnAnyError);
-  const connectTimeoutMs = Math.max(
+  const baseConnectTimeoutMs = Math.max(
     2000,
     Math.min(
       60_000,
@@ -481,6 +566,30 @@ async function handleChatCompletions({ store, body, res, onLog, signal, userData
         : FAILOVER_CONNECT_TIMEOUT_MS
     )
   );
+  // Huge chats: a cold 500k-token prefill legitimately needs minutes before the
+  // first byte. A fixed 60s cut killed the attempt and failed over to a COLD
+  // account (full re-prefill again) — the main "slow after 300k" spiral.
+  const requestChars = approxRequestChars(openaiBody);
+  const connectTimeoutMs = cacheAffinity.scaledTimeoutMs(baseConnectTimeoutMs, requestChars, {
+    perKTokensMs: 400,
+    maxMs: 300_000,
+  });
+  const streamIdleTimeoutMs = cacheAffinity.scaledTimeoutMs(
+    Number(provider.streamIdleTimeoutMs) > 0 ? Number(provider.streamIdleTimeoutMs) : 90_000,
+    requestChars,
+    { perKTokensMs: 400, maxMs: 300_000 }
+  );
+  // Stable conversation key → keep this chat on the account whose prompt cache is warm.
+  const convKey = cacheAffinity.conversationKey(openaiBody);
+  const affinityProviderId = provider?.id || route.providerId;
+  const affinityAccountId = cacheAffinity.getAffinity(affinityProviderId, convKey);
+  if (requestChars > 400_000) {
+    onLog?.({
+      level: "info",
+      msg: `big context ~${Math.round(requestChars / 4000)}k tok: connect=${Math.round(connectTimeoutMs / 1000)}s idle=${Math.round(streamIdleTimeoutMs / 1000)}s${affinityAccountId ? " (warm-cache account pinned)" : ""}`,
+      model: openaiBody.model,
+    });
+  }
 
   const errors = [];
   let lastFail = null;
@@ -507,6 +616,15 @@ async function handleChatCompletions({ store, body, res, onLog, signal, userData
       : accountRouter.DEFAULT_MAX_IN_FLIGHT_PER_ACCOUNT || 6;
 
   function pickNext({ allowSaturated = false, allowBlocked = false } = {}) {
+    // Warm prompt cache wins: the account that served this conversation last
+    // only needs to prefill the new delta (seconds) instead of 500k tokens (minutes).
+    if (affinityAccountId && !triedIds.has(affinityAccountId)) {
+      const warm = ordered.find((c) => c.account?.id === affinityAccountId);
+      if (warm) {
+        const live = accountRouter.getStatus(affinityAccountId);
+        if (allowBlocked || !live || live.available !== false) return warm;
+      }
+    }
     let best = null;
     let bestScore = null;
     // Prefer free keys, then free oauth, then (if allowSaturated) busy accounts.
@@ -689,16 +807,20 @@ async function handleChatCompletions({ store, body, res, onLog, signal, userData
     if (!cand) break;
 
     let prepared;
+    const isWarm = Boolean(affinityAccountId) && cand.account?.id === affinityAccountId;
     try {
       prepared = await prepareCand(cand, {
-        forceLease: allowSaturated,
+        // Warm-cache account: take the slot even if busy — a cold account costs far more.
+        forceLease: allowSaturated || isWarm,
         forceBlocked: allowBlocked,
       });
     } catch (e) {
+      if (isWarm) triedIds.add(affinityAccountId);
       onLog?.({ level: "error", msg: `prepare account: ${e.message || e}` });
       continue;
     }
     if (!prepared) {
+      if (isWarm) triedIds.add(affinityAccountId);
       // Lease lost race (another parallel client took the slot) — try next key.
       continue;
     }
@@ -725,6 +847,7 @@ async function handleChatCompletions({ store, body, res, onLog, signal, userData
         onLog,
         userDataPath,
         connectTimeoutMs,
+        convKey,
       });
     } catch (e) {
       attempt = {
@@ -737,6 +860,7 @@ async function handleChatCompletions({ store, body, res, onLog, signal, userData
     if (attempt.ok) {
       accountRouter.markSuccess(prepared.connection.id);
       persistRouting(userDataPath, prepared.connection.id);
+      cacheAffinity.setAffinity(affinityProviderId, convKey, prepared.connection.id);
 
       if (attempt.kind === "stream") {
         const streamResult = await pipeStream({
@@ -754,7 +878,7 @@ async function handleChatCompletions({ store, body, res, onLog, signal, userData
             providerId: provider?.id || route.providerId,
             account: prepared.label,
           },
-          idleTimeoutMs: provider.streamIdleTimeoutMs,
+          idleTimeoutMs: streamIdleTimeoutMs,
         });
         const streamUsage = streamResult?.usage || null;
 
@@ -857,7 +981,9 @@ async function handleChatCompletions({ store, body, res, onLog, signal, userData
         }
         onLog?.({
           level: "info",
-          msg: `← ok via ${prepared.label} (stream done)${tok != null ? ` tokens=${tok}` : ""}`,
+          msg: `← ok via ${prepared.label} (stream done)${tok != null ? ` tokens=${tok}` : ""}${
+            cachedTokensOf(streamUsage) != null ? ` cached=${cachedTokensOf(streamUsage)}` : ""
+          }`,
           model: openaiBody.model,
           providerId: provider?.id || route.providerId,
           usage: streamUsage || null,
@@ -1208,6 +1334,7 @@ async function tryOneAccount({
   onLog,
   userDataPath,
   connectTimeoutMs = FAILOVER_CONNECT_TIMEOUT_MS,
+  convKey = null,
 }) {
   let upstreamBody;
   let stream = Boolean(openaiBody.stream);
@@ -1219,6 +1346,11 @@ async function tryOneAccount({
     upstreamBody = openaiToResponsesRequest(openaiBody, {
       upstreamModel: route.upstreamModel,
     });
+    // Codex CLI sends a stable prompt_cache_key per conversation; without it every
+    // turn re-prefills the whole context (the 500k-token slowdown).
+    if (convKey && upstreamBody && typeof upstreamBody === "object" && !upstreamBody.prompt_cache_key) {
+      upstreamBody.prompt_cache_key = cacheAffinity.uuidFromKey(convKey, "codex");
+    }
     stream = true;
     converter = {
       responseMessage: (data, model) => responsesMessageToOpenAI(data, model),
@@ -1373,6 +1505,9 @@ async function tryOneAccount({
     const converted = converter.request(openaiBody, {
       upstreamModel: route.upstreamModel,
       projectId,
+      // Stable per-conversation session → Cloud Code keeps the cached prefix warm.
+      // (Old default hashed the WHOLE history, so the id changed every turn.)
+      sessionId: convKey ? `lopster-${convKey.slice(0, 32)}` : undefined,
     });
     upstreamBody = converted.body || converted;
     toolNameMap = converted._toolNameMap || null;
@@ -1395,6 +1530,15 @@ async function tryOneAccount({
     stream = Boolean(openaiBody.stream ?? true);
     if (upstreamBody && typeof upstreamBody === "object") {
       upstreamBody.stream = stream;
+      // Prompt caching: without cache_control Anthropic re-reads the full context
+      // every turn (slow + expensive at 300k+). Opt-out: LOPSTER_NO_PROMPT_CACHE=1.
+      if (process.env.LOPSTER_NO_PROMPT_CACHE !== "1") {
+        try {
+          addAnthropicCacheBreakpoints(upstreamBody);
+        } catch {
+          /* */
+        }
+      }
     }
   } else if (mode === "kiro") {
     converter = getConverter("openai", "kiro");

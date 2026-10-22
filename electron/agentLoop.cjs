@@ -272,6 +272,7 @@ async function runAgentLoopInner({
   thinkingMax = false,
 }) {
   const toolsUserDataPath = userDataPath || toolContext?.userDataPath || null;
+  const toolsRootPath = rootPath || toolContext?.rootPath || null;
   const toolsQuery =
     typeof customToolQuery === "string" && customToolQuery.trim()
       ? customToolQuery
@@ -285,6 +286,7 @@ async function runAgentLoopInner({
       : await getToolSchemasAsync({
           excludeNames: excludeToolNames,
           userDataPath: toolsUserDataPath,
+          rootPath: toolsRootPath,
           query: toolsQuery,
         });
   let toolsSorted = toolsByNameLength(tools);
@@ -298,6 +300,7 @@ async function runAgentLoopInner({
       const next = await getToolSchemasAsync({
         excludeNames: excludeToolNames,
         userDataPath: toolsUserDataPath,
+        rootPath: toolsRootPath,
         query: toolsQuery,
       });
       const nextFingerprint = next

@@ -90,6 +90,8 @@ contextBridge.exposeInMainWorld("lopster", {
   configureTelegramSlot: (slotId, config) => ipcRenderer.invoke("telegram:configureSlot", slotId, config),
   listTelegramSlots: () => ipcRenderer.invoke("telegram:listSlots"),
   newWindow: () => ipcRenderer.invoke("window:new"),
+  introReady: () => ipcRenderer.send("intro:ready"),
+  finishIntro: () => ipcRenderer.send("intro:finished"),
   openProxySubview: (view) => ipcRenderer.invoke("proxy:openSubview", view),
   sendChatRequest: (request) => ipcRenderer.invoke("chat:send", request),
   getModelLimits: (modelId) => ipcRenderer.invoke("model:limits", modelId),
@@ -135,6 +137,10 @@ contextBridge.exposeInMainWorld("lopster", {
   refreshMcpServer: (id) => ipcRenderer.invoke("mcp:refresh", id),
   inspectMcpServer: (id) => ipcRenderer.invoke("mcp:inspect", id),
   importMcpConfig: (config, options) => ipcRenderer.invoke("mcp:import", config, options || {}),
+  searchMcpRegistry: (options) => ipcRenderer.invoke("mcp:registrySearch", options || {}),
+  installMcpRegistry: (server, overrides) => ipcRenderer.invoke("mcp:registryInstall", server, overrides || {}),
+  listProjectMcp: (rootPath) => ipcRenderer.invoke("mcp:projectList", rootPath || null),
+  setProjectMcp: (rootPath, serverId, enabled) => ipcRenderer.invoke("mcp:projectSet", rootPath || null, serverId, enabled === true),
   onMcpChanged: (callback) => {
     const listener = (_event, payload) => callback(payload);
     ipcRenderer.on("mcp:changed", listener);
@@ -213,6 +219,12 @@ contextBridge.exposeInMainWorld("lopster", {
   proxyStatus: () => ipcRenderer.invoke("proxy:status"),
   proxyNgrokStatus: () => ipcRenderer.invoke("proxy:ngrokStatus"),
   proxyNgrokRestart: () => ipcRenderer.invoke("proxy:ngrokRestart"),
+  localAgentGetConfig: () => ipcRenderer.invoke("localAgent:getConfig"),
+  localAgentSetDir: (dir) => ipcRenderer.invoke("localAgent:setDir", dir),
+  localAgentPickDir: () => ipcRenderer.invoke("localAgent:pickDir"),
+  localAgentStatus: () => ipcRenderer.invoke("localAgent:status"),
+  localAgentStart: () => ipcRenderer.invoke("localAgent:start"),
+  localAgentStop: () => ipcRenderer.invoke("localAgent:stop"),
   proxyCreateKey: (label) => ipcRenderer.invoke("proxy:createKey", label),
   proxyDeleteKey: (keyId) => ipcRenderer.invoke("proxy:deleteKey", keyId),
   proxyToggleKey: (keyId, enabled) => ipcRenderer.invoke("proxy:toggleKey", keyId, enabled),

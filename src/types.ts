@@ -271,6 +271,10 @@ export interface McpServer {
   url?: string;
   headers?: Record<string, string>;
   timeout?: { startup?: number; request?: number };
+  marketplace?: { registry?: string; name?: string; version?: string; repository?: string };
+  envSpec?: Array<{ name: string; description?: string; required?: boolean; secret?: boolean }>;
+  headerSpec?: Array<{ name: string; description?: string; required?: boolean; secret?: boolean }>;
+  needsProjectPath?: boolean;
   status?: "connected" | "disconnected" | "disabled" | "error";
   tools?: McpToolInfo[];
   createdAt?: number;

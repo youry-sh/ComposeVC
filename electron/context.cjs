@@ -442,15 +442,16 @@ async function buildSystemPromptWithCustomTools({
   let mcpCatalog = "";
   try {
     const mcp = require("./mcpManager.cjs");
-    const servers = await mcp.listServers(userDataPath);
+    const binding = await mcp.listProjectServers(userDataPath, rootPath || null);
+    const allowed = new Set(binding.serverIds || []);
+    const servers = (await mcp.listServers(userDataPath)).filter((server) => server.enabled !== false && allowed.has(server.id));
     if (servers.length) {
       const lines = servers.map((server) =>
         `- ${server.name} [${server.type}] ${server.status}; ${(server.tools || []).length} tools`
       );
       mcpCatalog =
-        "MCP servers:\n" + lines.join("\n") +
-        "\nUse mcp_manager to add, remove, connect, inspect, import, or search MCP servers. " +
-        "Connected tools are callable directly as mcp__<server>__<tool>.";
+        "MCP servers enabled for this project:\n" + lines.join("\n") +
+        "\nOnly these MCP servers are available. Do not call mcp__ tools from servers that are not in this list.";
     }
   } catch {
     mcpCatalog = "";

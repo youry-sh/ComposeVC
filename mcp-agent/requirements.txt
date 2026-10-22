@@ -1,0 +1,5 @@
+# MCP coding-agent: Python deps (pin mcp<2 — там живёт FastMCP)
+mcp>=1.12,<2
+uvicorn>=0.30
+pyyaml>=6.0
+starlette>=0.37

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ComposeVC</title>
+  <style>
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #070707;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    @font-face {
+      font-family: "Caveat";
+      src: url("./fonts/Caveat.ttf") format("truetype");
+      font-weight: 400 700;
+      font-style: normal;
+      font-display: block;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="stage"></canvas>
+  <script>
+    const canvas = document.getElementById("stage");
+    const ctx = canvas.getContext("2d", { alpha: false });
+    const WORD = "ComposeVC";
+    let finished = false;
+    let started = false;
+    let holdUntil = 0;
+    const particles = [];
+
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      try { window.lopster && window.lopster.finishIntro && window.lopster.finishIntro(); } catch (e) {}
+    };
+    const reveal = () => {
+      try { window.lopster && window.lopster.introReady && window.lopster.introReady(); } catch (e) {}
+    };
+
+    function size() {
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      canvas.width = Math.max(1, Math.floor(window.innerWidth * dpr));
+      canvas.height = Math.max(1, Math.floor(window.innerHeight * dpr));
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function fontSizeFor(w) {
+      return Math.max(54, Math.min(w * 0.12, 132));
+    }
+
+    function sampleWord() {
+      const w = Math.max(window.innerWidth, 1);
+      const h = Math.max(window.innerHeight, 1);
+      const fontSize = fontSizeFor(w);
+      const off = document.createElement("canvas");
+      off.width = Math.ceil(w);
+      off.height = Math.ceil(h);
+      const o = off.getContext("2d", { willReadFrequently: true });
+      o.clearRect(0, 0, off.width, off.height);
+      o.fillStyle = "#f4f4f4";
+      o.textAlign = "center";
+      o.textBaseline = "middle";
+      o.font = "600 " + fontSize + "px Caveat, cursive";
+      o.letterSpacing = Math.round(fontSize * 0.02) + "px";
+      o.fillText(WORD, w / 2, h / 2);
+      const data = o.getImageData(0, 0, off.width, off.height).data;
+      const points = [];
+      for (let y = 0; y < off.height; y += 2) {
+        for (let x = 0; x < off.width; x += 2) {
+          if (data[(y * off.width + x) * 4 + 3] > 40) points.push(x + 1, y + 1);
+        }
+      }
+      return points;
+    }
+
+    function layout() {
+      if (started && performance.now() >= holdUntil) return;
+      size();
+      const points = sampleWord();
+      const now = performance.now();
+      if (!started) holdUntil = now + 900;
+      particles.length = 0;
+      const cx = window.innerWidth / 2;
+      const cy = window.innerHeight / 2;
+      for (let i = 0; i < points.length; i += 2) {
+        const x = points[i];
+        const y = points[i + 1];
+        const dx = x - cx;
+        const dy = y - cy;
+        const dist = Math.hypot(dx, dy) || 1;
+        const kick = 0.45 + Math.random() * 1.05;
+        particles.push({
+          x: x,
+          y: y,
+          vx: (dx / dist) * kick * (10 + Math.random() * 16),
+          vy: (dy / dist) * kick * (10 + Math.random() * 16),
+          delay: Math.random() * 0.16,
+        });
+      }
+    }
+
+    function frame(now) {
+      if (finished) return;
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.fillStyle = "#070707";
+      ctx.fillRect(0, 0, w, h);
+
+      if (!started || now < holdUntil) {
+        const fontSize = fontSizeFor(w);
+        ctx.fillStyle = "#f3f3f3";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.font = "600 " + fontSize + "px Caveat, cursive";
+        ctx.letterSpacing = Math.round(fontSize * 0.02) + "px";
+        ctx.fillText(WORD, w / 2, h / 2);
+        requestAnimationFrame(frame);
+        return;
+      }
+
+      const t = (now - holdUntil) / 1000;
+      let alive = 0;
+      ctx.fillStyle = "#f3f3f3";
+      for (let i = 0; i < particles.length; i += 1) {
+        const p = particles[i];
+        const local = t - p.delay;
+        if (local < 0) {
+          ctx.globalAlpha = 1;
+          ctx.fillRect(p.x, p.y, 1.7, 1.7);
+          alive += 1;
+          continue;
+        }
+        const ease = 1 - Math.pow(1 - Math.min(1, local / 1.05), 3);
+        const alpha = Math.max(0, 1 - local / 1.05);
+        if (alpha <= 0) continue;
+        alive += 1;
+        ctx.globalAlpha = alpha;
+        ctx.fillRect(p.x + p.vx * ease * 16, p.y + p.vy * ease * 16, 1.7, 1.7);
+      }
+      ctx.globalAlpha = 1;
+      if ((particles.length && alive === 0) || t > 1.45) {
+        finish();
+        return;
+      }
+      requestAnimationFrame(frame);
+    }
+
+    const face = new FontFace("Caveat", "url(./fonts/Caveat.ttf)", { weight: "600", style: "normal" });
+    face.load().then((loaded) => {
+      document.fonts.add(loaded);
+    }).catch(() => {}).finally(() => {
+      layout();
+      started = true;
+      reveal();
+      window.addEventListener("resize", layout);
+      requestAnimationFrame(frame);
+    });
+    setTimeout(finish, 5000);
+  </script>
+</body>
+</html>

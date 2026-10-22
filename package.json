@@ -30,6 +30,7 @@
     "test:code-impact-ide": "node tests/codeImpact/codeImpact.engine.test.cjs",
     "test:proxy-parallel": "node tests/proxy/parallel-routing.test.cjs",
     "test:mcp": "node tests/mcp.test.cjs",
+    "test:local-agent-mcp": "node tests/local-agent-mcp.smoke.test.cjs",
     "test:soviet7": "node tests/soviet7-architecture.test.cjs",
     "test:custom-tools-prompt": "node tests/custom-tools-prompt.test.cjs",
     "test:custom-tools-search": "node tests/custom-tools-search.test.cjs",
@@ -84,6 +85,16 @@
     "directories": {
       "output": "release",
       "buildResources": "build-assets"
-    }
+    },
+    "win": {
+      "icon": "build-assets/icon.ico"
+    },
+    "extraResources": [
+      {
+        "from": "mcp-agent",
+        "to": "mcp-agent",
+        "filter": ["**/*", "!.venv/**", "!__pycache__/**", "!.backup/**", "!*.log", "!.env", "!approved_zones.json"]
+      }
+    ]
   }
 }

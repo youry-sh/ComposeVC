@@ -10,12 +10,14 @@ import {
   RefreshCw,
   Save,
   Search,
+  Spline,
   Tags,
   Trash2,
   X,
 } from "lucide-react";
 import { KnowledgeChunk, KnowledgeChunkSummary, KnowledgeListResponse } from "../types";
 import MarkdownContent from "./markdown/MarkdownContent";
+import KnowledgeNeural from "./KnowledgeNeural";
 
 type ViewMode = "preview" | "edit";
 
@@ -94,6 +96,7 @@ const KnowledgeWorkspace: React.FC = () => {
   const [notice, setNotice] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [pendingOpenId, setPendingOpenId] = useState<string | null>(null);
+  const [pane, setPane] = useState<"library" | "neural">("library");
 
   const isDirty = snapshot(draft) !== savedSnapshot;
 
@@ -316,6 +319,21 @@ const KnowledgeWorkspace: React.FC = () => {
 
   const previewMarkdown = `${draft.title ? `# ${draft.title}\n\n` : ""}${draft.content}`;
 
+  if (pane === "neural") {
+    return (
+      <section className="knowledge-workspace is-neural">
+        <KnowledgeNeural
+          chunks={chunks}
+          onBack={() => setPane("library")}
+          onOpen={(id) => {
+            setPane("library");
+            void readChunk(id);
+          }}
+        />
+      </section>
+    );
+  }
+
   return (
     <section className="knowledge-workspace">
       <main className="knowledge-main">
@@ -329,6 +347,14 @@ const KnowledgeWorkspace: React.FC = () => {
             </div>
           </div>
           <div className="knowledge-toolbar-actions">
+            <div className="knowledge-view-toggle" aria-label="Knowledge section">
+              <button type="button" className="is-active">
+                <FileText className="h-3.5 w-3.5" /> Library
+              </button>
+              <button type="button" onClick={() => setPane("neural")}>
+                <Spline className="h-3.5 w-3.5" /> Neural
+              </button>
+            </div>
             <div className="knowledge-view-toggle" aria-label="Markdown view mode">
               <button
                 type="button"

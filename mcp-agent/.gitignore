@@ -1,0 +1,13 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+.env
+audit.log
+approved_zones.json
+*.pid
+.public_url
+bin/
+*.log
+launchd.out.log
+launchd.err.log

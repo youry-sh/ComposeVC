@@ -1,0 +1,33 @@
+# --- токен ---
+# Лучше держать токен в файле .env (см. .env.example), а не здесь.
+# Сгенерировать: python -c "import secrets; print(secrets.token_urlsafe(32))"
+token: "CHANGE_ME_generate_a_long_random_token"
+
+host: "127.0.0.1"
+port: 8000
+
+# --- доступ: режим Claude Code / OpenCode = весь диск ---
+# "*" = полный доступ от имени пользователя, без песочницы.
+# Защита в этом режиме: подтверждение новых папок (зоны) + audit.log.
+# Чтобы ограничить папками — впиши их список вместо "*":
+# allowed_dirs:
+#   - "~/Projects"
+allowed_dirs:
+  - "*"
+
+# --- лимиты ---
+max_file_bytes: 1048576        # 1 MB — файлы больше не читаем целиком
+max_output_chars: 20000        # обрезка stdout/stderr
+default_shell_timeout: 30
+max_shell_timeout: 120
+
+# --- запрещённые команды (регулярки, case-insensitive) ---
+# Работают только когда allowed_dirs НЕ "*". В full-access режиме
+# запретов нет (как в Claude Code), защита — подтверждение зон.
+deny_patterns: []
+
+# --- запрещённые компоненты пути ---
+# Работают только когда allowed_dirs НЕ "*".
+deny_paths: []
+
+audit_log: "./audit.log"

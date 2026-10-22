@@ -20,6 +20,7 @@ import {
   X,
 } from "lucide-react";
 import type { Translation } from "../i18n";
+import LocalAgentMcpPanel from "./LocalAgentMcpPanel";
 
 const PROVIDER_FAVORITES_KEY = "lopster.proxy.providerFavorites";
 
@@ -2333,8 +2334,15 @@ const ProxyWorkspace: React.FC<{
       )}
 
       {mainView === "settings" && (
-        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 sm:p-4 flex-shrink-0 overflow-y-auto scrollbar-thin items-start">
+        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] gap-3 p-3 sm:p-4 overflow-y-auto lg:overflow-hidden scrollbar-thin">
+          {/* LEFT — Local Coding Agent MCP */}
+          <div className="min-h-0 flex flex-col">
+            <LocalAgentMcpPanel pxBtn={pxBtn} />
+          </div>
+
+          {/* RIGHT — Local / Tunnel / Keys / Logs */}
+          <div className="min-h-0 flex flex-col gap-3">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 flex-shrink-0 items-stretch">
             {/* Local */}
             <section className="proxy-panel flex flex-col">
               <div className="proxy-table-header">
@@ -2492,9 +2500,10 @@ const ProxyWorkspace: React.FC<{
                 </div>
               </div>
             </section>
+          </div>
 
             {/* Keys */}
-            <section className="proxy-panel flex flex-col">
+            <section className="proxy-panel flex flex-col flex-shrink-0">
               <div className="proxy-table-header">
                 <span>Keys</span>
                 <button
@@ -2522,7 +2531,7 @@ const ProxyWorkspace: React.FC<{
                 {(config?.keys || []).length === 0 ? (
                   <div className="text-[11px] text-ink-500 py-1">No keys</div>
                 ) : (
-                  <ul className="space-y-1">
+                  <ul className="space-y-1 max-h-36 overflow-y-auto scrollbar-thin">
                     {(config?.keys || []).map((k) => (
                       <li
                         key={k.id}
@@ -2561,10 +2570,9 @@ const ProxyWorkspace: React.FC<{
                 )}
               </div>
             </section>
-          </div>
 
-          {/* Logs — terminal fills bottom half, from center to bottom */}
-          <section className="proxy-panel flex flex-col flex-1 min-h-0 mt-0 rounded-none border-x-0 border-b-0">
+          {/* Logs — fills the rest of the right column */}
+          <section className="proxy-panel flex flex-col flex-1 min-h-[14rem]">
             <div className="flex items-center gap-2 h-9 px-3 flex-shrink-0 theme-hairline-bottom">
               <span className="proxy-section-label">Logs</span>
               <span className="ml-auto text-[10px] font-mono tabular-nums normal-case tracking-normal text-ink-500">
@@ -2611,6 +2619,7 @@ const ProxyWorkspace: React.FC<{
               )}
             </div>
           </section>
+          </div>
         </div>
       )}
 

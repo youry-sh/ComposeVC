@@ -49,6 +49,7 @@ const { createTelegramBot, normalizeTelegramConfig } = require("./telegramBot.cj
 const telegramSlots = require("./telegramSlots.cjs");
 const { resolveUserAnswer, rejectAllPending } = require("./askUserBridge.cjs");
 const { registerProxyHandlers } = require("./proxy/index.cjs");
+const { registerLocalAgentHandlers } = require("./localAgentMcp.cjs");
 const runnerEngine = require("./runners/runnerEngine.cjs");
 const { showAgentToast } = require("./agentToast.cjs");
 const { runtime: sizeworkout } = require("./sizeworkout.cjs");
@@ -1151,6 +1152,7 @@ function createWindow(options = {}) {
     backgroundColor: "#000000",
     title: appName,
     frame: false,
+    show: false,
     icon: !appIconImage.isEmpty() ? appIconImage : undefined,
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
@@ -1178,9 +1180,39 @@ function createWindow(options = {}) {
   win.on("closed", () => {
     if (mainWindow === win) mainWindow = BrowserWindow.getAllWindows().find((item) => !item.isDestroyed()) || null;
   });
-  void loadWindowContent(win);
+  let revealed = false;
+  const reveal = () => {
+    if (revealed || win.isDestroyed()) return;
+    revealed = true;
+    if (!win.isMaximized()) win.maximize();
+    win.show();
+  };
+  if (!win.isDestroyed() && !win.isMaximized()) win.maximize();
+  if (options.intro) {
+    win.__introPending = true;
+    const revealTimer = setTimeout(reveal, 500);
+    win.once("closed", () => clearTimeout(revealTimer));
+    void win.loadFile(path.join(__dirname, "splash.html"));
+  } else {
+    win.once("ready-to-show", reveal);
+    void loadWindowContent(win, options);
+  }
   return win;
 }
+
+ipcMain.on("intro:ready", (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win || win.isDestroyed() || !win.__introPending) return;
+  if (!win.isMaximized()) win.maximize();
+  if (!win.isVisible()) win.show();
+});
+
+ipcMain.on("intro:finished", (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win || win.isDestroyed() || !win.__introPending) return;
+  win.__introPending = false;
+  void loadWindowContent(win);
+});
 
 ipcMain.handle("window:minimize", (event) => {
   BrowserWindow.fromWebContents(event.sender)?.minimize();
@@ -1682,6 +1714,7 @@ ipcMain.handle("telegram:runtimeContext", (event, context) => {
 
 
 registerProxyHandlers(ipcMain, () => app.getPath("userData"));
+registerLocalAgentHandlers(ipcMain, () => app.getPath("userData"));
 
 ipcMain.handle("config:write", async (_event, config) => {
   return writeProviderConfig(config);
@@ -3652,6 +3685,23 @@ ipcMain.handle("mcp:import", async (_event, config, options = {}) => {
   broadcastMcpChanged({ type: "changed" });
   return result;
 });
+ipcMain.handle("mcp:registrySearch", async (_event, options = {}) => {
+  const { searchRegistry } = require("./mcpRegistry.cjs");
+  return searchRegistry(options || {});
+});
+ipcMain.handle("mcp:registryInstall", async (_event, raw, overrides = {}) => {
+  const result = await mcpManager.installRegistryServer(app.getPath("userData"), raw, overrides || {});
+  broadcastMcpChanged({ type: result.already ? "status" : "added", server: result.server });
+  return result;
+});
+ipcMain.handle("mcp:projectList", async (_event, rootPath) => {
+  return mcpManager.listProjectServers(app.getPath("userData"), rootPath || null);
+});
+ipcMain.handle("mcp:projectSet", async (_event, rootPath, serverId, enabled) => {
+  const result = await mcpManager.setProjectServer(app.getPath("userData"), rootPath || null, serverId, enabled === true);
+  broadcastMcpChanged({ type: "project", server: result.server, rootPath: result.rootPath });
+  return result;
+});
 
 function broadcastMcpChanged(payload) {
   for (const win of BrowserWindow.getAllWindows()) {
@@ -4335,11 +4385,11 @@ app.whenReady().then(async () => {
     console.error("[desk] bridge failed:", error?.message || error);
   }
 
-  createWindow();
+  createWindow({ intro: true });
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
+      createWindow({ intro: true });
     }
   });
 });

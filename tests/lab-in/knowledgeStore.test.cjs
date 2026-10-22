@@ -44,6 +44,54 @@ async function main() {
 
     const found = await store.searchKnowledge(userDataPath, "contradictory guidance");
     assert.equal(found[0].id, secondId);
+    assert.equal(found[0].rank, 1);
+    assert.equal(found[0].strength, "strong");
+    assert.equal(found.strongest, "strong");
+
+    const noiseIds = [];
+    for (let index = 0; index < 20; index += 1) {
+      const noise = await store.addKnowledge(userDataPath, {
+        title: `Editing note ${index}`,
+        content: `idempotent editing pass ${index} for ordinary files`,
+        tags: ["note"],
+        source: "test",
+      });
+      noiseIds.push(noise.created[0].id);
+    }
+    const rare = await store.addKnowledge(userDataPath, {
+      title: "Idempotent IPC retry",
+      content: "Retry the same IPC message without duplicating the write.",
+      tags: ["electron", "ipc"],
+      source: "test",
+    });
+    const rareId = rare.created[0].id;
+    const ranked = await store.searchKnowledge(userDataPath, "idempotent ipc");
+    assert.equal(ranked[0].id, rareId);
+    assert.equal(ranked[0].rank, 1);
+    assert.equal(ranked[0].strength, "strong");
+    assert.equal(ranked[0].via, "direct");
+    assert.equal(ranked.some((hit) => noiseIds.includes(hit.id)), false, "common body words stay below a rare title match");
+
+    const neighbor = await store.addKnowledge(userDataPath, {
+      title: "Apply once",
+      content: "The second delivery must not append another row.",
+      tags: ["delivery"],
+      source: "test",
+    });
+    const neighborId = neighbor.created[0].id;
+    const parent = await store.addKnowledge(userDataPath, {
+      title: "Retry backoff",
+      content: "Wait and try the request again.",
+      tags: ["network"],
+      links: [neighborId],
+      source: "test",
+    });
+    const dug = await store.searchKnowledge(userDataPath, "backxx");
+    assert.equal(dug.broadened, true);
+    assert.equal(dug[0].id, parent.created[0].id);
+    assert.equal(dug[0].via, "broad");
+    assert.ok(dug.some((hit) => hit.id === neighborId && hit.via === "link"), "a thin search follows links of the nearest ranked hit");
+    const extraCount = noiseIds.length + 3;
 
     await store.updateKnowledge(userDataPath, {
       id: firstId,
@@ -81,7 +129,7 @@ async function main() {
     );
 
     const finalStats = await store.knowledgeStats(userDataPath);
-    assert.equal(finalStats.chunkCount, 1 + chunked.created.length);
+    assert.equal(finalStats.chunkCount, 1 + chunked.created.length + extraCount);
     console.log("LAB-IN knowledge store tests passed");
   } finally {
     await fs.promises.rm(userDataPath, { recursive: true, force: true });

@@ -40,11 +40,11 @@ module.exports = {
     if (action === "call") {
       let publicName = input.tool;
       if (publicName && !publicName.startsWith("mcp__")) publicName = mcp.publicToolName(target(input), publicName);
-      return mcp.callPublicTool(root, publicName, input.arguments || input.argsObject || {}, context);
+      return mcp.callPublicTool(root, publicName, input.arguments || input.argsObject || {}, { signal: context.signal, rootPath: context.rootPath || null });
     }
     if (action === "search") {
       const q = String(input.query || "").toLowerCase();
-      const schemas = await mcp.getEnabledToolSchemas(root);
+      const schemas = await mcp.getEnabledToolSchemas(root, { rootPath: context.rootPath || null });
       const tools = schemas.filter((t) => !q || `${t.name} ${t.description} ${t.mcpServer} ${t.mcpTool}`.toLowerCase().includes(q));
       return { count: tools.length, tools };
     }

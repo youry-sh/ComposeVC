@@ -231,14 +231,14 @@ function getToolSchemas({ excludeNames } = {}) {
   }));
 }
 
-async function getToolSchemasAsync({ excludeNames, userDataPath, query = "" } = {}) {
+async function getToolSchemasAsync({ excludeNames, userDataPath, rootPath = null, query = "" } = {}) {
   const base = getToolSchemas({ excludeNames });
   if (!userDataPath) return base;
   try {
     const mcp = require("../mcpManager.cjs");
     const excluded = new Set(excludeNames || []);
     const seen = new Set(base.map((t) => t.name));
-    const remote = await mcp.getEnabledToolSchemas(userDataPath);
+    const remote = await mcp.getEnabledToolSchemas(userDataPath, { rootPath });
     for (const tool of remote) {
       if (!tool?.name || excluded.has(tool.name) || seen.has(tool.name)) continue;
       seen.add(tool.name);
@@ -323,7 +323,7 @@ async function resolveTool(name, context = {}) {
   if (String(normalized || "").startsWith("mcp__")) {
     try {
       const mcp = require("../mcpManager.cjs");
-      const resolved = await mcp.resolvePublicTool(userDataPath, normalized);
+      const resolved = await mcp.resolvePublicTool(userDataPath, normalized, { rootPath: context?.rootPath || null });
       if (resolved) {
         return {
           name: normalized,

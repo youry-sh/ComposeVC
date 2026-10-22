@@ -1,71 +1,432 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Cable, Circle, Plug, PlugZap, Plus, RefreshCw, Search, Server, Trash2, X } from "lucide-react";
+import { Cable, Check, ChevronLeft, ChevronRight, Download, ExternalLink, Search, Trash2, X } from "lucide-react";
 import { McpServer } from "../types";
 
-interface Props { open: boolean; onClose: () => void; }
-const field = "ide-field h-8 w-full px-3 font-mono text-[11px] text-ink-950 outline-none";
-const quiet = "ide-quiet-btn inline-flex h-8 items-center justify-center gap-1.5 px-3 text-[11px] theme-soft disabled:opacity-40";
-const primary = "ide-primary-btn inline-flex h-8 items-center justify-center gap-1.5 px-3 text-[11px] ui-btn-primary disabled:opacity-40";
-interface McpForm { name: string; title: string; description: string; type: "local" | "remote"; command: string; args: string; cwd: string; environment: string; url: string; headers: string; startup: string; request: string; enabled: boolean; }
-const blank: McpForm = { name: "", title: "", description: "", type: "local", command: "", args: "[]", cwd: "", environment: "{}", url: "", headers: "{}", startup: "30000", request: "300000", enabled: true };
+interface Props {
+  open: boolean;
+  onClose: () => void;
+}
+
+interface RegistryCard {
+  name: string;
+  title: string;
+  description: string;
+  version: string;
+  repository: string;
+  transport: string;
+  packageName: string;
+  runtime: string;
+  remoteUrl: string;
+  raw: unknown;
+}
+
+interface SpecField {
+  name: string;
+  description?: string;
+  required?: boolean;
+  secret?: boolean;
+}
+
+const quiet = "ide-quiet-btn inline-flex h-7 items-center justify-center gap-1.5 px-2.5 text-[11px] theme-soft disabled:opacity-40";
+const primary = "ide-primary-btn inline-flex h-7 items-center justify-center gap-1.5 px-2.5 text-[11px] ui-btn-primary disabled:opacity-40";
+const field = "ide-field h-8 w-full px-3 text-[12px] text-ink-950 outline-none";
+const CHIPS = ["github", "filesystem", "browser", "postgres", "slack", "notion", "memory", "search"];
 
 const McpModal: React.FC<Props> = ({ open, onClose }) => {
-  const [servers, setServers] = useState<McpServer[]>([]);
-  const [selected, setSelected] = useState<string | null>(null);
-  const [form, setForm] = useState(blank);
+  const [tab, setTab] = useState<"browse" | "installed">("browse");
+  const [draft, setDraft] = useState("");
   const [query, setQuery] = useState("");
-  const [busy, setBusy] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+  const [cursors, setCursors] = useState<string[]>([""]);
+  const [cards, setCards] = useState<RegistryCard[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [log, setLog] = useState<string[]>(["$ mcp registry ready"]);
-  const [importText, setImportText] = useState("");
-  const [showImport, setShowImport] = useState(false);
+  const [notice, setNotice] = useState("");
+  const [installed, setInstalled] = useState<McpServer[]>([]);
+  const [selectedName, setSelectedName] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [secrets, setSecrets] = useState<Record<string, string>>({});
 
-  const load = async () => { const list = await window.lopster?.listMcpServers?.(); setServers(list || []); };
-  useEffect(() => { if (!open) return; void load(); const off = window.lopster?.onMcpChanged?.(() => void load()); return () => off?.(); }, [open]);
-  const filtered = useMemo(() => servers.filter(s => !query || `${s.name} ${s.title} ${s.description || ""} ${(s.tools || []).map(t => t.name).join(" ")}`.toLowerCase().includes(query.toLowerCase())), [servers, query]);
-  const append = (line: string) => setLog(prev => [...prev.slice(-7), `${new Date().toLocaleTimeString()} ${line}`]);
-  const select = (s: McpServer) => { setSelected(s.id); setError(""); setForm({ name: s.name, title: s.title || "", description: s.description || "", type: s.type, command: s.command || "", args: JSON.stringify(s.args || [], null, 2), cwd: s.cwd || "", environment: JSON.stringify(s.environment || {}, null, 2), url: s.url || "", headers: JSON.stringify(s.headers || {}, null, 2), startup: String(s.timeout?.startup || 30000), request: String(s.timeout?.request || 300000), enabled: s.enabled !== false }); };
-  const reset = () => { setSelected(null); setForm(blank); setError(""); };
-  const parseObject = (text: string, label: string) => { try { const value = JSON.parse(text || "{}"); if (!value || Array.isArray(value) || typeof value !== "object") throw new Error(); return value; } catch { throw new Error(`${label}: invalid JSON object`); } };
-  const parseArray = (text: string) => { try { const value = JSON.parse(text || "[]"); if (!Array.isArray(value)) throw new Error(); return value.map(String); } catch { throw new Error("Arguments: invalid JSON array"); } };
-  const payload = () => ({ name: form.name, title: form.title, description: form.description, type: form.type, enabled: form.enabled, command: form.command, args: parseArray(form.args), cwd: form.cwd || undefined, environment: parseObject(form.environment, "Environment"), url: form.url, headers: parseObject(form.headers, "Headers"), timeout: { startup: Number(form.startup), request: Number(form.request) } });
-  const save = async () => { setBusy("save"); setError(""); try { const p = payload(); if (selected) await window.lopster?.updateMcpServer?.(selected, p); else await window.lopster?.addMcpServer?.(p); append(`saved ${p.name}`); await load(); reset(); } catch (e) { setError(e instanceof Error ? e.message : String(e)); } finally { setBusy(null); } };
-  const act = async (kind: "connect" | "disconnect" | "refresh" | "remove", s: McpServer) => { setBusy(`${kind}:${s.id}`); setError(""); try { if (kind === "connect") await window.lopster?.connectMcpServer?.(s.id); if (kind === "disconnect") await window.lopster?.disconnectMcpServer?.(s.id); if (kind === "refresh") await window.lopster?.refreshMcpServer?.(s.id); if (kind === "remove") await window.lopster?.removeMcpServer?.(s.id); append(`${kind} ${s.name}`); await load(); if (kind === "remove" && selected === s.id) reset(); } catch (e) { const msg = e instanceof Error ? e.message : String(e); setError(msg); append(`error ${msg}`); } finally { setBusy(null); } };
-  const importConfig = async () => { setBusy("import"); setError(""); try { const result = await window.lopster?.importMcpConfig?.(importText, { overwrite: true }); append(`imported ${result?.imported || 0} server(s)`); setImportText(""); setShowImport(false); await load(); } catch (e) { setError(e instanceof Error ? e.message : String(e)); } finally { setBusy(null); } };
+  const loadInstalled = async () => {
+    const list = await window.lopster?.listMcpServers?.();
+    setInstalled(list || []);
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    void loadInstalled();
+    const off = window.lopster?.onMcpChanged?.(() => void loadInstalled());
+    return () => off?.();
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || tab !== "browse") return;
+    let cancelled = false;
+    const run = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const result = await window.lopster?.searchMcpRegistry?.({
+          query,
+          cursor: cursors[page] || "",
+          limit: 18,
+        });
+        if (cancelled) return;
+        setCards(result?.servers || []);
+        setNextCursor(result?.nextCursor || null);
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : String(err));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, tab, query, page, cursors]);
+
+  const installedByRegistry = useMemo(() => {
+    const map = new Map<string, McpServer>();
+    for (const server of installed) {
+      if (server.marketplace?.name) map.set(server.marketplace.name, server);
+    }
+    return map;
+  }, [installed]);
+
+  const selectedCard = cards.find((card) => card.name === selectedName) || null;
+  const selectedInstalled = installed.find((server) => server.id === selectedName || server.marketplace?.name === selectedName) || null;
+
+  const submitSearch = (value: string) => {
+    setQuery(value.trim());
+    setPage(0);
+    setCursors([""]);
+    setSelectedName(null);
+  };
+
+  const install = async (card: RegistryCard) => {
+    setBusy(card.name);
+    setError("");
+    setNotice("");
+    try {
+      const environment: Record<string, string> = {};
+      const headers: Record<string, string> = {};
+      for (const [key, value] of Object.entries(secrets)) {
+        if (!value.trim()) continue;
+        if (key.startsWith("header:")) headers[key.slice(7)] = value.trim();
+        else environment[key] = value.trim();
+      }
+      const result = await window.lopster?.installMcpRegistry?.(card.raw, { environment, headers });
+      const warnings = result?.warnings?.filter(Boolean) || [];
+      setNotice(result?.updated ? `Saved the key for ${card.title}` : result?.already ? `${card.title} is already installed` : `Installed ${card.title}${warnings.length ? ` · ${warnings[0]}` : ""}`);
+      await loadInstalled();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const remove = async (server: McpServer) => {
+    setBusy(server.id);
+    setError("");
+    try {
+      await window.lopster?.removeMcpServer?.(server.id);
+      if (selectedName === server.id) setSelectedName(null);
+      await loadInstalled();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const saveSecrets = async (server: McpServer) => {
+    setBusy(server.id);
+    setError("");
+    try {
+      const environment = { ...(server.environment || {}) };
+      const headers = { ...(server.headers || {}) };
+      for (const [key, value] of Object.entries(secrets)) {
+        const text = value.trim();
+        if (!text) continue;
+        if (key.startsWith("header:")) {
+          const name = key.slice(7);
+          headers[name] = /^authorization$/i.test(name) && !/^(bearer|basic)\s+/i.test(text) ? `Bearer ${text}` : text;
+        } else {
+          environment[key] = text;
+        }
+      }
+      await window.lopster?.updateMcpServer?.(server.id, { environment, headers });
+      setNotice(`Saved settings for ${server.title || server.name}`);
+      await loadInstalled();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(null);
+    }
+  };
+
   if (!open) return null;
 
-  return <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/65 p-5" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
-    <div className="flex h-[min(820px,94vh)] w-[min(1180px,96vw)] flex-col overflow-hidden border border-ink-300 shadow-2xl" style={{ background: "var(--bg)", boxShadow: "0 28px 90px rgba(0,0,0,.55), 0 0 0 1px var(--accent-muted)" }}>
-      <header className="flex h-11 shrink-0 items-center justify-between border-b border-ink-200 px-4">
-        <div className="flex items-center gap-2 font-mono"><Cable className="h-4 w-4" style={{ color: "var(--accent)" }}/><b className="text-[13px] text-ink-950">MCP CONTROL DECK</b><span className="text-[10px] text-ink-500">// MODEL CONTEXT PROTOCOL</span></div>
-        <div className="flex gap-1"><button className={quiet} onClick={() => setShowImport(v => !v)}>IMPORT JSON</button><button className={quiet} onClick={onClose}><X className="h-4 w-4"/></button></div>
-      </header>
-      {showImport && <div className="flex shrink-0 gap-2 border-b border-ink-200 p-3"><textarea value={importText} onChange={e => setImportText(e.target.value)} placeholder={'{"mcpServers":{"filesystem":{"command":"npx","args":["-y","@modelcontextprotocol/server-filesystem","/workspace"]}}}'} className="ide-code-editor h-24 flex-1 resize-none bg-transparent p-2 font-mono text-[10px] text-ink-950 outline-none"/><button className={primary} disabled={!importText.trim() || busy === "import"} onClick={() => void importConfig()}>IMPORT</button></div>}
-      <div className="flex min-h-0 flex-1">
-        <aside className="flex w-[340px] shrink-0 flex-col border-r border-ink-200" style={{ background: "var(--sidebar-tint)" }}>
-          <div className="flex gap-2 border-b border-ink-200 p-3"><div className="relative flex-1"><Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-ink-500"/><input className={`${field} pl-8`} placeholder="search servers / tools" value={query} onChange={e => setQuery(e.target.value)}/></div><button className={primary} onClick={reset}><Plus className="h-3.5 w-3.5"/></button></div>
-          <div className="min-h-0 flex-1 overflow-y-auto p-2">{filtered.map(s => <button key={s.id} onClick={() => select(s)} className="mb-1 w-full border px-3 py-2.5 text-left transition-colors" style={{ borderColor: selected === s.id ? "var(--accent)" : "var(--border)", background: selected === s.id ? "var(--accent-muted)" : "transparent" }}>
-            <div className="flex items-center gap-2"><Circle className="h-2.5 w-2.5" fill={s.status === "connected" ? "#4ade80" : s.enabled === false ? "#64748b" : "#f59e0b"} stroke="none"/><span className="flex-1 truncate font-mono text-[12px] font-semibold text-ink-950">{s.name}</span><span className="text-[9px] uppercase text-ink-500">{s.type}</span></div>
-            <div className="mt-1 truncate text-[10px] text-ink-500">{s.type === "local" ? `${s.command} ${(s.args || []).join(" ")}` : s.url}</div><div className="mt-1 text-[9px] text-ink-500">{s.tools?.length || 0} TOOLS · {s.status}</div>
-          </button>)}{!filtered.length && <div className="p-8 text-center font-mono text-[10px] text-ink-500">NO MCP SERVERS</div>}</div>
-        </aside>
-        <main className="flex min-w-0 flex-1 flex-col">
-          <div className="min-h-0 flex-1 overflow-y-auto p-5"><div className="mb-5 flex items-center gap-2"><Server className="h-4 w-4 text-ink-600"/><span className="font-mono text-[12px] text-ink-950">{selected ? `EDIT :: ${form.name}` : "NEW SERVER"}</span></div>
-            <div className="grid grid-cols-2 gap-3">
-              <label className="grid gap-1 text-[10px] uppercase text-ink-500">Name<input className={field} value={form.name} onChange={e => setForm({...form,name:e.target.value})}/></label>
-              <label className="grid gap-1 text-[10px] uppercase text-ink-500">Title<input className={field} value={form.title} onChange={e => setForm({...form,title:e.target.value})}/></label>
-              <label className="col-span-2 grid gap-1 text-[10px] uppercase text-ink-500">Description<input className={field} value={form.description} onChange={e => setForm({...form,description:e.target.value})}/></label>
-              <label className="grid gap-1 text-[10px] uppercase text-ink-500">Transport<select className={field} value={form.type} onChange={e => setForm({...form,type:e.target.value as "local"|"remote"})}><option value="local">LOCAL / STDIO</option><option value="remote">REMOTE / STREAMABLE HTTP</option></select></label>
-              <label className="flex items-end gap-2 pb-1 text-[10px] uppercase text-ink-500"><input type="checkbox" checked={form.enabled} onChange={e => setForm({...form,enabled:e.target.checked})}/> Auto-connect & expose tools</label>
-              {form.type === "local" ? <><label className="grid gap-1 text-[10px] uppercase text-ink-500">Command<input className={field} placeholder="npx" value={form.command} onChange={e => setForm({...form,command:e.target.value})}/></label><label className="grid gap-1 text-[10px] uppercase text-ink-500">Working directory<input className={field} value={form.cwd} onChange={e => setForm({...form,cwd:e.target.value})}/></label><label className="col-span-2 grid gap-1 text-[10px] uppercase text-ink-500">Arguments JSON<textarea className={`${field} h-20 py-2`} value={form.args} onChange={e => setForm({...form,args:e.target.value})}/></label><label className="col-span-2 grid gap-1 text-[10px] uppercase text-ink-500">Environment JSON · supports {"{env:NAME}"}<textarea className={`${field} h-20 py-2`} value={form.environment} onChange={e => setForm({...form,environment:e.target.value})}/></label></> : <><label className="col-span-2 grid gap-1 text-[10px] uppercase text-ink-500">Streamable HTTP URL<input className={field} placeholder="https://host.example/mcp" value={form.url} onChange={e => setForm({...form,url:e.target.value})}/></label><label className="col-span-2 grid gap-1 text-[10px] uppercase text-ink-500">Headers JSON · supports {"{env:NAME}"}<textarea className={`${field} h-24 py-2`} value={form.headers} onChange={e => setForm({...form,headers:e.target.value})}/></label></>}
-              <label className="grid gap-1 text-[10px] uppercase text-ink-500">Startup timeout ms<input className={field} type="number" value={form.startup} onChange={e => setForm({...form,startup:e.target.value})}/></label><label className="grid gap-1 text-[10px] uppercase text-ink-500">Request timeout ms<input className={field} type="number" value={form.request} onChange={e => setForm({...form,request:e.target.value})}/></label>
-            </div>{error && <div className="mt-3 border border-red-500/40 bg-red-500/10 px-3 py-2 font-mono text-[10px] text-status-err">ERR :: {error}</div>}
-            {selected && (() => { const s=servers.find(x=>x.id===selected); return s ? <div className="mt-5"><div className="mb-2 font-mono text-[10px] text-ink-500">DISCOVERED TOOLS [{s.tools?.length || 0}]</div><div className="grid grid-cols-2 gap-1">{(s.tools || []).map(t=><div key={t.publicName} className="border border-ink-200 px-2 py-1.5"><div className="truncate font-mono text-[10px] text-ink-950">{t.publicName}</div><div className="truncate text-[9px] text-ink-500">{t.description}</div></div>)}</div></div> : null; })()}
+  return (
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/65 p-5" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <div className="mcp-market flex h-[min(820px,94vh)] w-[min(1180px,96vw)] flex-col overflow-hidden border border-ink-300" style={{ background: "var(--bg)" }}>
+        <header className="flex h-11 shrink-0 items-center justify-between gap-3 border-b border-ink-200 px-4">
+          <div className="flex min-w-0 items-center gap-2">
+            <Cable className="h-4 w-4 shrink-0" style={{ color: "var(--accent)" }} />
+            <b className="truncate text-[13px] text-ink-950">MCP Marketplace</b>
+            <span className="hidden truncate text-[10px] text-ink-500 sm:inline">Official Registry · registry.modelcontextprotocol.io</span>
           </div>
-          <div className="shrink-0 border-t border-ink-200 bg-black/20 p-3"><div className="mb-2 h-[76px] overflow-hidden font-mono text-[9px] leading-4 text-ink-500">{log.map((l,i)=><div key={i}><span style={{color:"var(--accent)"}}>&gt;</span> {l}</div>)}</div><div className="flex justify-between"><div className="flex gap-1">{selected && <><button className={quiet} onClick={() => void act("connect", servers.find(s=>s.id===selected)!)}><PlugZap className="h-3.5 w-3.5"/>CONNECT</button><button className={quiet} onClick={() => void act("disconnect", servers.find(s=>s.id===selected)!)}><Plug className="h-3.5 w-3.5"/>STOP</button><button className={quiet} onClick={() => void act("refresh", servers.find(s=>s.id===selected)!)}><RefreshCw className="h-3.5 w-3.5"/>REFRESH</button><button className={quiet} onClick={() => void act("remove", servers.find(s=>s.id===selected)!)}><Trash2 className="h-3.5 w-3.5"/></button></>}</div><button className={primary} disabled={!form.name.trim() || busy === "save"} onClick={() => void save()}>{busy === "save" ? "SAVING…" : selected ? "SAVE SERVER" : "ADD SERVER"}</button></div></div>
-        </main>
+          <div className="flex shrink-0 items-center gap-1">
+            <button type="button" className={`${quiet} ${tab === "browse" ? "text-ink-950" : ""}`} onClick={() => { setTab("browse"); setSelectedName(null); }}>Browse</button>
+            <button type="button" className={`${quiet} ${tab === "installed" ? "text-ink-950" : ""}`} onClick={() => { setTab("installed"); setSelectedName(null); }}>Installed {installed.length ? installed.length : ""}</button>
+            <button type="button" className={quiet} onClick={onClose} aria-label="Close"><X className="h-4 w-4" /></button>
+          </div>
+        </header>
+
+        {tab === "browse" && (
+          <div className="flex shrink-0 flex-col gap-2 border-b border-ink-200 px-4 py-3">
+            <form className="flex gap-2" onSubmit={(event) => { event.preventDefault(); submitSearch(draft); }}>
+              <div className="relative min-w-0 flex-1">
+                <Search className="pointer-events-none absolute left-2.5 top-2 h-3.5 w-3.5 text-ink-500" />
+                <input className={`${field} pl-8`} value={draft} placeholder="Search servers people published" onChange={(event) => setDraft(event.target.value)} />
+              </div>
+              <button type="submit" className={primary}>Search</button>
+            </form>
+            <div className="flex gap-1 overflow-x-auto">
+              {CHIPS.map((chip) => (
+                <button key={chip} type="button" className={quiet} onClick={() => { setDraft(chip); submitSearch(chip); }}>{chip}</button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {(error || notice) && (
+          <div className="shrink-0 border-b border-ink-200 px-4 py-1.5 text-[11px]">
+            {notice && <span className="text-ink-600">{notice}</span>}
+            {error && <span className="text-status-err">{error}</span>}
+          </div>
+        )}
+
+        <div className="flex min-h-0 flex-1">
+          <div className="min-w-0 flex-1 overflow-y-auto p-3">
+            {tab === "browse" && loading && <div className="p-8 text-center font-mono text-[10px] text-ink-500">LOADING REGISTRY…</div>}
+            {tab === "browse" && !loading && !cards.length && <div className="p-8 text-center font-mono text-[10px] text-ink-500">NO SERVERS ON THIS PAGE</div>}
+            {tab === "browse" && (
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
+                {cards.map((card) => {
+                  const owned = installedByRegistry.get(card.name);
+                  const active = selectedName === card.name;
+                  return (
+                    <div key={`${card.name}:${card.version}`} role="button" tabIndex={0} onClick={() => { setSelectedName(card.name); setSecrets({}); }} onKeyDown={(event) => { if (event.key === "Enter") { setSelectedName(card.name); setSecrets({}); } }} className="mcp-market-card border px-3 py-2.5 text-left" style={{ borderColor: active ? "var(--accent)" : "var(--border)", background: active ? "var(--accent-muted)" : "transparent" }}>
+                      <div className="flex items-start gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-[12px] font-medium text-ink-950">{card.title}</div>
+                          <div className="truncate font-mono text-[10px] text-ink-500">{card.name}</div>
+                        </div>
+                        <span className="shrink-0 font-mono text-[9px] uppercase text-ink-500">{card.transport}</span>
+                      </div>
+                      <p className="mt-1.5 line-clamp-2 text-[11px] leading-4 text-ink-600">{card.description || "No description"}</p>
+                      <div className="mt-2 flex items-center justify-between gap-2">
+                        <span className="truncate font-mono text-[9px] text-ink-500">{card.version || card.packageName || card.remoteUrl}</span>
+                        <button
+                          type="button"
+                          className={owned ? `${quiet} pointer-events-none` : primary}
+                          disabled={Boolean(owned) || busy === card.name}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            if (!owned) void install(card);
+                          }}
+                        >
+                          {owned ? <><Check className="h-3 w-3" /> Installed</> : busy === card.name ? "Installing…" : <><Download className="h-3 w-3" /> Install</>}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {tab === "installed" && !installed.length && <div className="p-8 text-center font-mono text-[10px] text-ink-500">NOTHING INSTALLED YET</div>}
+            {tab === "installed" && installed.map((server) => (
+              <button key={server.id} type="button" onClick={() => { setSelectedName(server.id); setSecrets({}); }} className="mb-1 flex w-full items-center gap-3 border px-3 py-2.5 text-left" style={{ borderColor: selectedName === server.id ? "var(--accent)" : "var(--border)", background: selectedName === server.id ? "var(--accent-muted)" : "transparent" }}>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-[12px] font-medium text-ink-950">{server.title || server.name}</div>
+                  <div className="truncate font-mono text-[10px] text-ink-500">{server.marketplace?.name || server.name}</div>
+                </div>
+                <span className="shrink-0 font-mono text-[9px] uppercase text-ink-500">{server.type}</span>
+                <span className="shrink-0 text-[10px] text-ink-500">{server.tools?.length || 0} tools</span>
+              </button>
+            ))}
+          </div>
+
+          <aside className="flex w-[300px] shrink-0 flex-col border-l border-ink-200" style={{ background: "var(--sidebar-tint)" }}>
+            {tab === "browse" && selectedCard && (
+              <Detail
+                title={selectedCard.title}
+                subtitle={selectedCard.name}
+                description={selectedCard.description}
+                meta={[selectedCard.version && `v${selectedCard.version}`, selectedCard.transport, selectedCard.runtime].filter(Boolean).join(" · ")}
+                repository={selectedCard.repository}
+                specs={specsFromRaw(selectedCard.raw)}
+                secrets={secrets}
+                onSecret={(key, value) => setSecrets((prev) => ({ ...prev, [key]: value }))}
+                actionLabel={installedByRegistry.has(selectedCard.name) ? "Installed" : busy === selectedCard.name ? "Installing…" : "Install"}
+                actionDisabled={installedByRegistry.has(selectedCard.name) || busy === selectedCard.name}
+                onAction={() => void install(selectedCard)}
+              />
+            )}
+            {tab === "installed" && selectedInstalled && (
+              <Detail
+                title={selectedInstalled.title || selectedInstalled.name}
+                subtitle={selectedInstalled.marketplace?.name || selectedInstalled.name}
+                description={selectedInstalled.description || ""}
+                meta={[selectedInstalled.marketplace?.version, selectedInstalled.type, selectedInstalled.status].filter(Boolean).join(" · ")}
+                repository={selectedInstalled.marketplace?.repository || ""}
+                specs={installedSpecs(selectedInstalled)}
+                secrets={secrets}
+                onSecret={(key, value) => setSecrets((prev) => ({ ...prev, [key]: value }))}
+                actionLabel={busy === selectedInstalled.id ? "Saving…" : "Save settings"}
+                actionDisabled={busy === selectedInstalled.id}
+                onAction={() => void saveSecrets(selectedInstalled)}
+                secondaryLabel="Remove"
+                onSecondary={() => void remove(selectedInstalled)}
+              />
+            )}
+            {!selectedCard && tab === "browse" && <EmptyDetail text="Select a server to install it into ComposeVC." />}
+            {!selectedInstalled && tab === "installed" && <EmptyDetail text="Installed servers stay off until you enable them for a project in chat Connector." />}
+          </aside>
+        </div>
+
+        {tab === "browse" && (
+          <footer className="flex h-11 shrink-0 items-center justify-between border-t border-ink-200 px-4">
+            <span className="font-mono text-[10px] text-ink-500">PAGE {page + 1}{query ? ` · ${query}` : ""}</span>
+            <div className="flex gap-1">
+              <button type="button" className={quiet} disabled={page === 0 || loading} onClick={() => setPage((value) => Math.max(0, value - 1))}><ChevronLeft className="h-3.5 w-3.5" /> Prev</button>
+              <button type="button" className={quiet} disabled={!nextCursor || loading} onClick={() => {
+                setCursors((prev) => {
+                  if (prev[page + 1]) return prev;
+                  return [...prev, nextCursor || ""];
+                });
+                setPage((value) => value + 1);
+              }}>Next <ChevronRight className="h-3.5 w-3.5" /></button>
+            </div>
+          </footer>
+        )}
       </div>
     </div>
-  </div>;
+  );
 };
+
+function installedSpecs(server: McpServer): Array<SpecField & { key: string }> {
+  const specs = [
+    ...(server.envSpec || []).map((item) => ({ ...item, key: item.name })),
+    ...(server.headerSpec || []).map((item) => ({ ...item, key: `header:${item.name}` })),
+  ];
+  if (server.type === "remote" && !specs.some((item) => item.key.toLowerCase() === "header:authorization")) {
+    const saved = String(server.headers?.Authorization || server.headers?.authorization || "");
+    specs.unshift({
+      name: "Authorization",
+      key: "header:Authorization",
+      required: true,
+      secret: true,
+      description: saved && !/your_api_key|\{[^}]+\}/i.test(saved) ? "Saved. Paste a new key to replace it" : "Bearer API key",
+    });
+  }
+  return specs;
+}
+
+function specsFromRaw(raw: unknown): Array<SpecField & { key: string }> {
+  const server = (raw as { server?: { packages?: Array<Record<string, unknown>>; remotes?: Array<Record<string, unknown>> } })?.server
+    || (raw as { packages?: Array<Record<string, unknown>>; remotes?: Array<Record<string, unknown>> })
+    || {};
+  const packages = Array.isArray(server.packages) ? server.packages as Array<Record<string, unknown>> : [];
+  const pkg = packages.find((item) => {
+    const transport = item.transport as { type?: string } | undefined;
+    return !transport || transport.type === "stdio";
+  }) || null;
+  const remote = Array.isArray(server.remotes) ? server.remotes[0] : null;
+  const env = Array.isArray(pkg?.environmentVariables) ? pkg.environmentVariables as SpecField[] : [];
+  const headers = Array.isArray(remote?.headers) ? remote.headers as SpecField[] : [];
+  const specs = [
+    ...env.filter((item) => item?.name).map((item) => ({ ...item, key: item.name })),
+    ...headers.filter((item) => item?.name).map((item) => ({ ...item, key: `header:${item.name}` })),
+  ];
+  const remoteOnly = Array.isArray(server.remotes) && server.remotes.length > 0;
+  if (remoteOnly && !specs.some((item) => item.key.toLowerCase() === "header:authorization")) {
+    specs.unshift({ name: "Authorization", key: "header:Authorization", required: true, secret: true, description: "Bearer API key" });
+  }
+  return specs;
+}
+
+function EmptyDetail({ text }: { text: string }) {
+  return <div className="flex flex-1 items-center p-6 text-[12px] leading-5 text-ink-500">{text}</div>;
+}
+
+function Detail({
+  title,
+  subtitle,
+  description,
+  meta,
+  repository,
+  specs,
+  secrets,
+  onSecret,
+  actionLabel,
+  actionDisabled,
+  onAction,
+  secondaryLabel,
+  onSecondary,
+}: {
+  title: string;
+  subtitle: string;
+  description: string;
+  meta: string;
+  repository: string;
+  specs: Array<SpecField & { key: string }>;
+  secrets: Record<string, string>;
+  onSecret: (key: string, value: string) => void;
+  actionLabel: string;
+  actionDisabled?: boolean;
+  onAction: () => void;
+  secondaryLabel?: string;
+  onSecondary?: () => void;
+}) {
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="min-h-0 flex-1 overflow-y-auto p-4">
+        <div className="text-[13px] font-medium text-ink-950">{title}</div>
+        <div className="mt-0.5 truncate font-mono text-[10px] text-ink-500">{subtitle}</div>
+        {meta && <div className="mt-2 font-mono text-[10px] uppercase text-ink-500">{meta}</div>}
+        <p className="mt-3 text-[12px] leading-5 text-ink-700">{description || "No description published."}</p>
+        {repository && (
+          <button type="button" className={`${quiet} mt-3`} onClick={() => void window.lopster?.openExternal?.(repository)}>
+            <ExternalLink className="h-3.5 w-3.5" /> Repository
+          </button>
+        )}
+        {specs.length > 0 && (
+          <div className="mt-4 space-y-2">
+            <div className="text-[10px] font-medium uppercase tracking-[0.1em] text-ink-500">Required to connect</div>
+            {specs.map((spec) => (
+              <label key={spec.key} className="grid gap-1">
+                <span className="font-mono text-[10px] text-ink-600">{spec.name}{spec.required ? " *" : ""}</span>
+                <input className={field} type={spec.secret ? "password" : "text"} placeholder={spec.description || spec.name} value={secrets[spec.key] || ""} onChange={(event) => onSecret(spec.key, event.target.value)} />
+              </label>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="flex shrink-0 gap-1 border-t border-ink-200 p-3">
+        <button type="button" className={primary} disabled={actionDisabled} onClick={onAction}>
+          <Download className="h-3.5 w-3.5" /> {actionLabel}
+        </button>
+        {secondaryLabel && onSecondary && (
+          <button type="button" className={quiet} onClick={onSecondary}><Trash2 className="h-3.5 w-3.5" /> {secondaryLabel}</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default McpModal;

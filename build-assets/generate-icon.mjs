@@ -1,6 +1,6 @@
 /**
- * Single ComposeVC app icon from logo/Compose.jpg:
- * circular crop + multi-size .ico (PNG-embedded, taskbar/NSIS) + PNG (window/UI/favicon).
+ * ComposeVC app icon from dist/logo/icooffgf.jpg.
+ * macOS-style rounded corners, multi-size PNG-embedded .ico, and PNG for the window.
  * Usage: node build-assets/generate-icon.mjs
  */
 import { createRequire } from "module";
@@ -10,11 +10,11 @@ import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, "..");
-const srcJpg = path.join(root, "logo", "Compose.jpg");
+const srcJpg = path.join(root, "dist", "logo", "icooffgf.jpg");
 const publicLogo = path.join(root, "public", "logo");
+const distLogo = path.join(root, "dist", "logo");
 const sizes = [16, 24, 32, 48, 64, 128, 256, 512];
 
-/** Build ICO container with PNG (not BMP) payload — best Electron nativeImage support. */
 function makeIco(pngBuffers) {
   const header = Buffer.alloc(6);
   header.writeUInt16LE(0, 0);
@@ -31,7 +31,8 @@ function makeIco(pngBuffers) {
     const e = Buffer.alloc(16);
     e[0] = w >= 256 ? 0 : w;
     e[1] = h >= 256 ? 0 : h;
-    e[2] = 0; e[3] = 0;
+    e[2] = 0;
+    e[3] = 0;
     e.writeUInt16LE(1, 4);
     e.writeUInt16LE(32, 6);
     e.writeUInt32LE(buf.length, 8);
@@ -52,10 +53,11 @@ function resolveSharp() {
   }
 }
 
-function circleSvg(size) {
+function macMask(size) {
+  const radius = Math.round(size * 0.2237);
   return Buffer.from(
     `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="${size / 2}" cy="${size / 2}" r="${size / 2}" fill="#fff"/>
+      <rect x="0.5" y="0.5" width="${size - 1}" height="${size - 1}" rx="${radius}" ry="${radius}" fill="#fff"/>
     </svg>`
   );
 }
@@ -64,34 +66,36 @@ async function main() {
   const sharp = resolveSharp();
   await access(srcJpg);
   await mkdir(publicLogo, { recursive: true });
+  await mkdir(distLogo, { recursive: true });
 
-  const makeCirclePng = async (size) => {
+  const makeIconPng = async (size) => {
     const squared = await sharp(srcJpg)
       .resize(size, size, { fit: "cover", position: "centre" })
       .ensureAlpha()
       .png()
       .toBuffer();
     return sharp(squared)
-      .composite([{ input: circleSvg(size), blend: "dest-in" }])
+      .composite([{ input: macMask(size), blend: "dest-in" }])
       .png()
       .toBuffer();
   };
 
   const pngs = {};
-  for (const s of sizes) pngs[s] = await makeCirclePng(s);
+  for (const s of sizes) pngs[s] = await makeIconPng(s);
 
   await writeFile(path.join(publicLogo, "app-icon.png"), pngs[256]);
   await writeFile(path.join(publicLogo, "app-icon-512.png"), pngs[512]);
+  await writeFile(path.join(distLogo, "app-icon.png"), pngs[256]);
+  await writeFile(path.join(distLogo, "app-icon-512.png"), pngs[512]);
 
-  // PNG-embedded ICO (better Electron/Chromium support than BMP ICO)
   const ico = makeIco([16, 24, 32, 48, 64, 128, 256].map((s) => pngs[s]));
   await writeFile(path.join(publicLogo, "app-icon.ico"), ico);
-
+  await writeFile(path.join(distLogo, "app-icon.ico"), ico);
   await writeFile(path.join(__dirname, "app-icon.png"), pngs[512]);
   await writeFile(path.join(__dirname, "app-icon.ico"), ico);
-  await writeFile(path.join(root, "logo", "app-icon.png"), pngs[512]);
+  await writeFile(path.join(__dirname, "icon.ico"), ico);
 
-  console.log("Generated circular app-icon.png + app-icon.ico (PNG-embedded) from logo/Compose.jpg");
+  console.log("Generated mac-rounded app icon from dist/logo/icooffgf.jpg");
 }
 
 main().catch((err) => {

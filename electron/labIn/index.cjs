@@ -13,6 +13,7 @@ const {
   buildSynthesisPrompt,
   buildHandoffSequence,
   buildHandoff,
+  formatRankedShortlist,
 } = require("./prompts.cjs");
 
 const SEARCH_ALLOWED_TOOLS = new Set(["grep", "read_file", "list_dir", "think", "knowledge"]);
@@ -147,25 +148,34 @@ async function runSearchTeam({
   const assertRunning = () => {
     if (signal?.aborted) throw Object.assign(new Error("Stopped by user"), { name: "AbortError" });
   };
+  let rankedResults = [];
+  try {
+    const taskQuery = String(originalTask || "").trim();
+    if (taskQuery) rankedResults = await knowledgeStore.searchKnowledge(userDataPath, taskQuery, { limit: 12 });
+  } catch (error) {
+    warnings.push(`ranked shortlist failed: ${error?.message || error}`);
+  }
+  const rankedBlock = formatRankedShortlist(rankedResults);
   const commonPromptInput = {
     originalTask,
     refinedPrompt,
     conversationContext,
     knowledgeRoot: paths.root,
     chunkCount: stats.chunkCount,
+    rankedBlock,
   };
   const researchers = [
     {
       id: "lead",
       label: "Search Lead",
       prompt: buildSearchPrompt(commonPromptInput),
-      maxIterations: 6,
+      maxIterations: 30,
     },
     ...SEARCH_HELPERS.map((helper) => ({
       id: `helper-${helper.id}`,
       label: helper.label,
       prompt: buildHelperSearchPrompt({ ...commonPromptInput, helper }),
-      maxIterations: 4,
+      maxIterations: 24,
     })),
   ];
 

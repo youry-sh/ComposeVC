@@ -6,7 +6,18 @@ const STORE_VERSION = 1;
 const DEFAULT_CHUNK_CHARS = 6000;
 const MIN_CHUNK_CHARS = 800;
 const MAX_CHUNK_CHARS = 16000;
+const SEARCH_DEFAULT_LIMIT = 12;
+const SEARCH_MAX_LIMIT = 30;
 const writeQueues = new Map();
+const searchCache = new Map();
+const searchEpoch = new Map();
+const corpusLoads = new Map();
+
+const STOPWORDS = new Set(
+  `a an the and or of to for in on at by from with without into over after before as is are was were be been being this that these those it its if then else when where how what which who whom not no nor so than too very just also only about between among per via using use used can may should would could will shall do does did done have has had having you your we our they their i me my
+я ты вы мы он она они его ее её их меня мне нас вам этот эта это эти тот та те такой такая такое такие не ни да или но а в во на с со к ко по о об от до для без при через над под между из у же ли бы как что чем кто где когда какой какая какое какие уже еще ещё только можно нужно надо если то есть быть был была были будет все всё этот
+the this that with from into your`.split(/\s+/).filter(Boolean)
+);
 
 function requireUserDataPath(userDataPath) {
   const value = typeof userDataPath === "string" ? userDataPath.trim() : "";
@@ -95,7 +106,18 @@ async function readManifest(userDataPath) {
   }
 }
 
+function invalidateSearchCache(userDataPath) {
+  try {
+    const key = requireUserDataPath(userDataPath).toLowerCase();
+    searchCache.delete(key);
+    searchEpoch.set(key, (searchEpoch.get(key) || 0) + 1);
+  } catch {
+    /* invalid path is handled by the caller */
+  }
+}
+
 async function writeManifest(userDataPath, manifest) {
+  invalidateSearchCache(userDataPath);
   const paths = await ensureStore(userDataPath);
   const next = {
     version: STORE_VERSION,
@@ -338,51 +360,243 @@ async function getKnowledgeChunk(userDataPath, id) {
   return { ...entry, content: read.content, path: read.filePath };
 }
 
-function tokenizeQuery(value) {
-  return [...new Set(String(value || "").toLowerCase().match(/[\p{L}\p{N}_-]{2,}/gu) || [])].slice(0, 32);
+function tokenize(value, limit = Infinity) {
+  const found = String(value || "").toLowerCase().match(/[\p{L}\p{N}_-]{2,}/gu) || [];
+  const unique = [];
+  const seen = new Set();
+  for (const token of found) {
+    if (seen.has(token)) continue;
+    seen.add(token);
+    unique.push(token);
+    if (unique.length >= limit) break;
+  }
+  return unique;
+}
+
+function queryTerms(phrase) {
+  const raw = tokenize(phrase, 32);
+  const distinctive = raw.filter((term) => !STOPWORDS.has(term));
+  return (distinctive.length ? distinctive : raw).slice(0, 12);
+}
+
+function setHasPrefix(tokens, prefix) {
+  if (!prefix) return false;
+  for (const token of tokens) {
+    if (token.startsWith(prefix)) return true;
+  }
+  return false;
+}
+
+function excerptAround(content, terms) {
+  const body = String(content || "");
+  const lower = body.toLowerCase();
+  let at = -1;
+  for (const term of terms) {
+    const index = lower.indexOf(term);
+    if (index >= 0 && (at < 0 || index < at)) at = index;
+  }
+  if (at < 0) at = 0;
+  const start = Math.max(0, at - 180);
+  return body.slice(start, start + 700);
+}
+
+async function loadCorpus(userDataPath) {
+  const key = requireUserDataPath(userDataPath).toLowerCase();
+  const manifest = await readManifest(userDataPath);
+  const cached = searchCache.get(key);
+  if (cached && cached.updatedAt === manifest.updatedAt && cached.size === manifest.chunks.length) return cached;
+  const pending = corpusLoads.get(key);
+  if (pending) return pending;
+
+  const epoch = searchEpoch.get(key) || 0;
+  const load = (async () => {
+    const docs = [];
+    for (const entry of manifest.chunks) {
+      let read;
+      try {
+        read = await readChunkContent(userDataPath, entry);
+      } catch {
+        continue;
+      }
+      const body = String(read.content || "");
+      docs.push({
+        entry,
+        path: read.filePath,
+        body,
+        titleText: entry.title.toLowerCase(),
+        tagText: entry.tags.join(" ").toLowerCase(),
+        bodyText: body.toLowerCase(),
+        titleTokens: new Set(tokenize(entry.title)),
+        tagTokens: new Set(tokenize(entry.tags.join(" "))),
+        bodyTokens: new Set(tokenize(body)),
+      });
+    }
+    const corpus = { updatedAt: manifest.updatedAt, size: manifest.chunks.length, docs };
+    if ((searchEpoch.get(key) || 0) === epoch) searchCache.set(key, corpus);
+    return corpus;
+  })().finally(() => {
+    if (corpusLoads.get(key) === load) corpusLoads.delete(key);
+  });
+  corpusLoads.set(key, load);
+  return load;
+}
+
+function documentFrequency(docs, terms) {
+  const df = new Map();
+  for (const term of terms) {
+    let count = 0;
+    for (const doc of docs) {
+      if (doc.titleTokens.has(term) || doc.tagTokens.has(term) || doc.bodyTokens.has(term)) count += 1;
+    }
+    df.set(term, count);
+  }
+  return df;
+}
+
+function termWeight(df, term, total) {
+  const seen = df.get(term) || 0;
+  return Math.log(1 + (total - seen + 0.5) / (seen + 0.5));
+}
+
+function classifyHit(doc, phrase, terms, df, total, usePhrase) {
+  const phraseInTitle = usePhrase && doc.titleText.includes(phrase);
+  const phraseInTags = usePhrase && doc.tagText.includes(phrase);
+  const phraseInBody = usePhrase && doc.bodyText.includes(phrase);
+  let score = 0;
+  if (phraseInTitle) score += 36;
+  if (phraseInTags) score += 24;
+  if (phraseInBody) score += 14;
+
+  let titleHits = 0;
+  let tagHits = 0;
+  let bodyHits = 0;
+  for (const term of terms) {
+    const weight = termWeight(df, term, total);
+    if (doc.titleTokens.has(term)) {
+      score += 8 * weight;
+      titleHits += 1;
+    } else if (doc.tagTokens.has(term)) {
+      score += 5 * weight;
+      tagHits += 1;
+    } else if (doc.bodyTokens.has(term)) {
+      score += 1.5 * weight;
+      bodyHits += 1;
+    }
+  }
+  if (!score) return null;
+
+  const rareCutoff = Math.max(3, total * 0.2);
+  const midCutoff = Math.max(4, total * 0.5);
+  const rareTitle = terms.some((term) => doc.titleTokens.has(term) && (df.get(term) || 0) <= rareCutoff);
+  const midField = terms.some((term) => (
+    doc.titleTokens.has(term) || doc.tagTokens.has(term) || doc.bodyTokens.has(term)
+  ) && (df.get(term) || 0) <= midCutoff);
+  let strength = "weak";
+  if (phraseInTitle || phraseInTags || phraseInBody || rareTitle || titleHits + tagHits >= 2) strength = "strong";
+  else if (midField && (titleHits || tagHits || bodyHits)) strength = "partial";
+
+  return { score, strength, titleHits, tagHits, bodyHits };
+}
+
+function makeHit(doc, score, strength, via, terms) {
+  return {
+    id: doc.entry.id,
+    title: doc.entry.title,
+    tags: doc.entry.tags,
+    links: doc.entry.links,
+    score: Math.round(score * 10) / 10,
+    strength,
+    via,
+    path: doc.path,
+    excerpt: excerptAround(doc.body, terms),
+  };
+}
+
+function sortHits(hits) {
+  const strengthOrder = { strong: 3, partial: 2, weak: 1 };
+  return hits.sort((a, b) =>
+    b.score - a.score ||
+    (strengthOrder[b.strength] || 0) - (strengthOrder[a.strength] || 0) ||
+    a.id.localeCompare(b.id)
+  );
+}
+
+function selectHits(sorted, limit) {
+  const useful = sorted.filter((item) => item.strength === "strong" || item.strength === "partial");
+  if (!useful.length) return sorted.filter((item) => item.score > 0).slice(0, Math.min(5, limit));
+  const top = useful[0].score || 1;
+  return useful
+    .filter((item, index) => item.strength === "strong" || index < 4 || item.score >= top * 0.22)
+    .slice(0, limit);
+}
+
+function finishHits(hits, limit, broadened) {
+  const selected = selectHits(sortHits(hits), limit);
+  selected.forEach((item, index) => {
+    item.rank = index + 1;
+  });
+  selected.broadened = broadened;
+  selected.strongest = selected[0]?.strength || "none";
+  return selected;
 }
 
 async function searchKnowledge(userDataPath, query, options = {}) {
-  const manifest = await readManifest(userDataPath);
   const phrase = String(query || "").trim().toLowerCase();
   if (!phrase) throw new Error("knowledge search requires query");
-  const terms = tokenizeQuery(phrase);
-  const scored = [];
-  for (const entry of manifest.chunks) {
-    let read;
-    try {
-      read = await readChunkContent(userDataPath, entry);
-    } catch {
-      continue;
-    }
-    const title = entry.title.toLowerCase();
-    const tags = entry.tags.join(" ").toLowerCase();
-    const body = read.content.toLowerCase();
-    let score = 0;
-    if (title.includes(phrase)) score += 25;
-    if (tags.includes(phrase)) score += 18;
-    if (body.includes(phrase)) score += 12;
-    for (const term of terms) {
-      if (title.includes(term)) score += 6;
-      if (tags.includes(term)) score += 5;
-      if (body.includes(term)) score += 1;
-    }
-    if (!score) continue;
-    const firstTerm = terms.find((term) => body.includes(term));
-    const at = firstTerm ? body.indexOf(firstTerm) : 0;
-    const start = Math.max(0, at - 180);
-    scored.push({
-      id: entry.id,
-      title: entry.title,
-      tags: entry.tags,
-      links: entry.links,
-      score,
-      path: read.filePath,
-      excerpt: read.content.slice(start, start + 700),
-    });
+  const terms = queryTerms(phrase);
+  const limit = Math.max(1, Math.min(SEARCH_MAX_LIMIT, Number(options.limit) || SEARCH_DEFAULT_LIMIT));
+  const corpus = await loadCorpus(userDataPath);
+  const docs = corpus.docs;
+  const total = Math.max(1, docs.length);
+  const df = documentFrequency(docs, terms);
+  const usePhrase = phrase.length >= 4 && phrase.length <= 80 && terms.length > 0 && terms.length <= 6;
+  const byId = new Map(docs.map((doc) => [doc.entry.id, doc]));
+  const direct = [];
+
+  for (const doc of docs) {
+    const classified = classifyHit(doc, phrase, terms, df, total, usePhrase);
+    if (!classified) continue;
+    direct.push(makeHit(doc, classified.score, classified.strength, "direct", terms));
   }
-  const limit = Math.max(1, Math.min(100, Number(options.limit) || 20));
-  return scored.sort((a, b) => b.score - a.score || b.id.localeCompare(a.id)).slice(0, limit);
+
+  const directSorted = sortHits(direct);
+  const directUseful = directSorted.some((item) => item.strength === "strong" || item.strength === "partial");
+  if (directUseful || !docs.length) return finishHits(directSorted, limit, false);
+
+  const broadened = new Map(directSorted.map((hit) => [hit.id, hit]));
+  for (const term of terms) {
+    const prefix = term.length >= 7 ? term.slice(0, 5) : term.length >= 5 ? term.slice(0, 4) : "";
+    if (!prefix) continue;
+    const matched = docs.filter((doc) => setHasPrefix(doc.titleTokens, prefix) || setHasPrefix(doc.tagTokens, prefix));
+    if (!matched.length || matched.length > 8) continue;
+    const weight = Math.max(1, termWeight(df, term, total));
+    for (const doc of matched) {
+      const hit = makeHit(doc, 6 + weight, "partial", "broad", terms);
+      const existing = broadened.get(doc.entry.id);
+      if (existing && existing.strength !== "weak" && existing.score >= hit.score) continue;
+      broadened.set(doc.entry.id, hit);
+    }
+  }
+
+  const parents = sortHits([...broadened.values()]).slice(0, 4);
+  let linked = 0;
+  for (const parent of parents) {
+    const doc = byId.get(parent.id);
+    if (!doc || linked >= 8) break;
+    const neighborIds = new Set(doc.entry.links);
+    for (const other of docs) {
+      if (other.entry.links.includes(parent.id)) neighborIds.add(other.entry.id);
+    }
+    for (const neighborId of neighborIds) {
+      if (linked >= 8 || broadened.has(neighborId)) continue;
+      const neighbor = byId.get(neighborId);
+      if (!neighbor) continue;
+      broadened.set(neighborId, makeHit(neighbor, parent.score * 0.42, "partial", "link", terms));
+      linked += 1;
+    }
+  }
+
+  return finishHits([...broadened.values()], limit, true);
 }
 
 async function knowledgeLinks(userDataPath, id) {

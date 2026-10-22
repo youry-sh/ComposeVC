@@ -15,36 +15,43 @@ Rules:
 - Do not solve the task, write code, discuss your reasoning, or address the user.
 - Return only the improved prompt in plain text. It will be combined with a separate knowledge package.`;
 
-const SEARCH_AGENT_SYSTEM_PROMPT = `You are LAB-IN Search. Sweep the shared knowledge base and hand off what matters. Be fast.
+const SEARCH_AGENT_SYSTEM_PROMPT = `You are LAB-IN Search. Retrieve ranked knowledge and hand off what matters.
 
-You may only read that knowledge root (grep, read_file, list_dir, knowledge search). Never write memory and never open the user's project.
+You may only read that knowledge root (grep, read_file, list_dir, knowledge search/read/links). Never write memory and never open the user's project.
 
-Do this and stop:
-1. One or two targeted searches for the task words and one nearby synonym or guide term.
-2. Open only the chunks that clearly match. Skip the rest.
-3. Return a short package: chunk id, path, and the fact, rule, or step the main agent needs. Note a contradiction only if you actually saw one.
+The store holds two kinds of chunks: notes about a concrete task, and general knowledge or coding principles. A principle often does not repeat the task's words. Read both. Do not skip a principle, rule, or failure mode only because its title lacks the task noun. If it would change how this kind of work is done, read it and include it.
 
-Do not tour the manifest, do not chase every link, do not run a third search to be thorough. If nothing matches, say nothing found and stop. Do not answer the user's task.`;
+knowledge action=search returns hits already ranked. Rank 1 is the best match. Grep order and file order are not relevance. Each hit has rank, score, strength (strong, partial, or weak), and via (direct, broad, or link).
 
-const SEARCH_SYNTHESIS_SYSTEM_PROMPT = `You are LAB-IN Search Lead. Merge the scout reports into one short package for the main agent. Do not search again.
+Do this:
+1. Search with the concrete words of your lens (knowledge action=search). Use the ranked shortlist when it is present, then confirm it with that search if you still need a chunk it does not show.
+2. Search once more for the coding principle or general knowledge this task depends on. Use the name of the craft rule, not another copy of the task sentence.
+3. Read in rank order. Read every strong hit, then every partial hit, including principle hits that apply to this kind of work. Skip a weak hit while a strong or partial hit is still unread.
+4. Open links of the hits you read and read the neighbor when it is the same rule, its exception, or its check. That is part of the same pass, not a new search.
+5. If both searches are empty, or the strongest hit is weak, dig once: search again with a different concrete noun, then open links of the best remaining hit and read that neighbor when it bears on the task or on the principle.
+6. Return a short package in rank order: rank, strength, chunk id, path, and the fact, rule, or principle. Keep a general principle when it changes the work. Note a contradiction only if you saw one.
 
-Keep each unique fact with its chunk id and path. Drop duplicate wording. Keep a contradiction only when two reports actually disagree. Do not add new research and do not answer the user's task.`;
+You have a long tool budget so this sequence can finish. Spend it on these steps. Stop when the strong and partial hits and their linked neighbors are read. Do not spend leftover steps on another search, and do not tour the manifest or read the whole base. If the principle search and the dig are also empty, say nothing found and stop. Do not answer the user's task.`;
+
+const SEARCH_SYNTHESIS_SYSTEM_PROMPT = `You are LAB-IN Search Lead. Merge the scout reports into one package ordered by rank and strength. Do not search again.
+
+Put strong hits before partial hits, and partial hits before weak hits. Keep each unique fact with its chunk id, path, rank, and strength. Drop duplicate wording and drop a weak hit that adds nothing. Keep a contradiction only when two reports actually disagree. If the reports found nothing, say nothing found. Do not answer the user's task.`;
 
 const SEARCH_HELPERS = [
   {
     id: "semantic",
     label: "Semantic scout",
-    mission: "One search for the task words and a close synonym. Read only the hits that match. Return those chunks and stop.",
+    mission: "Lens: the task words and one close synonym. Follow the ranked search procedure for this lens. Read strong hits, then partial hits. If the list is empty or only weak, dig once, then stop.",
   },
   {
     id: "architecture",
     label: "Guides scout",
-    mission: "One search for a guide, setup step, or rule that changes how the task is done. Read the best hit. Return it and stop.",
+    mission: "Lens: a guide, setup step, or rule that changes how the task is done. Follow the ranked search procedure for this lens. Read strong hits, then partial hits. If the list is empty or only weak, dig once, then stop.",
   },
   {
     id: "adversarial",
     label: "Exceptions scout",
-    mission: "One search for a warning, exception, or old decision about this task. If you find one, quote it. Otherwise say none and stop.",
+    mission: "Lens: a warning, exception, or old decision about this task. Follow the ranked search procedure for this lens. If the list is empty or only weak, dig once for a contradiction, then stop.",
   },
 ];
 
@@ -63,11 +70,37 @@ function buildRefinerPrompt({ originalTask, conversationContext, projectName }) 
   ].join("\n");
 }
 
-function buildSearchPrompt({ originalTask, refinedPrompt, conversationContext, knowledgeRoot, chunkCount }) {
+function formatRankedShortlist(results) {
+  const rows = Array.isArray(results) ? results : [];
+  if (!rows.length) {
+    return [
+      "## Ranked shortlist",
+      "No ranked hit for the original request. Dig: run knowledge search with different concrete words from the task, then open links of the best remaining hit.",
+    ].join("\n");
+  }
+  const lines = rows.map((hit) =>
+    `${hit.rank}. ${hit.strength} · ${hit.via} · score ${hit.score} · ${hit.id} · ${hit.title}`
+  );
+  const thin = results.strongest === "weak" || results.broadened === true;
   return [
+    "## Ranked shortlist",
+    "Already ranked. Rank 1 is the best match, not the first file. Read strong rows, then partial rows. Skip a weak row while a stronger unread row remains.",
+    `Strongest: ${results.strongest || rows[0].strength}. Broadened: ${results.broadened ? "yes" : "no"}.`,
+    ...lines,
+    thin
+      ? "The top of this list is thin. Dig once with different concrete words and open links before you stop."
+      : "If a row you need is missing, search once more with a different concrete noun, then stop.",
+  ].join("\n");
+}
+
+function buildSearchPrompt({ originalTask, refinedPrompt, conversationContext, knowledgeRoot, chunkCount, rankedBlock }) {
+  return [
+    "You are the Search Lead.",
     "## LAB-IN research assignment",
     `Knowledge root: ${knowledgeRoot}`,
     `Known chunk count before research: ${chunkCount}`,
+    "",
+    String(rankedBlock || formatRankedShortlist([])),
     "",
     "## Original user request",
     String(originalTask || "").trim(),
@@ -78,19 +111,21 @@ function buildSearchPrompt({ originalTask, refinedPrompt, conversationContext, k
     "## Recent conversation context",
     String(conversationContext || "(none)"),
     "",
-    "Search once or twice, read the matching chunks, and return them. Other scouts cover the other angles. Do not keep searching.",
+    "Use the ranked shortlist and knowledge search. Read every strong hit, then every partial hit, including a coding principle that does not repeat the task words. Then read the linked neighbor when it is the same rule, its exception, or its check. If the list is empty or only weak, dig once with different concrete words. Stop when that set is read. Other scouts cover the other lenses. Then return the ranked package.",
   ].join("\n");
 }
 
-function buildHelperSearchPrompt({ helper, originalTask, refinedPrompt, conversationContext, knowledgeRoot, chunkCount }) {
+function buildHelperSearchPrompt({ helper, originalTask, refinedPrompt, conversationContext, knowledgeRoot, chunkCount, rankedBlock }) {
   return [
     "## LAB-IN specialist research assignment",
     `Specialist: ${helper?.label || "Search helper"}`,
     `Knowledge root: ${knowledgeRoot}`,
     `Known chunk count before research: ${chunkCount}`,
     "",
+    String(rankedBlock || formatRankedShortlist([])),
+    "",
     "## Your independent search lens",
-    String(helper?.mission || "Search the assigned knowledge base from an independent angle."),
+    String(helper?.mission || "Follow the ranked search procedure from an independent lens."),
     "",
     "## Original user request",
     String(originalTask || "").trim(),
@@ -101,7 +136,7 @@ function buildHelperSearchPrompt({ helper, originalTask, refinedPrompt, conversa
     "## Recent conversation context",
     String(conversationContext || "(none)"),
     "",
-    "Search once, read only the hits that match your lens, and return chunk id, path, and the useful lines. Then stop.",
+    "Search this lens with knowledge search. Rank 1 is the best match. Read strong hits, then partial hits. If the list is empty or only weak, dig once, then stop.",
   ].join("\n");
 }
 
@@ -124,7 +159,7 @@ function buildSynthesisPrompt({ originalTask, refinedPrompt, knowledgeRoot, coun
     "## Improved execution prompt",
     String(refinedPrompt || originalTask || "").trim(),
     "",
-    "Below are the Search Lead's own report and three independent specialist reports. Reconcile them into one exhaustive package. Preserve unique evidence, reusable prompts/templates, complete methodologies, procedural ordering, prerequisites, connection/setup steps, checklists, and validation rules; remove only duplication, and use tools for any unresolved conflict or important gap.",
+    "Below are the Search Lead's own report and three independent specialist reports. Merge them into one package ordered by strength: strong hits before partial hits, partial hits before weak hits. Keep unique facts, rules, exceptions, prerequisites, and verification steps with chunk id and path. Drop duplicates and weak hits that add nothing. Do not search again.",
     "",
     ...sections,
   ].join("\n");
@@ -258,6 +293,7 @@ module.exports = {
   SEARCH_AGENT_SYSTEM_PROMPT,
   SEARCH_SYNTHESIS_SYSTEM_PROMPT,
   SEARCH_HELPERS,
+  formatRankedShortlist,
   buildRefinerPrompt,
   buildSearchPrompt,
   buildHelperSearchPrompt,

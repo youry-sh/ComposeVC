@@ -3,6 +3,7 @@ const path = require("path");
 const crypto = require("crypto");
 
 const STORE_FILE = "mcp-servers.json";
+const PROJECTS_FILE = "mcp-projects.json";
 const DEFAULT_STARTUP_TIMEOUT = 30_000;
 const DEFAULT_REQUEST_TIMEOUT = 300_000;
 const clients = new Map();
@@ -53,13 +54,17 @@ function normalizeServer(input = {}, existing = null) {
     command: type === "local" ? String(command || "").trim() : undefined,
     args: type === "local" ? (Array.isArray(args) ? args.map(String) : []) : undefined,
     cwd: type === "local" ? String(input.cwd !== undefined ? input.cwd : existing?.cwd || "").trim() || undefined : undefined,
-    environment: type === "local" ? { ...(existing?.environment || {}), ...(input.environment || input.env || {}) } : undefined,
+    environment: { ...(existing?.environment || {}), ...(input.environment || input.env || {}) },
     url: type === "remote" ? String(input.url !== undefined ? input.url : existing?.url || "").trim() : undefined,
     headers: type === "remote" ? { ...(existing?.headers || {}), ...(input.headers || {}) } : undefined,
     timeout: {
       startup: Math.max(1000, Number(input.timeout?.startup ?? input.startupTimeout ?? existing?.timeout?.startup ?? DEFAULT_STARTUP_TIMEOUT)),
       request: Math.max(1000, Number(input.timeout?.request ?? input.requestTimeout ?? existing?.timeout?.request ?? DEFAULT_REQUEST_TIMEOUT)),
     },
+    marketplace: input.marketplace !== undefined ? input.marketplace : existing?.marketplace,
+    envSpec: Array.isArray(input.envSpec) ? input.envSpec : existing?.envSpec,
+    headerSpec: Array.isArray(input.headerSpec) ? input.headerSpec : existing?.headerSpec,
+    needsProjectPath: input.needsProjectPath !== undefined ? input.needsProjectPath === true : existing?.needsProjectPath === true,
     createdAt: existing?.createdAt || Date.now(),
     updatedAt: Date.now(),
   };
@@ -149,24 +154,91 @@ function timed(promise, ms, label) {
   ]).finally(() => clearTimeout(timer));
 }
 
-async function makeTransport(server) {
-  if (server.type === "local") {
-    const { StdioClientTransport } = require("@modelcontextprotocol/sdk/client/stdio.js");
-    const env = Object.fromEntries(Object.entries(server.environment || {}).map(([k, v]) => [k, expandEnv(String(v))]));
-    return new StdioClientTransport({ command: server.command, args: server.args || [], cwd: server.cwd || undefined, env, stderr: "pipe" });
-  }
-  const { StreamableHTTPClientTransport } = require("@modelcontextprotocol/sdk/client/streamableHttp.js");
-  const headers = Object.fromEntries(Object.entries(server.headers || {}).map(([k, v]) => [k, expandEnv(String(v))]));
-  return new StreamableHTTPClientTransport(new URL(server.url), { requestInit: { headers } });
+function resolveLocalCommand(command) {
+  const cmd = String(command || "").trim();
+  if (process.platform !== "win32") return cmd;
+  if (cmd === "npx") return "npx.cmd";
+  if (cmd === "npm") return "npm.cmd";
+  if (cmd === "uvx") return "uvx.exe";
+  return cmd;
 }
 
-async function connect(userDataPath, idOrName, { force = false } = {}) {
+function applyProject(server, rootPath) {
+  const expand = (value) => {
+    if (typeof value !== "string") return value;
+    if (!value.includes("{project}")) return value;
+    if (!rootPath) throw new Error("Open a project folder and enable this server in Connector");
+    return value.split("{project}").join(rootPath);
+  };
+  const args = (server.args || []).map((arg) => expand(String(arg)));
+  const environment = Object.fromEntries(
+    Object.entries(server.environment || {}).map(([key, value]) => [key, expand(expandEnv(String(value)))])
+  );
+  let cwd = server.cwd ? expand(String(server.cwd)) : undefined;
+  if (!cwd && server.needsProjectPath && rootPath) cwd = rootPath;
+  return {
+    ...server,
+    command: resolveLocalCommand(server.command),
+    args,
+    cwd: cwd || undefined,
+    environment,
+    headers: prepareRemoteHeaders(server, expand),
+  };
+}
+
+function prepareRemoteHeaders(server, expand) {
+  const { isPlaceholderSecret, applySecretValue } = require("./mcpRegistry.cjs");
+  const headers = {};
+  for (const [key, value] of Object.entries(server.headers || {})) {
+    const text = expand(expandEnv(String(value || ""))).trim();
+    if (!text || isPlaceholderSecret(text)) continue;
+    headers[key] = /^authorization$/i.test(key) ? applySecretValue({ name: "Authorization" }, text) : text;
+  }
+  if (!headers.Authorization && !headers.authorization) {
+    for (const [key, value] of Object.entries(server.environment || {})) {
+      if (!/key|token|secret|auth/i.test(key)) continue;
+      const formatted = applySecretValue({ name: "Authorization" }, expand(expandEnv(String(value || ""))));
+      if (formatted) {
+        headers.Authorization = formatted;
+        break;
+      }
+    }
+  }
+  return headers;
+}
+
+async function makeTransport(server, rootPath) {
+  const bound = applyProject(server, rootPath);
+  if (bound.type === "local") {
+    const { StdioClientTransport } = require("@modelcontextprotocol/sdk/client/stdio.js");
+    return new StdioClientTransport({
+      command: bound.command,
+      args: bound.args || [],
+      cwd: bound.cwd || undefined,
+      env: bound.environment || {},
+      stderr: "pipe",
+    });
+  }
+  const { StreamableHTTPClientTransport } = require("@modelcontextprotocol/sdk/client/streamableHttp.js");
+  const hasAuth = Boolean(bound.headers?.Authorization || bound.headers?.authorization);
+  const needsAuth = (bound.headerSpec || []).some((item) => item.required && /^authorization$/i.test(item.name || ""));
+  if ((needsAuth || bound.type === "remote") && !hasAuth && needsAuth) {
+    throw new Error(`${bound.title || bound.name}: API key was not saved. Open MCP Marketplace → Installed, paste the key, and press Save settings.`);
+  }
+  return new StreamableHTTPClientTransport(new URL(bound.url), { requestInit: { headers: bound.headers || {} } });
+}
+
+async function connect(userDataPath, idOrName, { force = false, rootPath = null } = {}) {
   const server = await findServer(userDataPath, idOrName);
   if (!server) throw new Error(`MCP server not found: ${idOrName}`);
   if (server.enabled === false && !force) throw new Error(`MCP server is disabled: ${server.name}`);
   const key = keyOf(userDataPath, server.name);
+  const boundRoot = rootPath || "";
+  const headerStamp = `${JSON.stringify(server.headers || {})}\n${JSON.stringify(server.environment || {})}`;
+  const rebind = server.needsProjectPath === true || JSON.stringify(server.args || []).includes("{project}") || headerStamp.includes("{project}");
   const cached = clients.get(key);
-  if (cached) return cached;
+  if (cached && (!rebind || (cached.rootPath || "") === boundRoot) && cached.headerStamp === headerStamp) return cached;
+  if (cached) await disconnect(userDataPath, server.name).catch(() => {});
   const pending = connecting.get(key);
   if (pending) return pending;
   const recentFailure = failures.get(key);
@@ -176,7 +248,7 @@ async function connect(userDataPath, idOrName, { force = false } = {}) {
   const work = (async () => {
     const { Client } = require("@modelcontextprotocol/sdk/client/index.js");
     const client = new Client({ name: "composevc", version: "1.0.1" });
-    const transport = await makeTransport(server);
+    const transport = await makeTransport(server, rootPath);
     try {
       await timed(client.connect(transport), server.timeout?.startup || DEFAULT_STARTUP_TIMEOUT, `MCP ${server.name} startup`);
       const listed = await timed(client.listTools(), server.timeout?.request || DEFAULT_REQUEST_TIMEOUT, `MCP ${server.name} tools/list`);
@@ -187,7 +259,7 @@ async function connect(userDataPath, idOrName, { force = false } = {}) {
         inputSchema: tool.inputSchema && typeof tool.inputSchema === "object" ? tool.inputSchema : { type: "object", properties: {} },
         annotations: tool.annotations,
       }));
-      const entry = { client, transport, server, tools, connectedAt: Date.now() };
+      const entry = { client, transport, server, tools, connectedAt: Date.now(), rootPath: boundRoot, headerStamp };
       clients.set(key, entry);
       failures.delete(key);
       transport.onclose = () => clients.delete(key);
@@ -221,9 +293,11 @@ async function refresh(userDataPath, idOrName) {
   return { server: entry.server, tools: entry.tools };
 }
 
-async function getEnabledToolSchemas(userDataPath) {
-  const servers = (await readStore(userDataPath)).servers.filter((s) => s.enabled !== false);
-  const settled = await Promise.allSettled(servers.map((s) => connect(userDataPath, s.name)));
+async function getEnabledToolSchemas(userDataPath, { rootPath = null } = {}) {
+  const allowed = await projectIdSet(userDataPath, rootPath);
+  if (!allowed) return [];
+  const servers = (await readStore(userDataPath)).servers.filter((s) => s.enabled !== false && allowed.has(s.id));
+  const settled = await Promise.allSettled(servers.map((s) => connect(userDataPath, s.name, { rootPath })));
   const schemas = [];
   settled.forEach((result) => {
     if (result.status !== "fulfilled") return;
@@ -232,11 +306,13 @@ async function getEnabledToolSchemas(userDataPath) {
   return schemas;
 }
 
-async function resolvePublicTool(userDataPath, publicName) {
-  const servers = (await readStore(userDataPath)).servers.filter((s) => s.enabled !== false);
+async function resolvePublicTool(userDataPath, publicName, { rootPath = null } = {}) {
+  const allowed = await projectIdSet(userDataPath, rootPath);
+  if (!allowed) return null;
+  const servers = (await readStore(userDataPath)).servers.filter((s) => s.enabled !== false && allowed.has(s.id));
   for (const server of servers) {
     try {
-      const entry = clients.get(keyOf(userDataPath, server.name)) || await connect(userDataPath, server.name);
+      const entry = clients.get(keyOf(userDataPath, server.name)) || await connect(userDataPath, server.name, { rootPath });
       const tool = entry.tools.find((t) => t.publicName === publicName);
       if (tool) return { entry, tool };
     } catch {
@@ -246,8 +322,8 @@ async function resolvePublicTool(userDataPath, publicName) {
   return null;
 }
 
-async function callPublicTool(userDataPath, publicName, args, { signal } = {}) {
-  const resolved = await resolvePublicTool(userDataPath, publicName);
+async function callPublicTool(userDataPath, publicName, args, { signal, rootPath = null } = {}) {
+  const resolved = await resolvePublicTool(userDataPath, publicName, { rootPath });
   if (!resolved) throw new Error(`Unknown MCP tool: ${publicName}`);
   if (signal?.aborted) throw new Error("Stopped by user");
   return timed(resolved.entry.client.callTool({ name: resolved.tool.name, arguments: args || {} }), resolved.entry.server.timeout?.request || DEFAULT_REQUEST_TIMEOUT, `MCP tool ${resolved.tool.name}`);
@@ -280,6 +356,92 @@ async function importConfig(userDataPath, config, { overwrite = false } = {}) {
   return { imported: results.length, servers: results };
 }
 
+function projectsPath(userDataPath) {
+  return path.join(userDataPath, PROJECTS_FILE);
+}
+
+function projectKey(rootPath) {
+  if (!rootPath) return "";
+  return path.resolve(String(rootPath)).replace(/[\\/]+$/, "").toLowerCase();
+}
+
+async function readProjects(userDataPath) {
+  try {
+    const raw = await fs.promises.readFile(projectsPath(userDataPath), "utf8");
+    const parsed = JSON.parse(raw);
+    return { version: 1, projects: parsed.projects && typeof parsed.projects === "object" ? parsed.projects : {} };
+  } catch (error) {
+    if (error?.code === "ENOENT") return { version: 1, projects: {} };
+    throw error;
+  }
+}
+
+async function writeProjects(userDataPath, store) {
+  const file = projectsPath(userDataPath);
+  await fs.promises.mkdir(path.dirname(file), { recursive: true });
+  const temp = `${file}.${process.pid}.tmp`;
+  await fs.promises.writeFile(temp, JSON.stringify({ version: 1, projects: store.projects }, null, 2), "utf8");
+  await fs.promises.rename(temp, file);
+}
+
+async function projectIdSet(userDataPath, rootPath) {
+  const key = projectKey(rootPath);
+  if (!key) return null;
+  const store = await readProjects(userDataPath);
+  return new Set(Array.isArray(store.projects[key]) ? store.projects[key] : []);
+}
+
+async function listProjectServers(userDataPath, rootPath) {
+  const key = projectKey(rootPath);
+  if (!key) return { rootPath: null, serverIds: [] };
+  const store = await readProjects(userDataPath);
+  return { rootPath: key, serverIds: Array.isArray(store.projects[key]) ? store.projects[key] : [] };
+}
+
+async function setProjectServer(userDataPath, rootPath, serverId, enabled) {
+  const key = projectKey(rootPath);
+  if (!key) throw new Error("Open a project folder first");
+  const server = await findServer(userDataPath, serverId);
+  if (!server) throw new Error("MCP server not found");
+  const store = await readProjects(userDataPath);
+  const next = new Set(Array.isArray(store.projects[key]) ? store.projects[key] : []);
+  if (enabled) next.add(server.id);
+  else next.delete(server.id);
+  store.projects[key] = [...next];
+  await writeProjects(userDataPath, store);
+  if (!enabled) await disconnect(userDataPath, server.name).catch(() => {});
+  return { rootPath: key, serverIds: store.projects[key], server };
+}
+
+async function installRegistryServer(userDataPath, raw, overrides = {}) {
+  const { toServerInput } = require("./mcpRegistry.cjs");
+  const input = toServerInput(raw, overrides);
+  const store = await readStore(userDataPath);
+  const registryName = input.marketplace?.name;
+  const existing = store.servers.find((server) => registryName && server.marketplace?.name === registryName)
+    || store.servers.find((server) => server.name === input.name);
+  if (existing) {
+    const patch = {};
+    if (input.headerSpec) patch.headerSpec = input.headerSpec;
+    if (input.envSpec) patch.envSpec = input.envSpec;
+    if (input.headers && Object.keys(input.headers).length) patch.headers = input.headers;
+    if (input.environment && Object.keys(input.environment).length) patch.environment = input.environment;
+    if (!Object.keys(patch).length) return { installed: false, already: true, server: existing, warnings: input.warnings || [] };
+    const savedSecret = Boolean(
+      (patch.headers && Object.keys(patch.headers).length) ||
+      (patch.environment && Object.keys(patch.environment).length)
+    );
+    const server = await updateServer(userDataPath, existing.id, patch);
+    return { installed: savedSecret, already: true, updated: savedSecret, server, warnings: input.warnings || [] };
+  }
+  let name = input.name;
+  if (store.servers.some((server) => server.name === name)) {
+    name = cleanName(`${name}-${crypto.createHash("sha1").update(registryName || name).digest("hex").slice(0, 4)}`);
+  }
+  const server = await addServer(userDataPath, { ...input, name, enabled: true });
+  return { installed: true, already: false, server, warnings: input.warnings || [] };
+}
+
 async function disposeAll() {
   const entries = [...clients.values()];
   clients.clear();
@@ -288,4 +450,4 @@ async function disposeAll() {
   return { disconnected: entries.length };
 }
 
-module.exports = { storePath, cleanName, publicToolName, normalizeServer, readStore, listServers, findServer, addServer, updateServer, removeServer, connect, disconnect, refresh, inspectServer, importConfig, getEnabledToolSchemas, resolvePublicTool, callPublicTool, disposeAll };
+module.exports = { storePath, cleanName, publicToolName, normalizeServer, readStore, listServers, findServer, addServer, updateServer, removeServer, connect, disconnect, refresh, inspectServer, importConfig, getEnabledToolSchemas, resolvePublicTool, callPublicTool, disposeAll, listProjectServers, setProjectServer, installRegistryServer };

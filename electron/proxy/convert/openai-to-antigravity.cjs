@@ -8,14 +8,19 @@ const { openaiToGeminiRequest } = require("./openai-to-gemini.cjs");
 const { resolveUpstreamModelId } = require("../oauth/antigravityUsage.cjs");
 
 function stableAntigravitySessionId(openaiBody) {
+  // Session id must stay the SAME for every turn of one chat, otherwise Cloud Code
+  // drops the cached prefix. Hashing the full history (old code) changed it each
+  // turn and cost a full JSON.stringify of the 2+ MB body. Use the immutable head.
+  try {
+    const { conversationKey } = require("../cacheAffinity.cjs");
+    const key = conversationKey(openaiBody);
+    if (key) return `lopster-${key.slice(0, 32)}`;
+  } catch {
+    /* fall through */
+  }
   const messages = Array.isArray(openaiBody?.messages) ? openaiBody.messages : [];
-  const seed = JSON.stringify(messages.map((m) => ({
-    role: m.role,
-    content: m.content,
-    tool_call_id: m.tool_call_id,
-    tool_calls: m.tool_calls,
-  })));
-  const hash = crypto.createHash("sha256").update(seed).digest("hex").slice(0, 32);
+  const head = messages.slice(0, 2).map((m) => ({ role: m?.role, content: m?.content }));
+  const hash = crypto.createHash("sha256").update(JSON.stringify(head)).digest("hex").slice(0, 32);
   return `lopster-${hash}`;
 }
 
