@@ -621,7 +621,7 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
                     </span>
                   )}
                 </button>
-                {stableSlots.length > 1 && (
+                {activeWorkspaceSlots.length > 1 && (
                   <button
                     type="button"
                     className="chat-rail-close"
@@ -641,7 +641,7 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
         </div>
 
         <footer className="chat-rail-foot">
-          {stableSlots.length}/{MULTIIDE_MAX_SLOTS}
+          {activeWorkspaceSlots.length}/{MULTIIDE_MAX_SLOTS}
         </footer>
       </aside>
 
