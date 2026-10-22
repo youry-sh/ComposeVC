@@ -396,7 +396,7 @@ function Detail({
 }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="min-h-0 flex-1 overflow-y-auto p-4">
+      <ChatMonoScroll className="min-h-0 flex-1 mcp-market-detail">
         <div className="text-[13px] font-medium text-ink-950">{title}</div>
         <div className="mt-0.5 truncate font-mono text-[10px] text-ink-500">{subtitle}</div>
         {meta && <div className="mt-2 font-mono text-[10px] uppercase text-ink-500">{meta}</div>}
@@ -417,7 +417,7 @@ function Detail({
             ))}
           </div>
         )}
-      </div>
+      </ChatMonoScroll>
       <div className="flex shrink-0 gap-1 border-t border-ink-200 p-3">
         <button type="button" className={primary} disabled={actionDisabled} onClick={onAction}>
           <Download className="h-3.5 w-3.5" /> {actionLabel}
