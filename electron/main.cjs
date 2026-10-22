@@ -3401,7 +3401,7 @@ ipcMain.handle("agent:notifyComplete", (event, payload = {}) => {
       }
     };
 
-    const theme = String(payload.theme || "signal-black");
+    const theme = String(payload.theme || "mono");
 
     showAgentToast({
       appName,

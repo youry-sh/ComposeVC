@@ -110,48 +110,52 @@ function buildToastHtml({ appName, body, durationMs, theme }) {
   }
   .card {
     position: absolute;
-    inset: 6px;
+    inset: 7px;
     display: grid;
-    grid-template-columns: 28px 1fr;
+    grid-template-columns: 26px 1fr;
     gap: 10px;
     align-items: center;
-    padding: 10px 12px 11px;
+    padding: 11px 13px 12px;
     border-radius: 10px;
     background: ${p.surface};
     border: 1px solid ${p.border};
     box-shadow: ${p.shadow};
-    animation: slideIn 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: border-color 0.12s ease;
+    animation: slideIn 0.22s cubic-bezier(0.22, 1, 0.36, 1);
   }
+  .card:hover { border-color: ${p.borderStrong}; }
   .mark {
-    width: 28px;
-    height: 28px;
-    border-radius: 7px;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
     display: grid;
     place-items: center;
     background: ${p.accentSoft};
     border: 1px solid ${p.accentBorder};
   }
   .mark svg {
-    width: 14px;
-    height: 14px;
+    width: 13px;
+    height: 13px;
     display: block;
   }
   .copy {
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
   }
   .app {
-    font-size: 10px;
-    font-weight: 500;
-    letter-spacing: 0.04em;
+    font-family: ui-monospace, "Cascadia Code", "SFMono-Regular", Menlo, Consolas, monospace;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
     color: ${p.muted};
   }
   .body {
-    font-size: 12px;
+    font-size: 12.5px;
     font-weight: 500;
-    line-height: 1.3;
+    line-height: 1.35;
     color: ${p.text};
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -160,11 +164,10 @@ function buildToastHtml({ appName, body, durationMs, theme }) {
   }
   .progress {
     position: absolute;
-    left: 10px;
-    right: 10px;
+    left: 0;
+    right: 0;
     bottom: 0;
     height: 1px;
-    border-radius: 1px;
     overflow: hidden;
     pointer-events: none;
     opacity: 0.7;
@@ -182,15 +185,15 @@ function buildToastHtml({ appName, body, durationMs, theme }) {
     to { transform: scaleX(0); }
   }
   @keyframes slideIn {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(10px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
   }
   .card.out {
-    animation: slideOut 0.18s ease-in forwards;
+    animation: slideOut 0.16s ease-in forwards;
   }
   @keyframes slideOut {
-    from { opacity: 1; transform: translateY(0); }
-    to { opacity: 0; transform: translateY(6px); }
+    from { opacity: 1; transform: translateY(0) scale(1); }
+    to { opacity: 0; transform: translateY(6px) scale(0.99); }
   }
 </style>
 </head>
@@ -237,7 +240,7 @@ function resolveDisplayBounds(anchorWin) {
 function showAgentToast(opts = {}) {
   const appName = String(opts.appName || "ComposeVC");
   const body = String(opts.body || "Agent finished.");
-  const theme = String(opts.theme || "signal-black");
+  const theme = String(opts.theme || "mono");
   const durationMs = Math.max(1800, Number(opts.durationMs) || AUTO_CLOSE_MS);
   const anchorWin = opts.anchorWin || null;
   const onClick = typeof opts.onClick === "function" ? opts.onClick : null;
