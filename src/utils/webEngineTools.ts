@@ -1,6 +1,6 @@
 /** Pure, React-free helpers for the Web Engine toolbar tools. */
 
-export const DEVICE_WIDTHS = [375, 768] as const;
+export const DEVICE_WIDTHS: number[] = [375, 768];
 
 /** Cycle the device preset: desktop (null) → mobile → tablet → desktop. */
 export function nextDeviceWidth(current: number | null): number | null {
