@@ -147,7 +147,11 @@ interface ChatPanelProps {
   thinkingMaxEnabled?: boolean;
   onToggleThinkingMax?: () => void;
   /** Send text and optional images (data URLs) together. Images-only is allowed. */
-  onSend: (content: string, images?: ChatImageAttachment[]) => void;
+  onSend: (
+    content: string,
+    images?: ChatImageAttachment[],
+    options?: { skipAutoInsert?: boolean }
+  ) => void;
   onStop: () => void;
   /** MultiIDE: fill parent instead of fixed resizable width */
   fill?: boolean;
