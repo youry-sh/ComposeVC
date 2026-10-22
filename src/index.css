@@ -9487,12 +9487,14 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
 .webengine-console:not(.is-open) .webengine-console-list { display: none; }
 
 /* Match the app's thin custom scrollbars (see .scrollbar-thin) on every
-   scrollable area of the Web Engine instead of the default OS scrollbar. */
+   scrollable area of the Web Engine instead of the default OS scrollbar.
+   White (accent) thumb — the same light bar the chat uses — so it stays
+   visible against the dark surface. */
 .webengine-console-list,
 .webengine-inspector-body,
 .webengine-el-line pre {
   scrollbar-width: thin;
-  scrollbar-color: var(--scrollbar) transparent;
+  scrollbar-color: var(--accent) transparent;
 }
 .webengine-console-list::-webkit-scrollbar,
 .webengine-inspector-body::-webkit-scrollbar,
@@ -9508,13 +9510,13 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
 .webengine-console-list::-webkit-scrollbar-thumb,
 .webengine-inspector-body::-webkit-scrollbar-thumb,
 .webengine-el-line pre::-webkit-scrollbar-thumb {
-  background-color: var(--scrollbar);
+  background-color: var(--accent);
   border-radius: 2px;
 }
 .webengine-console-list::-webkit-scrollbar-thumb:hover,
 .webengine-inspector-body::-webkit-scrollbar-thumb:hover,
 .webengine-el-line pre::-webkit-scrollbar-thumb:hover {
-  background-color: var(--scrollbar-hover);
+  background-color: var(--accent-hover);
 }
 .webengine-console-empty {
   padding: 10px 8px;
