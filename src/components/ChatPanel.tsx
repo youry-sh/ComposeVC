@@ -29,7 +29,6 @@ import {
   Square,
   Sparkles,
   Trash2,
-  Wrench,
   X,
   ListTodo,
   Clock,
@@ -3827,7 +3826,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   const [showModelMenu, setShowModelMenu] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [chatBookmarksModalOpen, setChatBookmarksModalOpen] = useState(false);
-  const [showToolsMenu, setShowToolsMenu] = useState(false);
   const [showAgentModeMenu, setShowAgentModeMenu] = useState(false);
   const [autoInsertModalOpen, setAutoInsertModalOpen] = useState(false);
   const [instructionsModalOpen, setInstructionsModalOpen] = useState(false);
@@ -4039,17 +4037,16 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   }, [isActiveChatPanel]);
 
   useEffect(() => {
-    if (!showToolsMenu && !showAgentModeMenu && !showModelMenu) return;
+    if (!showAgentModeMenu && !showModelMenu) return;
     const handleClick = (event: MouseEvent) => {
       if (toolsMenuRef.current && !toolsMenuRef.current.contains(event.target as Node)) {
-        setShowToolsMenu(false);
         setShowAgentModeMenu(false);
         setShowModelMenu(false);
       }
     };
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
-  }, [showToolsMenu, showAgentModeMenu, showModelMenu]);
+  }, [showAgentModeMenu, showModelMenu]);
 
   // Auto-grow the composer with the typed content, up to INPUT_MAX_HEIGHT — past
   // that point the textarea's own scrollbar takes over instead of growing further.
@@ -4829,7 +4826,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                 setShowModelMenu(next);
                 if (next) {
                   setShowAgentModeMenu(false);
-                  setShowToolsMenu(false);
                 }
               }}
               providers={providers}
@@ -4850,7 +4846,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                 onClick={() => {
                   if (thinking) return;
                   setShowAgentModeMenu((value) => !value);
-                  setShowToolsMenu(false);
                   setShowModelMenu(false);
                 }}
                 disabled={thinking}
