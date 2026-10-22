@@ -27,6 +27,7 @@ import {
   MouseSnippetsConfig,
   saveMouseSnippets,
 } from "../utils/mouseSnippets";
+import ChatMonoScroll from "./ChatMonoScroll";
 
 export interface SettingsModalProps {
   open: boolean;
@@ -691,7 +692,7 @@ const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, 
             </div>
           </header>
 
-          <div className="settings-native-scroll settings-chat-scrollbar settings-modal-scroll">
+          <ChatMonoScroll className="settings-modal-scroll">
           <div className="settings-body settings-body-all">
             {activeTab === "appearance" && (
               <div className="settings-body-scroll">
@@ -961,7 +962,7 @@ const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, 
             {activeTab === "cfmail" && <CfMailSettings />}
 
           </div>
-          </div>
+          </ChatMonoScroll>
         </section>
       </div>
     </div>
