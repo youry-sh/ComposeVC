@@ -1,9 +1,9 @@
 import React from "react";
 
 /**
- * Idle decoration for the right column: a red spider lily (the Tokyo Ghoul
- * flower) that keeps growing and blooming on an infinite CSS loop while the IDE
- * runs. Pure SVG + CSS animation — no JS timers, no React re-renders.
+ * Idle decoration for the right column: a white lily that stays in bloom and
+ * gently breathes on an infinite CSS loop while the IDE runs. Pure SVG + CSS
+ * animation — no JS timers, no React re-renders.
  */
 
 const PETALS = 6;
