@@ -59,6 +59,7 @@ import { ThinkingIndicator } from "./ThinkingIndicator";
 import ChatMonoScroll, { type ChatMonoScrollHandle } from "./ChatMonoScroll";
 import ModelPicker from "./ModelPicker";
 import WorkTimer from "./WorkTimer";
+import BackgroundTasks from "./BackgroundTasks";
 import MarkdownContent from "./markdown/MarkdownContent";
 import { computeLineDiff } from "../utils/diff";
 import { INSERT_INPUT_EVENT, InsertChatInputDetail } from "../utils/mouseSnippets";
@@ -5016,6 +5017,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             )}
         </div>
         <WorkTimer sessionId={activeSessionId} />
+        <BackgroundTasks sessionId={activeSessionId} />
         </div>
       </div>
 

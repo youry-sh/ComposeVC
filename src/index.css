@@ -1753,6 +1753,59 @@
     .work-timer-ico { animation: none; }
   }
 
+  /* Background terminal tasks — per-chat badges under the model chip, each with a stop (X). */
+  .bg-tasks {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin: 0 6px 6px;
+  }
+  .bg-task {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+    padding: 3px 4px 3px 9px;
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    background: var(--surface-2, var(--surface));
+    color: var(--ink-700);
+    font-family: var(--terminal-font);
+    font-size: 10px;
+    line-height: 1;
+  }
+  .bg-task-ico {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+    color: var(--accent);
+  }
+  .bg-task-label {
+    min-width: 0;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--ink-800);
+  }
+  .bg-task-close {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ink-500);
+    cursor: pointer;
+  }
+  .bg-task-close:hover {
+    background: var(--hover-bg);
+    color: var(--ink-950);
+  }
+
   .proxy-workspace {
     /* Keep proxy chrome neutral in every theme: dividers must not inherit the accent hue. */
     --proxy-divider: color-mix(in srgb, #a3a3a3 26%, transparent);

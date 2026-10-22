@@ -309,50 +309,64 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
     };
   }, []);
 
-  // Keep the selection valid when a panel is closed elsewhere.
-  useEffect(() => {
-    if (slots.length && !slots.some((s) => s.id === activeId)) {
-      setActiveId(slots[0].id);
-    }
-  }, [slots, activeId]);
+  // Slots belonging to the active workspace — the rail only shows these.
+  const activeWorkspaceSlots = useMemo(
+    () => slots.filter((s) => s.workspaceId === activeWorkspaceId),
+    [slots, activeWorkspaceId]
+  );
 
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(MULTIIDE_ACTIVE_KEY, activeId);
-    } catch {
-      /* ignore */
-    }
-  }, [activeId]);
+  // Update the active workspace's view state (active panel + open rows) immutably.
+  const patchActiveWorkspace = useCallback((patch: Partial<WorkspaceState>) => {
+    setWorkspaceState((prev) => ({
+      ...prev,
+      workspaces: prev.workspaces.map((w) =>
+        w.id === prev.activeWorkspaceId ? { ...w, ...patch } : w
+      ),
+    }));
+  }, []);
 
+  // Keep the active panel valid when the workspace loses a panel (or on first load).
   useEffect(() => {
-    setOpenIds((prev) => {
-      const ids = prev.filter((id) => slots.some((s) => s.id === id)).slice(0, MAX_ROWS);
-      if (ids.length === prev.length && ids.every((id, i) => id === prev[i])) return prev;
-      return ids.length ? ids : [slots[0]?.id].filter((id): id is string => Boolean(id));
-    });
-  }, [slots]);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(MULTIIDE_ROWS_KEY, JSON.stringify(openIds));
-    } catch {
-      /* ignore */
+    if (activeWorkspaceSlots.length && !activeWorkspaceSlots.some((s) => s.id === activeId)) {
+      patchActiveWorkspace({ activeId: activeWorkspaceSlots[0].id });
     }
-  }, [openIds]);
+  }, [activeWorkspaceSlots, activeId, patchActiveWorkspace]);
+
+  // Keep open rows valid (and never empty while the workspace has slots).
+  useEffect(() => {
+    const valid = openIds
+      .filter((id) => activeWorkspaceSlots.some((s) => s.id === id))
+      .slice(0, MAX_ROWS);
+    const next = valid.length
+      ? valid
+      : [activeWorkspaceSlots[0]?.id].filter((id): id is string => Boolean(id));
+    if (next.length !== openIds.length || next.some((id, i) => id !== openIds[i])) {
+      patchActiveWorkspace({ openIds: next });
+    }
+  }, [activeWorkspaceSlots, openIds, patchActiveWorkspace]);
+
+  // Persist workspace store + active id (activeId/openIds now live inside each workspace).
+  useEffect(() => {
+    saveWorkspaceState(workspaces, activeWorkspaceId);
+  }, [workspaces, activeWorkspaceId]);
 
   const focusSlot = useCallback(
     (id: string) => {
-      setActiveId(id);
-      setOpenIds((prev) => {
-        if (prev.includes(id)) return prev;
-        const idx = Math.max(0, prev.indexOf(activeId));
-        const next = prev.slice();
-        if (!next.length) return [id];
-        next[Math.min(idx, next.length - 1)] = id;
-        return next;
-      });
+      const prev = openIds;
+      let nextOpenIds = prev;
+      if (!prev.includes(id)) {
+        const idx = Math.max(0, prev.indexOf(activeId ?? id));
+        const copy = prev.slice();
+        if (!copy.length) {
+          nextOpenIds = [id];
+        } else {
+          copy[Math.min(idx, copy.length - 1)] = id;
+          nextOpenIds = copy;
+        }
+      }
+      patchActiveWorkspace({ activeId: id, openIds: nextOpenIds });
     },
-    [activeId]
+    [activeId, openIds, patchActiveWorkspace]
   );
 
   /** Drop a rail chat onto the centre. A free row is added; the third drop replaces the row under the cursor. */
