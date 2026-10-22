@@ -1974,7 +1974,8 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
 	      enqueueMessage(trimmed, sid, imgs);
 	      return;
 	    }
-		    void executeSendMessage(trimmed, { images: imgs, skipAutoInsert: options?.skipAutoInsert });	  };
+		    void executeSendMessage(trimmed, { images: imgs, skipAutoInsert: options?.skipAutoInsert });
+  };
 
   const executeSendMessage = async (
     content: string,
