@@ -158,6 +158,10 @@ declare global {
       storageUpload: (input: { phone: string; filePath: string; caption?: string; premium?: boolean }) => Promise<{ ok: boolean; item?: StorageItem; error?: string }>;
       storageList: () => Promise<{ ok: boolean; items?: StorageItem[]; error?: string }>;
       storageDeleteHistory: (id: string) => Promise<{ ok: boolean }>;
+      webEngineGetBinding: (chatKey: string) => Promise<{ url: string | null; updatedAt?: number | null; error?: string }>;
+      webEngineSetBinding: (chatKey: string, url: string) => Promise<{ ok: boolean; url?: string; error?: string }>;
+      webEngineProbeLocalhost: (rootPath: string | null) => Promise<{ ok: boolean; url: string | null; error?: string }>;
+      webEngineCopyText: (text: string) => Promise<{ ok: boolean; error?: string }>;
       onOpenChatSwitcher: (callback: () => void) => () => void;
       onFoldWebDock: (callback: () => void) => () => void;
       onStorageOpen: (callback: () => void) => () => void;

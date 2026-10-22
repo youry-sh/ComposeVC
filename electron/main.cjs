@@ -7,6 +7,7 @@ const { spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const net = require("net");
 const { pathToFileURL } = require("url");
 const {
   buildSystemPrompt,
@@ -21,6 +22,7 @@ const { contentToText: contentPartsToText } = require("./adapters/contentParts.c
 const memory = require("./memory.cjs");
 const gitService = require("./gitService.cjs");
 const storageStore = require("./storageStore.cjs");
+const webEngineStore = require("./webEngineStore.cjs");
 const workTimerStore = require("./workTimerStore.cjs");
 const backgroundTasks = require("./backgroundTasks.cjs");
 const telegramTool = require("./tools/telegram.cjs");
@@ -1693,6 +1695,71 @@ ipcMain.handle("shell:openExternal", (_event, url) => {
   if (typeof url !== "string" || !/^https?:\/\//i.test(url)) return false;
   shell.openExternal(url);
   return true;
+});
+
+// ── Web Engine: per-chat URL binding + localhost probe + clipboard ──────────
+
+ipcMain.handle("webengine:getBinding", async (_event, chatKey) => {
+  try {
+    return webEngineStore.get(app.getPath("userData"), chatKey);
+  } catch (error) {
+    return { url: null, error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+ipcMain.handle("webengine:setBinding", async (_event, chatKey, url) => {
+  try {
+    return await webEngineStore.set(app.getPath("userData"), chatKey, url);
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+ipcMain.handle("webengine:copyText", (_event, text) => {
+  if (typeof text !== "string" || !text) return { ok: false, error: "empty" };
+  try {
+    clipboard.writeText(text);
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+// Probe common dev-server ports on localhost and return the first one that is
+// actually listening. Bounded parallel connect attempts — never blocks the UI.
+const WEBENGINE_DEV_PORTS = [
+  3000, 5173, 4173, 8080, 8000, 4200, 5000, 5001, 9000, 3001, 3002, 3003,
+  4000, 1234, 7777, 8787, 8888, 8008, 5500, 4321, 3333, 6060, 7000, 10000,
+];
+
+function probePort(host, port, timeoutMs) {
+  return new Promise((resolve) => {
+    const socket = net.connect({ host, port });
+    let settled = false;
+    const finish = (ok) => {
+      if (settled) return;
+      settled = true;
+      socket.destroy();
+      resolve(ok);
+    };
+    socket.setTimeout(timeoutMs);
+    socket.once("connect", () => finish(true));
+    socket.once("timeout", () => finish(false));
+    socket.once("error", () => finish(false));
+  });
+}
+
+ipcMain.handle("webengine:probeLocalhost", async (_event, _rootPath) => {
+  try {
+    const results = await Promise.all(
+      WEBENGINE_DEV_PORTS.map((port) => probePort("127.0.0.1", port, 350))
+    );
+    const idx = results.findIndex(Boolean);
+    if (idx >= 0) return { ok: true, url: `http://localhost:${WEBENGINE_DEV_PORTS[idx]}` };
+    return { ok: true, url: null };
+  } catch (error) {
+    return { ok: false, url: null, error: error instanceof Error ? error.message : String(error) };
+  }
 });
 
 ipcMain.handle("worktimer:get", () => workTimerStore.get());

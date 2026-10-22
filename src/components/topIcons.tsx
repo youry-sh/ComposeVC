@@ -87,3 +87,13 @@ export const IcoProviders: React.FC<IconProps> = ({ className }) => (
     <rect x="6.9" y="6.9" width="2.2" height="2.2" />
   </svg>
 );
+
+/** Web Engine — browser window with an inspector crosshair */
+export const IcoWebEngine: React.FC<IconProps> = ({ className }) => (
+  <svg {...base} className={className}>
+    <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" />
+    <path d="M1.5 5.5 h13" />
+    <circle cx="3.5" cy="4" r="0.6" fill="currentColor" stroke="none" />
+    <path d="M6 12.5 v-2.5 a2 2 0 0 1 2 -2 h0 a2 2 0 0 1 2 2 v2.5 M8 10.5 v2" />
+  </svg>
+);

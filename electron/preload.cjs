@@ -28,6 +28,11 @@ contextBridge.exposeInMainWorld("lopster", {
   storageUpload: (input) => ipcRenderer.invoke("storage:upload", input || {}),
   storageList: () => ipcRenderer.invoke("storage:list"),
   storageDeleteHistory: (id) => ipcRenderer.invoke("storage:deleteHistory", id),
+  // Web Engine: per-chat URL binding, localhost probing, clipboard write.
+  webEngineGetBinding: (chatKey) => ipcRenderer.invoke("webengine:getBinding", chatKey || ""),
+  webEngineSetBinding: (chatKey, url) => ipcRenderer.invoke("webengine:setBinding", chatKey || "", url),
+  webEngineProbeLocalhost: (rootPath) => ipcRenderer.invoke("webengine:probeLocalhost", rootPath || null),
+  webEngineCopyText: (text) => ipcRenderer.invoke("webengine:copyText", text || ""),
   // Ctrl+H pressed while a <webview> had focus — the shell opens its switcher.
   onOpenChatSwitcher: (callback) => {
     const listener = () => callback();
