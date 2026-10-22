@@ -57,7 +57,7 @@ type WebviewElement = HTMLElement & {
 type LogLevel = "verbose" | "info" | "warning" | "error";
 type LogEntry = { id: string; level: LogLevel; text: string; source: string; ts: number };
 
-type ElementInfo = { sel: string; tag: string; id: string; cls: string; html: string; text: string };
+type ElementInfo = { sel: string; tag: string; id: string; cls: string; html: string; text: string; fullHtml?: string };
 
 interface WebEngineWorkspaceProps {
   /** Stable per-chat key (session id or project-folder fallback). */
