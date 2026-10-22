@@ -11282,8 +11282,7 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-width: 1180px;
-  margin: 0 auto;
+  width: 100%;
   padding-bottom: 24px;
 }
 
