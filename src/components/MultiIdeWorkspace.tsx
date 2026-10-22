@@ -503,6 +503,14 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
     (wsId: string) => {
       if (workspaces.length <= 1) return;
       const targetIds = new Set(slots.filter((s) => s.workspaceId === wsId).map((s) => s.id));
+      // Stop any running chat before its panel is unmounted, so deleting a workspace
+      // never leaves an orphaned run in the main process (same path as the Stop button).
+      for (const slot of slots) {
+        if (!targetIds.has(slot.id)) continue;
+        if (statusBySlot[slot.id]?.running && slot.sessionId) {
+          void window.lopster?.stopGeneration(slot.sessionId).catch(() => undefined);
+        }
+      }
       onSlotsChange(slots.filter((s) => !targetIds.has(s.id)));
       setStatusBySlot((prev) => {
         if (!targetIds.size) return prev;
@@ -518,7 +526,7 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
         return { activeWorkspaceId, workspaces: remaining };
       });
     },
-    [workspaces, slots, onSlotsChange]
+    [workspaces, slots, statusBySlot, onSlotsChange]
   );
 
   const stableSlots = useMemo(() => slots.slice(0, MULTIIDE_MAX_SLOTS), [slots]);
@@ -603,6 +611,7 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
                   <span
                     className="chat-workspace-stats"
                     title={`${labels.workspaceWorking}: ${working} · ${labels.workspaceDone}: ${completed}`}
+                    aria-label={`${labels.workspaceWorking}: ${working}, ${labels.workspaceDone}: ${completed}`}
                   >
                     <span className="chat-workspace-stat is-working">{working}</span>
                     <span className="chat-workspace-stat-divider" aria-hidden>
