@@ -57,6 +57,12 @@ function formatCount(value?: number | null): string {
   return n.toLocaleString("en-US");
 }
 
+function formatSigned(value?: number | null): string {
+  const n = Math.trunc(Number(value) || 0);
+  const sign = n > 0 ? "+" : n < 0 ? "−" : "";
+  return `${sign}${Math.abs(n).toLocaleString("en-US")}`;
+}
+
 function formatCompact(value?: number | null): string {
   const n = Math.max(0, Math.floor(Number(value) || 0));
   if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1)}B`;
@@ -75,9 +81,14 @@ function formatActiveTime(sec?: number | null): string {
   return d > 0 ? `${d}d ${h}:${m}:${r}` : `${h}:${m}:${r}`;
 }
 
-function sharePct(value: number, max: number): number {
+function barPct(value: number, max: number): number {
   if (!max || value <= 0) return 0;
   return Math.max(2, Math.min(100, Math.round((value / max) * 100)));
+}
+
+function truePct(value: number, total: number): number {
+  if (!total || value <= 0) return 0;
+  return Math.max(0, Math.min(100, Math.round((value / total) * 100)));
 }
 
 function KpiCard({

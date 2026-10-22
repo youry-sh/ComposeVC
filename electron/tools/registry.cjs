@@ -410,7 +410,10 @@ function usage() {
 /** Count files created / lines changed by the file-mutation tools (success only). */
 function recordFileMutation(name, input, data) {
   if (!usageStoreRef) return;
-  const countLines = (text) => String(text == null ? "" : text).split("\n").length;
+  const countLines = (text) => {
+    const s = String(text == null ? "" : text);
+    return s === "" ? 0 : s.split("\n").length;
+  };
   if (name === "create_file" && data && data.created) {
     usageStoreRef.recordFileCreate(countLines(input && input.content));
     return;

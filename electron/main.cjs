@@ -1517,7 +1517,7 @@ ipcMain.handle("usage:getSnapshot", async () => {
       runtime: {
         totalRuntimeSec: currentTotalRuntimeSec(),
         uptimeSec: Math.floor(process.uptime()),
-        sessions: runtimeSessions,
+        sessions: runtimeSessions + (runtimeQuitSaved ? 0 : 1),
       },
     };
   } catch (error) {
@@ -2644,9 +2644,12 @@ async function executeChatRequest(event, request, overrides = {}) {
   let sessionId = request.sessionId || null;
   const incomingMessages = Array.isArray(request.messages) ? request.messages : [];
   // Usage metric: characters the user typed in their prompt. Count only the
-  // latest real user turn (never assistant/tool output) and only in-chat runs
-  // (Telegram/remote channels are not "typed in the IDE").
-  if (!isTelegramRun) {
+  // latest real user turn (never assistant/tool output) and only genuine in-chat
+  // sends — Telegram/remote channels and automated Runner ticks are not "typed
+  // by the user in the IDE".
+  const isRunnerRun =
+    typeof overrides.agentId === "string" && overrides.agentId.startsWith("runner:");
+  if (!isTelegramRun && !isRunnerRun) {
     try {
       const lastUser = [...incomingMessages].reverse().find(
         (m) => m && m.role === "user" && isRealUserMessage(m)
