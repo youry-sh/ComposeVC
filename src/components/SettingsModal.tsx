@@ -18,7 +18,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Check, ChevronDown, Cpu, Keyboard, Mouse, Palette, X } from "lucide-react";
+import { Check, ChevronDown, Cpu, Keyboard, Mail, Mouse, Palette, X } from "lucide-react";
 import { AppLanguage, languageNames, Translation } from "../i18n";
 import { ProviderConfig } from "../types";
 import {
@@ -39,7 +39,7 @@ export interface SettingsModalProps {
 }
 
 type SaveStatus = "idle" | "dirty" | "saving" | "saved" | "error";
-type NavTab = "ai" | "shortcuts" | "appearance";
+type NavTab = "ai" | "shortcuts" | "appearance" | "cfmail";
 
 function keyboardShortcuts(labels: Translation): Array<{ keys: string; action: string }> {
   return [
