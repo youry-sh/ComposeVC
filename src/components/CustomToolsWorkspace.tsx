@@ -842,10 +842,10 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
               </select>
             </label>
             <div className="grid min-w-0 gap-1.5">
-              <span className={labelClass}>Подключённые инструменты</span>
+              <span className={labelClass}>{labels.customToolDependencies}</span>
               <div className="grid max-h-36 grid-cols-1 gap-1 overflow-y-auto border border-ink-200 bg-ink-50 p-2 sm:grid-cols-2 scrollbar-thin">
-                {tools.filter((tool) => tool.id !== selectedId && tool.name !== name.trim()).length ? (
-                  tools.filter((tool) => tool.id !== selectedId && tool.name !== name.trim()).map((tool) => (
+                {tools.filter((tool) => tool.id !== selectedId && tool.name !== derivedName).length ? (
+                  tools.filter((tool) => tool.id !== selectedId && tool.name !== derivedName).map((tool) => (
                     <label key={tool.id} className="flex min-w-0 cursor-pointer items-center gap-2 px-1 py-1 text-[11px] text-ink-700 hover:bg-ink-100">
                       <input
                         type="checkbox"
@@ -856,10 +856,10 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
                     </label>
                   ))
                 ) : (
-                  <span className="px-1 py-2 text-[10px] text-ink-500">Создай другие инструменты — их можно будет подключить сюда.</span>
+                  <span className="px-1 py-2 text-[10px] text-ink-500">{labels.customToolDependenciesEmpty}</span>
                 )}
               </div>
-              <span className="text-[10px] text-ink-500">Код получает ctx.callTool. Подключать можно только отмеченные инструменты; циклы блокируются.</span>
+              <span className="text-[10px] text-ink-500">{labels.customToolDependenciesHint}</span>
             </div>
             <label className="grid min-w-0 gap-1.5">
               <span className={labelClass}>{labels.customToolBody}</span>
