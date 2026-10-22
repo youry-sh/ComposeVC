@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Minus, Square, X } from "lucide-react";
+import { Camera, Check, Loader2, Minus, Square, X } from "lucide-react";
 import {
   IcoMulti,
   IcoProxy,
@@ -74,6 +74,35 @@ const TitleBar: React.FC<TitleBarProps> = ({
   const memPeak = useRef(1);
   const tokPeak = useRef(1);
   const ctxPeak = useRef(1);
+  const [shotState, setShotState] = useState<"idle" | "busy" | "ok" | "error">("idle");
+  const shotTimerRef = useRef<number | null>(null);
+
+  const handleScreenshot = async () => {
+    if (shotState === "busy") return;
+    setShotState("busy");
+    try {
+      const res = await window.lopster?.captureFullScreenshot?.();
+      if (res && res.ok) {
+        setShotState("ok");
+      } else {
+        setShotState("error");
+        console.error("Screenshot failed:", res?.error);
+      }
+    } catch (error) {
+      setShotState("error");
+      console.error("Screenshot failed:", error);
+    } finally {
+      if (shotTimerRef.current) window.clearTimeout(shotTimerRef.current);
+      shotTimerRef.current = window.setTimeout(() => setShotState("idle"), 1600);
+    }
+  };
+
+  useEffect(
+    () => () => {
+      if (shotTimerRef.current) window.clearTimeout(shotTimerRef.current);
+    },
+    []
+  );
 
   // live clock + date (1s tick)
   useEffect(() => {
@@ -227,6 +256,36 @@ const TitleBar: React.FC<TitleBarProps> = ({
       </div>
 
       <div className="titlebar-controls">
+        <button
+          type="button"
+          onClick={() => void handleScreenshot()}
+          className="titlebar-btn"
+          aria-label="Screenshot full screen"
+          title={
+            shotState === "ok"
+              ? "Screenshot copied to clipboard"
+              : shotState === "busy"
+                ? "Capturing…"
+                : shotState === "error"
+                  ? "Screenshot failed"
+                  : "Screenshot full screen"
+          }
+          style={
+            shotState === "ok"
+              ? { color: "var(--ok)" }
+              : shotState === "error"
+                ? { color: "var(--warn)" }
+                : undefined
+          }
+        >
+          {shotState === "busy" ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : shotState === "ok" ? (
+            <Check className="w-3.5 h-3.5" />
+          ) : (
+            <Camera className="w-3.5 h-3.5" />
+          )}
+        </button>
         <button
           type="button"
           onClick={() => window.lopster?.minimize()}
