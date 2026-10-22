@@ -6,6 +6,7 @@ import GitBadge from "./GitBadge";
 import ThinkingIndicator from "./ThinkingIndicator";
 import { CustomTool, MainAgentMode, ProviderConfig } from "../types";
 import { HotkeyDefinition, matchesHotkey } from "../utils/hotkeys";
+import { LayoutGrid } from "lucide-react";
 
 /** Ctrl+H (Cmd+H on macOS) — the chat switcher, matched by physical key. */
 const SWITCHER_HOTKEY: HotkeyDefinition = { code: "KeyH", modifiers: ["mod"] };
@@ -525,21 +526,60 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
       {/* ── Left rail: every chat panel, the running one is marked ── */}
       <aside className="chat-rail" aria-label={labels.chat || "Chats"}>
         <header className="chat-rail-head">
+          <span className="chat-rail-title">{labels.workspaces || "Workspaces"}</span>
+          <div className="chat-rail-actions">
+            <button
+              type="button"
+              className="chat-rail-add"
+              onClick={handleAddWorkspace}
+              title={labels.newWorkspace || "New workspace"}
+              aria-label={labels.newWorkspace || "New workspace"}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              className="chat-rail-add"
+              onClick={handleAddSlot}
+              disabled={stableSlots.length >= MULTIIDE_MAX_SLOTS}
+              title={labels.newChat || "New chat panel"}
+              aria-label={labels.newChat || "New chat panel"}
+            >
+              +
+            </button>
+          </div>
+        </header>
+
+        {/* Workspace switcher — one click switches the whole set of chat panels. */}
+        <div className="chat-workspace-list">
+          {workspaces.map((ws, i) => {
+            const active = ws.id === activeWorkspaceId;
+            const wsSlots = slots.filter((s) => s.workspaceId === ws.id);
+            const wsRunning = wsSlots.some((s) => Boolean(statusBySlot[s.id]?.running));
+            return (
+              <button
+                key={ws.id}
+                type="button"
+                className={`chat-workspace-item${active ? " is-active" : ""}${wsRunning ? " is-running" : ""}`}
+                onClick={() => switchWorkspace(ws.id)}
+                title={`${labels.workspace} ${i + 1}`}
+              >
+                <span className="chat-rail-dot" aria-hidden />
+                <span className="chat-workspace-name">
+                  {labels.workspace} {i + 1}
+                </span>
+                <span className="chat-workspace-count">{wsSlots.length}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <header className="chat-rail-head chat-rail-subhead">
           <span className="chat-rail-title">{labels.chat || "Chats"}</span>
-          <button
-            type="button"
-            className="chat-rail-add"
-            onClick={handleAddSlot}
-            disabled={stableSlots.length >= MULTIIDE_MAX_SLOTS}
-            title={labels.newChat || "New chat panel"}
-            aria-label={labels.newChat || "New chat panel"}
-          >
-            +
-          </button>
         </header>
 
         <div className="chat-rail-list">
-          {stableSlots.map((slot, index) => {
+          {activeWorkspaceSlots.map((slot, index) => {
             const status = statusBySlot[slot.id];
             const running = Boolean(status?.running);
             const sessionCount = status?.sessionCount ?? 0;
