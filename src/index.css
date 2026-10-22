@@ -7584,7 +7584,7 @@
   border-right: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
 }
 .titlebar-brand-copy {
-  color: var(--ink-850);
+  color: var(--ink-900);
   font: 700 11px/1 var(--terminal-font);
   letter-spacing: .14em;
   white-space: nowrap;
