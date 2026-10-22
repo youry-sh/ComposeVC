@@ -55,25 +55,41 @@
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 
-    function fontSizeFor(w) {
-      return Math.max(54, Math.min(w * 0.12, 132));
+    function layoutMetrics(w, h) {
+      // 78-column banner; a mono glyph is ~0.6em wide, line-height ~1.05em.
+      const sizeByWidth = (w * 0.94) / (78 * 0.6);
+      const sizeByHeight = (h * 0.74) / (BANNER.length * 1.05);
+      const fontSize = Math.max(8, Math.min(sizeByWidth, sizeByHeight, 84));
+      const lineHeight = Math.round(fontSize * 1.05);
+      return { fontSize, lineHeight };
     }
 
-    function sampleWord() {
+    function drawBanner(g, w, h) {
+      const { fontSize, lineHeight } = layoutMetrics(w, h);
+      g.font = "400 " + fontSize + "px " + MONO;
+      g.textAlign = "left";
+      g.textBaseline = "middle";
+      let widest = 0;
+      for (const line of BANNER) widest = Math.max(widest, g.measureText(line).width);
+      const startX = Math.round((w - widest) / 2);
+      const totalH = lineHeight * BANNER.length;
+      let y = Math.round((h - totalH) / 2 + lineHeight / 2);
+      for (const line of BANNER) {
+        g.fillText(line, startX, y);
+        y += lineHeight;
+      }
+    }
+
+    function sampleBanner() {
       const w = Math.max(window.innerWidth, 1);
       const h = Math.max(window.innerHeight, 1);
-      const fontSize = fontSizeFor(w);
       const off = document.createElement("canvas");
       off.width = Math.ceil(w);
       off.height = Math.ceil(h);
       const o = off.getContext("2d", { willReadFrequently: true });
       o.clearRect(0, 0, off.width, off.height);
       o.fillStyle = "#f4f4f4";
-      o.textAlign = "center";
-      o.textBaseline = "middle";
-      o.font = "600 " + fontSize + "px Caveat, cursive";
-      o.letterSpacing = Math.round(fontSize * 0.02) + "px";
-      o.fillText(WORD, w / 2, h / 2);
+      drawBanner(o, w, h);
       const data = o.getImageData(0, 0, off.width, off.height).data;
       const points = [];
       for (let y = 0; y < off.height; y += 2) {
@@ -87,7 +103,7 @@
     function layout() {
       if (started && performance.now() >= holdUntil) return;
       size();
-      const points = sampleWord();
+      const points = sampleBanner();
       const now = performance.now();
       if (!started) holdUntil = now + 900;
       particles.length = 0;
@@ -120,13 +136,8 @@
       ctx.fillRect(0, 0, w, h);
 
       if (!started || now < holdUntil) {
-        const fontSize = fontSizeFor(w);
         ctx.fillStyle = "#f3f3f3";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.font = "600 " + fontSize + "px Caveat, cursive";
-        ctx.letterSpacing = Math.round(fontSize * 0.02) + "px";
-        ctx.fillText(WORD, w / 2, h / 2);
+        drawBanner(ctx, w, h);
         requestAnimationFrame(frame);
         return;
       }
@@ -158,16 +169,11 @@
       requestAnimationFrame(frame);
     }
 
-    const face = new FontFace("Caveat", "url(./fonts/Caveat.ttf)", { weight: "600", style: "normal" });
-    face.load().then((loaded) => {
-      document.fonts.add(loaded);
-    }).catch(() => {}).finally(() => {
-      layout();
-      started = true;
-      reveal();
-      window.addEventListener("resize", layout);
-      requestAnimationFrame(frame);
-    });
+    layout();
+    started = true;
+    reveal();
+    window.addEventListener("resize", layout);
+    requestAnimationFrame(frame);
     setTimeout(finish, 5000);
   </script>
 </body>

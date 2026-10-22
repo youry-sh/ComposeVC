@@ -3827,6 +3827,11 @@
     color: #a78bfa;
     background: rgba(167, 139, 250, 0.12);
   }
+  .chat-header-icon.is-telegram-live {
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.12);
+    box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.18);
+  }
 
   .chat-history-scrim {
     position: fixed;

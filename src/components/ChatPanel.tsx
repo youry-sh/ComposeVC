@@ -2753,12 +2753,12 @@ const ChatTelegramModal: React.FC<{
 
   const statusLabel = (() => {
     if (status?.running) {
-      return status.botUsername ? `Running · @${status.botUsername}` : "Running · polling";
+      return status.botUsername ? `@${status.botUsername}` : "Running";
     }
-    if (status?.lastError) return `Error · ${status.lastError}`;
-    if (!draft.botToken.trim()) return "Stopped · paste bot token";
-    if (!draft.enabled) return "Stopped · turn Enabled on";
-    return "Stopped · starting…";
+    if (status?.lastError) return "Error";
+    if (!draft.botToken.trim()) return "Not configured";
+    if (!draft.enabled) return "Disabled";
+    return "Starting…";
   })();
 
   const handleSave = async () => {
@@ -4302,7 +4302,9 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                   ? `Telegram · @${telegramHeaderStatus.botUsername || "bot"}`
                   : "Telegram bot settings"
               }
-              className={`chat-header-icon relative ${telegramModalOpen ? "is-active" : ""}`}
+              className={`chat-header-icon relative ${telegramModalOpen ? "is-active" : ""} ${
+                telegramHeaderStatus?.running ? "is-telegram-live" : ""
+              }`}
             >
               <TelegramIcon className="w-3.5 h-3.5" />
               <span
