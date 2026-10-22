@@ -8458,6 +8458,13 @@
   min-width: 0;
   height: 100%;
 }
+
+/* A fixed overlay opened inside a chat pane (auto-insert, instructions, …) is
+   trapped in that pane's z-index:1 stacking context, so in split view it would
+   render BEHIND sibling chats. Raise the owning pane above everything. */
+.chat-stage-pane:has(.theme-scrim) {
+  z-index: 9999;
+}
 .chat-stage-pane.is-drop .chat-stage-frame {
   outline: 1px solid var(--ink-400);
   outline-offset: -1px;
