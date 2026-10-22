@@ -56,6 +56,7 @@ const { showAgentToast } = require("./agentToast.cjs");
 const { runtime: sizeworkout } = require("./sizeworkout.cjs");
 const workerPool = require("./workerPool.cjs");
 const terminalManager = require("./terminalManager.cjs");
+const usageStore = require("./usageStore.cjs");
 terminalManager.register(ipcMain, app);
 sizeworkout.on("changed", (workspace) => {
   for (const win of BrowserWindow.getAllWindows()) {
@@ -1502,6 +1503,22 @@ ipcMain.handle("system:getMetrics", async () => {
       workingSetBytes: workingSet > 0 ? workingSet * 1024 : mem.rss || 0,
       uptimeSec: Math.floor(process.uptime()),
       totalRuntimeSec: currentTotalRuntimeSec(),
+    };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+ipcMain.handle("usage:getSnapshot", async () => {
+  try {
+    return {
+      ok: true,
+      usage: usageStore.snapshot(),
+      runtime: {
+        totalRuntimeSec: currentTotalRuntimeSec(),
+        uptimeSec: Math.floor(process.uptime()),
+        sessions: runtimeSessions,
+      },
     };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : String(error) };
@@ -4221,6 +4238,11 @@ ipcMain.handle("file:write", async (_event, filePath, content) => {
 ipcMain.handle("file:create", async (_event, parentPath, name) => {
   const targetPath = path.join(parentPath, name);
   await fs.promises.writeFile(targetPath, "", { flag: "wx" });
+  try {
+    usageStore.recordFileCreate(0);
+  } catch {
+    /* usage tracking must never break file creation */
+  }
   return targetPath;
 });
 
