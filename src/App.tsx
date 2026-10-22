@@ -234,7 +234,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const removeSoundListener = window.lopster?.onPlayAgentCompleteSound((soundUrl) => {
       const audio = new Audio(soundUrl);
-      audio.volume = 0.75;
+      audio.volume = 0.5;
       void audio.play().catch(() => undefined);
     });
     return () => removeSoundListener?.();

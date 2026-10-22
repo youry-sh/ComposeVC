@@ -3390,7 +3390,7 @@ ipcMain.handle("agent:notifyComplete", (event, payload = {}) => {
   if (isFocused && !force) return { shown: false, reason: "focused" };
 
   const body = String(payload.body || "Main agent finished working.");
-  const soundPath = path.join(__dirname, "..", "logo", "zvuk-opovesheniya-sms.mp3");
+  const soundPath = path.join(__dirname, "..", "logo", "notify-sms.wav");
 
   try {
     const focusMain = () => {

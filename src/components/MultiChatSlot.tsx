@@ -2466,7 +2466,7 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
           theme:
             document.documentElement.getAttribute("data-theme") ||
             window.localStorage.getItem("lopster-theme") ||
-            "signal-black",
+            "mono",
         });
       }
       drainMessageQueue(runSessionId);

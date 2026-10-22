@@ -13,44 +13,27 @@ let closeTimer = null;
 let fadeTimer = null;
 
 const THEME_PALETTES = {
-  ink: {
-    surface: "#11141b",
-    border: "#222936",
-    text: "#eef1f6",
-    muted: "#7b879c",
-    accent: "#6ea8ff",
-    accentSoft: "rgba(110, 168, 255, 0.12)",
-    accentBorder: "rgba(110, 168, 255, 0.28)",
-    bar: "#6ea8ff",
-    shadow: "0 10px 28px rgba(4, 8, 16, 0.45)",
-  },
-  "signal-black": {
-    surface: "#101214",
-    border: "#1f2328",
-    text: "#f6f7f8",
-    muted: "#9ca3af",
-    accent: "#22c55e",
-    accentSoft: "rgba(34, 197, 94, 0.10)",
-    accentBorder: "rgba(34, 197, 94, 0.22)",
-    bar: "#22c55e",
-    shadow: "0 10px 28px rgba(0, 0, 0, 0.5)",
-  },
-  ember: {
-    surface: "#101214",
-    border: "#1f2328",
-    text: "#f6f7f8",
-    muted: "#9ca3af",
-    accent: "#f97316",
-    accentSoft: "rgba(249, 115, 22, 0.10)",
-    accentBorder: "rgba(249, 115, 22, 0.24)",
-    bar: "#f97316",
-    shadow: "0 10px 28px rgba(0, 0, 0, 0.5)",
+  mono: {
+    surface: "#0b0b0b",
+    surface2: "#101010",
+    border: "#1c1c1c",
+    borderStrong: "#2b2b2b",
+    text: "#e8e8e8",
+    muted: "#6f6f6f",
+    dim: "#9a9a9a",
+    accent: "#e8e8e8",
+    accentSoft: "rgba(255, 255, 255, 0.06)",
+    accentBorder: "rgba(255, 255, 255, 0.14)",
+    bar: "#e8e8e8",
+    shadow: "0 12px 32px rgba(0, 0, 0, 0.55)",
   },
 };
 
-function resolvePalette(theme) {
-  const key = String(theme || "").trim();
-  return THEME_PALETTES[key] || THEME_PALETTES["signal-black"];
+function resolvePalette(_theme) {
+  // The IDE is a single monochrome theme ("mono"). Every incoming theme key
+  // (ink / signal-black / ember / mono) resolves to the same neutral palette
+  // so the toast always matches the app chrome — no coloured accents.
+  return THEME_PALETTES.mono;
 }
 
 function clearTimers() {
