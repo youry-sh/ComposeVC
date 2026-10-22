@@ -167,75 +167,108 @@ const ModelPicker: React.FC<ModelPickerProps> = ({
         />
       </button>
 
-      {open && (
-        <div className="model-picker-menu animate-fade-in" role="listbox">
-          <div className="model-picker-search">
-            <Search className="model-picker-search-icon" />
-            <input
-              ref={searchRef}
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={searchPlaceholder}
-              className="model-picker-search-input"
-              spellCheck={false}
-              autoComplete="off"
-            />
-            {query ? (
-              <button
-                type="button"
-                className="model-picker-search-clear"
-                onClick={() => {
-                  setQuery("");
-                  searchRef.current?.focus();
-                }}
-                aria-label="Clear"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            ) : null}
-          </div>
+      {open &&
+        createPortal(
+          <div
+            className="model-picker-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-label={labels.selectModel}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) onOpenChange(false);
+            }}
+          >
+            <div className="model-picker-sheet">
+              <span className="model-picker-grabber" aria-hidden="true" />
 
-          <div className="model-picker-list scrollbar-thin">
-            {models.length === 0 ? (
-              <div className="model-picker-empty">{labels.noModelsConfigured}</div>
-            ) : totalVisible === 0 ? (
-              <div className="model-picker-empty">{emptyFound}</div>
-            ) : (
-              groups.map((group) => (
-                <div key={group.providerId} className="model-picker-group">
-                  <div className="model-picker-group-head">
-                    <span className="model-picker-group-name">{group.providerName}</span>
-                    <span className="model-picker-group-count">{group.models.length}</span>
-                  </div>
-                  {group.models.map((model) => {
-                    const active = model.id === selectedModelId;
-                    return (
-                      <button
-                        key={model.id}
-                        type="button"
-                        role="option"
-                        aria-selected={active}
-                        onClick={() => {
-                          onSelectModel(model.id);
-                          onOpenChange(false);
-                        }}
-                        className={`model-picker-item ${active ? "is-active" : ""}`}
-                      >
-                        <span className="model-picker-item-main">
-                          <span className="model-picker-item-name">{model.name}</span>
-                          <span className="model-picker-item-meta">{formatCtx(model.contextLimit)}</span>
-                        </span>
-                        {active ? <Check className="model-picker-item-check" /> : null}
-                      </button>
-                    );
-                  })}
+              <div className="model-picker-sheet-head">
+                <span className="model-picker-sheet-kicker">Model</span>
+                <button
+                  type="button"
+                  className="model-picker-sheet-close"
+                  onClick={() => onOpenChange(false)}
+                  aria-label="Close"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <div className="model-picker-search">
+                <Search className="model-picker-search-icon" />
+                <input
+                  ref={searchRef}
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder={searchPlaceholder}
+                  className="model-picker-search-input"
+                  spellCheck={false}
+                  autoComplete="off"
+                />
+                {query ? (
+                  <button
+                    type="button"
+                    className="model-picker-search-clear"
+                    onClick={() => {
+                      setQuery("");
+                      searchRef.current?.focus();
+                    }}
+                    aria-label="Clear"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                ) : null}
+              </div>
+
+              <div className="model-picker-list scrollbar-thin" role="listbox">
+                {models.length === 0 ? (
+                  <div className="model-picker-empty">{labels.noModelsConfigured}</div>
+                ) : totalVisible === 0 ? (
+                  <div className="model-picker-empty">{emptyFound}</div>
+                ) : (
+                  groups.map((group) => (
+                    <div key={group.providerId} className="model-picker-group">
+                      <div className="model-picker-group-head">
+                        <span className="model-picker-group-name">{group.providerName}</span>
+                        <span className="model-picker-group-count">{group.models.length}</span>
+                      </div>
+                      {group.models.map((model) => {
+                        const active = model.id === selectedModelId;
+                        return (
+                          <button
+                            key={model.id}
+                            type="button"
+                            role="option"
+                            aria-selected={active}
+                            onClick={() => {
+                              onSelectModel(model.id);
+                              onOpenChange(false);
+                            }}
+                            className={`model-picker-item ${active ? "is-active" : ""}`}
+                          >
+                            <span className="model-picker-item-main">
+                              <span className="model-picker-item-name">{model.name}</span>
+                              <span className="model-picker-item-meta">{formatCtx(model.contextLimit)}</span>
+                            </span>
+                            {active ? <Check className="model-picker-item-check" /> : null}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {models.length > 0 ? (
+                <div className="model-picker-sheet-foot">
+                  <span>{totalVisible}</span>
+                  <span>{totalVisible === 1 ? "model" : "models"}</span>
                 </div>
-              ))
-            )}
-          </div>
-        </div>
-      )}
+              ) : null}
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 };
