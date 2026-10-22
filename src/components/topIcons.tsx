@@ -106,3 +106,14 @@ export const IcoDocs: React.FC<IconProps> = ({ className }) => (
     <path d="M5.5 5.5 h2.2 M5.5 8 h2.2" />
   </svg>
 );
+
+/** Usage — bar chart glyph (statistics) */
+export const IcoUsage: React.FC<IconProps> = ({ className }) => (
+  <svg {...base} className={className}>
+    <path d="M2.5 13.5 h11" />
+    <rect x="3.2" y="8.5" width="1.8" height="5" rx="0.4" fill="currentColor" fillOpacity="0.45" />
+    <rect x="6.2" y="5.5" width="1.8" height="8" rx="0.4" />
+    <rect x="9.2" y="7" width="1.8" height="6.5" rx="0.4" fill="currentColor" fillOpacity="0.45" />
+    <rect x="12.2" y="2.8" width="1.8" height="10.7" rx="0.4" fill="currentColor" fillOpacity="0.85" />
+  </svg>
+);
