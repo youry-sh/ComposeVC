@@ -4927,7 +4927,8 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
               )}
             </div>
 
-        </div>        <WorkTimer sessionId={activeSessionId} />
+        </div>
+        <WorkTimer sessionId={activeSessionId} />
         <BackgroundTasks sessionId={activeSessionId} />
         </div>
       </div>
