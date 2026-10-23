@@ -533,11 +533,20 @@ export class NeuralScene {
   }
 
   private updateUniforms() {
+    const detail = this.computeDetail();
     this.strandMaterial.uniforms.uTime.value = this.time;
     this.strandMaterial.uniforms.uFlow.value = this.motion;
+    this.strandMaterial.uniforms.uDetail.value = detail;
     this.strandMaterial.uniforms.uSphere.value.copy(this.sphere.position);
     this.nodeMaterial.uniforms.uTime.value = this.time;
     this.nodeMaterial.uniforms.uFlow.value = this.motion;
+    this.nodeMaterial.uniforms.uDetail.value = detail;
+    this.highlightStrandMaterial.uniforms.uSphere.value.copy(this.sphere.position);
+  }
+
+  private computeDetail() {
+    const t = clamp((this.radius - this.fitRadius) / (ZOOM_MAX - this.fitRadius), 0, 1);
+    return 1 - t * 0.85;
   }
 
   private updateCamera(dt: number) {
@@ -594,7 +603,14 @@ export class NeuralScene {
         best = i;
       }
     }
-    this.setHover(best);
+    if (best >= 0) {
+      this.cancelHoverClear();
+      this.setHover(best);
+    } else if (this.hovered >= 0) {
+      this.scheduleHoverClear();
+    } else {
+      this.setHover(-1);
+    }
   }
 
   private setHover(index: number) {
