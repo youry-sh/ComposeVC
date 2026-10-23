@@ -164,7 +164,7 @@ test("create rejects an over-limit title", async () => {
   const dir = tempDir();
   try {
     const longTitle = "a".repeat(301);
-    await assert.rejects(() => store.create(dir, { title: longTitle, text: "x" }), /длиннее300/);
+    await assert.rejects(() => store.create(dir, { title: longTitle, text: "x" }), /длиннее 300/);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
@@ -174,7 +174,7 @@ test("create rejects an over-limit text", async () => {
   const dir = tempDir();
   try {
     const longText = "a".repeat(1_000_001);
-    await assert.rejects(() => store.create(dir, { title: "x", text: longText }), /длиннее1000000/);
+    await assert.rejects(() => store.create(dir, { title: "x", text: longText }), /длиннее 1000000/);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
