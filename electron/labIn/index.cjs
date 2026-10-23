@@ -561,6 +561,18 @@ async function runLabInPipeline({
       `read ${counts.read}/${required.read}, links ${counts.links}/${required.links}. ` +
       "Do not assume the knowledge base was exhaustively covered.]";
   }
+
+  emit({
+    type: "lab_in_package",
+    phase: "lab-in-execute",
+    label: `LAB-IN · package ready · main ${modelLabel(mainModel)} executing…`,
+    knowledgePackage,
+    refinedPrompt,
+    chunkCount: stats.chunkCount,
+    truncated,
+    coverage,
+  });
+
   const handoffSequence = buildHandoffSequence({
     originalTask,
     refinedPrompt,
