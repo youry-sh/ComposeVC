@@ -778,6 +778,7 @@ export class NeuralScene {
     }
 
     if (this.dragMode === "rotate") {
+      this.gestureMoved = true;
       const dx = event.movementX || 0;
       const dy = event.movementY || 0;
       this.targetTheta -= dx * 0.0058;
@@ -785,6 +786,7 @@ export class NeuralScene {
       return;
     }
     if (this.dragMode === "pan") {
+      this.gestureMoved = true;
       const dx = event.movementX || 0;
       const dy = event.movementY || 0;
       this.tmpVec.setFromMatrixColumn(this.camera.matrix, 0);
