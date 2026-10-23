@@ -12686,7 +12686,8 @@ body.cvc-inspecting * {
   font: 500 9px/1 var(--terminal-font);
   letter-spacing: 0.02em;
 }
-.prompt-copy-list { max-height: 300px; overflow-y: auto; padding: 6px; }
+.prompt-copy-list { max-height: 300px; }
+.prompt-copy-list .chat-mono-scroll-viewport { padding: 6px; }
 .prompt-copy-empty {
   padding: 26px 12px;
   text-align: center;

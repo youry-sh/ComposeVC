@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Check, Copy, Search, X } from "lucide-react";
+import ChatMonoScroll from "./ChatMonoScroll";
 
 type Prompt = {
   id: string;
@@ -209,7 +210,7 @@ const PromptCopyModal: React.FC<PromptCopyModalProps> = ({ open, onClose }) => {
           <span className="prompt-copy-kbd">{shortcutLabel}</span>
         </div>
 
-        <div className="prompt-copy-list">
+        <ChatMonoScroll className="prompt-copy-list">
           {filtered.length === 0 ? (
             <div className="prompt-copy-empty">
               {query ? "Ничего не найдено" : "Промтов пока нет"}
@@ -232,7 +233,7 @@ const PromptCopyModal: React.FC<PromptCopyModalProps> = ({ open, onClose }) => {
               </button>
             ))
           )}
-        </div>
+        </ChatMonoScroll>
 
         {copyState !== "idle" ? (
           <div className={`prompt-copy-status is-${copyState}`}>
