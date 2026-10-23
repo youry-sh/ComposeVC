@@ -334,6 +334,65 @@ const KnowledgeWorkspace: React.FC<KnowledgeWorkspaceProps> = ({ rootPath = null
     }
   };
 
+  const exportArchive = async () => {
+    if (archiveBusy) return;
+    setArchiveBusy("export");
+    setError(null);
+    setNotice(null);
+    setNoticeDetail("");
+    try {
+      const result = await window.lopster?.knowledgeExport?.(rootPath);
+      if (!result) throw new Error("Knowledge export is unavailable");
+      const labels = result.copies.map((copy) =>
+        copy.label === "desktop" ? "Desktop" : copy.label === "project" ? "project folder" : copy.label
+      );
+      const detail = [
+        ...result.copies.map((copy) => `${copy.label}: ${copy.path}`),
+        ...result.failures.map((item) => `${item.label} failed: ${item.error}`),
+      ].join("\n");
+      showNotice(
+        `${result.archiveName} · ${result.chunkCount} chunks → ${labels.join(" + ")}`,
+        detail
+      );
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setArchiveBusy(null);
+    }
+  };
+
+  const importArchive = async () => {
+    if (archiveBusy) return;
+    setArchiveBusy("import");
+    setError(null);
+    setNotice(null);
+    setNoticeDetail("");
+    try {
+      const result = await window.lopster?.knowledgeImport?.();
+      if (!result) throw new Error("Knowledge import is unavailable");
+      if ("canceled" in result) return;
+      const catalogResult = await fetchCatalog();
+      if (!isDirty) {
+        const targetId = result.importedIds?.[0] || catalogResult.chunks[0]?.id;
+        if (targetId) await readChunk(targetId);
+      }
+      const summary = [
+        `${result.imported} imported`,
+        result.duplicates ? `${result.duplicates} duplicates` : "",
+        result.skipped ? `${result.skipped} skipped` : "",
+        result.remappedLinks ? `${result.remappedLinks} links remapped` : "",
+      ].filter(Boolean).join(" · ");
+      showNotice(
+        `${result.archiveName}: ${summary} · ${result.totalChunks} chunks total`,
+        `${result.archivePath}\n${result.root}`
+      );
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setArchiveBusy(null);
+    }
+  };
+
   const previewMarkdown = `${draft.title ? `# ${draft.title}\n\n` : ""}${draft.content}`;
 
   if (pane === "neural") {
