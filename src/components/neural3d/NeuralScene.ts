@@ -730,6 +730,7 @@ export class NeuralScene {
     this.downPos = { x: event.clientX, y: event.clientY };
 
     if (this.pointers.size === 2) {
+      this.multiTouch = true;
       const pts = [...this.pointers.values()];
       this.pinch = {
         dist: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1,
@@ -745,6 +746,7 @@ export class NeuralScene {
     } else if (event.button === 1 || event.button === 2) {
       this.dragMode = "pan";
     }
+    if (this.dragMode) this.renderer.domElement.classList.add("is-panning");
     if (this.pointers.size <= 2) {
       try {
         (this.renderer.domElement as HTMLElement).setPointerCapture(event.pointerId);
@@ -760,6 +762,7 @@ export class NeuralScene {
     }
 
     if (this.pinch && this.pointers.size >= 2) {
+      this.gestureMoved = true;
       const pts = [...this.pointers.values()];
       const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1;
       this.targetRadius = clamp(this.pinch.radius * (this.pinch.dist / dist), ZOOM_MIN, ZOOM_MAX);
