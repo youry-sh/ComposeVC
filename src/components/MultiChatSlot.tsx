@@ -2372,14 +2372,12 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
             compacting: false,
             agentStatusLabel: null,
             retryInfo: null,
-            labInPackage: null,
           });
           setMessages(nextMessages);
           clearAssistantDrafts();
           setToolActivity([]);
           toolActivityRef.current = [];
           setRetryInfo(null);
-          setLabInPackage(null);
           setAgentStatusLabel(null);
           // Always clear compact spinner on successful turn end.
           setCompacting(false);
@@ -2406,6 +2404,7 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
             messages: nextMessages,
             contextTokens: tokens,
             agentTodos: live.agentTodos || [],
+            labInPackage: live.labInPackage,
             compacting: false,
           });
         }
