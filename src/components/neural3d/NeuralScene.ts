@@ -15,7 +15,7 @@
 
 import * as THREE from "three";
 import { NeuralGraph, BRAIN_RADIUS } from "./graph";
-import { STRAND_VERTEX, STRAND_FRAGMENT, NODE_VERTEX, NODE_FRAGMENT } from "./shaders";
+import { STRAND_VERTEX, STRAND_FRAGMENT, HIGHLIGHT_STRAND_FRAGMENT, NODE_VERTEX, NODE_FRAGMENT } from "./shaders";
 import { buildMagicCircleTexture } from "./magicRing";
 import { readThemeColors } from "./theme";
 
@@ -38,7 +38,11 @@ const SPHERE_ORBIT = 150;
 const SPHERE_RADIUS = 26;
 const RING_OUTER = 92;
 const RING_INNER = 40;
-const STRAND_SEGMENTS = 8;
+
+/** Fewer strand segments at large node counts keeps geometry build + upload light. */
+function strandSegments(count: number) {
+  return count > 10000 ? 4 : 8;
+}
 
 const FOV = 55;
 const CAMERA_NEAR = 1;
