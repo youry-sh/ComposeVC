@@ -4485,6 +4485,13 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
         />
       )}
 
+      {labInPackageModalOpen && labInPackage && (
+        <LabInPackageModal
+          pkg={labInPackage}
+          onClose={() => setLabInPackageModalOpen(false)}
+        />
+      )}
+
 
       {agentTodos.length > 0 && (
         <div className="px-4 pt-2 pb-0">
@@ -4757,6 +4764,22 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
               />
               <div className="min-w-0 text-[11px] text-ink-800">{compactNotice.text}</div>
             </div>
+          </div>
+        )}
+        {labInPackage && (
+          <div className="mb-1.5 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setLabInPackageModalOpen(true)}
+              className="h-7 px-2.5 flex items-center gap-1.5 rounded-md border border-ink-200 bg-ink-100 text-ink-800 text-[11px] font-medium outline-none transition-colors hover:bg-ink-150 hover:text-ink-950 hover:border-ink-300"
+              title="Посмотреть, что LAB-IN нашёл и передал нейронке"
+            >
+              <Eye className="w-3.5 h-3.5 text-ink-600" />
+              Просмотреть, что нашёл ИИ
+            </button>
+            {labInPackage.coverage === false && (
+              <span className="text-[10px] text-ink-500">покрытие неполное</span>
+            )}
           </div>
         )}
         <div

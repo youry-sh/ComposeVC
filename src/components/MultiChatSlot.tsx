@@ -1580,7 +1580,8 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
         progress.type === "subagent_status" ||
         progress.type === "assistant_text" ||
         progress.type === "ask_user" ||
-        progress.type === "ask_otp";
+        progress.type === "ask_otp" ||
+        progress.type === "lab_in_package";
       if (urgent) {
         if (flushTimer != null) {
           window.clearTimeout(flushTimer);
