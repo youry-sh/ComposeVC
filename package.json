@@ -63,6 +63,7 @@
     "sharp": "^0.35.3",
     "telegram": "^2.26.22",
     "teleproto": "^1.228.4",
+    "three": "^0.170.0",
     "typescript": "^5.5.3",
     "ws": "^8.21.1"
   },
@@ -71,6 +72,7 @@
     "@types/katex": "^0.16.8",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
+    "@types/three": "^0.170.0",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.19",
     "electron": "^42.5.1",
@@ -94,7 +96,15 @@
       {
         "from": "mcp-agent",
         "to": "mcp-agent",
-        "filter": ["**/*", "!.venv/**", "!__pycache__/**", "!.backup/**", "!*.log", "!.env", "!approved_zones.json"]
+        "filter": [
+          "**/*",
+          "!.venv/**",
+          "!__pycache__/**",
+          "!.backup/**",
+          "!*.log",
+          "!.env",
+          "!approved_zones.json"
+        ]
       }
     ]
   }
