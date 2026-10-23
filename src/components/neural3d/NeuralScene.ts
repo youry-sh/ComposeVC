@@ -661,7 +661,6 @@ export class NeuralScene {
   private onPointerDown = (event: PointerEvent) => {
     this.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
     this.downPos = { x: event.clientX, y: event.clientY };
-    const rect = this.renderer.domElement.getBoundingClientRect();
 
     if (this.pointers.size === 2) {
       const pts = [...this.pointers.values()];
@@ -823,6 +822,7 @@ export class NeuralScene {
     canvas.removeEventListener("pointermove", this.onPointerMove);
     canvas.removeEventListener("pointerup", this.onPointerUp);
     canvas.removeEventListener("pointercancel", this.onPointerUp);
+    canvas.removeEventListener("pointerleave", this.onPointerLeave);
     canvas.removeEventListener("wheel", this.onWheel);
     canvas.removeEventListener("contextmenu", this.onContextMenu);
     canvas.removeEventListener("dblclick", this.onDoubleClick);
