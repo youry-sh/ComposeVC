@@ -356,8 +356,12 @@ const KnowledgeWorkspace: React.FC<KnowledgeWorkspaceProps> = ({ rootPath = null
         ...result.copies.map((copy) => `${copy.label}: ${copy.path}`),
         ...result.failures.map((item) => `${item.label} failed: ${item.error}`),
       ].join("\n");
+      const failedNote = result.failures.length
+        ? ` · ${result.failures.map((item) => `${item.label} failed`).join(", ")}`
+        : "";
+      const dirtyNote = isDirty ? " · unsaved edits not included" : "";
       showNotice(
-        `${result.archiveName} · ${result.chunkCount} chunks → ${labels.join(" + ")}`,
+        `${result.archiveName} · ${result.chunkCount} chunks → ${labels.join(" + ")}${failedNote}${dirtyNote}`,
         detail
       );
     } catch (cause) {
