@@ -39,7 +39,8 @@
     "test:web-engine": "node tests/web-engine/webEngineStore.test.cjs && node tests/web-engine/webEngineUrl.test.cjs && node tests/web-engine/webEngineTools.test.cjs",
     "test:proxy-server-retry": "node tests/proxy-server-retry.test.cjs",
     "test:vm": "node tests/vm/iso.test.cjs && node tests/vm/engine.test.cjs && node tests/vm/protocol.test.cjs && node tests/vm/download.test.cjs",
-    "test:usage": "node tests/usage/usageStore.test.cjs"
+    "test:usage": "node tests/usage/usageStore.test.cjs",
+    "test:neural-graph": "node tests/neural-graph.smoke.ts"
   },
   "dependencies": {
     "@faker-js/faker": "^10.5.0",
