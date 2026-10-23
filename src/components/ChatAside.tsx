@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import FlowerBloom from "./FlowerBloom";
+import SphereBloom from "./SphereBloom";
 import GitPanel from "./GitPanel";
 import { RunnerJob } from "../types";
 import {
@@ -202,9 +202,9 @@ const ChatAside: React.FC<Props> = ({ chatCount, runningPanels, activeRootPath, 
         )}
       </section>
 
-      {/* Idle decoration — a red spider lily that blooms forever on its own. */}
+      {/* Idle decoration — a gold spell sphere floating inside its magic circle. */}
       <section className="aside-block aside-block-war">
-        <FlowerBloom />
+        <SphereBloom />
       </section>
     </aside>
   );
