@@ -8,6 +8,7 @@ import {
   ChatSessionSummary,
   CompactionInfo,
   CustomTool,
+  LabInPackage,
   MainAgentMode,
   ProviderConfig,
   TodoItem,
@@ -106,6 +107,8 @@ type SessionLiveState = {
   agentStatusLabel: string | null;
   retryInfo: { attempt: number; maxRetries: number } | null;
   compacting: boolean;
+  /** LAB-IN package handed off to the main agent (shown via a button while the turn runs). */
+  labInPackage: LabInPackage | null;
 };
 
 const MAX_LIVE_TOOL_ACTIVITY = 80;
