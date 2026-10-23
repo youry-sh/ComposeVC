@@ -45,6 +45,7 @@ import {
   ChatSessionSummary,
   CompactionInfo,
   CustomTool,
+  LabInPackage,
   ProjectTask,
   TodoItem,
   MainAgentMode,
@@ -112,6 +113,8 @@ interface ChatPanelProps {
   onRemoveQueuedMessage?: (id: string) => void;
   onClearMessageQueue?: () => void;
   statusLabel?: string;
+  /** LAB-IN knowledge package handed to the main agent (button above the composer while running). */
+  labInPackage?: LabInPackage | null;
   usedTokens: number;
   contextLimit: number;
   compacting: boolean;
@@ -3713,6 +3716,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   onRemoveQueuedMessage,
   onClearMessageQueue,
   statusLabel,
+  labInPackage,
   usedTokens,
   contextLimit,
   compacting,
@@ -3824,6 +3828,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   const [instructionsModalOpen, setInstructionsModalOpen] = useState(false);
   const [telegramModalOpen, setTelegramModalOpen] = useState(false);
   const [projectTasksModalOpen, setProjectTasksModalOpen] = useState(false);
+  const [labInPackageModalOpen, setLabInPackageModalOpen] = useState(false);
   const [hasProjectInstructions, setHasProjectInstructions] = useState(false);
   const [telegramHeaderStatus, setTelegramHeaderStatus] = useState<TelegramBotStatus | null>(null);
   const [chatWidth, setChatWidth] = useState(loadChatWidth);

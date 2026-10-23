@@ -176,6 +176,7 @@ function emptyLiveState(): SessionLiveState {
     agentStatusLabel: null,
     retryInfo: null,
     compacting: false,
+    labInPackage: null,
   };
 }
 
@@ -262,6 +263,21 @@ function applyProgressToLiveState(state: SessionLiveState, progress: AgentToolPr
       (typeof progress.label === "string" && progress.label) ||
       (typeof progress.text === "string" ? progress.text : null);
     if (label) next = { ...next, agentStatusLabel: label };
+    return next;
+  }
+
+  if (progress.type === "lab_in_package" && progress.labInPackage) {
+    const pkg = progress.labInPackage;
+    next = {
+      ...next,
+      labInPackage: {
+        knowledgePackage: typeof pkg.knowledgePackage === "string" ? pkg.knowledgePackage : "",
+        refinedPrompt: typeof pkg.refinedPrompt === "string" ? pkg.refinedPrompt : "",
+        chunkCount: typeof pkg.chunkCount === "number" ? pkg.chunkCount : undefined,
+        truncated: pkg.truncated === true,
+        coverage: pkg.coverage === true,
+      },
+    };
     return next;
   }
 
@@ -978,6 +994,7 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
   );
   const [agentStatusLabel, setAgentStatusLabel] = useState<string | null>(null);
   const [retryInfo, setRetryInfo] = useState<{ attempt: number; maxRetries: number } | null>(null);
+  const [labInPackage, setLabInPackage] = useState<LabInPackage | null>(null);
 
   const messagesRef = useRef<ChatMessage[]>([]);
   const activeSessionIdRef = useRef<string | null>(initialSessionId);
@@ -1083,6 +1100,7 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
       agentStatusLabel,
       retryInfo,
       compacting,
+      labInPackage,
     });
     toolActivityRef.current = toolActivity;
     assistantDraftsRef.current = assistantDrafts;
@@ -1099,6 +1117,7 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
     agentStatusLabel,
     retryInfo,
     compacting,
+    labInPackage,
   ]);
 
   const persist = useCallback(
@@ -1300,6 +1319,7 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
     setCompactionBanner(state.compactionBanner);
     setAgentStatusLabel(state.agentStatusLabel);
     setRetryInfo(state.retryInfo);
+    setLabInPackage(state.labInPackage);
     // Never rehydrate "compacting" when session is not actually running (stuck after quit mid-compact)
     const showCompacting = Boolean(state.compacting && running);
     setCompacting(showCompacting);
@@ -1500,6 +1520,7 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
           }
           setCompacting(next.compacting);
           setRetryInfo(next.retryInfo);
+          setLabInPackage(next.labInPackage);
           if (next.agentStatusLabel !== undefined) {
             setAgentStatusLabel(next.agentStatusLabel);
           }
@@ -2078,6 +2099,7 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
       toolActivityRef.current = [];
       clearAssistantDrafts();
       setRetryInfo(null);
+      setLabInPackage(null);
       setAgentTodos(todos);
       const initialStatus =
           modeAtSend === "lab-in"
@@ -2099,6 +2121,7 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
         thinkingMaxLocked: thinkingMaxRef.current,
         thinkingTokens: 0,
         compacting: false,
+        labInPackage: null,
       });
     } else {
       const prev = sessionLiveRef.current.get(runSessionRef.current) || emptyLiveState();
@@ -2120,6 +2143,7 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
         thinkingMaxLocked: thinkingMaxRef.current,
         thinkingTokens: 0,
         compacting: false,
+        labInPackage: null,
       });
     }
 
@@ -2347,12 +2371,14 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
             compacting: false,
             agentStatusLabel: null,
             retryInfo: null,
+            labInPackage: null,
           });
           setMessages(nextMessages);
           clearAssistantDrafts();
           setToolActivity([]);
           toolActivityRef.current = [];
           setRetryInfo(null);
+          setLabInPackage(null);
           setAgentStatusLabel(null);
           // Always clear compact spinner on successful turn end.
           setCompacting(false);
@@ -2437,6 +2463,7 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
       markSessionRunning(runSessionId, false);
       if (isViewingRunSession()) {
         setRetryInfo(null);
+        setLabInPackage(null);
         setAgentStatusLabel(null);
         // Always drop compact spinner on turn end (success, fail, abort).
         setCompacting(false);
@@ -2447,6 +2474,7 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
             compacting: false,
             retryInfo: null,
             agentStatusLabel: null,
+            labInPackage: null,
           });
         }
       } else {
@@ -2531,6 +2559,7 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
             agentStatusLabel ||
             (retryInfo ? `${labels.retrying} ${retryInfo.attempt}/${retryInfo.maxRetries}…` : undefined)
           }
+          labInPackage={labInPackage}
           usedTokens={estimatedTokens}
            contextLimit={resolvedContextLimit || 500000}
           compacting={compacting}

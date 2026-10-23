@@ -566,11 +566,13 @@ async function runLabInPipeline({
     type: "lab_in_package",
     phase: "lab-in-execute",
     label: `LAB-IN · package ready · main ${modelLabel(mainModel)} executing…`,
-    knowledgePackage,
-    refinedPrompt,
-    chunkCount: stats.chunkCount,
-    truncated,
-    coverage,
+    labInPackage: {
+      knowledgePackage,
+      refinedPrompt,
+      chunkCount: stats.chunkCount,
+      truncated,
+      coverage,
+    },
   });
 
   const handoffSequence = buildHandoffSequence({
