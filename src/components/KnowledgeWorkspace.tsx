@@ -17,7 +17,10 @@ import {
 } from "lucide-react";
 import { KnowledgeChunk, KnowledgeChunkSummary, KnowledgeListResponse } from "../types";
 import MarkdownContent from "./markdown/MarkdownContent";
-import KnowledgeNeural from "./KnowledgeNeural";
+
+// Lazy-mount the WebGL neural view: three.js and the scene only load when the
+// user opens the pane, keeping the main bundle small.
+const KnowledgeNeural = React.lazy(() => import("./KnowledgeNeural"));
 
 type ViewMode = "preview" | "edit";
 
@@ -322,14 +325,24 @@ const KnowledgeWorkspace: React.FC = () => {
   if (pane === "neural") {
     return (
       <section className="knowledge-workspace is-neural">
-        <KnowledgeNeural
-          chunks={chunks}
-          onBack={() => setPane("library")}
-          onOpen={(id) => {
-            setPane("library");
-            void readChunk(id);
-          }}
-        />
+        <React.Suspense
+          fallback={
+            <div className="knowledge-neural">
+              <div className="knowledge-neural-status">
+                <span>Загрузка…</span>
+              </div>
+            </div>
+          }
+        >
+          <KnowledgeNeural
+            chunks={chunks}
+            onBack={() => setPane("library")}
+            onOpen={(id) => {
+              setPane("library");
+              void readChunk(id);
+            }}
+          />
+        </React.Suspense>
       </section>
     );
   }
