@@ -620,6 +620,32 @@ export class NeuralScene {
     this.emitHover();
   }
 
+  private scheduleHoverClear() {
+    if (this.hoverClearTimer != null || this.hoverHold) return;
+    this.hoverClearTimer = window.setTimeout(() => {
+      this.hoverClearTimer = null;
+      if (this.hoverHold) return;
+      this.setHover(-1);
+    }, 250);
+  }
+
+  private cancelHoverClear() {
+    if (this.hoverClearTimer != null) {
+      window.clearTimeout(this.hoverClearTimer);
+      this.hoverClearTimer = null;
+    }
+  }
+
+  /** Card tells the scene the pointer is over it, so hover must not be cleared. */
+  setHoverHold(value: boolean) {
+    this.hoverHold = value;
+    if (value) {
+      this.cancelHoverClear();
+    } else if (this.hovered >= 0) {
+      this.scheduleHoverClear();
+    }
+  }
+
   private applyHighlight() {
     const on = this.hovered >= 0 && !!this.graph;
     this.strandMaterial.uniforms.uDim.value = on ? 0.62 : 0;
@@ -652,11 +678,10 @@ export class NeuralScene {
     this.highlightRing.quaternion.copy(this.camera.quaternion);
     this.highlightRing.visible = true;
 
-    // Bright strand (sphere -> node) for the hovered node.
-    const strandPos = buildStrandPositions(graph, index);
+    // Bright strand (sphere -> node) for the hovered node, sharing the main
+    // strand's near-end orbit-follow via uSphere.
     this.highlightStrands.geometry.dispose();
-    this.highlightStrands.geometry = new THREE.BufferGeometry();
-    this.highlightStrands.geometry.setAttribute("position", new THREE.BufferAttribute(strandPos, 3));
+    this.highlightStrands.geometry = buildSingleStrandGeometry(graph, index);
     this.highlightStrands.visible = true;
 
     // Bright node-to-node edges touching the hovered node.
