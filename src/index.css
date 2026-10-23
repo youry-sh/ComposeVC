@@ -8453,20 +8453,26 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 0;
-  border-radius: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
   background: transparent;
   color: var(--ink-500);
-  font-size: 14px;
   line-height: 1;
   cursor: pointer;
   opacity: 0;
-  transition: opacity .12s ease, background .12s ease, color .12s ease;
+  transition: opacity .12s ease, background .14s ease, color .14s ease, border-color .14s ease, box-shadow .14s ease;
 }
+.chat-workspace-close svg { width: 12px; height: 12px; display: block; transition: transform .16s ease; }
 .chat-workspace-item:hover .chat-workspace-close,
 .chat-workspace-item.is-active .chat-workspace-close { opacity: 1; }
-.chat-workspace-close:focus-visible { opacity: 1; }
-.chat-workspace-close:hover { background: var(--hover-bg); color: var(--ink-950); }
+.chat-workspace-close:focus-visible { opacity: 1; outline: 1px solid var(--focus-ring); outline-offset: 1px; }
+.chat-workspace-close:hover {
+  background: var(--active-bg);
+  border-color: var(--border-strong);
+  color: var(--ink-950);
+  box-shadow: 0 0 0 1px var(--accent-muted);
+}
+.chat-workspace-close:hover svg { transform: scale(1.08); }
 .chat-rail-subhead {
   height: 24px;
   border-bottom: 1px solid var(--border);
@@ -8633,19 +8639,26 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 0;
-  border-radius: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
   background: transparent;
   color: var(--ink-500);
-  font-size: 14px;
   line-height: 1;
   cursor: pointer;
   opacity: 0;
-  transition: opacity .12s ease, background .12s ease, color .12s ease;
+  transition: opacity .12s ease, background .14s ease, color .14s ease, border-color .14s ease, box-shadow .14s ease;
 }
+.chat-rail-close svg { width: 12px; height: 12px; display: block; transition: transform .16s ease; }
 .chat-rail-item:hover .chat-rail-close,
 .chat-rail-item.is-active .chat-rail-close { opacity: 1; }
-.chat-rail-close:hover { background: var(--hover-bg); color: var(--ink-950); }
+.chat-rail-close:focus-visible { opacity: 1; outline: 1px solid var(--focus-ring); outline-offset: 1px; }
+.chat-rail-close:hover {
+  background: var(--active-bg);
+  border-color: var(--border-strong);
+  color: var(--ink-950);
+  box-shadow: 0 0 0 1px var(--accent-muted);
+}
+.chat-rail-close:hover svg { transform: scale(1.08); }
 
 .chat-rail-foot {
   flex: 0 0 auto;

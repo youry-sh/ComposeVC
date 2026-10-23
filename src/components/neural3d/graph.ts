@@ -167,6 +167,8 @@ export async function buildNeuralGraph(
   const rawFrom = new Uint32Array(cap);
   const rawTo = new Uint32Array(cap);
   let edgeCount = 0;
+  // Undirected dedupe: reciprocal links (A→B and B→A) must not create two edges.
+  const seen = new Set<number>();
 
   for (let i = 0; i < n; i += 1) {
     if ((i & 16383) === 0) {
@@ -179,6 +181,9 @@ export async function buildNeuralGraph(
       if (!token) continue;
       const j = idMap.get(token) ?? titleMap.get(token.toLowerCase());
       if (j == null || j === i || degree[j] >= MAX_DEGREE) continue;
+      const key = (i < j ? i : j) * n + (i < j ? j : i);
+      if (seen.has(key)) continue;
+      seen.add(key);
       if (edgeCount >= cap) break;
       rawFrom[edgeCount] = i;
       rawTo[edgeCount] = j;

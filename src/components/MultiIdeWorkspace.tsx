@@ -6,7 +6,7 @@ import GitBadge from "./GitBadge";
 import ThinkingIndicator from "./ThinkingIndicator";
 import { CustomTool, MainAgentMode, ProviderConfig } from "../types";
 import { HotkeyDefinition, matchesHotkey } from "../utils/hotkeys";
-import { LayoutGrid } from "lucide-react";
+import { LayoutGrid, X } from "lucide-react";
 
 /** Ctrl+H (Cmd+H on macOS) — the chat switcher, matched by physical key. */
 const SWITCHER_HOTKEY: HotkeyDefinition = { code: "KeyH", modifiers: ["mod"] };
@@ -630,7 +630,7 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
                     title={labels.deleteWorkspace}
                     aria-label={labels.deleteWorkspace}
                   >
-                    ×
+                    <X size={12} strokeWidth={2} aria-hidden />
                   </button>
                 )}
               </div>
@@ -693,7 +693,7 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
                     title="Close panel"
                     aria-label="Close panel"
                   >
-                    ×
+                    <X size={12} strokeWidth={2} aria-hidden />
                   </button>
                 )}
                 </div>
@@ -766,7 +766,7 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
                   aria-label="Убрать ряд"
                   onClick={() => unpinSlot(slot.id)}
                 >
-                  ×
+                  <X size={12} strokeWidth={2} aria-hidden />
                 </button>
               )}
               <MultiChatSlot
