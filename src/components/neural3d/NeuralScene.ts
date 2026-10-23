@@ -685,7 +685,6 @@ export class NeuralScene {
         /* ignore */
       }
     }
-    void rect;
   };
 
   private onPointerMove = (event: PointerEvent) => {
