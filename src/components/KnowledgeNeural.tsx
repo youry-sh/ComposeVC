@@ -22,7 +22,7 @@ const KnowledgeNeural: React.FC<Props> = ({ chunks, onBack, onOpen }) => {
   const onOpenRef = useRef(onOpen);
   onOpenRef.current = onOpen;
 
-  const [showLinks, setShowLinks] = useState(false);
+  const [showLinks, setShowLinks] = useState(true);
   const [hover, setHover] = useState<NeuralHoverInfo | null>(null);
   const [status, setStatus] = useState<"idle" | "building" | "ready" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -134,6 +134,8 @@ const KnowledgeNeural: React.FC<Props> = ({ chunks, onBack, onOpen }) => {
           className="knowledge-neural-card"
           style={{ left: card?.left, top: card?.top }}
           onClick={openHovered}
+          onPointerEnter={() => sceneRef.current?.setHoverHold(true)}
+          onPointerLeave={() => sceneRef.current?.setHoverHold(false)}
           role="button"
           tabIndex={0}
           onKeyDown={(event) => {

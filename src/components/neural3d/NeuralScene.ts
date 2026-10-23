@@ -980,74 +980,81 @@ function quad(o: [number, number, number], c: [number, number, number], p: [numb
   return [a * o[0] + b * c[0] + d * p[0], a * o[1] + b * c[1] + d * p[1], a * o[2] + b * c[2] + d * p[2]];
 }
 
-function buildStrandPositions(graph: NeuralGraph, index: number): Float32Array {
+function writeStrand(
+  graph: NeuralGraph,
+  index: number,
+  segments: number,
+  position: Float32Array,
+  aT: Float32Array,
+  aSeed: Float32Array,
+  aColor: Float32Array,
+  base: number
+) {
   const px = graph.positions[index * 3];
   const py = graph.positions[index * 3 + 1];
   const pz = graph.positions[index * 3 + 2];
   const c = strandControl(index, px, py, pz);
-  const out = new Float32Array(STRAND_SEGMENTS * 2 * 3);
+  const seed = hashUnit(index, 0x5eed);
+  const cr = graph.colors[index * 3];
+  const cg = graph.colors[index * 3 + 1];
+  const cb = graph.colors[index * 3 + 2];
   const o: [number, number, number] = [0, 0, 0];
   const p: [number, number, number] = [px, py, pz];
-  for (let s = 0; s < STRAND_SEGMENTS; s += 1) {
-    const t0 = s / STRAND_SEGMENTS;
-    const t1 = (s + 1) / STRAND_SEGMENTS;
+  for (let s = 0; s < segments; s += 1) {
+    const t0 = s / segments;
+    const t1 = (s + 1) / segments;
     const a = quad(o, c, p, t0);
     const b = quad(o, c, p, t1);
-    out[s * 6] = a[0];
-    out[s * 6 + 1] = a[1];
-    out[s * 6 + 2] = a[2];
-    out[s * 6 + 3] = b[0];
-    out[s * 6 + 4] = b[1];
-    out[s * 6 + 5] = b[2];
+    const v = (base + s * 2) * 3;
+    position[v] = a[0];
+    position[v + 1] = a[1];
+    position[v + 2] = a[2];
+    position[v + 3] = b[0];
+    position[v + 4] = b[1];
+    position[v + 5] = b[2];
+    aT[base + s * 2] = t0;
+    aT[base + s * 2 + 1] = t1;
+    aSeed[base + s * 2] = seed;
+    aSeed[base + s * 2 + 1] = seed;
+    const w = (base + s * 2) * 3;
+    aColor[w] = cr;
+    aColor[w + 1] = cg;
+    aColor[w + 2] = cb;
+    aColor[w + 3] = cr;
+    aColor[w + 4] = cg;
+    aColor[w + 5] = cb;
   }
-  return out;
 }
 
 function buildStrandGeometry(graph: NeuralGraph): THREE.BufferGeometry {
   const n = graph.count;
-  const vCount = n * STRAND_SEGMENTS * 2;
+  const segments = strandSegments(n);
+  const vCount = n * segments * 2;
   const position = new Float32Array(vCount * 3);
   const aT = new Float32Array(vCount);
   const aSeed = new Float32Array(vCount);
   const aColor = new Float32Array(vCount * 3);
 
   for (let i = 0; i < n; i += 1) {
-    const px = graph.positions[i * 3];
-    const py = graph.positions[i * 3 + 1];
-    const pz = graph.positions[i * 3 + 2];
-    const c = strandControl(i, px, py, pz);
-    const seed = hashUnit(i, 0x5eed);
-    const cr = graph.colors[i * 3];
-    const cg = graph.colors[i * 3 + 1];
-    const cb = graph.colors[i * 3 + 2];
-    const o: [number, number, number] = [0, 0, 0];
-    const p: [number, number, number] = [px, py, pz];
-    const base = i * STRAND_SEGMENTS * 2;
-    for (let s = 0; s < STRAND_SEGMENTS; s += 1) {
-      const t0 = s / STRAND_SEGMENTS;
-      const t1 = (s + 1) / STRAND_SEGMENTS;
-      const a = quad(o, c, p, t0);
-      const b = quad(o, c, p, t1);
-      const v = (base + s * 2) * 3;
-      position[v] = a[0];
-      position[v + 1] = a[1];
-      position[v + 2] = a[2];
-      position[v + 3] = b[0];
-      position[v + 4] = b[1];
-      position[v + 5] = b[2];
-      aT[base + s * 2] = t0;
-      aT[base + s * 2 + 1] = t1;
-      aSeed[base + s * 2] = seed;
-      aSeed[base + s * 2 + 1] = seed;
-      const w = (base + s * 2) * 3;
-      aColor[w] = cr;
-      aColor[w + 1] = cg;
-      aColor[w + 2] = cb;
-      aColor[w + 3] = cr;
-      aColor[w + 4] = cg;
-      aColor[w + 5] = cb;
-    }
+    writeStrand(graph, i, segments, position, aT, aSeed, aColor, i * segments * 2);
   }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.BufferAttribute(position, 3));
+  geo.setAttribute("aT", new THREE.BufferAttribute(aT, 1));
+  geo.setAttribute("aSeed", new THREE.BufferAttribute(aSeed, 1));
+  geo.setAttribute("aColor", new THREE.BufferAttribute(aColor, 3));
+  return geo;
+}
+
+function buildSingleStrandGeometry(graph: NeuralGraph, index: number): THREE.BufferGeometry {
+  const segments = strandSegments(graph.count);
+  const vCount = segments * 2;
+  const position = new Float32Array(vCount * 3);
+  const aT = new Float32Array(vCount);
+  const aSeed = new Float32Array(vCount);
+  const aColor = new Float32Array(vCount * 3);
+  writeStrand(graph, index, segments, position, aT, aSeed, aColor, 0);
 
   const geo = new THREE.BufferGeometry();
   geo.setAttribute("position", new THREE.BufferAttribute(position, 3));
@@ -1065,21 +1072,74 @@ function buildNodeGeometry(graph: NeuralGraph): THREE.BufferGeometry {
   return geo;
 }
 
+function edgeControl(e: number, ax: number, ay: number, az: number, bx: number, by: number, bz: number): [number, number, number] {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const dz = bz - az;
+  const len = Math.hypot(dx, dy, dz) || 1;
+  const px = Math.sin(e * 12.9898) * 43758.5453;
+  const py = Math.cos(e * 78.233) * 12543.765;
+  const pz = Math.sin(e * 37.719) * 39773.51;
+  let nx = dy * pz - dz * py;
+  let ny = dz * px - dx * pz;
+  let nz = dx * py - dy * px;
+  const nl = Math.hypot(nx, ny, nz);
+  if (nl < 1e-4) {
+    nx = 1;
+    ny = 0;
+    nz = 0;
+  } else {
+    nx /= nl;
+    ny /= nl;
+    nz /= nl;
+  }
+  const bend = len * 0.06;
+  return [(ax + bx) / 2 + nx * bend, (ay + by) / 2 + ny * bend, (az + bz) / 2 + nz * bend];
+}
+
 function buildEdgeGeometry(graph: NeuralGraph): THREE.BufferGeometry {
-  const vCount = graph.edgeCount * 2;
+  const SEGS = 2;
+  const vCount = graph.edgeCount * SEGS * 2;
   const position = new Float32Array(vCount * 3);
+  const color = new Float32Array(vCount * 3);
   for (let e = 0; e < graph.edgeCount; e += 1) {
     const a = graph.edges[e * 2];
     const b = graph.edges[e * 2 + 1];
-    position[e * 6] = graph.positions[a * 3];
-    position[e * 6 + 1] = graph.positions[a * 3 + 1];
-    position[e * 6 + 2] = graph.positions[a * 3 + 2];
-    position[e * 6 + 3] = graph.positions[b * 3];
-    position[e * 6 + 4] = graph.positions[b * 3 + 1];
-    position[e * 6 + 5] = graph.positions[b * 3 + 2];
+    const ax = graph.positions[a * 3];
+    const ay = graph.positions[a * 3 + 1];
+    const az = graph.positions[a * 3 + 2];
+    const bx = graph.positions[b * 3];
+    const by = graph.positions[b * 3 + 1];
+    const bz = graph.positions[b * 3 + 2];
+    const c = edgeControl(e, ax, ay, az, bx, by, bz);
+    const cr = graph.colors[a * 3];
+    const cg = graph.colors[a * 3 + 1];
+    const cb = graph.colors[a * 3 + 2];
+    const o: [number, number, number] = [ax, ay, az];
+    const p: [number, number, number] = [bx, by, bz];
+    const base = e * SEGS * 2;
+    for (let s = 0; s < SEGS; s += 1) {
+      const t0 = s / SEGS;
+      const t1 = (s + 1) / SEGS;
+      const pa = quad(o, c, p, t0);
+      const pb = quad(o, c, p, t1);
+      const v = (base + s * 2) * 3;
+      position[v] = pa[0];
+      position[v + 1] = pa[1];
+      position[v + 2] = pa[2];
+      position[v + 3] = pb[0];
+      position[v + 4] = pb[1];
+      position[v + 5] = pb[2];
+      color[v] = cr;
+      color[v + 1] = cg;
+      color[v + 2] = cb;
+      color[v + 3] = cr;
+      color[v + 4] = cg;
+      color[v + 5] = cb;
+    }
   }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute("position", new THREE.BufferAttribute(position, 3));
-  geo.setAttribute("color", new THREE.BufferAttribute(graph.edgeColors, 3));
+  geo.setAttribute("color", new THREE.BufferAttribute(color, 3));
   return geo;
 }
