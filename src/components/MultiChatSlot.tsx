@@ -2454,6 +2454,7 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
           messages: [...live.messages, errMsg],
           contextTokens: live.contextTokens,
           agentTodos: live.agentTodos || [],
+          labInPackage: live.labInPackage,
           compacting: false,
         });
       }
@@ -2463,7 +2464,6 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
       markSessionRunning(runSessionId, false);
       if (isViewingRunSession()) {
         setRetryInfo(null);
-        setLabInPackage(null);
         setAgentStatusLabel(null);
         // Always drop compact spinner on turn end (success, fail, abort).
         setCompacting(false);
@@ -2474,7 +2474,6 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
             compacting: false,
             retryInfo: null,
             agentStatusLabel: null,
-            labInPackage: null,
           });
         }
       } else {
