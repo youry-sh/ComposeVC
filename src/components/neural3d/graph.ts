@@ -76,57 +76,71 @@ export interface NeuralGraph {
   /** edgeCount*2 node indices (a, b). */
   edges: Uint32Array;
   edgeCount: number;
-  /** edgeCount*2*3 per-vertex rgb (both endpoints same lane colour). */
-  edgeColors: Float32Array;
   /** Undirected adjacency (for edge/strand highlight on hover). */
   adjOff: Uint32Array;
   adjTo: Uint32Array;
 }
 
-/** Deform a unit-sphere point into a recognizable brain silhouette. */
+/**
+ * Deform a unit-sphere direction into a brain silhouette whose radius varies
+ * by direction (wide left-right, tall, shallow front-back, with frontal/occipital
+ * and cerebellum asymmetry). The result is NOT normalized so the point cloud
+ * reads as a brain rather than a sphere.
+ */
 function shapeBrain(px: number, py: number, pz: number): [number, number, number] {
-  let x = px * 1.16; // left-right widest
-  let y = py * 1.04; // vertical
-  let z = pz * 0.8; // front-back narrowest
+  // Base ellipsoid: widest left-right, tall, shallow front-back.
+  let x = px * 1.18;
+  let y = py * 1.05;
+  let z = pz * 0.82;
 
-  // Longitudinal fissure: groove at the midline separates the hemispheres,
-  // deepest toward the front (z>0).
+  // Longitudinal fissure: push the hemispheres apart near the midline,
+  // deepest at the top/front.
   const mid = 1 - Math.abs(px);
-  const fissure = 0.15 * (0.55 + 0.45 * Math.max(0, pz));
+  const fissure = 0.1 * (0.4 + 0.6 * Math.max(0, pz)) * (0.3 + 0.7 * Math.max(0, py));
   x += Math.sign(px || 1) * fissure * mid * mid;
+
+  // Frontal lobe: extend the anterior (z>0) toward the top.
+  if (pz > 0) z += 0.1 * pz * (0.5 + 0.5 * py);
+
+  // Occipital: taper the posterior (z<0), more so at the base.
+  if (pz < 0) z *= 1 - 0.16 * Math.max(0, -py);
 
   // Cerebellum: bulge tucked under the back-bottom of the skull.
   if (pz < 0 && py < 0) {
-    const w = Math.min(1, Math.abs(pz) / 0.85) * Math.min(1, Math.abs(py) / 0.85);
-    z -= 0.2 * w;
+    const w = Math.min(1, Math.abs(pz) / 0.8) * Math.min(1, Math.abs(py) / 0.8);
+    z -= 0.18 * w;
     y -= 0.1 * w;
   }
 
-  // Slightly flatten the crown and base for an organic skull profile.
-  y *= 1 - 0.05 * Math.pow(Math.abs(py), 3);
+  // Flatten the crown and base for an organic profile.
+  y *= 1 - 0.06 * Math.pow(Math.abs(py), 3);
 
   return [x, y, z];
 }
 
+/** Stable, deterministic unit direction for a chunk id (so add/remove doesn't move others). */
+function directionFromId(id: string): [number, number, number] {
+  const h = hashText(id);
+  const py = hashUnit(h, 0xbeef) * 2 - 1;
+  const theta = hashUnit(h, 0xcafe) * Math.PI * 2;
+  const s = Math.sqrt(Math.max(0, 1 - py * py));
+  return [Math.cos(theta) * s, py, Math.sin(theta) * s];
+}
+
 export function brainLayout(
-  n: number,
+  ids: string[],
   positions: Float32Array,
   sizes: Float32Array,
   degree: ArrayLike<number>
 ) {
-  const golden = Math.PI * (3 - Math.sqrt(5));
-  for (let i = 0; i < n; i += 1) {
-    const u = n <= 1 ? 0.5 : i / (n - 1);
-    const py = 1 - u * 2;
-    const pr = Math.sqrt(Math.max(0, 1 - py * py));
-    const theta = golden * i + 2.7;
-    const [x, y, z] = shapeBrain(Math.cos(theta) * pr, py, Math.sin(theta) * pr);
-    const len = Math.hypot(x, y, z) || 1;
-    const jitter = 1 + (hashUnit(i, 0x1234) - 0.5) * 0.1;
+  for (let i = 0; i < ids.length; i += 1) {
+    const [px, py, pz] = directionFromId(ids[i]);
+    const [x, y, z] = shapeBrain(px, py, pz);
+    const jitter = 1 + (hashUnit(hashText(ids[i]), 0x1234) - 0.5) * 0.1;
     const r = BRAIN_RADIUS * jitter;
-    positions[i * 3] = (x / len) * r;
-    positions[i * 3 + 1] = (y / len) * r;
-    positions[i * 3 + 2] = (z / len) * r;
+    positions[i * 3] = x * r;
+    positions[i * 3 + 1] = y * r;
+    positions[i * 3 + 2] = z * r;
     sizes[i] = 2.4 + Math.min(5, degree[i] || 0) * 0.5;
   }
 }
