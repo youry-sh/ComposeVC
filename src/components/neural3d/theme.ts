@@ -26,26 +26,3 @@ export function readThemeColors(): NeuralThemeColors {
     accent: get("--accent", "#e8e8e8"),
   };
 }
-
-/** Parse #rgb / #rrggbb into 0..1 rgb (throws is handled by callers via try). */
-export function hexToRgb01(hex: string): [number, number, number] {
-  let value = hex.trim().replace(/^#/, "");
-  if (value.length === 3) {
-    value = value
-      .split("")
-      .map((c) => c + c)
-      .join("");
-  }
-  const int = parseInt(value.slice(0, 6), 16);
-  if (Number.isNaN(int)) return [1, 1, 1];
-  return [((int >> 16) & 255) / 255, ((int >> 8) & 255) / 255, (int & 255) / 255];
-}
-
-/** Prefers-reduced-motion, read live (matches CSS media query semantics). */
-export function prefersReducedMotion(): boolean {
-  try {
-    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  } catch {
-    return false;
-  }
-}
