@@ -27,13 +27,27 @@ const THEME_PALETTES = {
     bar: "#e8e8e8",
     shadow: "0 12px 32px rgba(0, 0, 0, 0.55)",
   },
+  winter: {
+    surface: "#0a1119",
+    surface2: "#0e1620",
+    border: "#1a2431",
+    borderStrong: "#29384a",
+    text: "#e6eef5",
+    muted: "#6e8195",
+    dim: "#93a6b8",
+    accent: "#8fd3ff",
+    accentSoft: "rgba(143, 211, 255, 0.10)",
+    accentBorder: "rgba(143, 211, 255, 0.22)",
+    bar: "#8fd3ff",
+    shadow: "0 12px 32px rgba(2, 6, 12, 0.6)",
+  },
 };
 
-function resolvePalette(_theme) {
-  // The IDE is a single monochrome theme ("mono"). Every incoming theme key
-  // (ink / signal-black / ember / mono) resolves to the same neutral palette
-  // so the toast always matches the app chrome — no coloured accents.
-  return THEME_PALETTES.mono;
+function resolvePalette(theme) {
+  // Resolve the native toast palette from the incoming theme key. Known keys
+  // map to their matching palette; unknown/legacy keys (ink / signal-black /
+  // ember) fall back to the neutral mono palette so the toast always matches.
+  return THEME_PALETTES[theme] || THEME_PALETTES.mono;
 }
 
 function clearTimers() {
