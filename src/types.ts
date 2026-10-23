@@ -367,6 +367,17 @@ export interface TodoItem {
 }
 
 
+/** LAB-IN knowledge package handed to the main agent (what it found + the refined prompt). */
+export interface LabInPackage {
+  /** Researched shared-memory knowledge handed to the neural network. */
+  knowledgePackage: string;
+  /** Improved execution prompt produced by the LAB-IN prompt refiner. */
+  refinedPrompt: string;
+  chunkCount?: number;
+  truncated?: boolean;
+  coverage?: boolean;
+}
+
 export interface AgentToolProgress {
   type:
     | "tool_start"
@@ -385,7 +396,8 @@ export interface AgentToolProgress {
     | "ask_user"
     | "ask_otp"
     | "status"
-    | "work_timer";
+    | "work_timer"
+    | "lab_in_package";
   toolCallId?: string;
   name?: string;
   text?: string;
@@ -394,6 +406,8 @@ export interface AgentToolProgress {
   /** Human-readable status line. */
   label?: string;
   phase?: string;
+  /** LAB-IN package handoff (knowledge package + refined prompt) for the live "view" button. */
+  labInPackage?: LabInPackage;
   /** Thinking-max metadata. Raw private reasoning is never sent to the UI. */
   processId?: string;
   tokenDelta?: number;
