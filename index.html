@@ -9,15 +9,15 @@
     <!-- Apply theme before paint to avoid flash -->
     <script>
       (function () {
-        var allowed = { ink: 1, "signal-black": 1, ember: 1 };
+        var allowed = { mono: 1, winter: 1, neon: 1 };
         var light = {};
         try {
           var t = localStorage.getItem("lopster-theme");
-          if (!allowed[t]) t = "ink";
+          if (!allowed[t]) t = "mono";
           document.documentElement.setAttribute("data-theme", t);
           document.documentElement.style.colorScheme = light[t] ? "light" : "dark";
         } catch (e) {
-          document.documentElement.setAttribute("data-theme", "ink");
+          document.documentElement.setAttribute("data-theme", "mono");
           document.documentElement.style.colorScheme = "dark";
         }
       })();

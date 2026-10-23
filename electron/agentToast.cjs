@@ -41,6 +41,20 @@ const THEME_PALETTES = {
     bar: "#9db9cb",
     shadow: "0 12px 32px rgba(3, 6, 9, 0.6)",
   },
+  neon: {
+    surface: "#1a251f",
+    surface2: "#1e2a24",
+    border: "#2a3a32",
+    borderStrong: "#365447",
+    text: "#eef4f0",
+    muted: "#7b9187",
+    dim: "#9cb0a5",
+    accent: "#ff4d9d",
+    accentSoft: "rgba(255, 77, 157, 0.10)",
+    accentBorder: "rgba(255, 77, 157, 0.26)",
+    bar: "#ff4d9d",
+    shadow: "0 12px 32px rgba(5, 10, 8, 0.65)",
+  },
 };
 
 function resolvePalette(theme) {

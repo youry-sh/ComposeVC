@@ -6,7 +6,7 @@
  * Tailwind `ink-*` / `status-*` / `accent` map to those variables.
  */
 
-export type ThemeId = "mono" | "winter";
+export type ThemeId = "mono" | "winter" | "neon";
 
 export type ThemeMeta = {
   id: ThemeId;
@@ -34,6 +34,13 @@ export const THEMES: ThemeMeta[] = [
     description: "Морозный сумрак — приглушённый стальной иней без резких бликов.",
     type: "dark",
     swatches: ["#080b0f", "#121a21", "#9db9cb", "#dfe7ed"],
+  },
+  {
+    id: "neon",
+    name: "Неон",
+    description: "Хвойный #365447 с неоново-розовым акцентом и пепельно-серыми деталями.",
+    type: "dark",
+    swatches: ["#16201b", "#365447", "#7b9187", "#ff4d9d"],
   },
 ];
 
