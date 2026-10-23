@@ -196,6 +196,16 @@ const DocsWorkspace: React.FC = () => {
               <span>{selectedId || "no section selected"}</span>
             </div>
           </div>
+          <button
+            type="button"
+            className={`docs-copy-all${copiedAll ? " is-copied" : ""}`}
+            onClick={() => void handleCopyAll()}
+            disabled={copyingAll}
+            title="Скопировать всю документацию одним Markdown-файлом"
+          >
+            {copiedAll ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+            <span>{copiedAll ? "Copied" : copyingAll ? "Copying…" : "Copy all"}</span>
+          </button>
         </header>
 
         <ChatMonoScroll className="docs-content">
