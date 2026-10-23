@@ -236,6 +236,7 @@ const KnowledgeWorkspace: React.FC<KnowledgeWorkspaceProps> = ({ rootPath = null
     setSaving(true);
     setError(null);
     setNotice(null);
+    setNoticeDetail("");
     const payload = {
       title,
       content,

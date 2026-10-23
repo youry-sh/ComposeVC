@@ -10986,7 +10986,16 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   letter-spacing: .06em;
   text-transform: uppercase;
 }
-.knowledge-toolbar-actions { display: flex; flex: none; align-items: center; gap: 6px; }
+.knowledge-toolbar { flex-wrap: wrap; }
+.knowledge-toolbar-actions {
+  display: flex;
+  min-width: 0;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
 .knowledge-view-toggle {
   display: flex;
   align-items: center;
