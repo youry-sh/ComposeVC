@@ -3744,12 +3744,15 @@ ipcMain.handle("knowledge:import", async (event, payload = {}) => {
   if (!zipPath) {
     const win = BrowserWindow.fromWebContents(event.sender);
     const parent = win && !win.isDestroyed() ? win : mainWindow;
-    const picked = await dialog.showOpenDialog(parent, {
+    const options = {
       title: "Import knowledge archive",
       buttonLabel: "Import ZIP",
       properties: ["openFile"],
       filters: [{ name: "ZIP archive", extensions: ["zip"] }],
-    });
+    };
+    const picked = parent
+      ? await dialog.showOpenDialog(parent, options)
+      : await dialog.showOpenDialog(options);
     if (picked.canceled || !picked.filePaths?.[0]) return { canceled: true };
     zipPath = picked.filePaths[0];
   }
