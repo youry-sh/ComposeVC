@@ -931,6 +931,7 @@ export class NeuralScene {
     this.strandMaterial.dispose();
     this.nodeMaterial.dispose();
     this.edgeMaterial.dispose();
+    this.highlightStrandMaterial.dispose();
 
     this.renderer.dispose();
     try {
