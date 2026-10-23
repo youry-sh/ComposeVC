@@ -47,7 +47,7 @@ function hashUnit(index: number, salt: number) {
   let h = Math.imul(index + 1, 0x9e3779b1) ^ Math.imul(salt + 1, 0x85ebca6b);
   h = Math.imul(h ^ (h >>> 16), 0x7feb352d);
   h = Math.imul(h ^ (h >>> 15), 0x846ca68b);
-  return ((h >>> 16) ^ h) >>> 0 / 4294967296;
+  return (((h >>> 16) ^ h) >>> 0) / 4294967296;
 }
 
 function laneOf(chunk: KnowledgeChunkSummary) {
@@ -229,8 +229,6 @@ export async function buildNeuralGraph(
   }
 
   const edges = new Uint32Array(edgeCount * 2);
-  edges.set(rawFrom.subarray(0, edgeCount * 2));
-  // rawFrom/rawTo are interleaved already as [a0,b0,a1,b1,…], so build from both:
   for (let e = 0; e < edgeCount; e += 1) {
     edges[e * 2] = rawFrom[e];
     edges[e * 2 + 1] = rawTo[e];
