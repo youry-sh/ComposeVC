@@ -18,7 +18,7 @@ const path = require("path");
 
 const STORE_VERSION = 1;
 /** Bump to re-write the built-in starter sections on the next launch. */
-const SEED_VERSION = 11;
+const SEED_VERSION = 12;
 const MAX_TITLE_CHARS = 200;
 const MAX_SUMMARY_CHARS = 320;
 
@@ -192,6 +192,27 @@ async function deleteDocsSection(userDataPath, id) {
     sections: manifest.sections.filter((entry) => entry.id !== id),
   });
   return { deleted: true, id };
+}
+
+/** Every section with its full body, ordered — used for the "copy all" export. */
+async function getAllDocs(userDataPath) {
+  const manifest = await readManifest(userDataPath);
+  const sections = [];
+  for (const entry of manifest.sections) {
+    let content = "";
+    try {
+      content = await readSectionContent(userDataPath, entry);
+    } catch {
+      content = "";
+    }
+    sections.push({ ...entry, content });
+  }
+  return {
+    version: manifest.version,
+    sectionCount: sections.length,
+    updatedAt: manifest.updatedAt,
+    sections,
+  };
 }
 
 /* ───────────────────────────── Seed content ───────────────────────────── */
@@ -1455,6 +1476,7 @@ module.exports = {
   readManifest,
   listDocs,
   getDocsSection,
+  getAllDocs,
   upsertDocsSection,
   deleteDocsSection,
   seedIfEmpty,
