@@ -11037,6 +11037,103 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   color: var(--ink-0, #fff);
   border-color: var(--ink-950);
 }
+.knowledge-neural { overflow: hidden; }
+.knowledge-neural-hint {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  z-index: 2;
+  display: flex;
+  gap: 14px;
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.42);
+  color: var(--ink-500);
+  font: 10px/1 var(--terminal-font);
+  pointer-events: none;
+  white-space: nowrap;
+}
+.knowledge-neural-hint span + span::before {
+  content: "·";
+  margin-right: 14px;
+  color: var(--border-strong);
+}
+.knowledge-neural-status {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--ink-500);
+  font: 12px/1.5 var(--terminal-font);
+  pointer-events: none;
+}
+.knowledge-neural-status small { color: var(--ink-600); font-size: 11px; }
+.knowledge-neural-status.is-error span { color: #f0b9b9; }
+.knowledge-neural-spin {
+  animation: knowledge-neural-spin 1s linear infinite;
+  color: var(--accent);
+}
+@keyframes knowledge-neural-spin { to { transform: rotate(360deg); } }
+.knowledge-neural-card {
+  position: absolute;
+  z-index: 3;
+  width: 240px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--surface);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.55);
+  transform: translate(-50%, -130%);
+  cursor: pointer;
+}
+.knowledge-neural-card::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 10px;
+  height: 10px;
+  transform: translateX(-50%) rotate(45deg);
+  background: var(--surface);
+  border-right: 1px solid var(--border-strong);
+  border-bottom: 1px solid var(--border-strong);
+}
+.knowledge-neural-card-title {
+  color: var(--ink-950);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.knowledge-neural-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+.knowledge-neural-card-tag {
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--ink-500);
+  font: 10px/1 var(--terminal-font);
+}
+.knowledge-neural-card-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  color: var(--ink-600);
+  font: 10px/1 var(--terminal-font);
+}
+.knowledge-neural-card-open { color: var(--accent); }
 
 .knowledge-sidebar > footer span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
