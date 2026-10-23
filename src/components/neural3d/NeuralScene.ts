@@ -33,11 +33,11 @@ export interface NeuralSceneOptions {
   onHover: (info: NeuralHoverInfo | null) => void;
 }
 
-const CUBE_EDGE = 320;
-const SPHERE_ORBIT = 66;
-const SPHERE_RADIUS = 34;
-const RING_OUTER = 78;
-const RING_INNER = 46;
+const CUBE_EDGE = 200;
+const SPHERE_ORBIT = 42;
+const SPHERE_RADIUS = 24;
+const RING_OUTER = 54;
+const RING_INNER = 34;
 
 /** Fewer strand segments at large node counts keeps geometry build + upload light. */
 function strandSegments(count: number) {
@@ -237,7 +237,7 @@ export class NeuralScene {
       const pos = new Float32Array(count * 3);
       for (let i = 0; i < count; i += 1) {
         const a = hashUnit(i, 0x9a1) * Math.PI * 2;
-        const r = SPHERE_RADIUS * (1.6 + hashUnit(i, 0x9b2) * 1.4);
+        const r = SPHERE_RADIUS * (1.2 + hashUnit(i, 0x9b2) * 0.9);
         pos[i * 3] = Math.cos(a) * r;
         pos[i * 3 + 1] = Math.sin(a) * r * 0.55;
         pos[i * 3 + 2] = Math.sin(a * 0.7) * r;
