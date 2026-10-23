@@ -129,6 +129,7 @@ export class NeuralScene {
   private hoverHold = false;
   private multiTouch = false;
   private gestureMoved = false;
+  private lastWheelEmit = 0;
 
   private time = 0;
   private lastFrame = 0;
@@ -842,6 +843,14 @@ export class NeuralScene {
   private onWheel = (event: WheelEvent) => {
     event.preventDefault();
     this.targetRadius = clamp(this.targetRadius * Math.exp(event.deltaY * 0.0011), ZOOM_MIN, ZOOM_MAX);
+    // Re-anchor the hover card (throttled) so it tracks the node during zoom.
+    if (this.hovered >= 0) {
+      const now = performance.now();
+      if (now - this.lastWheelEmit > 100) {
+        this.lastWheelEmit = now;
+        this.emitHover();
+      }
+    }
   };
 
   private onContextMenu = (event: MouseEvent) => {
