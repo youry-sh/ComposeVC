@@ -31,9 +31,9 @@ export const THEMES: ThemeMeta[] = [
   {
     id: "winter",
     name: "Зима",
-    description: "Морозная арктическая ночь — лёд, снег и голубой иней.",
+    description: "Морозный сумрак — приглушённый стальной иней без резких бликов.",
     type: "dark",
-    swatches: ["#060b12", "#0e1620", "#8fd3ff", "#e6eef5"],
+    swatches: ["#080b0f", "#121a21", "#9db9cb", "#dfe7ed"],
   },
 ];
 
