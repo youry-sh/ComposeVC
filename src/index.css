@@ -9343,26 +9343,26 @@
 }
 .sphere-ring-outer {
   fill: none;
-  stroke: #f2b34d;
+  stroke: var(--border-strong);
   stroke-width: 2;
   opacity: 0.9;
 }
 .sphere-ring-inner {
   fill: none;
-  stroke: #ffd88a;
+  stroke: var(--border);
   stroke-width: 1;
-  opacity: 0.55;
+  opacity: 0.6;
 }
 .sphere-tick {
-  stroke: #ffd88a;
+  stroke: var(--ink-500);
   stroke-width: 1;
-  opacity: 0.5;
+  opacity: 0.6;
 }
 .sphere-ring-orb {
-  fill: #ffffff;
+  fill: var(--ink-950);
 }
 .sphere-glyph {
-  fill: #ffd88a;
+  fill: var(--ink-950);
   font: 600 12px "Noto Sans JP", "Yu Gothic", "Meiryo", serif;
   opacity: 0.95;
   animation: sb-glyph-pulse 6s ease-in-out infinite;
@@ -9378,7 +9378,7 @@
   animation: sb-orbit 7s linear infinite;
 }
 .sphere-dot {
-  fill: #ffffff;
+  fill: var(--ink-950);
   animation: sb-dot-pulse 7s ease-in-out infinite;
 }
 .sphere-dot--2 {
