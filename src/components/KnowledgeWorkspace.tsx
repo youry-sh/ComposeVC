@@ -275,6 +275,7 @@ const KnowledgeWorkspace: React.FC<KnowledgeWorkspaceProps> = ({ rootPath = null
         setSavedSnapshot(snapshot(next));
         await fetchCatalog();
         setNotice("Chunk saved");
+        setNoticeDetail("");
       }
       setDeleteConfirm(false);
     } catch (cause) {
@@ -307,6 +308,7 @@ const KnowledgeWorkspace: React.FC<KnowledgeWorkspaceProps> = ({ rootPath = null
       await window.lopster?.knowledgeDelete?.(selectedId);
       const result = await fetchCatalog();
       setNotice("Chunk deleted; its Markdown file was moved to the knowledge trash folder");
+      setNoticeDetail("");
       setDeleteConfirm(false);
       if (result.chunks[0]) {
         await readChunk(result.chunks[0].id);
@@ -329,6 +331,7 @@ const KnowledgeWorkspace: React.FC<KnowledgeWorkspaceProps> = ({ rootPath = null
       await fetchCatalog();
       if (selectedId && !isDirty) await readChunk(selectedId);
       setNotice("Knowledge catalog refreshed");
+      setNoticeDetail("");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
     } finally {
