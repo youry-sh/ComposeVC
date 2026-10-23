@@ -203,10 +203,11 @@ export class NeuralScene {
     this.scene.add(this.sphere);
 
     this.ringGroup = new THREE.Group();
+    this.ringTexture = buildMagicCircleTexture();
     this.ringMesh = new THREE.Mesh(
       new THREE.RingGeometry(RING_INNER, RING_OUTER, 96, 1),
       new THREE.MeshBasicMaterial({
-        map: buildMagicCircleTexture(),
+        map: this.ringTexture,
         transparent: true,
         depthWrite: false,
         side: THREE.DoubleSide,
