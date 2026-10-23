@@ -1349,6 +1349,9 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
       ...emptyLiveState(),
       messages,
       contextTokens,
+      // Keep the LAB-IN "view what was found" button available after a turn ends,
+      // across chat switches, until the next request is sent.
+      labInPackage: existing?.labInPackage || null,
     });
   };
 
