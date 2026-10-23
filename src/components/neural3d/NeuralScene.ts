@@ -375,6 +375,7 @@ export class NeuralScene {
     canvas.addEventListener("pointermove", this.onPointerMove);
     canvas.addEventListener("pointerup", this.onPointerUp);
     canvas.addEventListener("pointercancel", this.onPointerUp);
+    canvas.addEventListener("pointerleave", this.onPointerLeave);
     canvas.addEventListener("wheel", this.onWheel, { passive: false });
     canvas.addEventListener("contextmenu", this.onContextMenu);
     canvas.addEventListener("dblclick", this.onDoubleClick);
@@ -836,6 +837,7 @@ export class NeuralScene {
       this.scene.remove(obj);
       disposeObject(obj);
     }
+    this.ringTexture.dispose();
     this.strandMaterial.dispose();
     this.nodeMaterial.dispose();
     this.edgeMaterial.dispose();
