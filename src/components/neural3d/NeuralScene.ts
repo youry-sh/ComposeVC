@@ -749,6 +749,15 @@ export class NeuralScene {
       this.pendingPick = { x: event.clientX, y: event.clientY };
       this.needsPick = true;
     }
+    // Re-anchor the hover card after a drag ended (camera has moved).
+    if (this.hovered >= 0) this.emitHover();
+  };
+
+  private onPointerLeave = () => {
+    if (this.dragMode) return;
+    this.pendingPick = null;
+    this.needsPick = false;
+    this.setHover(-1);
   };
 
   private onWheel = (event: WheelEvent) => {
