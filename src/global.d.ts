@@ -25,7 +25,7 @@ type SizeworkoutUpdate = {
   payload?: unknown;
 };
 
-import { AgentToolProgress, CfMailConfig, ChatExecutionRequest, ChatExecutionResponse, ChatMessage, ChatRequestMessage, ChatSession, ChatSessionPage, ChatSessionSummary, CompactChatRequest, CompactChatResponse, FileNode, KnowledgeChunk, KnowledgeChunkSummary, KnowledgeListResponse, ProblemItem, ProjectSearchResult, ProjectTask, ProviderConfig, RunnerJob, RunnerReport, RunnerReportSummary } from "./types";
+import { AgentToolProgress, CfMailConfig, ChatExecutionRequest, ChatExecutionResponse, ChatMessage, ChatRequestMessage, ChatSession, ChatSessionPage, ChatSessionSummary, CompactChatRequest, CompactChatResponse, FileNode, KnowledgeChunk, KnowledgeChunkSummary, KnowledgeExportResult, KnowledgeImportCanceled, KnowledgeImportResult, KnowledgeListResponse, ProblemItem, ProjectSearchResult, ProjectTask, ProviderConfig, RunnerJob, RunnerReport, RunnerReportSummary } from "./types";
 
 /** Snapshot of a chat folder's repository — see electron/gitService.cjs */
 export type GitStatus =
@@ -404,6 +404,10 @@ declare global {
         patch: { title?: string; content?: string; tags?: string[]; links?: string[]; source?: string }
       ) => Promise<KnowledgeChunkSummary>;
       knowledgeDelete: (id: string) => Promise<{ deleted: KnowledgeChunkSummary; trashPath: string }>;
+      knowledgeExport: (rootPath?: string | null) => Promise<KnowledgeExportResult>;
+      knowledgeImport: (
+        zipPath?: string | null
+      ) => Promise<KnowledgeImportResult | KnowledgeImportCanceled>;
       onKnowledgeChanged: (callback: (payload: {
         type?: "added" | "updated" | "deleted" | "changed" | string;
         chunk?: KnowledgeChunkSummary;

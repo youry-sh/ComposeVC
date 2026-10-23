@@ -137,6 +137,8 @@ contextBridge.exposeInMainWorld("lopster", {
   knowledgeCreate: (input) => ipcRenderer.invoke("knowledge:create", input || {}),
   knowledgeUpdate: (id, patch) => ipcRenderer.invoke("knowledge:update", id, patch || {}),
   knowledgeDelete: (id) => ipcRenderer.invoke("knowledge:delete", id),
+  knowledgeExport: (rootPath) => ipcRenderer.invoke("knowledge:export", { rootPath: rootPath || null }),
+  knowledgeImport: (zipPath) => ipcRenderer.invoke("knowledge:import", { zipPath: zipPath || null }),
   onKnowledgeChanged: (callback) => {
     const listener = (_event, payload) => callback(payload || { type: "changed" });
     ipcRenderer.on("knowledge:changed", listener);

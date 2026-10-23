@@ -125,8 +125,25 @@ async function writeManifest(userDataPath, manifest) {
     updatedAt: Date.now(),
     chunks: Array.isArray(manifest?.chunks) ? manifest.chunks.map(normalizeEntry).filter(Boolean) : [],
   };
-  await fs.promises.writeFile(paths.manifestPath, JSON.stringify(next, null, 2), "utf8");
+  await writeFileAtomic(paths.manifestPath, JSON.stringify(next, null, 2));
   return next;
+}
+
+/** Atomic JSON write: a crash can never leave a half-written manifest. */
+async function writeFileAtomic(filePath, data) {
+  const tmpPath = `${filePath}.${process.pid}.tmp`;
+  await fs.promises.writeFile(tmpPath, data, "utf8");
+  try {
+    await fs.promises.rename(tmpPath, filePath);
+  } catch (error) {
+    if (["EPERM", "EEXIST", "EACCES"].includes(error?.code)) {
+      await fs.promises.rm(filePath, { force: true }).catch(() => undefined);
+      await fs.promises.rename(tmpPath, filePath);
+      return;
+    }
+    await fs.promises.rm(tmpPath, { force: true }).catch(() => undefined);
+    throw error;
+  }
 }
 
 function withWriteLock(userDataPath, operation) {
@@ -645,6 +662,359 @@ async function knowledgeStats(userDataPath) {
   };
 }
 
+/* ── Archive snapshots (ZIP export / import) ──────────────────────────────── */
+
+function safeChild(root, relative) {
+  const resolvedRoot = path.resolve(root);
+  const target = path.resolve(resolvedRoot, String(relative || ""));
+  if (target !== resolvedRoot && !target.startsWith(resolvedRoot + path.sep)) {
+    throw new Error(`Archive path escapes the knowledge folder: ${relative}`);
+  }
+  return target;
+}
+
+function markerList(value) {
+  return normalizeStringList(value).filter((item) => item.toLowerCase() !== "(none)");
+}
+
+/** Parse a stored knowledge Markdown file (with or without the LAB-IN header). */
+function parseChunkFile(raw, fallbackId = "") {
+  const text = String(raw || "").replace(/\r\n?/g, "\n").trim();
+  const lines = text ? text.split("\n") : [];
+  let meta = {};
+  let markerLines = 0;
+  if (lines[0]?.includes("LAB-IN")) {
+    const start = lines[0].indexOf("{");
+    const end = lines[0].lastIndexOf("}");
+    if (start >= 0 && end > start) {
+      try {
+        meta = JSON.parse(lines[0].slice(start, end + 1)) || {};
+      } catch {
+        meta = {};
+      }
+    }
+    markerLines = 1;
+  }
+
+  const readField = (prefix) => {
+    const limit = Math.min(lines.length, markerLines + 10);
+    for (let index = markerLines; index < limit; index += 1) {
+      const line = lines[index];
+      if (line.startsWith(prefix)) return line.slice(prefix.length).trim();
+      const trimmed = line.trim();
+      if (
+        trimmed &&
+        !line.startsWith("# ") &&
+        !line.startsWith("Knowledge-ID:") &&
+        !line.startsWith("Tags:") &&
+        !line.startsWith("Links:") &&
+        !line.startsWith("Source:")
+      ) {
+        break;
+      }
+    }
+    return "";
+  };
+
+  const headingLine = lines[markerLines]?.startsWith("# ") ? lines[markerLines].slice(2).trim() : "";
+  const sourceIndex = lines.findIndex(
+    (line, index) => index >= markerLines && line.startsWith("Source:")
+  );
+
+  let content;
+  if (sourceIndex >= 0) {
+    content = lines.slice(sourceIndex + 1).join("\n").trim();
+  } else {
+    let start = markerLines;
+    if (lines[start]?.startsWith("# ")) start += 1;
+    while (start < lines.length) {
+      const line = lines[start];
+      if (
+        !line.trim() ||
+        line.startsWith("Knowledge-ID:") ||
+        line.startsWith("Tags:") ||
+        line.startsWith("Links:") ||
+        line.startsWith("Source:")
+      ) {
+        start += 1;
+        continue;
+      }
+      break;
+    }
+    content = lines.slice(start).join("\n").trim();
+  }
+
+  return {
+    id: String(meta.id || readField("Knowledge-ID:") || fallbackId || "").trim(),
+    title: String(meta.title || headingLine || "Imported knowledge").trim(),
+    tags: markerList(Array.isArray(meta.tags) && meta.tags.length ? meta.tags : readField("Tags:")),
+    links: markerList(Array.isArray(meta.links) && meta.links.length ? meta.links : readField("Links:")),
+    source: String(meta.source || readField("Source:") || "knowledge-archive").trim(),
+    content,
+  };
+}
+
+/**
+ * Materialise the whole knowledge base as a portable folder:
+ * manifest.json + chunks/<id>.md + README.txt.
+ * `destDir` must be a fresh, empty directory (the archive module owns it).
+ */
+async function buildKnowledgeSnapshot(userDataPath, destDir) {
+  const destination = String(destDir || "").trim();
+  if (!destination) throw new Error("Knowledge snapshot requires a destination directory");
+  const paths = await ensureStore(userDataPath);
+  const manifest = await readManifest(userDataPath);
+  const destRoot = path.resolve(destination);
+  const destChunks = path.join(destRoot, "chunks");
+  await fs.promises.mkdir(destChunks, { recursive: true });
+
+  const chunks = [];
+  let totalChars = 0;
+  for (const entry of manifest.chunks) {
+    const sourcePath = safeChild(paths.root, entry.file);
+    const targetPath = path.join(destChunks, `${entry.id}.md`);
+    try {
+      await fs.promises.copyFile(sourcePath, targetPath);
+    } catch {
+      continue;
+    }
+    chunks.push({ ...entry, file: `chunks/${entry.id}.md` });
+    totalChars += entry.charCount;
+  }
+
+  const exportedAt = Date.now();
+  const snapshot = {
+    format: "composevc-knowledge-archive",
+    archiveVersion: 1,
+    version: STORE_VERSION,
+    createdAt: manifest.createdAt,
+    updatedAt: manifest.updatedAt,
+    exportedAt,
+    chunkCount: chunks.length,
+    totalChars,
+    chunks,
+  };
+  await writeFileAtomic(path.join(destRoot, "manifest.json"), JSON.stringify(snapshot, null, 2));
+  await fs.promises.writeFile(
+    path.join(destRoot, "README.txt"),
+    [
+      "ComposeVC / LAB-IN knowledge archive",
+      "",
+      `Exported: ${new Date(exportedAt).toISOString()}`,
+      `Chunks: ${chunks.length}`,
+      `Characters: ${totalChars}`,
+      "",
+      "Restore it from the Knowledge workspace with the Import ZIP button.",
+      "The importer normalises chunks, skips exact duplicates and remaps links.",
+      "",
+    ].join("\n"),
+    "utf8"
+  );
+  return { root: destRoot, chunkCount: chunks.length, totalChars };
+}
+
+/**
+ * Restore a knowledge folder/archive into the live store.
+ * - accepts manifest.json + chunks/*.md, or any tree of knowledge .md files
+ * - normalises metadata, regenerates colliding ids, remaps links
+ * - deduplicates by content hash and reports what happened
+ */
+async function importKnowledgeSnapshot(userDataPath, sourceDir) {
+  const sourceRoot = path.resolve(String(sourceDir || ""));
+  const sourceStat = await fs.promises.stat(sourceRoot).catch(() => null);
+  if (!sourceStat?.isDirectory()) {
+    throw new Error(`Knowledge archive folder not found: ${sourceDir || "(empty)"}`);
+  }
+
+  const candidates = new Map();
+  let sourceManifest = null;
+  try {
+    sourceManifest = JSON.parse(
+      await fs.promises.readFile(path.join(sourceRoot, "manifest.json"), "utf8")
+    );
+  } catch {
+    sourceManifest = null;
+  }
+
+  const manifestChunks = Array.isArray(sourceManifest?.chunks) ? sourceManifest.chunks : [];
+  for (const rawEntry of manifestChunks) {
+    if (!rawEntry || typeof rawEntry !== "object") continue;
+    const relative = String(
+      rawEntry.file || (rawEntry.id ? `chunks/${rawEntry.id}.md` : "")
+    ).replace(/\\/g, "/");
+    if (!relative || !/\.md$/i.test(relative)) continue;
+    let absolute;
+    try {
+      absolute = safeChild(sourceRoot, relative);
+    } catch {
+      continue;
+    }
+    const raw = await fs.promises.readFile(absolute, "utf8").catch(() => null);
+    if (raw != null && !candidates.has(absolute)) candidates.set(absolute, { raw, entry: rawEntry });
+  }
+
+  // Also accept hand-made archives: any .md file inside the extracted tree.
+  const stack = [sourceRoot];
+  let walked = 0;
+  while (stack.length) {
+    const dir = stack.pop();
+    let entries = [];
+    try {
+      entries = await fs.promises.readdir(dir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      walked += 1;
+      if (walked > 4000) break;
+      const absolute = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (["__MACOSX", "trash", "node_modules"].includes(entry.name)) continue;
+        stack.push(absolute);
+      } else if (entry.isFile() && /\.md$/i.test(entry.name) && !candidates.has(absolute)) {
+        const raw = await fs.promises.readFile(absolute, "utf8").catch(() => null);
+        if (raw != null) candidates.set(absolute, { raw, entry: null });
+      }
+    }
+  }
+
+  if (!candidates.size) {
+    throw new Error("The archive contains no knowledge chunks (.md files)");
+  }
+
+  let skipped = 0;
+  const parsed = [];
+  for (const [absolute, candidate] of candidates) {
+    const fallbackId = path.basename(absolute, path.extname(absolute));
+    const info = parseChunkFile(candidate.raw, fallbackId);
+    const content = info.content.trim();
+    if (!content) {
+      skipped += 1;
+      continue;
+    }
+    const meta = candidate.entry && typeof candidate.entry === "object" ? candidate.entry : {};
+    const title =
+      String(meta.title || info.title || "Imported knowledge").trim().slice(0, 240) ||
+      "Imported knowledge";
+    const tags = markerList(Array.isArray(meta.tags) ? meta.tags : info.tags);
+    const links = markerList(Array.isArray(meta.links) ? meta.links : info.links);
+    const source =
+      String(meta.source || info.source || "knowledge-archive").trim().slice(0, 500) ||
+      "knowledge-archive";
+    parsed.push({
+      importedId: String(meta.id || info.id || fallbackId || "").trim(),
+      title,
+      tags,
+      links,
+      source,
+      content,
+      hash: contentHash(content),
+      createdAt: Number(meta.createdAt) || Date.now(),
+      updatedAt: Number(meta.updatedAt) || Number(meta.createdAt) || Date.now(),
+    });
+  }
+
+  if (!parsed.length) {
+    throw new Error("The archive contains no readable knowledge content");
+  }
+
+  return withWriteLock(userDataPath, async () => {
+    const paths = await ensureStore(userDataPath);
+    const manifest = await readManifest(userDataPath);
+    const byHash = new Map();
+    for (const entry of manifest.chunks) {
+      if (entry.hash) byHash.set(entry.hash, entry);
+    }
+
+    const idMap = new Map();
+    const created = [];
+    const sourceLinks = new Map();
+    let duplicates = 0;
+
+    for (const item of parsed) {
+      const duplicate = byHash.get(item.hash);
+      if (duplicate) {
+        duplicates += 1;
+        if (item.importedId) idMap.set(item.importedId, duplicate.id);
+        continue;
+      }
+
+      let id = /^kb-[a-zA-Z0-9-]+$/.test(item.importedId) ? item.importedId : makeChunkId();
+      if (manifest.chunks.some((entry) => entry.id === id)) id = makeChunkId();
+
+      const entry = normalizeEntry({
+        id,
+        title: item.title,
+        tags: item.tags,
+        links: item.links,
+        source: item.source,
+        hash: item.hash,
+        charCount: item.content.length,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+      });
+      if (!entry) continue;
+
+      await fs.promises.writeFile(
+        path.join(paths.chunksDir, `${id}.md`),
+        renderChunk(entry, item.content),
+        "utf8"
+      );
+      manifest.chunks.push(entry);
+      byHash.set(entry.hash, entry);
+      created.push(entry);
+      sourceLinks.set(entry.id, item.links);
+      if (item.importedId) idMap.set(item.importedId, id);
+    }
+
+    // Links point at ids from the archive; remap them to the ids that now exist.
+    const validIds = new Set(manifest.chunks.map((entry) => entry.id));
+    let remappedLinks = 0;
+    for (let index = 0; index < created.length; index += 1) {
+      const entry = created[index];
+      const original = sourceLinks.get(entry.id) || [];
+      const nextLinks = [];
+      for (const link of original) {
+        const mapped = idMap.get(link) || link;
+        if (mapped !== link) remappedLinks += 1;
+        if (mapped !== entry.id && validIds.has(mapped) && !nextLinks.includes(mapped)) {
+          nextLinks.push(mapped);
+        }
+      }
+      if (nextLinks.join("\u0000") === entry.links.join("\u0000")) continue;
+
+      const read = await readChunkContent(userDataPath, entry);
+      const next = normalizeEntry({
+        ...entry,
+        links: nextLinks,
+        updatedAt: Date.now(),
+      });
+      await fs.promises.writeFile(
+        path.join(paths.chunksDir, `${entry.id}.md`),
+        renderChunk(next, read.content),
+        "utf8"
+      );
+      const manifestIndex = manifest.chunks.findIndex((item) => item.id === entry.id);
+      if (manifestIndex >= 0) manifest.chunks[manifestIndex] = next;
+      created[index] = next;
+    }
+
+    if (created.length) await writeManifest(userDataPath, manifest);
+
+    return {
+      root: paths.root,
+      imported: created.length,
+      duplicates,
+      skipped,
+      remappedLinks,
+      totalChunks: manifest.chunks.length,
+      created,
+      importedIds: created.map((entry) => entry.id),
+      totalChars: created.reduce((sum, entry) => sum + entry.charCount, 0),
+    };
+  });
+}
+
 module.exports = {
   STORE_VERSION,
   DEFAULT_CHUNK_CHARS,
@@ -660,4 +1030,6 @@ module.exports = {
   knowledgeLinks,
   listKnowledge,
   knowledgeStats,
+  buildKnowledgeSnapshot,
+  importKnowledgeSnapshot,
 };

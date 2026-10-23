@@ -4,6 +4,7 @@ import SettingsModal from "./components/SettingsModal";
 import ElementInspector from "./components/ElementInspector";
 import ProvidersModal from "./components/ProvidersModal";
 import SearchOverlay from "./components/SearchOverlay";
+import PromptCopyModal from "./components/PromptCopyModal";
 import ProxyWorkspace from "./components/ProxyWorkspace";
 import RunnerWorkspace from "./components/RunnerWorkspace";
 import RunnerSendModal from "./components/RunnerSendModal";
@@ -66,6 +67,7 @@ const App: React.FC = () => {
     }
   });
   const [searchOpen, setSearchOpen] = useState(false);
+  const [promptCopyOpen, setPromptCopyOpen] = useState(false);
   const [runnerSendOpen, setRunnerSendOpen] = useState(false);
   const [storageOpen, setStorageOpen] = useState(false);
   const [inspectorActive, setInspectorActive] = useState(false);
@@ -360,6 +362,8 @@ const App: React.FC = () => {
         setSearchOpen((open) => !open);
       } else if (payload.type === "toggle" && payload.target === "settings") {
         setSettingsOpen((open) => !open);
+      } else if (payload.type === "toggle" && payload.target === "prompts") {
+        setPromptCopyOpen((open) => !open);
       }
     });
     return () => unsubscribe?.();
@@ -628,6 +632,11 @@ const App: React.FC = () => {
         }}
         onClose={() => setSearchOpen(false)}
         onOpenResult={handleSearchOpen}
+      />
+
+      <PromptCopyModal
+        open={promptCopyOpen}
+        onClose={() => setPromptCopyOpen(false)}
       />
 
       <RunnerSendModal

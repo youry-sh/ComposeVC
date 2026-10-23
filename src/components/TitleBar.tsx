@@ -14,7 +14,9 @@ import {
   IcoUsage,
   IcoBlinds,
   IcoInspector,
+  IcoPrompts,
 } from "./topIcons";
+import PromptsWorkspace from "./PromptsWorkspace";
 import {
   CONTEXT_METRICS_EVENT,
   ContextMetricsDetail,
@@ -81,6 +83,7 @@ const TitleBar: React.FC<TitleBarProps> = ({
   const tokPeak = useRef(1);
   const ctxPeak = useRef(1);
   const [blindsOpen, setBlindsOpen] = useState(false);
+  const [blindsTab, setBlindsTab] = useState<"prompts">("prompts");
 
   // live clock + date (1s tick)
   useEffect(() => {
@@ -282,15 +285,28 @@ const TitleBar: React.FC<TitleBarProps> = ({
       </div>
 
       {/* ── ШТОРЫ (blinds) drawer ──────────────────────────────────────────
-          Drop-down strip under the top bar, reserved for FUTURE tabs.
-          This is the single canonical place to register new tabs later:
-          add a <button className="topbar-tab"> as a sibling of the title below. */}
+          Drop-down drawer under the top bar. Tabs register here — each tab is a
+          <button className="blinds-tab"> in the head, and its workspace renders
+          in the body. "Prompts" is the first tab. */}
       <div
         className={`titlebar-blinds-panel ${blindsOpen ? "is-open" : ""}`}
         aria-hidden={!blindsOpen}
       >
-        <span className="titlebar-blinds-panel-title">ШТОРЫ</span>
-        <span className="titlebar-blinds-panel-hint">// future tabs land here</span>
+        <div className="blinds-panel-head">
+          <span className="titlebar-blinds-panel-title">ШТОРЫ</span>
+          <button
+            type="button"
+            className={`blinds-tab${blindsTab === "prompts" ? " is-active" : ""}`}
+            onClick={() => setBlindsTab("prompts")}
+            aria-pressed={blindsTab === "prompts"}
+          >
+            <IcoPrompts className="blinds-tab-ico" />
+            <span>Prompts</span>
+          </button>
+        </div>
+        <div className="blinds-panel-body">
+          {blindsTab === "prompts" && <PromptsWorkspace />}
+        </div>
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Check,
   Database,
+  Download,
   Eye,
   FileText,
   Link2,
@@ -13,6 +14,7 @@ import {
   Spline,
   Tags,
   Trash2,
+  Upload,
   X,
 } from "lucide-react";
 import { KnowledgeChunk, KnowledgeChunkSummary, KnowledgeListResponse } from "../types";
@@ -83,7 +85,11 @@ function formatSize(chars: number) {
   return `${(value / 1000).toFixed(value < 10000 ? 1 : 0)}k chars`;
 }
 
-const KnowledgeWorkspace: React.FC = () => {
+interface KnowledgeWorkspaceProps {
+  rootPath?: string | null;
+}
+
+const KnowledgeWorkspace: React.FC<KnowledgeWorkspaceProps> = ({ rootPath = null }) => {
   const [catalog, setCatalog] = useState<KnowledgeListResponse | null>(null);
   const [chunks, setChunks] = useState<KnowledgeChunkSummary[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -100,8 +106,15 @@ const KnowledgeWorkspace: React.FC = () => {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [pendingOpenId, setPendingOpenId] = useState<string | null>(null);
   const [pane, setPane] = useState<"library" | "neural">("library");
+  const [archiveBusy, setArchiveBusy] = useState<"export" | "import" | null>(null);
+  const [noticeDetail, setNoticeDetail] = useState("");
 
   const isDirty = snapshot(draft) !== savedSnapshot;
+
+  const showNotice = (text: string, detail = "") => {
+    setNotice(text);
+    setNoticeDetail(detail);
+  };
 
   const fetchCatalog = useCallback(async () => {
     const result = await window.lopster?.knowledgeList?.();
@@ -192,6 +205,7 @@ const KnowledgeWorkspace: React.FC = () => {
     setDeleteConfirm(false);
     setError(null);
     setNotice(null);
+    setNoticeDetail("");
   };
 
   const discardAndContinue = () => {

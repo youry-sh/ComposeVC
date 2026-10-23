@@ -230,6 +230,40 @@ export interface KnowledgeListResponse {
   chunks: KnowledgeChunkSummary[];
 }
 
+export interface KnowledgeArchiveCopy {
+  label: "desktop" | "project" | string;
+  dir: string;
+  path: string;
+  bytes: number;
+}
+
+export interface KnowledgeExportResult {
+  archiveName: string;
+  bytes: number;
+  chunkCount: number;
+  totalChars: number;
+  copies: KnowledgeArchiveCopy[];
+  failures: Array<{ label: string; dir: string; error: string }>;
+}
+
+export interface KnowledgeImportResult {
+  root: string;
+  imported: number;
+  duplicates: number;
+  skipped: number;
+  remappedLinks: number;
+  totalChunks: number;
+  created: KnowledgeChunkSummary[];
+  importedIds: string[];
+  totalChars: number;
+  archivePath: string;
+  archiveName: string;
+}
+
+export interface KnowledgeImportCanceled {
+  canceled: true;
+}
+
 /** lopster = ComposeVC; lab-in = refine + research + execute; fortani = lab-in then a follow-up agent */
 export type MainAgentMode = "lopster" | "lab-in" | "fortani";
 

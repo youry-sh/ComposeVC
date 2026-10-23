@@ -43,6 +43,7 @@ const {
   buildFixMessage,
 } = require("./fortani/index.cjs");
 const knowledgeStore = require("./labIn/knowledgeStore.cjs");
+const knowledgeArchive = require("./labIn/knowledgeArchive.cjs");
 const docsStore = require("./docs/docsStore.cjs");
 const promptsStore = require("./promptsStore.cjs");
 const cfMailConfig = require("./cfMailConfig.cjs");
@@ -3728,6 +3729,36 @@ ipcMain.handle("knowledge:update", async (_event, id, patch) => {
 ipcMain.handle("knowledge:delete", async (_event, id) => {
   const result = await knowledgeStore.deleteKnowledge(app.getPath("userData"), id);
   broadcastKnowledgeChanged({ type: "deleted", chunkId: id });
+  return result;
+});
+
+ipcMain.handle("knowledge:export", async (_event, payload = {}) => {
+  return knowledgeArchive.exportKnowledgeArchive(app.getPath("userData"), {
+    desktopPath: app.getPath("desktop"),
+    rootPath: typeof payload?.rootPath === "string" ? payload.rootPath : null,
+  });
+});
+
+ipcMain.handle("knowledge:import", async (event, payload = {}) => {
+  let zipPath = typeof payload?.zipPath === "string" ? payload.zipPath.trim() : "";
+  if (!zipPath) {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    const parent = win && !win.isDestroyed() ? win : mainWindow;
+    const picked = await dialog.showOpenDialog(parent, {
+      title: "Import knowledge archive",
+      buttonLabel: "Import ZIP",
+      properties: ["openFile"],
+      filters: [{ name: "ZIP archive", extensions: ["zip"] }],
+    });
+    if (picked.canceled || !picked.filePaths?.[0]) return { canceled: true };
+    zipPath = picked.filePaths[0];
+  }
+
+  const result = await knowledgeArchive.importKnowledgeArchive(
+    app.getPath("userData"),
+    zipPath
+  );
+  broadcastKnowledgeChanged({ type: "imported", chunks: result.created || [] });
   return result;
 });
 
