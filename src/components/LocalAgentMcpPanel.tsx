@@ -190,9 +190,9 @@ export default function LocalAgentMcpPanel({ pxBtn }: Props) {
                 {copied === "all-conn" ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
               </button>
             </div>
-            <div className="rounded-md border border-white/5 font-mono text-[11px]">
+            <div className="rounded-md border border-ink-200 font-mono text-[11px]">
               {rows.map((r) => (
-                <div key={r.id} className="flex items-center gap-2 px-2 py-1 border-b border-white/5 last:border-b-0">
+                <div key={r.id} className="flex items-center gap-2 px-2 py-1 border-b border-ink-200 last:border-b-0">
                   <span className="w-36 flex-shrink-0 text-ink-500 truncate" title={r.label}>{r.label}</span>
                   <span
                     className={`flex-1 min-w-0 truncate ${r.id === "desc" ? "italic text-ink-500" : ""}`}

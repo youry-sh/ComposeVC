@@ -9,14 +9,14 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   overflow: hidden;
-  background: var(--bg);
+  background: var(--terminal-bg);
 }
 .terminal-pane {
   min-width: 0;
   min-height: 0;
   overflow: hidden;
   padding: 9px 8px 7px 11px;
-  background: var(--bg);
+  background: var(--terminal-bg);
 }
 .terminal-pane + .terminal-pane { border-left: 1px solid var(--border-strong); }
 .terminal-pane .xterm { height: 100%; }
@@ -150,6 +150,7 @@
     --chat-user-bg: #101010;
     --chat-assistant-bg: transparent;
     --sidebar-tint: #050505;
+    --terminal-bg: #090909;
 
     --radius-control: 6px;
     --radius-card: 10px;
@@ -276,6 +277,7 @@
     --chat-user-bg: #0f1a26;
     --chat-assistant-bg: transparent;
     --sidebar-tint: #050a11;
+    --terminal-bg: #040a11;
 
     --radius-control: 6px;
     --radius-card: 10px;

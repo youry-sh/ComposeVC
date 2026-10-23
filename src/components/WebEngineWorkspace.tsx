@@ -169,21 +169,28 @@ const INSPECTOR_OFF = `(function () {
   }
 })(); void 0;`;
 
-/* Injected into the guest page so the viewed site gets the same visible white
-   scrollbar the app's chat uses (instead of the OS/default one). */
-const GUEST_SCROLLBAR_CSS = `
-  ::-webkit-scrollbar { width: 8px; height: 8px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb {
-    background-color: #e8e8e8;
-    border-radius: 4px;
-    border: 2px solid transparent;
-    background-clip: padding-box;
+/* Injected into the guest page so the viewed site gets a scrollbar that
+   matches the app's current theme (instead of the OS/default one). */
+function guestScrollbarCss(): string {
+  let thumb = "#e8e8e8";
+  let hover = "#ffffff";
+  if (typeof document !== "undefined") {
+    const cs = getComputedStyle(document.documentElement);
+    thumb = cs.getPropertyValue("--scrollbar").trim() || thumb;
+    hover = cs.getPropertyValue("--scrollbar-hover").trim() || hover;
   }
-  ::-webkit-scrollbar-thumb:hover { background-color: #ffffff; }
-  ::-webkit-scrollbar-corner { background: transparent; }
-  html { scrollbar-width: thin; scrollbar-color: #e8e8e8 transparent; }
-`;
+  return `::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background-color: ${thumb};
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background-color: ${hover}; }
+::-webkit-scrollbar-corner { background: transparent; }
+html { scrollbar-width: thin; scrollbar-color: ${thumb} transparent; }`;
+}
 
 function chromeUserAgent(): string {
   const ua = typeof navigator === "undefined" ? "" : navigator.userAgent;
@@ -589,7 +596,7 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({
     };
     const onFinish = () => {
       setLoading(false);
-      void view.insertCSS(GUEST_SCROLLBAR_CSS).catch(() => undefined);
+      void view.insertCSS(guestScrollbarCss()).catch(() => undefined);
       if (typeof view.setZoomFactor === "function") {
         try {
           view.setZoomFactor(zoomRef.current);
@@ -603,7 +610,7 @@ const WebEngineWorkspace: React.FC<WebEngineWorkspaceProps> = ({
       }
     };
     const onDomReady = () => {
-      void view.insertCSS(GUEST_SCROLLBAR_CSS).catch(() => undefined);
+      void view.insertCSS(guestScrollbarCss()).catch(() => undefined);
       if (inspectorOnRef.current) {
         runInGuest(INSPECTOR_INSTALL);
         runInGuest(INSPECTOR_ON);

@@ -36,13 +36,13 @@ const FlowerBloom: React.FC = () => (
           <stop offset="100%" stopColor="rgba(255, 255, 255, 0)" />
         </radialGradient>
         <linearGradient id="fb-petal" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#ffffff" />
-          <stop offset="55%" stopColor="#e6e6e6" />
-          <stop offset="100%" stopColor="#a9a9a9" />
+          <stop offset="0%" stopColor="var(--ink-950)" />
+          <stop offset="55%" stopColor="var(--ink-900)" />
+          <stop offset="100%" stopColor="var(--ink-700)" />
         </linearGradient>
         <linearGradient id="fb-stem" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#6b6b6b" />
-          <stop offset="100%" stopColor="#2b2b2b" />
+          <stop offset="0%" stopColor="var(--ink-600)" />
+          <stop offset="100%" stopColor="var(--ink-400)" />
         </linearGradient>
       </defs>
 
@@ -59,7 +59,7 @@ const FlowerBloom: React.FC = () => (
       />
       <path
         d="M100 152 C 88 150 79 143 75 134 C 88 139 96 144 100 152 Z"
-        fill="#3a3a3a"
+        fill="var(--ink-400)"
         className="flower-leaf"
       />
 
@@ -80,8 +80,8 @@ const FlowerBloom: React.FC = () => (
         {Array.from({ length: STAMENS }).map((_, i) => (
           <g key={`s${i}`} transform={`rotate(${(360 / STAMENS) * i + 30})`}>
             <g className="flower-stamen" style={{ animationDelay: `${i * 0.16}s` }}>
-              <path d={STAMEN_PATH} fill="none" stroke="#ededed" strokeWidth="1.3" strokeLinecap="round" />
-              <circle cx="0" cy="-76" r="2.4" fill="#cfcfcf" className="flower-anther" />
+              <path d={STAMEN_PATH} fill="none" stroke="var(--ink-300)" strokeWidth="1.3" strokeLinecap="round" />
+              <circle cx="0" cy="-76" r="2.4" fill="var(--ink-500)" className="flower-anther" />
             </g>
           </g>
         ))}

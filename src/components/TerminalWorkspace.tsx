@@ -16,7 +16,7 @@ function cssVar(name: string, fallback: string): string {
  *  re-skins with every tab/modal instead of staying fixed to a mono grey. */
 function readTerminalTheme() {
   return {
-    background: cssVar("--bg", "#070707"),
+    background: cssVar("--terminal-bg", "#090909"),
     foreground: cssVar("--text", "#e8e8e8"),
     cursor: cssVar("--text", "#f2f2f2"),
     cursorAccent: cssVar("--bg", "#090909"),

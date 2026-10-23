@@ -1,5 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { THEME_CHANGE_EVENT } from "../themes";
 
 interface ContextRingProps {
   usedTokens: number;
@@ -50,6 +51,12 @@ const ContextRing: React.FC<ContextRingProps> = ({
   const [tipPos, setTipPos] = useState<{ top: number; left: number; place: "above" | "below" } | null>(
     null
   );
+  const [, forceThemeTick] = useState(0);
+  useEffect(() => {
+    const onTheme = () => forceThemeTick((n) => n + 1);
+    window.addEventListener(THEME_CHANGE_EVENT, onTheme);
+    return () => window.removeEventListener(THEME_CHANGE_EVENT, onTheme);
+  }, []);
 
   const percent = limitTokens > 0 ? Math.min(usedTokens / limitTokens, 1) : 0;
   const offset = CIRCUMFERENCE * (1 - percent);
@@ -165,7 +172,7 @@ const ContextRing: React.FC<ContextRingProps> = ({
             cy={SIZE / 2}
             r={RADIUS}
             fill="none"
-            stroke="rgba(255,255,255,0.08)"
+            stroke="var(--border)"
             strokeWidth={STROKE}
           />
           <circle
