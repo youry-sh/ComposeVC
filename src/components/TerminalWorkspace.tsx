@@ -1,9 +1,32 @@
 import React, { useEffect, useRef } from "react";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
+import { THEME_CHANGE_EVENT } from "../themes";
 import "@xterm/xterm/css/xterm.css";
 
 type TerminalId = "1" | "2";
+
+function cssVar(name: string, fallback: string): string {
+  if (typeof window === "undefined") return fallback;
+  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return value || fallback;
+}
+
+/** Build the xterm palette from the active theme tokens so the terminal
+ *  re-skins with every tab/modal instead of staying fixed to a mono grey. */
+function readTerminalTheme() {
+  return {
+    background: cssVar("--bg", "#070707"),
+    foreground: cssVar("--text", "#e8e8e8"),
+    cursor: cssVar("--text", "#f2f2f2"),
+    cursorAccent: cssVar("--bg", "#090909"),
+    selectionBackground: cssVar("--ink-400", "#3b3b3b"),
+    black: cssVar("--bg", "#090909"),
+    brightBlack: cssVar("--ink-500", "#666666"),
+    white: cssVar("--text", "#d6d6d6"),
+    brightWhite: cssVar("--ink-950", "#ffffff"),
+  };
+}
 
 function TerminalPane({ id }: { id: TerminalId }) {
   const hostRef = useRef<HTMLDivElement | null>(null);
@@ -21,21 +44,20 @@ function TerminalPane({ id }: { id: TerminalId }) {
       lineHeight: 1.18,
       scrollback: 10000,
       allowProposedApi: false,
-      theme: {
-        background: "#090909",
-        foreground: "#d6d6d6",
-        cursor: "#f2f2f2",
-        cursorAccent: "#090909",
-        selectionBackground: "#3b3b3b",
-        black: "#090909",
-        brightBlack: "#666666",
-        white: "#d6d6d6",
-        brightWhite: "#ffffff",
-      },
+      theme: readTerminalTheme(),
     });
     terminal.loadAddon(fit);
     terminal.open(host);
     terminalRef.current = terminal;
+
+    const onThemeChange = () => {
+      try {
+        terminal.options.theme = readTerminalTheme();
+      } catch {
+        /* ignore — theme update is best-effort */
+      }
+    };
+    window.addEventListener(THEME_CHANGE_EVENT, onThemeChange);
 
     terminal.attachCustomKeyEventHandler((event) => {
       if (!(event.ctrlKey && event.shiftKey)) return true;
@@ -84,6 +106,7 @@ function TerminalPane({ id }: { id: TerminalId }) {
 
     return () => {
       observer.disconnect();
+      window.removeEventListener(THEME_CHANGE_EVENT, onThemeChange);
       host.removeEventListener("contextmenu", onContextMenu);
       dataDisposable.dispose();
       onData?.();
