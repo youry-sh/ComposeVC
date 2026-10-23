@@ -104,6 +104,7 @@ export class NeuralScene {
   private highlightNode: THREE.Mesh;
   private highlightRing: THREE.Mesh;
   private highlightStrands: THREE.LineSegments;
+  private highlightStrandMaterial: THREE.ShaderMaterial;
   private highlightEdges: THREE.LineSegments;
 
   // Controls
@@ -124,12 +125,17 @@ export class NeuralScene {
   private hovered = -1;
   private pendingPick: { x: number; y: number } | null = null;
   private needsPick = false;
+  private hoverClearTimer: number | null = null;
+  private hoverHold = false;
+  private multiTouch = false;
+  private gestureMoved = false;
 
   private time = 0;
   private lastFrame = 0;
   private motion = 1;
   private showLinks = false;
   private fitted = false;
+  private fitRadius = 0;
   private disposed = false;
 
   private resizeObserver: ResizeObserver | null = null;
