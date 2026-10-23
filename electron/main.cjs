@@ -44,6 +44,7 @@ const {
 } = require("./fortani/index.cjs");
 const knowledgeStore = require("./labIn/knowledgeStore.cjs");
 const docsStore = require("./docs/docsStore.cjs");
+const promptsStore = require("./promptsStore.cjs");
 const cfMailConfig = require("./cfMailConfig.cjs");
 
 const { TOOLS, getToolSchemas, getToolSchemasAsync } = require("./tools/registry.cjs");
@@ -3756,6 +3757,44 @@ ipcMain.handle("docs:delete", async (_event, id) => {
   return result;
 });
 
+// ── Prompts: user prompt snippets for the Шторы "Prompts" tab ─────────────
+
+ipcMain.handle("prompts:list", async () => {
+  return promptsStore.readAll(app.getPath("userData"));
+});
+
+ipcMain.handle("prompts:create", async (_event, input) => {
+  const prompt = await promptsStore.create(app.getPath("userData"), input || {});
+  broadcastPromptsChanged({ type: "changed" });
+  return prompt;
+});
+
+ipcMain.handle("prompts:update", async (_event, id, patch) => {
+  const prompt = await promptsStore.update(app.getPath("userData"), id, patch || {});
+  broadcastPromptsChanged({ type: "changed" });
+  return prompt;
+});
+
+ipcMain.handle("prompts:delete", async (_event, id) => {
+  const result = await promptsStore.remove(app.getPath("userData"), id);
+  broadcastPromptsChanged({ type: "changed" });
+  return result;
+});
+
+ipcMain.handle("prompts:copy", async (_event, id) => {
+  try {
+    if (typeof id !== "string" || !id) return { ok: false, error: "Не указан id промта." };
+    const store = await promptsStore.readAll(app.getPath("userData"));
+    const prompt = store.prompts.find((entry) => entry.id === id);
+    if (!prompt) return { ok: false, error: "Промт не найден." };
+    if (!prompt.text) return { ok: false, error: "Текст промта пуст." };
+    clipboard.writeText(prompt.text);
+    return { ok: true, title: prompt.title };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
 // Real token count of the current system prompt (project tree, git status, etc.)
 // for this rootPath — used by the renderer for context-usage estimate.
 ipcMain.handle("context:estimateTokens", async (_event, rootPath, projectName) => {
@@ -3787,6 +3826,16 @@ function broadcastDocsChanged(payload) {
   for (const win of BrowserWindow.getAllWindows()) {
     try {
       win.webContents.send("docs:changed", payload || { type: "changed" });
+    } catch {
+      // ignore
+    }
+  }
+}
+
+function broadcastPromptsChanged(payload) {
+  for (const win of BrowserWindow.getAllWindows()) {
+    try {
+      win.webContents.send("prompts:changed", payload || { type: "changed" });
     } catch {
       // ignore
     }
