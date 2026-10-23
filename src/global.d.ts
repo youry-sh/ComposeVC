@@ -183,7 +183,7 @@ declare global {
                   | "docs"
                   | "usage";
               }
-            | { type: "toggle"; target: "search" | "settings" }
+            | { type: "toggle"; target: "search" | "settings" | "prompts" }
         ) => void
       ) => () => void;
       readProviderConfig: () => Promise<ProviderConfig>;
@@ -427,6 +427,17 @@ declare global {
       docsUpdate: (id: string, patch: { title?: string; content?: string; summary?: string; order?: number }) => Promise<{ id: string; title: string; summary: string; order: number; content: string; createdAt: number; updatedAt: number }>;
       docsDelete: (id: string) => Promise<{ deleted: boolean; id?: string }>;
       onDocsChanged: (callback: (payload: { type?: string }) => void) => () => void;
+      promptsList: () => Promise<{
+        version: number;
+        createdAt: number;
+        updatedAt: number;
+        prompts: Array<{ id: string; title: string; text: string; createdAt: number; updatedAt: number }>;
+      }>;
+      promptsCreate: (input: { title: string; text: string }) => Promise<{ id: string; title: string; text: string; createdAt: number; updatedAt: number }>;
+      promptsUpdate: (id: string, patch: { title?: string; text?: string }) => Promise<{ id: string; title: string; text: string; createdAt: number; updatedAt: number }>;
+      promptsDelete: (id: string) => Promise<{ deleted: boolean; id?: string }>;
+      promptsCopy: (id: string) => Promise<{ ok: boolean; title?: string; error?: string }>;
+      onPromptsChanged: (callback: (payload: { type?: string }) => void) => () => void;
       estimateContextTokens: (rootPath: string | null, projectName?: string) => Promise<number>;
       listMcpServers: () => Promise<import("./types").McpServer[]>;
       addMcpServer: (input: Partial<import("./types").McpServer> & { name: string }) => Promise<import("./types").McpServer>;

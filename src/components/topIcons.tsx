@@ -125,6 +125,14 @@ export const IcoBlinds: React.FC<IconProps> = ({ className }) => (
   </svg>
 );
 
+/** Prompts — a prompt chevron (`>`) over text rows */
+export const IcoPrompts: React.FC<IconProps> = ({ className }) => (
+  <svg {...base} className={className}>
+    <path d="M4.5 5 L7.5 8 L4.5 11" />
+    <path d="M9.5 5.2 h3 M9.5 8 h3 M9.5 10.8 h1.6" />
+  </svg>
+);
+
 /** Inspector — pick cursor (finger) for the F12-style element picker */
 export const IcoInspector: React.FC<IconProps> = ({ className }) => (
   <svg viewBox="0 0 16 16" fill="none" className={className}>

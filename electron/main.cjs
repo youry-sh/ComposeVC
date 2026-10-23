@@ -1171,6 +1171,13 @@ function installPackagedWindowHardening(win) {
       try { if (!wc.isDestroyed()) wc.send("shell:hotkey", { type: "toggle", target: "search" }); } catch {}
       return;
     }
+    // Ctrl+Shift+P → prompt copy modal (prompt palette). Ctrl+Shift+P is unused
+    // elsewhere, so it never clashes with the terminal/DevTools blocks above.
+    if (ctrl && shift && !alt && code === "KeyP") {
+      event.preventDefault();
+      try { if (!wc.isDestroyed()) wc.send("shell:hotkey", { type: "toggle", target: "prompts" }); } catch {}
+      return;
+    }
     // F12, Ctrl+Shift+I/J/C, Ctrl+Shift+U, Ctrl+U (view source)
     const block =
       key === "F12" ||
