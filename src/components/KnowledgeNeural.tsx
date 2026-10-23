@@ -1,15 +1,8 @@
-import React, { useEffect, useRef, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { ArrowLeft, Link2, Loader2 } from "lucide-react";
 import { KnowledgeChunkSummary } from "../types";
-import {
-  NeuralModel,
-  NeuralView,
-  buildNeuralModel,
-  contentFrame,
-  drawNeural,
-  hitTest,
-  restartFlower,
-} from "./knowledgeNeuralModel";
+import { NeuralScene, NeuralHoverInfo } from "./neural3d/NeuralScene";
+import { buildNeuralGraph, NeuralGraph } from "./neural3d/graph";
 
 interface Props {
   chunks: KnowledgeChunkSummary[];
@@ -17,39 +10,61 @@ interface Props {
   onOpen: (id: string) => void;
 }
 
+function clamp(value: number, min: number, max: number) {
+  const lo = Math.min(min, max);
+  const hi = Math.max(min, max);
+  return value < lo ? lo : value > hi ? hi : value;
+}
+
 const KnowledgeNeural: React.FC<Props> = ({ chunks, onBack, onOpen }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
-  const modelRef = useRef<NeuralModel | null>(null);
-  const viewRef = useRef<NeuralView>({ zoom: 1, ox: 0, oy: 0 });
-  const hoverRef = useRef(-1);
-  const fitted = useRef(false);
-  const drag = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
-  const chunksRef = useRef(chunks);
+  const sceneRef = useRef<NeuralScene | null>(null);
   const onOpenRef = useRef(onOpen);
-  const [showLinks, setShowLinks] = useState(false);
-  const showLinksRef = useRef(false);
-  showLinksRef.current = showLinks;
-  chunksRef.current = chunks;
   onOpenRef.current = onOpen;
 
+  const [showLinks, setShowLinks] = useState(false);
+  const [hover, setHover] = useState<NeuralHoverInfo | null>(null);
+  const [status, setStatus] = useState<"idle" | "building" | "ready" | "error">("idle");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Mount the WebGL scene exactly once; it owns its full lifecycle.
   useEffect(() => {
-    restartFlower();
+    const wrap = wrapRef.current;
+    if (!wrap) return;
+
+    let scene: NeuralScene | null = null;
+    try {
+      scene = new NeuralScene(wrap, {
+        onOpen: (id) => onOpenRef.current(id),
+        onHover: (info) => setHover(info),
+      });
+      sceneRef.current = scene;
+    } catch (cause) {
+      setStatus("error");
+      setErrorMessage(cause instanceof Error ? cause.message : String(cause));
+    }
+
+    return () => {
+      sceneRef.current = null;
+      scene?.dispose();
+    };
   }, []);
 
-  useEffect(() => {
-    const face = new FontFace("Caveat", "url(./fonts/Caveat.ttf)", { weight: "600" });
-    face.load().then((loaded) => document.fonts.add(loaded)).catch(() => {});
-  }, []);
-
+  // Build the graph cooperatively and hand it to the scene. A cancellation
+  // token guards against a stale build landing after a newer one.
   useEffect(() => {
     const token = { cancelled: false };
-    modelRef.current = null;
-    fitted.current = false;
-    void buildNeuralModel(chunks, () => token.cancelled).then((model) => {
+    if (!chunks.length) {
+      sceneRef.current?.setGraph(null);
+      setStatus("idle");
+      setHover(null);
+      return;
+    }
+    setStatus("building");
+    void buildNeuralGraph(chunks, () => token.cancelled).then((graph: NeuralGraph | null) => {
       if (token.cancelled) return;
-      modelRef.current = model;
-      fitted.current = false;
+      sceneRef.current?.setGraph(graph);
+      setStatus(graph ? "ready" : "idle");
     });
     return () => {
       token.cancelled = true;
@@ -57,125 +72,22 @@ const KnowledgeNeural: React.FC<Props> = ({ chunks, onBack, onOpen }) => {
   }, [chunks]);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    const wrap = wrapRef.current;
-    if (!canvas || !wrap) return;
-    const ctx = canvas.getContext("2d", { alpha: false });
-    if (!ctx) return;
-    let frame = 0;
+    sceneRef.current?.setShowLinks(showLinks);
+  }, [showLinks]);
 
-    const resize = () => {
-      const rect = wrap.getBoundingClientRect();
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
-      const width = Math.max(1, Math.floor(rect.width * dpr));
-      const height = Math.max(1, Math.floor(rect.height * dpr));
-      if (canvas.width !== width || canvas.height !== height) {
-        canvas.width = width;
-        canvas.height = height;
+  const openHovered = useCallback(() => {
+    if (hover) onOpenRef.current(hover.id);
+  }, [hover]);
+
+  const card = hover
+    ? {
+        left: clamp(hover.x, 140, (wrapRef.current?.clientWidth ?? 0) - 140),
+        top: clamp(hover.y, 150, wrapRef.current?.clientHeight ?? 0),
       }
-      if (!fitted.current && rect.width > 0 && rect.height > 0) {
-        const frame = contentFrame(modelRef.current);
-        const zoom = Math.min(1.15, Math.max(0.28, Math.min((rect.width - 72) / frame.w, (rect.height - 72) / frame.h)));
-        viewRef.current = {
-          zoom,
-          ox: (rect.width - frame.w * zoom) / 2 - frame.x * zoom,
-          oy: (rect.height - frame.h * zoom) / 2 - frame.y * zoom,
-        };
-        fitted.current = Boolean(modelRef.current) || chunksRef.current.length === 0;
-      }
-    };
-
-    const paint = () => {
-      resize();
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
-      drawNeural(ctx, modelRef.current, viewRef.current, canvas.width, canvas.height, dpr, hoverRef.current, showLinksRef.current);
-      frame = window.requestAnimationFrame(paint);
-    };
-    frame = window.requestAnimationFrame(paint);
-
-    const worldPoint = (event: PointerEvent) => {
-      const rect = canvas.getBoundingClientRect();
-      const view = viewRef.current;
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-      return { x, y, wx: (x - view.ox) / view.zoom, wy: (y - view.oy) / view.zoom };
-    };
-
-    const onWheel = (event: WheelEvent) => {
-      event.preventDefault();
-      const rect = canvas.getBoundingClientRect();
-      const view = viewRef.current;
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-      const wx = (x - view.ox) / view.zoom;
-      const wy = (y - view.oy) / view.zoom;
-      const next = Math.min(32, Math.max(0.35, view.zoom * Math.exp(-event.deltaY * 0.00115)));
-      view.zoom = next;
-      view.ox = x - wx * next;
-      view.oy = y - wy * next;
-    };
-
-    const onPointerDown = (event: PointerEvent) => {
-      if (event.button !== 0) return;
-      const point = worldPoint(event);
-      drag.current = { x: point.x, y: point.y, ox: viewRef.current.ox, oy: viewRef.current.oy };
-      canvas.classList.add("is-panning");
-      canvas.setPointerCapture(event.pointerId);
-    };
-
-    const onPointerMove = (event: PointerEvent) => {
-      const point = worldPoint(event);
-      if (drag.current) {
-        viewRef.current.ox = drag.current.ox + (point.x - drag.current.x);
-        viewRef.current.oy = drag.current.oy + (point.y - drag.current.y);
-        return;
-      }
-      const model = modelRef.current;
-      hoverRef.current = model ? hitTest(model, point.wx, point.wy, viewRef.current.zoom) : -1;
-      canvas.style.cursor = hoverRef.current >= 0 && !drag.current ? "pointer" : drag.current ? "grabbing" : "grab";
-    };
-
-    const onPointerUp = (event: PointerEvent) => {
-      const point = worldPoint(event);
-      const moved = drag.current ? Math.hypot(point.x - drag.current.x, point.y - drag.current.y) : 0;
-      drag.current = null;
-      canvas.classList.remove("is-panning");
-      if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
-      if (moved > 5) return;
-      const model = modelRef.current;
-      if (!model) return;
-      const hit = hitTest(model, point.wx, point.wy, viewRef.current.zoom);
-      const chunk = hit >= 0 ? chunksRef.current[hit] : null;
-      if (chunk) onOpenRef.current(chunk.id);
-    };
-
-    const onDoubleClick = () => {
-      fitted.current = false;
-    };
-
-    canvas.addEventListener("wheel", onWheel, { passive: false });
-    canvas.addEventListener("pointerdown", onPointerDown);
-    canvas.addEventListener("pointermove", onPointerMove);
-    canvas.addEventListener("pointerup", onPointerUp);
-    canvas.addEventListener("pointercancel", onPointerUp);
-    canvas.addEventListener("dblclick", onDoubleClick);
-    const observer = new ResizeObserver(resize);
-    observer.observe(wrap);
-    return () => {
-      window.cancelAnimationFrame(frame);
-      observer.disconnect();
-      canvas.removeEventListener("wheel", onWheel);
-      canvas.removeEventListener("pointerdown", onPointerDown);
-      canvas.removeEventListener("pointermove", onPointerMove);
-      canvas.removeEventListener("pointerup", onPointerUp);
-      canvas.removeEventListener("pointercancel", onPointerUp);
-      canvas.removeEventListener("dblclick", onDoubleClick);
-    };
-  }, []);
+    : null;
 
   return (
-    <div className="knowledge-neural" ref={wrapRef}>
-      <canvas ref={canvasRef} />
+    <div className="knowledge-neural" ref={wrapRef} role="application" aria-label="Neural knowledge graph">
       <div className="knowledge-neural-tools">
         <button type="button" className="knowledge-neural-back" onClick={onBack}>
           <ArrowLeft className="h-3.5 w-3.5" />
@@ -186,9 +98,67 @@ const KnowledgeNeural: React.FC<Props> = ({ chunks, onBack, onOpen }) => {
           className={`knowledge-neural-back ${showLinks ? "is-on" : ""}`}
           onClick={() => setShowLinks((value) => !value)}
         >
+          <Link2 className="h-3.5 w-3.5" />
           Все связи
         </button>
       </div>
+
+      <div className="knowledge-neural-hint">
+        <span>ЛКМ — вращение</span>
+        <span>ПКМ / колесо — зум</span>
+        <span>двойной клик — сброс</span>
+      </div>
+
+      {status === "building" && (
+        <div className="knowledge-neural-status">
+          <Loader2 className="h-4 w-4 knowledge-neural-spin" />
+          <span>Построение нейросети…</span>
+        </div>
+      )}
+
+      {status === "error" && (
+        <div className="knowledge-neural-status is-error">
+          <span>Не удалось запустить WebGL</span>
+          <small>{errorMessage}</small>
+        </div>
+      )}
+
+      {status !== "building" && status !== "error" && !chunks.length && (
+        <div className="knowledge-neural-status">
+          <span>Пока нет знаний — добавьте чанк в библиотеке</span>
+        </div>
+      )}
+
+      {hover && status !== "error" && (
+        <div
+          className="knowledge-neural-card"
+          style={{ left: card?.left, top: card?.top }}
+          onClick={openHovered}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              openHovered();
+            }
+          }}
+        >
+          <div className="knowledge-neural-card-title">{hover.title || "Без названия"}</div>
+          {hover.tags.length > 0 && (
+            <div className="knowledge-neural-card-tags">
+              {hover.tags.slice(0, 6).map((tag) => (
+                <span key={tag} className="knowledge-neural-card-tag">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+          <div className="knowledge-neural-card-meta">
+            <span>{hover.links.length} связей</span>
+            <span className="knowledge-neural-card-open">открыть →</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
