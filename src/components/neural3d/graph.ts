@@ -12,7 +12,7 @@
  * The hot path (per-frame rendering) is entirely on the GPU.
  */
 
-import { KnowledgeChunkSummary } from "../types";
+import { KnowledgeChunkSummary } from "../../types";
 
 export const LANES = 8;
 
