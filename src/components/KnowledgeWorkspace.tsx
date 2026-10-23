@@ -251,6 +251,7 @@ const KnowledgeWorkspace: React.FC<KnowledgeWorkspaceProps> = ({ rootPath = null
           const duplicate = result?.duplicates?.[0];
           if (duplicate?.id) {
             setNotice("An identical chunk already exists. Opened the existing chunk.");
+            setNoticeDetail("");
             await fetchCatalog();
             await readChunk(duplicate.id);
             return;
@@ -260,6 +261,7 @@ const KnowledgeWorkspace: React.FC<KnowledgeWorkspaceProps> = ({ rootPath = null
         await fetchCatalog();
         await readChunk(created[0].id);
         setNotice(created.length > 1 ? `Saved as ${created.length} chunks` : "Chunk created");
+        setNoticeDetail("");
       } else {
         await window.lopster?.knowledgeUpdate?.(selectedId, payload);
         const next: ChunkDraft = {
@@ -441,6 +443,34 @@ const KnowledgeWorkspace: React.FC<KnowledgeWorkspaceProps> = ({ rootPath = null
                 <Spline className="h-3.5 w-3.5" /> Neural
               </button>
             </div>
+            <button
+              type="button"
+              className="knowledge-action-btn"
+              onClick={() => void exportArchive()}
+              disabled={!chunks.length || Boolean(archiveBusy)}
+              title="Export the whole knowledge base as a ZIP to the Desktop and the project folder"
+            >
+              {archiveBusy === "export" ? (
+                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Download className="h-3.5 w-3.5" />
+              )}
+              {archiveBusy === "export" ? "Exporting…" : "Export ZIP"}
+            </button>
+            <button
+              type="button"
+              className="knowledge-action-btn"
+              onClick={() => void importArchive()}
+              disabled={Boolean(archiveBusy)}
+              title="Import a knowledge ZIP: chunks are normalised, duplicates skipped and links remapped into the base"
+            >
+              {archiveBusy === "import" ? (
+                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Upload className="h-3.5 w-3.5" />
+              )}
+              {archiveBusy === "import" ? "Importing…" : "Import ZIP"}
+            </button>
             <div className="knowledge-view-toggle" aria-label="Markdown view mode">
               <button
                 type="button"
@@ -495,7 +525,12 @@ const KnowledgeWorkspace: React.FC<KnowledgeWorkspaceProps> = ({ rootPath = null
           </div>
         ) : null}
         {error ? <div className="knowledge-message is-error">{error}</div> : null}
-        {notice ? <div className="knowledge-message"><Check className="h-3.5 w-3.5" />{notice}</div> : null}
+        {notice ? (
+          <div className="knowledge-message" title={noticeDetail || notice}>
+            <Check className="h-3.5 w-3.5" />
+            {notice}
+          </div>
+        ) : null}
 
         <div className="knowledge-document-scroll">
           {loadingChunk ? (
