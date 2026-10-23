@@ -1526,24 +1526,50 @@
     white-space: nowrap;
   }
   .chat-send-fab {
-    width: 28px;
-    height: 28px;
+    height: 30px;
+    padding: 0 12px 0 10px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 6px;
     border-radius: 8px;
-    border: 0;
+    border: 1px solid var(--btn-primary-border);
     background: var(--btn-primary-bg);
     color: var(--btn-primary-fg);
+    font-family: var(--terminal-font);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .02em;
+    line-height: 1;
+    white-space: nowrap;
     cursor: pointer;
-    transition: background 0.12s ease, opacity 0.12s ease, transform 0.12s ease;
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--accent-hover) 55%, transparent);
+    transition: background 0.14s ease, border-color 0.14s ease, box-shadow 0.16s ease, transform 0.1s ease, opacity 0.12s ease;
   }
   .chat-send-fab:hover:not(:disabled) {
     background: var(--btn-primary-hover);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--accent-hover) 75%, transparent), 0 0 16px var(--glow);
+  }
+  .chat-send-fab:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+  .chat-send-fab:focus-visible {
+    outline: 1px solid var(--focus-ring);
+    outline-offset: 2px;
   }
   .chat-send-fab:disabled {
-    opacity: 0.35;
+    opacity: 0.38;
     cursor: not-allowed;
+    box-shadow: none;
+  }
+  .chat-send-fab svg {
+    width: 14px;
+    height: 14px;
+    flex: none;
+  }
+  .chat-send-label {
+    font-size: 11px;
+    line-height: 1;
   }
   .chat-chip-row {
     display: flex;

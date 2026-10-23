@@ -4826,6 +4826,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                 aria-label={labels.send}
               >
                 <Send className="w-3.5 h-3.5" />
+                <span className="chat-send-label">{labels.send}</span>
               </button>
             )}
           </div>
