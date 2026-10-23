@@ -68,6 +68,45 @@ const DocsWorkspace: React.FC = () => {
     }
   }, []);
 
+  /** Gather every section into one clean Markdown document and copy it. */
+  const handleCopyAll = useCallback(async () => {
+    if (copyingAll) return;
+    setCopyingAll(true);
+    setError(null);
+    try {
+      const result = await window.lopster?.docsAll?.();
+      const list = result?.sections || [];
+      if (!list.length) throw new Error("Документация пуста");
+      const parts = list.map((section) => {
+        // Drop a leading H1 so the exported title is not duplicated.
+        const body = (section.content || "")
+          .trim()
+          .replace(/^#\s+.*(?:\r?\n)+/, "")
+          .trim();
+        const head = `# ${section.title}`;
+        const sub = section.summary ? `_${section.summary}_` : "";
+        return [head, sub, body].filter((piece) => piece).join("\n\n");
+      });
+      const markdown = [
+        "# ComposeVC — Документация",
+        "",
+        "> Полная документация IDE, собранная в один файл Markdown.",
+        "",
+        "---",
+        "",
+        parts.join("\n\n---\n\n"),
+        "",
+      ].join("\n");
+      await navigator.clipboard.writeText(markdown);
+      setCopiedAll(true);
+      window.setTimeout(() => setCopiedAll(false), 1800);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setCopyingAll(false);
+    }
+  }, [copyingAll]);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
