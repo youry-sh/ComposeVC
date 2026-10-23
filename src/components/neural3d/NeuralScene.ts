@@ -383,7 +383,6 @@ export class NeuralScene {
         blending: THREE.AdditiveBlending,
       })
     );
-    this.highlightEdges.frustumCulled = false;
     this.highlightEdges.visible = false;
     this.scene.add(this.highlightEdges);
 
@@ -426,40 +425,46 @@ export class NeuralScene {
 
   // ── Graph ──
   setGraph(graph: NeuralGraph | null) {
+    this.cancelHoverClear();
+    this.hoverHold = false;
     this.clearGraphLayers();
     this.graph = graph;
     this.hovered = -1;
     this.needsPick = false;
     this.pendingPick = null;
     this.setHighlight(null);
+    this.options.onHover(null);
 
-    if (!graph || !graph.count) {
-      this.options.onHover(null);
-      if (!this.fitted) this.fit();
-      return;
-    }
+    if (!graph || !graph.count) return;
 
     this.strandLayer = new THREE.LineSegments(buildStrandGeometry(graph), this.strandMaterial);
-    this.strandLayer.frustumCulled = false;
     this.scene.add(this.strandLayer);
 
     this.nodeLayer = new THREE.Points(buildNodeGeometry(graph), this.nodeMaterial);
     this.scene.add(this.nodeLayer);
 
-    this.edgeLayer = new THREE.LineSegments(buildEdgeGeometry(graph), this.edgeMaterial);
-    this.edgeLayer.frustumCulled = false;
-    this.edgeLayer.visible = this.showLinks;
-    this.scene.add(this.edgeLayer);
-
-    this.edgeMaterial.opacity = this.showLinks ? 0.24 : 0;
+    if (this.showLinks) this.buildEdgeLayer();
+    this.applyEdgeVisibility();
 
     if (!this.fitted) this.fit();
   }
 
   setShowLinks(value: boolean) {
     this.showLinks = value;
-    if (this.edgeLayer) this.edgeLayer.visible = value;
-    this.edgeMaterial.opacity = value ? (this.hovered >= 0 ? 0.08 : 0.24) : 0;
+    if (value && this.graph && this.graph.count && !this.edgeLayer) this.buildEdgeLayer();
+    this.applyEdgeVisibility();
+  }
+
+  private buildEdgeLayer() {
+    if (!this.graph || !this.graph.count || this.edgeLayer) return;
+    this.edgeLayer = new THREE.LineSegments(buildEdgeGeometry(this.graph), this.edgeMaterial);
+    this.scene.add(this.edgeLayer);
+  }
+
+  private applyEdgeVisibility() {
+    const on = this.showLinks && !!this.edgeLayer;
+    if (this.edgeLayer) this.edgeLayer.visible = on;
+    this.edgeMaterial.opacity = this.showLinks ? (this.hovered >= 0 ? 0.08 : 0.24) : 0;
   }
 
   fit() {
@@ -472,6 +477,7 @@ export class NeuralScene {
     this.theta = 0.4;
     this.phi = 1.12;
     this.pan.set(0, 0, 0);
+    this.fitRadius = radius;
     this.fitted = true;
   }
 
