@@ -3705,6 +3705,79 @@ async function filesToChatImages(files: FileList | File[]): Promise<ChatImageAtt
   return out;
 }
 
+const LabInPackageModal: React.FC<{
+  pkg: LabInPackage;
+  onClose: () => void;
+}> = ({ pkg, onClose }) => {
+  const refinedPrompt = (pkg.refinedPrompt || "").trim();
+  const knowledgePackage = (pkg.knowledgePackage || "").trim();
+  const hasChunks = typeof pkg.chunkCount === "number";
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center theme-scrim animate-fade-in" onClick={onClose}>
+      <div
+        className="w-[min(760px,92vw)] h-[min(680px,86vh)] bg-ink-0 border border-ink-200 rounded-xl overflow-hidden flex flex-col shadow-modal"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-ink-200">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 text-[13px] font-medium text-ink-950">
+              <BrainCircuit className="w-4 h-4 text-ink-600 flex-shrink-0" />
+              LAB-IN · что передано нейронке
+            </div>
+            <div className="mt-0.5 text-[11px] text-ink-500 truncate">
+              {hasChunks ? `Найдено в ${pkg.chunkCount} чанках памяти` : "Исследованная память"}
+              {pkg.truncated ? " · пакет усечён" : ""}
+              {pkg.coverage === false ? " · покрытие неполное" : ""}
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="h-7 w-7 flex items-center justify-center rounded-md text-ink-500 outline-none hover:bg-ink-100 hover:text-ink-950 transition-colors"
+            title="Закрыть"
+            aria-label="Закрыть"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto scrollbar-thin p-4 space-y-4">
+          {refinedPrompt && (
+            <section>
+              <div className="text-[11px] font-medium uppercase tracking-wider text-ink-500 mb-1.5">
+                Улучшенный промпт (задача для нейронки)
+              </div>
+              <div className="rounded-lg border border-ink-200 bg-ink-100 px-3 py-2.5">
+                <MarkdownContent content={refinedPrompt} />
+              </div>
+            </section>
+          )}
+          <section>
+            <div className="text-[11px] font-medium uppercase tracking-wider text-ink-500 mb-1.5">
+              Найденные знания (пакет LAB-IN)
+            </div>
+            <div className="rounded-lg border border-ink-200 bg-ink-100 px-3 py-2.5">
+              {knowledgePackage ? (
+                <MarkdownContent content={knowledgePackage} />
+              ) : (
+                <div className="text-[12px] text-ink-500">Пакет знаний пуст.</div>
+              )}
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ChatPanel: React.FC<ChatPanelProps> = ({
   messages,
   thinking,
