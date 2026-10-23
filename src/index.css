@@ -10573,8 +10573,7 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
 .chat-composer-icon-btn,
 .context-ring-btn { border-radius: 6px; }
 /* Beats the global terminal re-skin that flattens every .rounded-* utility. */
-.chat-composer-actions > button { border-radius: 6px !important; }
-.chat-send-fab { border-radius: 6px !important; }
+.chat-composer-actions > button:not(.chat-send-fab) { border-radius: 6px !important; }
 
 .gen-image-card { margin: 6px 8px 8px 22px; }
 .gen-image-frame {
@@ -10668,6 +10667,8 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   height: 26px;
   flex: 0 0 26px;
 }
+.chat-stage.is-split .chat-send-fab { padding: 0; gap: 0; }
+.chat-stage.is-split .chat-send-label { display: none; }
 .chat-stage.is-split .chat-composer-actions > button:not(.chat-composer-icon-btn):not(.chat-send-fab) {
   height: 26px;
   padding: 0 8px;
