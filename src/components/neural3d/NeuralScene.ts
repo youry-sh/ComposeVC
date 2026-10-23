@@ -161,7 +161,7 @@ export class NeuralScene {
     const colors = readThemeColors();
     const bg = new THREE.Color(colors.bg);
     this.scene.background = bg;
-    this.scene.fog = new THREE.Fog(bg, 700, 4200);
+    this.scene.fog = new THREE.Fog(bg, 800, 5200);
 
     // ── Lights (for the lit cube + gold sphere) ──
     this.scene.add(new THREE.AmbientLight(0xffffff, 0.55));
@@ -288,8 +288,8 @@ export class NeuralScene {
         uTime: { value: 0 },
         uFlow: { value: 1 },
         uFogColor: { value: bg.clone() },
-        uFogNear: { value: 700 },
-        uFogFar: { value: 4200 },
+        uFogNear: { value: 800 },
+        uFogFar: { value: 5200 },
         uDim: { value: 0 },
       },
     });
