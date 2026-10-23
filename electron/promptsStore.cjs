@@ -49,8 +49,8 @@ function normalizePrompt(entry) {
   const text = String(entry.text == null ? "" : entry.text).replace(/\r\n?/g, "\n");
   return {
     id,
-    title: title.slice(0, MAX_TITLE_CHARS),
-    text: text.slice(0, MAX_TEXT_CHARS),
+    title,
+    text,
     createdAt: Number(entry.createdAt) || Date.now(),
     updatedAt: Number(entry.updatedAt) || Number(entry.createdAt) || Date.now(),
   };
@@ -121,13 +121,16 @@ async function readAll(userDataPath) {
 
 function validateInput(input) {
   const title = String(input?.title ?? "").trim();
-  const text = String(input?.text ?? "").replace(/\r\n?/g, "\n").trim();
+  const text = String(input?.text ?? "").replace(/\r\n?/g, "\n");
   if (!title) throw new Error("Заголовок промта не может быть пустым.");
-  if (!text) throw new Error("Текст промта не может быть пустым.");
-  return {
-    title: title.slice(0, MAX_TITLE_CHARS),
-    text: text.slice(0, MAX_TEXT_CHARS),
-  };
+  if (!text.trim()) throw new Error("Текст промта не может быть пустым.");
+  if (title.length > MAX_TITLE_CHARS) {
+    throw new Error(`Заголовок длиннее ${MAX_TITLE_CHARS} символов.`);
+  }
+  if (text.length > MAX_TEXT_CHARS) {
+    throw new Error(`Текст длиннее ${MAX_TEXT_CHARS} символов.`);
+  }
+  return { title, text };
 }
 
 async function create(userDataPath, input) {
@@ -153,8 +156,8 @@ async function update(userDataPath, id, input) {
   const index = store.prompts.findIndex((prompt) => prompt.id === id);
   if (index < 0) throw new Error("Промт не найден.");
   const existing = store.prompts[index];
-  const title = input?.title != null ? String(input.title).trim() : existing.title;
-  const text = input?.text != null ? String(input.text).replace(/\r\n?/g, "\n").trim() : existing.text;
+  const title = input?.title != null ? String(input.title) : existing.title;
+  const text = input?.text != null ? String(input.text) : existing.text;
   const clean = validateInput({ title, text });
   const prompt = {
     ...existing,

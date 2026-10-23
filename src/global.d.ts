@@ -436,6 +436,7 @@ declare global {
         createdAt: number;
         updatedAt: number;
         prompts: Array<{ id: string; title: string; text: string; createdAt: number; updatedAt: number }>;
+        error?: string;
       }>;
       promptsCreate: (input: { title: string; text: string }) => Promise<{ id: string; title: string; text: string; createdAt: number; updatedAt: number }>;
       promptsUpdate: (id: string, patch: { title?: string; text?: string }) => Promise<{ id: string; title: string; text: string; createdAt: number; updatedAt: number }>;

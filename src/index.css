@@ -7988,7 +7988,7 @@
   height: min(72vh, 600px);
   background: var(--bg);
   border-bottom: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border));
-  box-shadow: 0 16px 40px color-mix(in srgb, #000 38%, transparent);
+  box-shadow: var(--shadow-menu, 0 12px 40px rgba(0, 0, 0, 0.45));
   transform: translateY(-12px);
   opacity: 0;
   pointer-events: none;
@@ -12621,7 +12621,7 @@ body.cvc-inspecting * {
   align-items: flex-start;
   justify-content: center;
   padding-top: 96px;
-  background: color-mix(in srgb, #05080c 52%, transparent);
+  background: var(--scrim);
   animation: prompt-fade-in 0.14s ease;
 }
 .prompt-copy-modal {
@@ -12633,7 +12633,7 @@ body.cvc-inspecting * {
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--bg);
-  box-shadow: 0 24px 64px color-mix(in srgb, #000 45%, transparent);
+  box-shadow: var(--shadow-modal, 0 24px 64px rgba(0, 0, 0, 0.45));
 }
 .prompt-copy-head {
   display: flex;

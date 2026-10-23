@@ -1068,6 +1068,7 @@ function installPackagedWindowHardening(win) {
         if (code === "KeyH" && !shift) channel = "chat:switcher-toggle";
         else if (code === "KeyW" && shift) channel = "web:dock-fold";
         else if (code === "KeyF" && shift) hotkey = { type: "toggle", target: "search" };
+        else if (code === "KeyP" && shift) hotkey = { type: "toggle", target: "prompts" };
         else if (!shift) {
           if (Object.prototype.hasOwnProperty.call(PANEL_BY_DIGIT, code)) {
             hotkey = { type: "panel", panel: PANEL_BY_DIGIT[code] };
@@ -3801,7 +3802,17 @@ ipcMain.handle("docs:delete", async (_event, id) => {
 // ── Prompts: user prompt snippets for the Шторы "Prompts" tab ─────────────
 
 ipcMain.handle("prompts:list", async () => {
-  return promptsStore.readAll(app.getPath("userData"));
+  try {
+    return await promptsStore.readAll(app.getPath("userData"));
+  } catch (error) {
+    return {
+      version: 1,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      prompts: [],
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
 });
 
 ipcMain.handle("prompts:create", async (_event, input) => {

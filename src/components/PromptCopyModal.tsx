@@ -29,6 +29,10 @@ const PromptCopyModal: React.FC<PromptCopyModalProps> = ({ open, onClose }) => {
   const rootRef = useRef<HTMLDivElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const confirmTimer = useRef<number | null>(null);
+  const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  const isMac = typeof navigator !== "undefined" && /Mac/i.test(navigator.userAgent);
+  const shortcutLabel = isMac ? "⌘⇧P" : "Ctrl+Shift+P";
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -54,9 +58,13 @@ const PromptCopyModal: React.FC<PromptCopyModalProps> = ({ open, onClose }) => {
     (async () => {
       try {
         const result = await window.lopster?.promptsList?.();
-        if (!cancelled && result && Array.isArray(result.prompts)) {
+        if (cancelled) return;
+        if (result?.error) {
+          setCopyState("error");
+          setCopyMessage(result.error);
+        } else if (result && Array.isArray(result.prompts)) {
           setPrompts(result.prompts);
-        } else if (!cancelled) {
+        } else {
           setCopyState("error");
           setCopyMessage("Хранилище промтов недоступно.");
         }
@@ -77,6 +85,12 @@ const PromptCopyModal: React.FC<PromptCopyModalProps> = ({ open, onClose }) => {
       returnFocusRef.current?.focus?.();
     };
   }, [open, resetCopyState]);
+
+  // Keep the highlighted item visible while navigating with the arrow keys.
+  useEffect(() => {
+    const el = itemRefs.current[selectedIndex];
+    el?.scrollIntoView({ block: "nearest" });
+  }, [selectedIndex]);
 
   const close = useCallback(() => {
     onClose();
@@ -130,7 +144,7 @@ const PromptCopyModal: React.FC<PromptCopyModalProps> = ({ open, onClose }) => {
           root.querySelectorAll<HTMLElement>(
             'button, [href], input, textarea, select, [tabindex]:not([tabindex="-1"])'
           )
-        ).filter((el) => !el.hasAttribute("disabled") && el.offsetParent !== null);
+        ).filter((el) => !el.hasAttribute("disabled") && el.tabIndex >= 0 && el.offsetParent !== null);
         if (!focusables.length) return;
         const first = focusables[0];
         const last = focusables[focusables.length - 1];
@@ -192,7 +206,7 @@ const PromptCopyModal: React.FC<PromptCopyModalProps> = ({ open, onClose }) => {
 
         <div className="prompt-copy-meta">
           <span>Быстрое копирование промта</span>
-          <span className="prompt-copy-kbd">Ctrl+Shift+P</span>
+          <span className="prompt-copy-kbd">{shortcutLabel}</span>
         </div>
 
         <div className="prompt-copy-list">
@@ -205,6 +219,10 @@ const PromptCopyModal: React.FC<PromptCopyModalProps> = ({ open, onClose }) => {
               <button
                 type="button"
                 key={prompt.id}
+                tabIndex={-1}
+                ref={(el) => {
+                  itemRefs.current[index] = el;
+                }}
                 className={`prompt-copy-item${index === selectedIndex ? " is-selected" : ""}`}
                 onMouseEnter={() => setSelectedIndex(index)}
                 onClick={() => void doCopy(prompt)}

@@ -41,12 +41,12 @@ test("create → readAll round-trips a prompt", async () => {
   }
 });
 
-test("create normalizes CRLF and trims", async () => {
+test("create normalizes CRLF and trims the title (keeps text whitespace)", async () => {
   const dir = tempDir();
   try {
     const created = await store.create(dir, { title: "  T  ", text: "a\r\nb\r\n" });
     assert.equal(created.title, "T");
-    assert.equal(created.text, "a\nb");
+    assert.equal(created.text, "a\nb\n");
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
@@ -155,6 +155,55 @@ test("readAll drops malformed entries but keeps valid ones", async () => {
     assert.equal(result.prompts.length, 1);
     assert.equal(result.prompts[0].id, "ok");
     assert.equal(result.prompts[0].text, "body");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("create rejects an over-limit title", async () => {
+  const dir = tempDir();
+  try {
+    const longTitle = "a".repeat(301);
+    await assert.rejects(() => store.create(dir, { title: longTitle, text: "x" }), /длиннее300/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("create rejects an over-limit text", async () => {
+  const dir = tempDir();
+  try {
+    const longText = "a".repeat(1_000_001);
+    await assert.rejects(() => store.create(dir, { title: "x", text: longText }), /длиннее1000000/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("create preserves leading/trailing whitespace in text", async () => {
+  const dir = tempDir();
+  try {
+    const created = await store.create(dir, { title: "T", text: " a\nb " });
+    assert.equal(created.text, " a\nb ");
+    const result = await store.readAll(dir);
+    assert.equal(result.prompts[0].text, " a\nb ");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("readAll preserves a long title without truncating", async () => {
+  const dir = tempDir();
+  try {
+    fs.mkdirSync(path.dirname(storeFile(dir)), { recursive: true });
+    const longTitle = "a".repeat(350);
+    fs.writeFileSync(
+      storeFile(dir),
+      JSON.stringify({ version: 1, prompts: [{ id: "ok", title: longTitle, text: "body", createdAt: 1, updatedAt: 1 }] }),
+      "utf8"
+    );
+    const result = await store.readAll(dir);
+    assert.equal(result.prompts[0].title.length, 350);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

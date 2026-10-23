@@ -58,6 +58,10 @@ const PromptsWorkspace: React.FC = () => {
       if (!result || !Array.isArray(result.prompts)) {
         throw new Error("Хранилище промтов недоступно.");
       }
+      if (result.error) {
+        setLoadError(result.error);
+        return null;
+      }
       setPrompts(result.prompts);
       setLoadError(null);
       return result.prompts;
@@ -163,15 +167,18 @@ const PromptsWorkspace: React.FC = () => {
   }, [selectedId, resetEditor]);
 
   const handleCopy = useCallback(async () => {
-    if (!selectedId) return;
-    const result = await window.lopster?.promptsCopy?.(selectedId);
+    if (!text.trim()) {
+      setSaveError("Текст промта пуст.");
+      return;
+    }
+    const result = await window.lopster?.webEngineCopyText?.(text);
     if (result?.ok) {
       setCopiedFlash(true);
       clearFlash();
     } else {
       setSaveError(result?.error || "Не удалось скопировать промт.");
     }
-  }, [selectedId, clearFlash]);
+  }, [text, clearFlash]);
 
   // Initial load + live refresh from other windows (or the copy modal's writes).
   useEffect(() => {
@@ -296,7 +303,7 @@ const PromptsWorkspace: React.FC = () => {
               type="button"
               className="prompts-action-btn"
               onClick={handleCopy}
-              disabled={!selectedId}
+              disabled={!text.trim()}
               title="Скопировать текст промта"
             >
               {copiedFlash ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
