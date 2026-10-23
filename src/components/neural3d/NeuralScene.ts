@@ -33,11 +33,11 @@ export interface NeuralSceneOptions {
   onHover: (info: NeuralHoverInfo | null) => void;
 }
 
-const CUBE_EDGE = 108;
-const SPHERE_ORBIT = 150;
-const SPHERE_RADIUS = 26;
-const RING_OUTER = 92;
-const RING_INNER = 40;
+const CUBE_EDGE = 320;
+const SPHERE_ORBIT = 66;
+const SPHERE_RADIUS = 34;
+const RING_OUTER = 78;
+const RING_INNER = 46;
 
 /** Fewer strand segments at large node counts keeps geometry build + upload light. */
 function strandSegments(count: number) {
@@ -188,15 +188,17 @@ export class NeuralScene {
       new THREE.BoxGeometry(CUBE_EDGE, CUBE_EDGE, CUBE_EDGE),
       new THREE.MeshStandardMaterial({
         color: 0xf8f8f8,
-        roughness: 0.28,
-        metalness: 0.05,
-        emissive: 0x202020,
-        emissiveIntensity: 0.6,
+        roughness: 0.15,
+        metalness: 0.1,
+        emissive: 0x000000,
+        transparent: true,
+        opacity: 0.1,
+        depthWrite: false,
       })
     );
     const cubeEdges = new THREE.LineSegments(
       new THREE.EdgesGeometry(this.cube.geometry),
-      new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35 })
+      new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 })
     );
     this.cube.add(cubeEdges);
     this.scene.add(this.cube);
