@@ -270,6 +270,7 @@ export class NeuralScene {
           transparent: true,
           opacity: 0.35,
           depthWrite: false,
+          fog: false,
           blending: THREE.AdditiveBlending,
         })
       );
