@@ -9,14 +9,14 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   overflow: hidden;
-  background: #090909;
+  background: var(--bg);
 }
 .terminal-pane {
   min-width: 0;
   min-height: 0;
   overflow: hidden;
   padding: 9px 8px 7px 11px;
-  background: #090909;
+  background: var(--bg);
 }
 .terminal-pane + .terminal-pane { border-left: 1px solid var(--border-strong); }
 .terminal-pane .xterm { height: 100%; }

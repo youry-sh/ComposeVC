@@ -172,7 +172,7 @@ const McpModal: React.FC<Props> = ({ open, onClose }) => {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/65 p-5" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+    <div className="fixed inset-0 z-[120] flex items-center justify-center theme-scrim p-5" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <div className="mcp-market flex h-[min(820px,94vh)] w-[min(1180px,96vw)] flex-col overflow-hidden border border-ink-300" style={{ background: "var(--bg)" }}>
         <header className="flex h-11 shrink-0 items-center justify-between gap-3 border-b border-ink-200 px-4">
           <div className="flex min-w-0 items-center gap-2">
