@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { BookOpen, FileText, Search, X } from "lucide-react";
+import { BookOpen, Check, Copy, FileText, Search, X } from "lucide-react";
 import MarkdownContent from "./markdown/MarkdownContent";
 import ChatMonoScroll from "./ChatMonoScroll";
 
@@ -32,6 +32,8 @@ const DocsWorkspace: React.FC = () => {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [copyingAll, setCopyingAll] = useState(false);
+  const [copiedAll, setCopiedAll] = useState(false);
 
   const refreshList = useCallback(async () => {
     try {

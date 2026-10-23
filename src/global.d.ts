@@ -417,6 +417,12 @@ declare global {
         sections: Array<{ id: string; title: string; summary: string; order: number; createdAt: number; updatedAt: number }>;
       }>;
       docsRead: (id: string) => Promise<{ id: string; title: string; summary: string; order: number; content: string; createdAt: number; updatedAt: number }>;
+      docsAll: () => Promise<{
+        version: number;
+        sectionCount: number;
+        updatedAt: number;
+        sections: Array<{ id: string; title: string; summary: string; order: number; content: string; createdAt: number; updatedAt: number }>;
+      }>;
       docsCreate: (input: { title: string; content: string; summary?: string; order?: number }) => Promise<{ id: string; title: string; summary: string; order: number; content: string; createdAt: number; updatedAt: number }>;
       docsUpdate: (id: string, patch: { title?: string; content?: string; summary?: string; order?: number }) => Promise<{ id: string; title: string; summary: string; order: number; content: string; createdAt: number; updatedAt: number }>;
       docsDelete: (id: string) => Promise<{ deleted: boolean; id?: string }>;

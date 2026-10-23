@@ -144,6 +144,7 @@ contextBridge.exposeInMainWorld("lopster", {
   },
   docsList: () => ipcRenderer.invoke("docs:list"),
   docsRead: (id) => ipcRenderer.invoke("docs:read", id),
+  docsAll: () => ipcRenderer.invoke("docs:all"),
   docsCreate: (input) => ipcRenderer.invoke("docs:create", input || {}),
   docsUpdate: (id, patch) => ipcRenderer.invoke("docs:update", id, patch || {}),
   docsDelete: (id) => ipcRenderer.invoke("docs:delete", id),

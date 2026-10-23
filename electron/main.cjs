@@ -3733,6 +3733,11 @@ ipcMain.handle("docs:read", async (_event, id) => {
   return docsStore.getDocsSection(app.getPath("userData"), id);
 });
 
+ipcMain.handle("docs:all", async () => {
+  await docsStore.seedIfEmpty(app.getPath("userData"));
+  return docsStore.getAllDocs(app.getPath("userData"));
+});
+
 ipcMain.handle("docs:create", async (_event, input) => {
   const section = await docsStore.upsertDocsSection(app.getPath("userData"), input || {});
   broadcastDocsChanged({ type: "changed" });
