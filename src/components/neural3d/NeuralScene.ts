@@ -904,6 +904,7 @@ export class NeuralScene {
     if (this.disposed) return;
     this.disposed = true;
     this.renderer.setAnimationLoop(null);
+    this.cancelHoverClear();
     this.clearGraphLayers();
 
     const canvas = this.renderer.domElement;
