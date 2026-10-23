@@ -8860,13 +8860,22 @@
   align-items: center;
   justify-content: center;
   border: 1px solid var(--border);
+  border-radius: 4px;
   background: var(--surface);
   color: var(--ink-600);
-  font-size: 14px;
   line-height: 1;
   cursor: pointer;
+  transition: background .14s ease, color .14s ease, border-color .14s ease, box-shadow .14s ease;
 }
-.chat-stage-unpin:hover { color: var(--ink-950); border-color: var(--border-strong); }
+.chat-stage-unpin svg { width: 12px; height: 12px; display: block; transition: transform .16s ease; }
+.chat-stage-unpin:hover {
+  background: var(--active-bg);
+  border-color: var(--border-strong);
+  color: var(--ink-950);
+  box-shadow: 0 0 0 1px var(--accent-muted);
+}
+.chat-stage-unpin:hover svg { transform: scale(1.08); }
+.chat-stage-unpin:focus-visible { outline: 1px solid var(--focus-ring); outline-offset: 1px; }
 /* Fills its grid column edge to edge — the hairlines are the only separation
    between the rail, the chat and the reserved column. */
 .chat-stage-frame {
