@@ -298,6 +298,7 @@ export class NeuralScene {
         uSphere: { value: new THREE.Vector3() },
         uTime: { value: 0 },
         uFlow: { value: 1 },
+        uDetail: { value: 1 },
         uFogColor: { value: bg.clone() },
         uFogNear: { value: 800 },
         uFogFar: { value: 5200 },
@@ -316,6 +317,10 @@ export class NeuralScene {
         uScale: { value: 1 },
         uTime: { value: 0 },
         uFlow: { value: 1 },
+        uDetail: { value: 1 },
+        uFogColor: { value: bg.clone() },
+        uFogNear: { value: 800 },
+        uFogFar: { value: 5200 },
         uDim: { value: 0 },
       },
     });
@@ -350,17 +355,21 @@ export class NeuralScene {
     this.highlightRing.visible = false;
     this.scene.add(this.highlightRing);
 
-    this.highlightStrands = new THREE.LineSegments(
-      new THREE.BufferGeometry(),
-      new THREE.LineBasicMaterial({
-        color: 0xfff2cc,
-        transparent: true,
-        opacity: 0.9,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-      })
-    );
-    this.highlightStrands.frustumCulled = false;
+    this.highlightStrandMaterial = new THREE.ShaderMaterial({
+      vertexShader: STRAND_VERTEX,
+      fragmentShader: HIGHLIGHT_STRAND_FRAGMENT,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      uniforms: {
+        uSphere: { value: new THREE.Vector3() },
+        uFogColor: { value: bg.clone() },
+        uFogNear: { value: 800 },
+        uFogFar: { value: 5200 },
+      },
+    });
+
+    this.highlightStrands = new THREE.LineSegments(new THREE.BufferGeometry(), this.highlightStrandMaterial);
     this.highlightStrands.visible = false;
     this.scene.add(this.highlightStrands);
 
