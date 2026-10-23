@@ -1,10 +1,9 @@
 import React from "react";
 
 /**
- * Idle decoration for the right column: the same gold "anime spell" sphere as
- * the Neural view — a warm gold orb inside a slowly turning magic circle of
- * kanji, floating gently on an infinite CSS loop. Pure SVG + CSS, no JS timers
- * and no React re-renders.
+ * Idle decoration for the right column: a white "anime spell" orb inside a
+ * slowly turning gold magic circle of kanji, floating gently on an infinite
+ * CSS loop. Pure SVG + CSS, no JS timers and no React re-renders.
  */
 
 const GLYPHS = [
@@ -73,15 +72,15 @@ const SphereBloom: React.FC = () => {
       <svg className="sphere-svg" viewBox="0 0 200 200">
         <defs>
           <radialGradient id="sb-sphere" cx="35%" cy="30%" r="80%">
-            <stop offset="0%" stopColor="#fff2cf" />
-            <stop offset="42%" stopColor="#f7c04a" />
-            <stop offset="76%" stopColor="#d99a2b" />
-            <stop offset="100%" stopColor="#8a5a12" />
+            <stop offset="0%" stopColor="#ffffff" />
+            <stop offset="45%" stopColor="#f2f2f2" />
+            <stop offset="78%" stopColor="#d4d4d4" />
+            <stop offset="100%" stopColor="#8f8f8f" />
           </radialGradient>
           <radialGradient id="sb-glow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="rgba(255, 216, 138, 0.32)" />
-            <stop offset="55%" stopColor="rgba(255, 216, 138, 0.10)" />
-            <stop offset="100%" stopColor="rgba(255, 216, 138, 0)" />
+            <stop offset="0%" stopColor="rgba(255, 255, 255, 0.30)" />
+            <stop offset="55%" stopColor="rgba(255, 255, 255, 0.10)" />
+            <stop offset="100%" stopColor="rgba(255, 255, 255, 0)" />
           </radialGradient>
         </defs>
 

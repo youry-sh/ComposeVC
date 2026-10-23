@@ -9375,7 +9375,7 @@
   animation: sb-orbit 7s linear infinite;
 }
 .sphere-dot {
-  fill: #ffe9b8;
+  fill: #ffffff;
   animation: sb-dot-pulse 7s ease-in-out infinite;
 }
 .sphere-dot--2 {
