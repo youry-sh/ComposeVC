@@ -9,10 +9,12 @@
     <!-- Apply theme before paint to avoid flash -->
     <script>
       (function () {
-        var allowed = { mono: 1, winter: 1, neon: 1 };
+        var allowed = { mono: 1, winter: 1, crimson: 1 };
+        var alias = { neon: "crimson" };
         var light = {};
         try {
           var t = localStorage.getItem("lopster-theme");
+          if (alias[t]) t = alias[t];
           if (!allowed[t]) t = "mono";
           document.documentElement.setAttribute("data-theme", t);
           document.documentElement.style.colorScheme = light[t] ? "light" : "dark";

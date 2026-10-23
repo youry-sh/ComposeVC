@@ -6,7 +6,7 @@
  * Tailwind `ink-*` / `status-*` / `accent` map to those variables.
  */
 
-export type ThemeId = "mono" | "winter" | "neon";
+export type ThemeId = "mono" | "winter" | "crimson";
 
 export type ThemeMeta = {
   id: ThemeId;
@@ -36,11 +36,11 @@ export const THEMES: ThemeMeta[] = [
     swatches: ["#080b0f", "#121a21", "#9db9cb", "#dfe7ed"],
   },
   {
-    id: "neon",
-    name: "Неон",
-    description: "Хвойный #365447 с неоново-розовым акцентом и пепельно-серыми деталями.",
+    id: "crimson",
+    name: "Багровый",
+    description: "Угольно-чёрный интерфейс с алым акцентом и тёплой пепельной отделкой.",
     type: "dark",
-    swatches: ["#16201b", "#365447", "#7b9187", "#ff4d9d"],
+    swatches: ["#070606", "#332626", "#a08d8d", "#e5484d"],
   },
 ];
 
@@ -55,7 +55,8 @@ export function isThemeId(value: unknown): value is ThemeId {
 export function getStoredTheme(): ThemeId {
   try {
     const raw = window.localStorage.getItem(THEME_STORAGE_KEY);
-    // Migrate any removed or unknown theme (crimson/cobalt/violet) → default
+    // Removed "neon" is replaced by crimson; any other unknown id → default.
+    if (raw === "neon") return "crimson";
     if (isThemeId(raw)) return raw;
   } catch {
     /* ignore */
