@@ -225,7 +225,7 @@ export async function buildNeuralGraph(
 
   const positions = new Float32Array(n * 3);
   const sizes = new Float32Array(n);
-  brainLayout(n, positions, sizes, degree);
+  brainLayout(ids, positions, sizes, degree);
 
   const colors = new Float32Array(n * 3);
   for (let i = 0; i < n; i += 1) {
@@ -233,18 +233,6 @@ export async function buildNeuralGraph(
     colors[i * 3] = r / 255;
     colors[i * 3 + 1] = g / 255;
     colors[i * 3 + 2] = b / 255;
-  }
-
-  const edgeColors = new Float32Array(edgeCount * 2 * 3);
-  for (let e = 0; e < edgeCount; e += 1) {
-    const a = rawFrom[e];
-    const [r, g, b] = PALETTE[lane[a] % LANES];
-    edgeColors[e * 6] = r / 255;
-    edgeColors[e * 6 + 1] = g / 255;
-    edgeColors[e * 6 + 2] = b / 255;
-    edgeColors[e * 6 + 3] = r / 255;
-    edgeColors[e * 6 + 4] = g / 255;
-    edgeColors[e * 6 + 5] = b / 255;
   }
 
   const edges = new Uint32Array(edgeCount * 2);
@@ -265,7 +253,6 @@ export async function buildNeuralGraph(
     colors,
     edges,
     edgeCount,
-    edgeColors,
     adjOff,
     adjTo,
   };
