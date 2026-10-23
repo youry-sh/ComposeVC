@@ -806,7 +806,7 @@ export class NeuralScene {
   private onPointerUp = (event: PointerEvent) => {
     if (this.downPos) {
       const moved = Math.hypot(event.clientX - this.downPos.x, event.clientY - this.downPos.y);
-      if (moved < 5 && event.button === 0 && this.graph && this.graph.count) {
+      if (!this.multiTouch && !this.gestureMoved && moved < 5 && event.button === 0 && this.graph && this.graph.count) {
         this.performPick(event.clientX, event.clientY);
         if (this.hovered >= 0) {
           this.options.onOpen(this.graph.ids[this.hovered]);
@@ -816,7 +816,12 @@ export class NeuralScene {
     }
     this.pointers.delete(event.pointerId);
     if (this.pointers.size < 2) this.pinch = null;
-    if (this.pointers.size === 0) this.dragMode = null;
+    if (this.pointers.size === 0) {
+      this.dragMode = null;
+      this.multiTouch = false;
+      this.gestureMoved = false;
+      this.renderer.domElement.classList.remove("is-panning");
+    }
     if (this.dragMode === null) {
       this.pendingPick = { x: event.clientX, y: event.clientY };
       this.needsPick = true;
@@ -825,11 +830,13 @@ export class NeuralScene {
     if (this.hovered >= 0) this.emitHover();
   };
 
-  private onPointerLeave = () => {
+  private onPointerLeave = (event: PointerEvent) => {
     if (this.dragMode) return;
+    const to = event.relatedTarget as Element | null;
+    if (to && to.closest(".knowledge-neural-card")) return;
     this.pendingPick = null;
     this.needsPick = false;
-    this.setHover(-1);
+    if (this.hovered >= 0) this.scheduleHoverClear();
   };
 
   private onWheel = (event: WheelEvent) => {
@@ -863,6 +870,8 @@ export class NeuralScene {
     this.scene.background = bg;
     (this.scene.fog as THREE.Fog).color.copy(bg);
     this.strandMaterial.uniforms.uFogColor.value.copy(bg);
+    this.nodeMaterial.uniforms.uFogColor.value.copy(bg);
+    this.highlightStrandMaterial.uniforms.uFogColor.value.copy(bg);
     (this.starfield.material as THREE.PointsMaterial).color.set(colors.accent);
   }
 
