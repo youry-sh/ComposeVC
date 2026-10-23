@@ -84,6 +84,7 @@ export class NeuralScene {
   private sphere: THREE.Mesh;
   private ringGroup: THREE.Group;
   private ringMesh: THREE.Mesh;
+  private ringTexture: THREE.Texture;
   private starfield: THREE.Points;
   private orbitParticles: THREE.Points;
 
@@ -474,31 +475,32 @@ export class NeuralScene {
   }
 
   private updateSetpiece() {
+    const t = this.time;
+
     // White cube: slow meditative spin.
-    this.cube.rotation.x += 0.0016 * 0.22 * this.motion;
-    this.cube.rotation.y += 0.0016 * 0.14 * this.motion;
+    this.cube.rotation.x = t * 0.22;
+    this.cube.rotation.y = t * 0.14;
 
     // Gold sphere: tilted orbital loop.
-    const orbit = this.time * 0.55;
     this.sphere.position.set(
-      Math.cos(orbit) * SPHERE_ORBIT,
-      Math.sin(orbit * 0.85) * SPHERE_ORBIT * 0.34,
-      Math.sin(orbit) * SPHERE_ORBIT * 0.62
+      Math.cos(t * 0.55) * SPHERE_ORBIT,
+      Math.sin(t * 0.4675) * SPHERE_ORBIT * 0.34,
+      Math.sin(t * 0.55) * SPHERE_ORBIT * 0.62
     );
-    this.sphere.rotation.y += 0.016 * this.motion;
+    this.sphere.rotation.y = t * 0.9;
 
     // Spell ring follows the sphere and billboards to the camera.
     this.ringGroup.position.copy(this.sphere.position);
     this.ringGroup.quaternion.copy(this.camera.quaternion);
-    this.ringMesh.rotation.z += 0.0032 * this.motion;
+    this.ringMesh.rotation.z = t * 0.18;
 
     this.orbitParticles.position.copy(this.sphere.position);
-    this.orbitParticles.rotation.y += 0.004 * this.motion;
-    this.starfield.rotation.y += 0.0006 * this.motion;
+    this.orbitParticles.rotation.y = t * 0.25;
+    this.starfield.rotation.y = t * 0.03;
 
-    if (this.highlightRing.visible && this.graph) {
-      const s = 1 + Math.sin(this.time * 3.5) * 0.25;
-      this.highlightRing.scale.setScalar(s);
+    if (this.highlightRing.visible) {
+      this.highlightRing.quaternion.copy(this.camera.quaternion);
+      this.highlightRing.scale.setScalar(1 + Math.sin(t * 3.5) * 0.25);
     }
   }
 
@@ -795,10 +797,13 @@ export class NeuralScene {
 
   // ── Disposal ──
   private clearGraphLayers() {
+    // Shared materials are owned by the scene and reused across setGraph calls,
+    // so only the per-graph geometry is disposed here (the materials live until
+    // the scene itself is disposed).
     for (const layer of [this.strandLayer, this.nodeLayer, this.edgeLayer]) {
       if (!layer) continue;
       this.scene.remove(layer);
-      disposeObject(layer);
+      layer.geometry.dispose();
     }
     this.strandLayer = null;
     this.nodeLayer = null;
