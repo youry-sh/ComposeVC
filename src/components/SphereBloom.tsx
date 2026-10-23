@@ -91,9 +91,9 @@ const SphereBloom: React.FC = () => {
             <circle className="sphere-ring-outer" r="58" />
             <circle className="sphere-ring-inner" r="42" />
             {ticks}
+            {glyphs}
+            <circle className="sphere-ring-orb" cy="-58" r="3.2" />
           </g>
-
-          <g className="sphere-glyphs">{glyphs}</g>
 
           <g className="sphere-core">
             <circle className="sphere-body" r="28" fill="url(#sb-sphere)" />

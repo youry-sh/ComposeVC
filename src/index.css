@@ -9339,7 +9339,7 @@
 .sphere-ring-spin {
   transform-box: fill-box;
   transform-origin: center;
-  animation: sb-ring-spin 28s linear infinite;
+  animation: sb-ring-spin 14s linear infinite;
 }
 .sphere-ring-outer {
   fill: none;
@@ -9357,6 +9357,9 @@
   stroke: #ffd88a;
   stroke-width: 1;
   opacity: 0.5;
+}
+.sphere-ring-orb {
+  fill: #ffffff;
 }
 .sphere-glyph {
   fill: #ffd88a;
@@ -9385,12 +9388,12 @@
 @keyframes sb-ring-spin { to { transform: rotate(360deg); } }
 @keyframes sb-orbit { to { transform: rotate(360deg); } }
 @keyframes sb-float {
-  0%, 100% { transform: translateY(0) scale(1); }
-  50%      { transform: translateY(-2px) scale(1.03); }
+  0%, 100% { transform: translateY(0) scale(0.94); }
+  50%      { transform: translateY(-3px) scale(1.07); }
 }
 @keyframes sb-glow-pulse {
-  0%, 100% { transform: scale(0.88); opacity: 0.5; }
-  50%      { transform: scale(1.06); opacity: 1; }
+  0%, 100% { transform: scale(0.82); opacity: 0.45; }
+  50%      { transform: scale(1.14); opacity: 1; }
 }
 @keyframes sb-glyph-pulse {
   0%, 100% { opacity: 0.55; }
