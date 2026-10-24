@@ -3841,6 +3841,9 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   );
   /** Live tool cards stay folded behind the status strip until asked for. */
   const [liveToolsOpen, setLiveToolsOpen] = useState(false);
+  /** Queue item currently being edited inline (id → draft text). */
+  const [editingQueueId, setEditingQueueId] = useState<string | null>(null);
+  const [editingQueueText, setEditingQueueText] = useState("");
   /** Newest text chunk of the running turn — the one that stays in the chat. */
   const lastLiveTextId = useMemo(() => {
     for (let index = liveTimeline.length - 1; index >= 0; index -= 1) {
