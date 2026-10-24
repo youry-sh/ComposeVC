@@ -1249,6 +1249,16 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
     );
   };
 
+  const editQueuedMessage = (id: string, content: string) => {
+    const sid = activeSessionIdRef.current;
+    if (!sid) return;
+    const prev = messageQueuesRef.current.get(sid) || [];
+    syncSessionQueue(
+      sid,
+      prev.map((item) => (item.id === id ? { ...item, content } : item))
+    );
+  };
+
   const clearAssistantDrafts = () => {
     assistantDraftsRef.current = [];
     setAssistantDrafts([]);
