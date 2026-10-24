@@ -430,6 +430,7 @@ const App: React.FC = () => {
     queueEdit: t.queueEdit,
     queueSave: t.queueSave,
     queueCancel: t.queueCancel,
+    queueCopy: t.queueCopy,
     tools: t.tools,
     autoInsert: t.autoInsert,
     autoInsertHint: t.autoInsertHint,

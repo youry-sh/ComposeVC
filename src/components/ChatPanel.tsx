@@ -195,6 +195,7 @@ interface ChatPanelProps {
     queueEdit: string;
     queueSave: string;
     queueCancel: string;
+    queueCopy: string;
     retry: string;
     tools: string;
     autoInsert: string;
@@ -3844,6 +3845,19 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   /** Queue item currently being edited inline (id → draft text). */
   const [editingQueueId, setEditingQueueId] = useState<string | null>(null);
   const [editingQueueText, setEditingQueueText] = useState("");
+  /** Queue item whose text was just copied (id → brief checkmark). */
+  const [copiedQueueId, setCopiedQueueId] = useState<string | null>(null);
+  const copiedTimer = useRef<number | null>(null);
+  const handleCopyQueued = async (id: string, content: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+    } catch {
+      /* clipboard unavailable — ignore */
+    }
+    if (copiedTimer.current) window.clearTimeout(copiedTimer.current);
+    setCopiedQueueId(id);
+    copiedTimer.current = window.setTimeout(() => setCopiedQueueId(null), 1200);
+  };
   /** Newest text chunk of the running turn — the one that stays in the chat. */
   const lastLiveTextId = useMemo(() => {
     for (let index = liveTimeline.length - 1; index >= 0; index -= 1) {
