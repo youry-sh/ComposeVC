@@ -2566,6 +2566,7 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
           thinkingDraft={thinking ? thinkingDraft : null}
           messageQueue={messageQueue}
           onRemoveQueuedMessage={removeQueuedMessage}
+          onEditQueuedMessage={editQueuedMessage}
           onClearMessageQueue={clearMessageQueue}
           statusLabel={
             agentStatusLabel ||

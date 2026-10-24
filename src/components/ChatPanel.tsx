@@ -111,6 +111,7 @@ interface ChatPanelProps {
   thinkingDraft?: string | null;
   messageQueue?: Array<{ id: string; content: string; images?: ChatImageAttachment[] }>;
   onRemoveQueuedMessage?: (id: string) => void;
+  onEditQueuedMessage?: (id: string, content: string) => void;
   onClearMessageQueue?: () => void;
   statusLabel?: string;
   /** LAB-IN knowledge package handed to the main agent (button above the composer while running). */
@@ -191,6 +192,9 @@ interface ChatPanelProps {
     queue: string;
     queueClear: string;
     queueWaiting: string;
+    queueEdit: string;
+    queueSave: string;
+    queueCancel: string;
     retry: string;
     tools: string;
     autoInsert: string;
@@ -3787,6 +3791,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   thinkingDraft = null,
   messageQueue = [],
   onRemoveQueuedMessage,
+  onEditQueuedMessage,
   onClearMessageQueue,
   statusLabel,
   labInPackage,
