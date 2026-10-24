@@ -6327,6 +6327,37 @@
     background: rgba(255, 255, 255, 0.04);
   }
 
+  .chat-queue-item.is-editing {
+    align-items: flex-start;
+  }
+
+  .chat-queue-edit-input {
+    flex: 1;
+    min-width: 0;
+    resize: none;
+    padding: 4px 6px;
+    border: 1px solid var(--border-strong);
+    border-radius: 4px;
+    background: var(--input-bg);
+    color: var(--ink-900);
+    font: inherit;
+    font-size: 11px;
+    line-height: 1.4;
+    outline: none;
+  }
+
+  .chat-queue-edit-input:focus {
+    border-color: var(--accent);
+  }
+
+  .chat-queue-edit-save {
+    color: var(--accent-soft);
+  }
+
+  .chat-queue-edit-save:hover {
+    color: var(--accent-soft);
+  }
+
   /* Composer + bubble image thumbs */
   .chat-composer-images {
     min-width: 0;
