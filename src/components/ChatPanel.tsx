@@ -4728,32 +4728,102 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
               )}
             </div>
             <div className="chat-queue-list">
-              {messageQueue.map((item, index) => (
-                <div key={item.id} className="chat-queue-item">
-                  <span className="chat-queue-index">{String(index + 1).padStart(2, "0")}</span>
-                  <span
-                    className="chat-queue-text"
-                    title={
-                      item.content ||
-                      (item.images?.length ? `${item.images.length} image(s)` : "")
-                    }
-                  >
-                    {item.content ||
-                      (item.images?.length ? `🖼 ${item.images.length} image(s)` : "")}
-                  </span>
-                  {onRemoveQueuedMessage && (
-                    <button
-                      type="button"
-                      onClick={() => onRemoveQueuedMessage(item.id)}
-                      className="chat-queue-remove"
-                      title={labels.queueClear}
-                      aria-label="Remove from queue"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  )}
-                </div>
-              ))}
+              {messageQueue.map((item, index) => {
+                const isEditing = editingQueueId === item.id;
+                return (
+                  <div key={item.id} className={`chat-queue-item${isEditing ? " is-editing" : ""}`}>
+                    <span className="chat-queue-index">{String(index + 1).padStart(2, "0")}</span>
+                    {isEditing ? (
+                      <>
+                        <textarea
+                          className="chat-queue-edit-input"
+                          value={editingQueueText}
+                          onChange={(event) => setEditingQueueText(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" && !event.shiftKey) {
+                              event.preventDefault();
+                              const value = editingQueueText.trim();
+                              if (value) onEditQueuedMessage?.(item.id, value);
+                              setEditingQueueId(null);
+                              setEditingQueueText("");
+                            } else if (event.key === "Escape") {
+                              setEditingQueueId(null);
+                              setEditingQueueText("");
+                            }
+                          }}
+                          rows={2}
+                          autoFocus
+                          aria-label="Edit queue message"
+                        />
+                        <button
+                          type="button"
+                          className="chat-queue-remove chat-queue-edit-save"
+                          onClick={() => {
+                            const value = editingQueueText.trim();
+                            if (value) onEditQueuedMessage?.(item.id, value);
+                            setEditingQueueId(null);
+                            setEditingQueueText("");
+                          }}
+                          title={labels.queueSave}
+                          aria-label="Save"
+                        >
+                          <Check className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          className="chat-queue-remove"
+                          onClick={() => {
+                            setEditingQueueId(null);
+                            setEditingQueueText("");
+                          }}
+                          title={labels.queueCancel}
+                          aria-label="Cancel"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <span
+                          className="chat-queue-text"
+                          title={
+                            item.content ||
+                            (item.images?.length ? `${item.images.length} image(s)` : "")
+                          }
+                        >
+                          {item.content ||
+                            (item.images?.length ? `🖼 ${item.images.length} image(s)` : "")}
+                        </span>
+                        {onEditQueuedMessage && (
+                          <button
+                            type="button"
+                            className="chat-queue-remove chat-queue-edit"
+                            onClick={() => {
+                              setEditingQueueId(item.id);
+                              setEditingQueueText(item.content || "");
+                            }}
+                            title={labels.queueEdit}
+                            aria-label="Edit queue message"
+                          >
+                            <Pencil className="w-3 h-3" />
+                          </button>
+                        )}
+                        {onRemoveQueuedMessage && (
+                          <button
+                            type="button"
+                            onClick={() => onRemoveQueuedMessage(item.id)}
+                            className="chat-queue-remove"
+                            title={labels.queueClear}
+                            aria-label="Remove from queue"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
