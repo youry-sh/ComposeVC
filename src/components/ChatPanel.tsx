@@ -4808,6 +4808,19 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                           {item.content ||
                             (item.images?.length ? `🖼 ${item.images.length} image(s)` : "")}
                         </span>
+                        <button
+                          type="button"
+                          className="chat-queue-remove"
+                          onClick={() => void handleCopyQueued(item.id, item.content || "")}
+                          title={labels.queueCopy}
+                          aria-label="Copy queue message"
+                        >
+                          {copiedQueueId === item.id ? (
+                            <Check className="w-3 h-3" />
+                          ) : (
+                            <Copy className="w-3 h-3" />
+                          )}
+                        </button>
                         {onEditQueuedMessage && (
                           <button
                             type="button"

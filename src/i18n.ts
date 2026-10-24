@@ -573,6 +573,7 @@ export const translations = {
     queueEdit: "Змінити",
     queueSave: "Зберегти",
     queueCancel: "Скасувати",
+    queueCopy: "Копіювати",
     retrying: "Повтор спроби",
     retry: "Повторити",
     nothingToCompact: "Поки що нічого стискати — діалог ще короткий.",
