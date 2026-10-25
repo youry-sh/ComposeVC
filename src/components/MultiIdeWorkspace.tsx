@@ -25,10 +25,12 @@ const ASIDE_HOTKEY: HotkeyDefinition = { code: "KeyB", modifiers: ["mod", "shift
 export const MULTIIDE_STORAGE_KEY = "lopster-multiide-slots";
 export const MULTIIDE_ACTIVE_KEY = "lopster-multiide-active";
 const MULTIIDE_ROWS_KEY = "lopster-multiide-rows";
-/** Hard ceiling — each panel holds a live agent session. */
-export const MULTIIDE_MAX_SLOTS = 6;
 /** Workspace ceiling — Alt+1…4 jump straight to these slots of the rail. */
 export const MULTIIDE_MAX_WORKSPACES = 4;
+/** Chats allowed inside ONE workspace (each workspace has its own budget). */
+export const MULTIIDE_CHATS_PER_WORKSPACE = 6;
+/** Global hard ceiling — every workspace filled to the brim (each panel holds a live session). */
+export const MULTIIDE_MAX_SLOTS = MULTIIDE_MAX_WORKSPACES * MULTIIDE_CHATS_PER_WORKSPACE;
 /** Fixed id of the default workspace — pre-workspace chats attach here on migration. */
 export const DEFAULT_WORKSPACE_ID = "ws-default";
 const WORKSPACES_KEY = "lopster-multiide-workspaces";
@@ -745,6 +747,9 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
   }, []);
 
   const handleAddSlot = useCallback(() => {
+    // Each workspace owns its own chat budget, so the cap is per workspace here;
+    // the global ceiling is only the sum of all four budgets.
+    if (activeWorkspaceSlots.length >= MULTIIDE_CHATS_PER_WORKSPACE) return;
     if (slots.length >= MULTIIDE_MAX_SLOTS) return;
     const used = new Set(slots.map((s) => s.id));
     let id = "";
@@ -754,7 +759,7 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
     } while (used.has(id));
     onSlotsChange([...slots, emptySlot(id, activeWorkspaceId)]);
     patchActiveWorkspace({ activeId: id });
-  }, [onSlotsChange, slots, activeWorkspaceId, patchActiveWorkspace]);
+  }, [activeWorkspaceSlots, onSlotsChange, slots, activeWorkspaceId, patchActiveWorkspace]);
 
   // Create a new workspace with one fresh empty panel, then switch to it.
   const handleAddWorkspace = useCallback(() => {
@@ -910,7 +915,7 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
               type="button"
               className="chat-rail-add"
               onClick={handleAddWorkspace}
-              disabled={workspaces.length >= MULTIIDE_MAX_WORKSPACES || stableSlots.length >= MULTIIDE_MAX_SLOTS}
+              disabled={workspaces.length >= MULTIIDE_MAX_WORKSPACES}
               title={labels.newWorkspace || "New workspace"}
               aria-label={labels.newWorkspace || "New workspace"}
             >
@@ -920,8 +925,8 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
               type="button"
               className="chat-rail-add"
               onClick={handleAddSlot}
-              disabled={stableSlots.length >= MULTIIDE_MAX_SLOTS}
-              title={labels.newChat || "New chat panel"}
+              disabled={activeWorkspaceSlots.length >= MULTIIDE_CHATS_PER_WORKSPACE}
+              title={`${labels.newChat || "New chat panel"} (${activeWorkspaceSlots.length}/${MULTIIDE_CHATS_PER_WORKSPACE})`}
               aria-label={labels.newChat || "New chat panel"}
             >
               +
