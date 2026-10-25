@@ -9240,7 +9240,6 @@
   gap: 4px;
 }
 .chat-rail-quick-btn {
-  position: relative;
   min-width: 0;
   height: 24px;
   display: inline-flex;
@@ -9256,26 +9255,6 @@
   letter-spacing: .06em;
   cursor: pointer;
   transition: color .12s ease, background .12s ease, border-color .12s ease;
-}
-/* Accent underline riding the bottom edge of every rail footer button. */
-.chat-rail-quick-btn::after {
-  content: "";
-  position: absolute;
-  left: 4px;
-  right: 4px;
-  bottom: 2px;
-  height: 2px;
-  border-radius: 1px;
-  background: var(--accent);
-  opacity: .45;
-  transform: scaleX(.55);
-  transform-origin: 50% 50%;
-  transition: opacity .16s ease, transform .16s ease;
-}
-.chat-rail-quick-btn:hover::after,
-.chat-rail-quick-btn:focus-visible::after {
-  opacity: 1;
-  transform: scaleX(1);
 }
 .chat-rail-quick-btn svg { width: 12px; height: 12px; flex: none; display: block; }
 .chat-rail-quick-btn span {
@@ -9293,10 +9272,6 @@
 .chat-rail-foot-count {
   text-align: right;
   font-variant-numeric: tabular-nums;
-  text-decoration: underline;
-  text-decoration-color: var(--accent);
-  text-decoration-thickness: 1px;
-  text-underline-offset: 3px;
 }
 
 /* ── Ctrl+H switcher: the rail's list as a modal ──
