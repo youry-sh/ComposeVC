@@ -35,6 +35,9 @@ export default function UpdateBadge() {
   const [pos, setPos] = useState<{ top: number; right: number }>({ top: 40, right: 12 });
   const btnRef = useRef<HTMLButtonElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
+  // Set when the user presses "Скачать и обновить": once the download finishes,
+  // the install+restart runs by itself (consent was already given by the click).
+  const autoInstallRef = useRef(false);
 
   useEffect(() => {
     const api = window.lopster;
@@ -54,6 +57,21 @@ export default function UpdateBadge() {
       off?.();
     };
   }, []);
+
+  // User already agreed ("Скачать и обновить") → install + relaunch as soon as
+  // the download finishes. Without that click nothing is downloaded or applied.
+  useEffect(() => {
+    const status = state?.status;
+    if (status === "downloaded" && autoInstallRef.current) {
+      autoInstallRef.current = false;
+      setBusy(true);
+      Promise.resolve(window.lopster?.updateInstall())
+        .catch(() => {})
+        .finally(() => setBusy(false));
+      return;
+    }
+    if (status === "error" || status === "idle") autoInstallRef.current = false;
+  }, [state?.status]);
 
   const refreshPosition = useCallback(() => {
     const el = btnRef.current;
@@ -156,6 +174,7 @@ export default function UpdateBadge() {
       return;
     }
     if (status === "available") {
+      autoInstallRef.current = true;
       run(() => window.lopster?.updateDownload());
       return;
     }
