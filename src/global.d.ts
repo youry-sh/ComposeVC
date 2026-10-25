@@ -429,6 +429,13 @@ declare global {
       newWindow: () => Promise<boolean | { ok: boolean; instanceId?: string; error?: string }>;
       openProxySubview: (view: "usage" | "settings") => Promise<{ ok: boolean; error?: string }>;
       sendChatRequest: (request: ChatExecutionRequest) => Promise<ChatExecutionResponse>;
+      /** Ghost-text autocomplete for the chat composer (whole draft + caret). */
+      inlineHintSuggest: (request: {
+        text: string;
+        caret?: number;
+        modelId?: string | null;
+        projectName?: string | null;
+      }) => Promise<{ ok: boolean; text?: string; model?: string; error?: string }>;
       getModelLimits: (modelId: string | null) => Promise<{ context: number | null; output: number | null }>;
       sizeworkoutSnapshot: (workspaceId?: string | null) => Promise<{
         ok: boolean;

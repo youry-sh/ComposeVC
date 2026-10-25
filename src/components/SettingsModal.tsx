@@ -591,6 +591,8 @@ const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, 
     fortaniModelId: "",
     cloudflareAccountId: "",
     cloudflareApiToken: "",
+    inlineHintEnabled: false,
+    inlineHintModelId: "",
   };
   const labInPromptModelId =
     typeof aiRuntime.labInPromptModelId === "string" ? aiRuntime.labInPromptModelId.trim() : "";
@@ -610,6 +612,13 @@ const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, 
     ? draft.models.find((m) => m.id === fortaniModelId || m.name === fortaniModelId)
     : null;
   const fortaniSelectValue = fortaniModelMatch ? fortaniModelMatch.id : "";
+  const inlineHintModelId =
+    typeof aiRuntime.inlineHintModelId === "string" ? aiRuntime.inlineHintModelId.trim() : "";
+  const inlineHintModelMatch = inlineHintModelId
+    ? draft.models.find((m) => m.id === inlineHintModelId || m.name === inlineHintModelId)
+    : null;
+  const inlineHintSelectValue = inlineHintModelMatch ? inlineHintModelMatch.id : "";
+  const inlineHintEnabled = aiRuntime.inlineHintEnabled === true;
   const modelOptions = [
     { value: "", label: "Same as main model (default)" },
     ...draft.models.map((model) => {
@@ -958,6 +967,54 @@ const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, 
                     {fortaniModelId && !fortaniModelMatch ? (
                       <p className="text-[11px] leading-snug" style={{ color: "var(--danger)" }}>
                         Saved FoRtani model &quot;{fortaniModelId}&quot; is missing — falls back to main model.
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="settings-card">
+                  <div className="settings-card-title">Composer autocomplete</div>
+                  <p className="mb-2 text-[11px] leading-snug text-ink-500">
+                    While you type a prompt, the model continues it as faint ghost text inside the input.
+                    Tab inserts the suggestion; keep typing and a fresh one appears. It sees the whole input
+                    and the current caret position.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => updateAiRuntime({ inlineHintEnabled: !inlineHintEnabled })}
+                    className="settings-toggle-row"
+                  >
+                    <span
+                      className={`relative h-5 w-9 shrink-0 rounded-full border transition-colors ${
+                        inlineHintEnabled ? "theme-toggle-on" : "border-ink-300 bg-ink-300"
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-[3px] h-3.5 w-3.5 rounded-full theme-toggle-thumb shadow-sm transition-transform ${
+                          inlineHintEnabled ? "translate-x-4" : "translate-x-0.5"
+                        }`}
+                      />
+                    </span>
+                    <span
+                      className="min-w-0 text-[12px] leading-none"
+                      style={{ color: inlineHintEnabled ? "var(--ink-950)" : "var(--ink-700)" }}
+                    >
+                      {inlineHintEnabled ? "Ghost suggestions on · Tab to insert" : "Ghost suggestions off"}
+                    </span>
+                  </button>
+                  <div className="mt-3 grid gap-1.5">
+                    <span className="text-[10px] font-medium uppercase tracking-[0.1em] text-ink-500">
+                      Suggestion model
+                    </span>
+                    <UiSelect
+                      ariaLabel="Composer autocomplete model"
+                      value={inlineHintSelectValue}
+                      options={modelOptions}
+                      onChange={(next) => updateAiRuntime({ inlineHintModelId: next || "" })}
+                    />
+                    {inlineHintModelId && !inlineHintModelMatch ? (
+                      <p className="text-[11px] leading-snug" style={{ color: "var(--danger)" }}>
+                        Saved autocomplete model &quot;{inlineHintModelId}&quot; is missing — falls back to the main model.
                       </p>
                     ) : null}
                   </div>

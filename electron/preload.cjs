@@ -116,6 +116,7 @@ contextBridge.exposeInMainWorld("lopster", {
   finishIntro: () => ipcRenderer.send("intro:finished"),
   openProxySubview: (view) => ipcRenderer.invoke("proxy:openSubview", view),
   sendChatRequest: (request) => ipcRenderer.invoke("chat:send", request),
+  inlineHintSuggest: (request) => ipcRenderer.invoke("inline-hint:suggest", request || {}),
   getModelLimits: (modelId) => ipcRenderer.invoke("model:limits", modelId),
   stopGeneration: (sessionId) => ipcRenderer.invoke("chat:stop", sessionId || null),
   listRunningChatSessions: () => ipcRenderer.invoke("chat:runningSessions"),

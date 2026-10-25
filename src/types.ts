@@ -170,6 +170,10 @@ export interface AiRuntimeConfig {
   cloudflareAccountId?: string;
   /** Cloudflare API token for Workers AI image generation. */
   cloudflareApiToken?: string;
+  /** Inline ghost-text autocomplete in the chat composer (Tab inserts it). */
+  inlineHintEnabled?: boolean;
+  /** Model used for composer autocomplete. Empty = selected chat model. */
+  inlineHintModelId?: string;
 }
 
 export interface ProviderConfig {
