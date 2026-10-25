@@ -107,14 +107,11 @@ const labelClass = "ide-field-label text-[10px] font-medium uppercase tracking-[
 
 const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
   tools,
-  onAdd,
   onUpdate,
   onRemove,
   labels,
 }) => {
-  const [panelMode, setPanelMode] = useState<PanelMode>("create");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
   const [busyShare, setBusyShare] = useState(false);
@@ -141,73 +138,37 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
   useEffect(() => {
     if (selectedId && !tools.some((t) => t.id === selectedId)) {
       setSelectedId(null);
-      setPanelMode("create");
-      setTitle("");
       setDescription("");
       setError(null);
     }
   }, [tools, selectedId]);
 
-  const resetCreateForm = () => {
-    setTitle("");
+  const closeSelection = () => {
+    setSelectedId(null);
     setDescription("");
     setError(null);
   };
 
-  const openCreate = () => {
-    setPanelMode("create");
-    setSelectedId(null);
-    resetCreateForm();
-  };
-
-  const openEdit = (tool: CustomTool) => {
-    setPanelMode("edit");
+  const openTool = (tool: CustomTool) => {
     setSelectedId(tool.id);
-    setTitle(tool.title || "");
     setDescription(tool.description || "");
     setError(null);
   };
 
   const selectedTool = selectedId ? tools.find((t) => t.id === selectedId) : undefined;
-  // Identity: derived once from the title on create; the persisted name is preserved
-  // verbatim on edit (renaming the title must never rename the folder).
-  const derivedName =
-    panelMode === "edit" && selectedTool ? selectedTool.name : slugifyName(title);
-
-  const canSave = Boolean(derivedName);
 
   const handleSave = async () => {
-    const trimmedName = derivedName;
-    const trimmedTitle = title.trim();
-    const trimmedDescription = description.trim();
-    if (!trimmedName) {
-      setError(labels.customToolNameRequired);
-      return;
-    }
-
+    if (!selectedTool) return;
     setSaving(true);
     setError(null);
     setStatusMsg(null);
     try {
-      if (panelMode === "edit" && selectedId) {
-        // Only the catalog metadata is edited here; entry code, runtime, tags and
-        // connections stay untouched on disk (the agent owns the tool folder).
-        await onUpdate(selectedId, {
-          name: trimmedName,
-          title: trimmedTitle || undefined,
-          description: trimmedDescription || undefined,
-        });
-      } else {
-        await onAdd({
-          name: trimmedName,
-          title: trimmedTitle || undefined,
-          description: trimmedDescription || undefined,
-          code: DEFAULT_CODE,
-          runtime: "node",
-          entry: "main.js",
-        });
-        resetCreateForm();
-      }
+      // Catalog-only edit: entry code, runtime, title, tags and connections stay
+      // untouched on disk (the agent owns the tool folder).
+      await onUpdate(selectedTool.id, {
+        name: selectedTool.name,
+        description: description.trim() || undefined,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save custom tool");
     } finally {
@@ -629,15 +590,6 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
                   style={fieldStyle}
                 />
               </div>
-              <button
-                type="button"
-                onClick={openCreate}
-                className={quietBtn}
-                title={labels.customToolAdd}
-              >
-                <Plus className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">{labels.customToolAdd}</span>
-              </button>
             </div>
             <div className="ide-library-list max-h-[32vh] min-h-0 overflow-y-auto px-1.5 pb-1.5 scrollbar-thin">
               {filteredTools.length === 0 ? (
