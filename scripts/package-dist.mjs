@@ -160,6 +160,30 @@ function tryClearDir(dir, attempts = 4) {
   return false;
 }
 
+/**
+ * Remove staged build dirs abandoned by an interrupted build (older than 6 h).
+ * Only our own `.build-*` output folders are touched — never user artifacts.
+ */
+function pruneStagedOutputs(releaseDir) {
+  if (!exists(releaseDir)) return;
+  const cutoff = Date.now() - 6 * 60 * 60 * 1000;
+  let entries;
+  try {
+    entries = fs.readdirSync(releaseDir, { withFileTypes: true });
+  } catch {
+    return;
+  }
+  for (const ent of entries) {
+    if (!ent.isDirectory() || !ent.name.startsWith(".build-")) continue;
+    const p = path.join(releaseDir, ent.name);
+    try {
+      if (fs.statSync(p).mtimeMs < cutoff) tryClearDir(p, 1);
+    } catch {
+      /* leave it for the next build */
+    }
+  }
+}
+
 function mkdirp(p) {
   fs.mkdirSync(p, { recursive: true });
 }
@@ -492,6 +516,7 @@ if (!stagedOutput && exists(primaryAppOut) && !tryClearDir(primaryAppOut)) {
   stagedOutput = true;
 }
 if (stagedOutput) {
+  pruneStagedOutputs(releaseDir);
   buildOutput = path.join(releaseDir, `.build-${Date.now().toString(36)}`);
   mkdirp(buildOutput);
   log("release/win-unpacked is locked by a running app (usually ComposeVC itself).");
