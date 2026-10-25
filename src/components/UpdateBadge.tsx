@@ -223,15 +223,28 @@ export default function UpdateBadge() {
           aria-label="Обновления ComposeVC"
           style={{ top: pos.top, right: pos.right }}
         >
+          {/* The wordmark moved here from the title bar — the bar is chrome only. */}
+          <div className="titlebar-update-brand">
+            <div className="titlebar-update-brand-copy">
+              <span className="titlebar-update-brand-name">
+                COMPOSE
+                <span className="titlebar-update-brand-slash" aria-hidden>
+                  //
+                </span>
+                VC
+              </span>
+              <span className="titlebar-update-brand-sub">desktop workspace</span>
+            </div>
+            <span className="titlebar-update-brand-ver" title="Установленная версия">
+              {currentVersion ? `v${currentVersion}` : "dev"}
+            </span>
+          </div>
+
           <div className="titlebar-update-head">
             <span className="titlebar-update-title">ОБНОВЛЕНИЯ</span>
             <button type="button" className="titlebar-update-close" aria-label="Закрыть" onClick={() => setOpen(false)}>
               <X className="w-3 h-3" />
             </button>
-          </div>
-
-          <div className="titlebar-update-current">
-            Установлено: <b>{currentVersion || "—"}</b>
           </div>
 
           <div className="titlebar-update-body">
