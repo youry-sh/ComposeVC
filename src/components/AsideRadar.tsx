@@ -24,16 +24,6 @@ const AsideRadar: React.FC = () => (
       <span className="aside-radar-blip aside-radar-blip--3" />
       <span className="aside-radar-core" />
     </div>
-
-    <div className="aside-radar-hud">
-      <span className="aside-radar-tag">Signal</span>
-      <span className="aside-radar-state">
-        scanning
-        <i />
-        <i />
-        <i />
-      </span>
-    </div>
   </div>
 );
 

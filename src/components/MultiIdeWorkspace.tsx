@@ -898,32 +898,34 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
                   </button>
                 )}
                 {renamingId !== ws.id && (
-                  <button
-                    type="button"
-                    className="chat-workspace-action chat-workspace-rename-btn"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      beginRename(ws, i);
-                    }}
-                    title="Переименовать воркспейс"
-                    aria-label="Переименовать воркспейс"
-                  >
-                    <Pencil size={13} strokeWidth={1.9} aria-hidden />
-                  </button>
-                )}
-                {workspaces.length > 1 && renamingId !== ws.id && (
-                  <button
-                    type="button"
-                    className="chat-workspace-close"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteWorkspace(ws.id);
-                    }}
-                    title={labels.deleteWorkspace}
-                    aria-label={labels.deleteWorkspace}
-                  >
-                    <X size={13} strokeWidth={2} aria-hidden />
-                  </button>
+                  <div className="chat-workspace-actions">
+                    <button
+                      type="button"
+                      className="chat-workspace-action chat-workspace-rename-btn"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        beginRename(ws, i);
+                      }}
+                      title="Переименовать воркспейс"
+                      aria-label="Переименовать воркспейс"
+                    >
+                      <Pencil size={13} strokeWidth={1.9} aria-hidden />
+                    </button>
+                    {workspaces.length > 1 && (
+                      <button
+                        type="button"
+                        className="chat-workspace-close"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteWorkspace(ws.id);
+                        }}
+                        title={labels.deleteWorkspace}
+                        aria-label={labels.deleteWorkspace}
+                      >
+                        <X size={13} strokeWidth={2} aria-hidden />
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             );

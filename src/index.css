@@ -9670,12 +9670,12 @@
    range rings, a rotating accent wedge with a bright leading edge, and three
    blips that flash as the beam crosses them. One composited rotation plus a
    few opacity tweens — no timers, no React state, no layout work per frame.
-   Colours are theme tokens, so mono / winter / crimson re-tint it for free. */
+   Colours are theme tokens, so mono / winter / crimson re-tint it for free.
+   No caption under the scope: the block stays pure geometry. */
 .aside-radar {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
 }
 .aside-radar-scope {
   position: relative;
@@ -9772,30 +9772,8 @@
   animation: aside-radar-core 2.4s ease-in-out infinite;
 }
 .aside-radar-hud {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font: 500 9px/1 var(--terminal-font);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  white-space: nowrap;
+  display: none;
 }
-.aside-radar-tag { color: color-mix(in srgb, var(--ink-950) 38%, transparent); }
-.aside-radar-state {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  color: color-mix(in srgb, var(--accent) 55%, var(--ink-600));
-}
-.aside-radar-state i {
-  width: 2px;
-  height: 2px;
-  border-radius: 50%;
-  background: currentColor;
-  animation: aside-radar-dot 1.5s ease-in-out infinite;
-}
-.aside-radar-state i:nth-child(2) { animation-delay: 0.18s; }
-.aside-radar-state i:nth-child(3) { animation-delay: 0.36s; }
 
 @keyframes aside-radar-sweep { to { transform: rotate(360deg); } }
 @keyframes aside-radar-blip {
