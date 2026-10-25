@@ -38,6 +38,8 @@ let config = defaultConfig();
 let intervalTimer = null;
 /** True while a timed background poll runs — it must not flip the visible badge. */
 let backgroundCheck = false;
+/** One check at a time: a poll and a manual check must never overlap. */
+let checkInFlight = false;
 let started = false;
 let packagedToken = "";
 
@@ -288,6 +290,7 @@ async function check(options) {
     return setState({ status: "dev", error: null });
   }
   if (state.status === "checking" || state.status === "downloading") return publicState();
+  if (checkInFlight) return publicState();
 
   // An already announced update survives a failed poll — the badge keeps
   // pointing at it instead of dropping back to a neutral state.
@@ -302,6 +305,7 @@ async function check(options) {
       : null;
 
   backgroundCheck = silent;
+  checkInFlight = true;
   try {
     applyFeed();
     if (!silent) setState({ status: "checking", error: null });
@@ -318,6 +322,7 @@ async function check(options) {
     }
   } finally {
     backgroundCheck = false;
+    checkInFlight = false;
   }
   return publicState();
 }
