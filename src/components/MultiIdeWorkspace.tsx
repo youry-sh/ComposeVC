@@ -456,18 +456,15 @@ function hasSlotDrag(data: DataTransfer): boolean {
 }
 
 /**
- * Every workspace row in the rail carries a soft hairline in its own colour, so
- * the list is scannable at a glance. The hue comes from the workspace id — it
- * looks random, but the same workspace keeps its colour across re-renders and
- * restarts (no state, no timers), and FNV-1a keeps neighbouring ids far apart.
+ * Every workspace row in the rail is underlined by its own soft hue, so the
+ * list (Workspace-1, Workspace-2, …) is scannable at a glance. Hues walk the
+ * colour wheel by the golden angle, so the sequence reads as random yet two
+ * neighbouring workspaces are always ~137° apart — never the same colour.
+ * Pure function of the row position: no state, no timers, no flicker.
  */
-function workspaceAccent(id: string): string {
-  let hash = 0x811c9dc5;
-  for (let i = 0; i < id.length; i += 1) {
-    hash ^= id.charCodeAt(i);
-    hash = Math.imul(hash, 0x01000193) >>> 0;
-  }
-  return `hsl(${hash % 360} 68% 62%)`;
+function workspaceAccent(index: number): string {
+  const hue = Math.round((index * 137.508 + 210) % 360);
+  return `hsl(${hue} 68% 62%)`;
 }
 
 const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
@@ -974,7 +971,7 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
               <div
                 key={ws.id}
                 className={`chat-workspace-item${active ? " is-active" : ""}${wsRunning ? " is-running" : ""}`}
-                style={{ "--ws-accent": workspaceAccent(ws.id) } as React.CSSProperties}
+                style={{ "--ws-accent": workspaceAccent(i) } as React.CSSProperties}
               >
                 {renamingId === ws.id ? (
                   <div className="chat-workspace-btn is-editing">
