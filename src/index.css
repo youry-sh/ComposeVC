@@ -8254,7 +8254,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .titlebar-blinds-panel { transition: none; }
-  .titlebar-blinds-ico { transition: none; }
+  .blinds-roll { transition: none; }
+  .titlebar-blinds-caret { transition: none; }
 }
 
 .terminal-chat-strip {
@@ -13278,16 +13279,64 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   color: var(--text);
 }
 
-.titlebar-update-current {
-  padding: 6px 10px;
-  font-size: 10px;
-  color: var(--text-muted);
+/* ── brand masthead — the COMPOSE//VC wordmark moved here from the title bar ── */
+.titlebar-update-brand {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 12px 10px;
+  background:
+    radial-gradient(130% 150% at 0% 0%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 62%),
+    linear-gradient(180deg, color-mix(in srgb, var(--ink-50) 70%, var(--panel-bg)), var(--panel-bg));
   border-bottom: 1px solid var(--border);
 }
-
-.titlebar-update-current b {
+.titlebar-update-brand::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: -1px;
+  height: 1px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 55%, transparent), transparent 72%);
+}
+.titlebar-update-brand-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.titlebar-update-brand-name {
+  color: var(--text);
+  font-family: var(--terminal-font, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  white-space: nowrap;
+}
+.titlebar-update-brand-slash {
+  padding: 0 1px;
+  color: var(--accent);
+  letter-spacing: 0;
+}
+.titlebar-update-brand-sub {
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.titlebar-update-brand-ver {
+  flex: 0 0 auto;
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--surface);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
   color: var(--text-dim);
-  font-weight: 600;
 }
 
 .titlebar-update-body {
