@@ -166,7 +166,7 @@ export default function UpdateBadge() {
     status === "downloaded"
       ? "Обновить и перезапустить"
       : status === "available"
-        ? "Скачать сейчас"
+        ? "Скачать и обновить"
         : status === "downloading"
           ? "Загрузка…"
           : status === "checking"
@@ -229,18 +229,10 @@ export default function UpdateBadge() {
             ) : null}
 
             {status === "available" ? (
-              <>
-                <p className="titlebar-update-text">
-                  Доступна версия <b>{version}</b>. Загрузка начнётся автоматически.
-                </p>
-                <button
-                  type="button"
-                  className="titlebar-update-link"
-                  onClick={() => run(() => window.lopster?.updateDownload())}
-                >
-                  Скачать сейчас
-                </button>
-              </>
+              <p className="titlebar-update-text">
+                Доступна версия <b>{version}</b>. Без вашего согласия ничего не скачивается — нажмите
+                «Скачать и обновить».
+              </p>
             ) : null}
 
             {status === "downloading" ? (
