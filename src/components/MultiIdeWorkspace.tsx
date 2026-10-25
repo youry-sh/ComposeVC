@@ -441,6 +441,16 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [dropOn, setDropOn] = useState<string | null>(null);
   const seqRef = useRef(0);
+  /** Inline workspace rename: which workspace is being edited + its draft. */
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameDraft, setRenameDraft] = useState("");
+  const renameInputRef = useRef<HTMLInputElement>(null);
+  const renameCancelRef = useRef(false);
+  /** Latest persisted state for the sync pagehide flush. */
+  const workspacesRef = useRef(workspaces);
+  const activeWorkspaceIdRef = useRef(activeWorkspaceId);
+  workspacesRef.current = workspaces;
+  activeWorkspaceIdRef.current = activeWorkspaceId;
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -498,6 +508,92 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
   useEffect(() => {
     saveWorkspaceState(workspaces, activeWorkspaceId);
   }, [workspaces, activeWorkspaceId]);
+
+  // A rename must survive even an instant quit / reload: flush synchronously when
+  // the window goes away instead of relying on an async IPC round-trip.
+  useEffect(() => {
+    const flush = () => {
+      flushWorkspaceState(workspacesRef.current, activeWorkspaceIdRef.current);
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, []);
+
+  /** Rail label — custom name, else the numbered default. */
+  const workspaceLabel = useCallback(
+    (workspace: WorkspaceState, index: number) =>
+      workspace.name.trim() || `${labels.workspace} ${index + 1}`,
+    [labels.workspace]
+  );
+
+  useEffect(() => {
+    if (!renamingId) return;
+    const input = renameInputRef.current;
+    if (!input) return;
+    input.focus();
+    input.select();
+  }, [renamingId]);
+
+  const beginRename = useCallback(
+    (workspace: WorkspaceState, index: number) => {
+      setRenameDraft(workspaceLabel(workspace, index));
+      renameCancelRef.current = false;
+      setRenamingId(workspace.id);
+    },
+    [workspaceLabel]
+  );
+
+  /** Enter / blur: keep a custom name; empty (or the default label) → default. */
+  const commitRename = useCallback(
+    (workspaceId: string) => {
+      const index = workspaces.findIndex((workspace) => workspace.id === workspaceId);
+      if (index < 0) {
+        setRenamingId(null);
+        return;
+      }
+      const fallbackName = `${labels.workspace} ${index + 1}`;
+      const value = renameDraft.replace(/\s+/g, " ").trim().slice(0, WORKSPACE_NAME_MAX);
+      const name = value === fallbackName ? "" : value;
+      const nextWorkspaces = workspaces.map((workspace) =>
+        workspace.id === workspaceId ? { ...workspace, name } : workspace
+      );
+      setWorkspaceState((prev) => ({ ...prev, workspaces: nextWorkspaces }));
+      saveWorkspaceState(nextWorkspaces, activeWorkspaceId);
+      setRenamingId(null);
+    },
+    [activeWorkspaceId, labels.workspace, renameDraft, workspaces]
+  );
+
+  const cancelRename = useCallback(() => {
+    renameCancelRef.current = true;
+    setRenamingId(null);
+  }, []);
+
+  const handleRenameKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLInputElement>, workspaceId: string) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        event.stopPropagation();
+        commitRename(workspaceId);
+        return;
+      }
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        cancelRename();
+        return;
+      }
+      if (event.key === " ") event.stopPropagation();
+    },
+    [cancelRename, commitRename]
+  );
 
   const focusSlot = useCallback(
     (id: string) => {
@@ -614,7 +710,10 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
     onSlotsChange([...slots, slot]);
     setWorkspaceState((prev) => ({
       activeWorkspaceId: wsId,
-      workspaces: [...prev.workspaces, { id: wsId, activeId: slotId, openIds: [slotId] }],
+      workspaces: [
+        ...prev.workspaces,
+        { id: wsId, name: "", activeId: slotId, openIds: [slotId] },
+      ],
     }));
   }, [workspaces, slots, onSlotsChange]);
 
@@ -654,6 +753,7 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
   const handleDeleteWorkspace = useCallback(
     (wsId: string) => {
       if (workspaces.length <= 1) return;
+      setRenamingId((current) => (current === wsId ? null : current));
       const targetIds = new Set(slots.filter((s) => s.workspaceId === wsId).map((s) => s.id));
       // Stop any running chat before its panel is unmounted, so deleting a workspace
       // never leaves an orphaned run in the main process (same path as the Stop button).
