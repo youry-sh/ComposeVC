@@ -167,6 +167,8 @@ interface ChatPanelProps {
   providers: AIProvider[];
   models: AIModel[];
   selectedModelId?: string;
+  /** Ghost-text prompt autocomplete (Settings → AI runtime). */
+  inlineHint?: { enabled: boolean; modelId?: string };
   onSelectModel: (modelId: string) => void;
   agentMode: MainAgentMode;
   onSelectAgentMode: (mode: MainAgentMode) => void;
@@ -3534,6 +3536,8 @@ const CustomToolsModal: React.FC<{
 
 const COMPACT_SUMMARY_RE = /^\[Conversation summary — (\d+) earlier messages compacted\]\n([\s\S]*)$/;
 const INPUT_MAX_HEIGHT = 160;
+/** Delay before asking the model for a ghost continuation of the draft. */
+const INLINE_HINT_DEBOUNCE_MS = 450;
 
 const CHAT_WIDTH_KEY = "lopster-chat-width";
 const CHAT_WIDTH_DEFAULT = 360;
@@ -3986,6 +3990,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   providers,
   models,
   selectedModelId,
+  inlineHint,
   onSelectModel,
   agentMode,
   onSelectAgentMode,
@@ -4087,6 +4092,13 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   const [chatWidth, setChatWidth] = useState(loadChatWidth);
   const [isResizing, setIsResizing] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  /** Ghost continuation of the composer draft — Tab inserts it verbatim. */
+  const [hint, setHint] = useState<{ text: string; caret: number; draft: string } | null>(null);
+  /** Caret offset the suggestion belongs to (kept in sync with the textarea). */
+  const [caretPos, setCaretPos] = useState(0);
+  const hintTimerRef = useRef<number | null>(null);
+  const hintSeqRef = useRef(0);
+  const hintOverlayRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const docInputRef = useRef<HTMLInputElement>(null);
   /** Latest pending files — the async drop handler reads it between awaits. */
@@ -4312,7 +4324,110 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
     if (!el) return;
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, INPUT_MAX_HEIGHT)}px`;
+    syncHintOverlay();
   }, [input]);
+
+  // ── Ghost-text prompt autocomplete ───────────────────────────────────────
+  // The model receives the WHOLE draft plus the caret offset, so the ghost is
+  // always a continuation of what is actually written. It is hidden while the
+  // feature is off, regenerated (debounced) after every edit, and inserted only
+  // by Tab — plain typing simply replaces it.
+  const inlineHintEnabled = inlineHint?.enabled === true;
+  const inlineHintModelId = inlineHint?.modelId || "";
+
+  useEffect(() => {
+    if (hintTimerRef.current) {
+      window.clearTimeout(hintTimerRef.current);
+      hintTimerRef.current = null;
+    }
+    // Any edit or caret move invalidates the previous suggestion immediately.
+    const seq = ++hintSeqRef.current;
+    setHint(null);
+    if (!inlineHintEnabled) return;
+    const draft = input;
+    const caret = Math.max(0, Math.min(caretPos, draft.length));
+    if (draft.trim().length < 3) return;
+    const el = inputRef.current;
+    if (el && el.selectionStart !== el.selectionEnd) return;
+    hintTimerRef.current = window.setTimeout(() => {
+      hintTimerRef.current = null;
+      const api = window.lopster;
+      if (!api?.inlineHintSuggest) return;
+      void api
+        .inlineHintSuggest({
+          text: draft,
+          caret,
+          modelId: inlineHintModelId || null,
+          projectName: rootPath ? rootPath.split(/[\\/]/).filter(Boolean).pop() || null : null,
+        })
+        .then((result) => {
+          if (seq !== hintSeqRef.current) return;
+          const text = typeof result?.text === "string" ? result.text : "";
+          if (!result?.ok || !text.trim()) return;
+          setHint({ text, caret, draft });
+        })
+        .catch(() => {
+          /* suggestions are best-effort — never surface an error in the composer */
+        });
+    }, INLINE_HINT_DEBOUNCE_MS);
+    return () => {
+      if (hintTimerRef.current) {
+        window.clearTimeout(hintTimerRef.current);
+        hintTimerRef.current = null;
+      }
+    };
+  }, [input, caretPos, inlineHintEnabled, inlineHintModelId, rootPath]);
+
+  /** Keep the ghost layer box-identical to the textarea (font, padding, scroll). */
+  const syncHintOverlay = useCallback(() => {
+    const el = inputRef.current;
+    const box = hintOverlayRef.current;
+    if (!el || !box) return;
+    const style = window.getComputedStyle(el);
+    box.style.width = `${el.clientWidth}px`;
+    box.style.height = `${el.clientHeight}px`;
+    box.style.paddingTop = style.paddingTop;
+    box.style.paddingRight = style.paddingRight;
+    box.style.paddingBottom = style.paddingBottom;
+    box.style.paddingLeft = style.paddingLeft;
+    box.style.fontFamily = style.fontFamily;
+    box.style.fontSize = style.fontSize;
+    box.style.fontWeight = style.fontWeight;
+    box.style.fontStyle = style.fontStyle;
+    box.style.letterSpacing = style.letterSpacing;
+    box.style.lineHeight = style.lineHeight;
+    box.style.textAlign = style.textAlign || "left";
+    box.style.textIndent = style.textIndent;
+    box.style.wordSpacing = style.wordSpacing;
+    const tabSize = (style as unknown as { tabSize?: string }).tabSize;
+    if (tabSize) box.style.tabSize = tabSize;
+    box.scrollTop = el.scrollTop;
+  }, []);
+
+  useEffect(() => {
+    if (hint) syncHintOverlay();
+  }, [hint, input, caretPos, syncHintOverlay]);
+
+  /** Valid only while the draft/caret it was generated for is still current. */
+  const hintVisible = Boolean(
+    hint && hint.draft === input && hint.caret === caretPos && inlineHintEnabled
+  );
+
+  const acceptInlineHint = () => {
+    if (!hint || !hintVisible) return;
+    const nextValue = `${input.slice(0, hint.caret)}${hint.text}${input.slice(hint.caret)}`;
+    const nextCaret = hint.caret + hint.text.length;
+    setInput(nextValue);
+    setCaretPos(nextCaret);
+    setHint(null);
+    window.dispatchEvent(new CustomEvent("composevc-draft", { detail: { text: nextValue } }));
+    window.requestAnimationFrame(() => {
+      const el = inputRef.current;
+      if (!el) return;
+      el.focus();
+      el.setSelectionRange(nextCaret, nextCaret);
+    });
+  };
 
   const pushInputHistory = (text: string) => {
     const trimmed = text.trim();
