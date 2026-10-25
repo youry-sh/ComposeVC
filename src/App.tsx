@@ -626,6 +626,11 @@ const App: React.FC = () => {
               <UsageWorkspace />
             </div>
           )}
+          {activePanel === "prompts" && (
+            <div className="flex-1 min-w-0 min-h-0 flex overflow-hidden">
+              <PromptsWorkspace />
+            </div>
+          )}
         </div>
       </div>
 
@@ -661,6 +666,8 @@ const App: React.FC = () => {
       />
 
       <StorageModal open={storageOpen} onClose={() => setStorageOpen(false)} />
+
+      <McpModal open={mcpOpen} onClose={() => setMcpOpen(false)} />
 
       <SettingsModal
         open={settingsOpen}
