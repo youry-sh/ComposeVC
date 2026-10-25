@@ -13,7 +13,6 @@ import {
   IcoDocs,
   IcoUsage,
   IcoBlinds,
-  IcoInspector,
   IcoPrompts,
 } from "./topIcons";
 import PromptsWorkspace from "./PromptsWorkspace";
@@ -32,8 +31,6 @@ interface TitleBarProps {
   active: Panel;
   onSelect: (panel: Panel) => void;
   onOpenProviders?: () => void;
-  inspectorActive?: boolean;
-  onToggleInspector?: () => void;
   labels?: {
     multiIde?: string;
     proxy?: string;
@@ -67,8 +64,6 @@ const TitleBar: React.FC<TitleBarProps> = ({
   active,
   onSelect,
   onOpenProviders,
-  inspectorActive,
-  onToggleInspector,
   labels,
 }) => {
   const [memoryLabel, setMemoryLabel] = useState("—");

@@ -1004,10 +1004,14 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
   /** Coalesce delayed queue drains so the next turn waits for paint of the finished answer. */
   const queueDrainTimersRef = useRef<Map<string, number>>(new Map());
 
-  type SessionAutoInsert = { enabled: boolean; messages: string[] };
-  type AutoInsertStore = { enabled: boolean; messages: string[] };
-  const autoInsertStoreRef = useRef<AutoInsertStore>({ enabled: true, messages: [] });
-  const [sessionAutoInsert, setSessionAutoInsert] = useState<SessionAutoInsert>({ enabled: true, messages: [] });
+  type SessionAutoInsert = { enabled: boolean; messages: string[]; messageEnabled: boolean[] };
+  type AutoInsertStore = { enabled: boolean; messages: string[]; messageEnabled?: boolean[] };
+  const autoInsertStoreRef = useRef<AutoInsertStore>({ enabled: true, messages: [], messageEnabled: [] });
+  const [sessionAutoInsert, setSessionAutoInsert] = useState<SessionAutoInsert>({
+    enabled: true,
+    messages: [],
+    messageEnabled: [],
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -1015,12 +1019,18 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
       try {
         const store = await window.lopster?.readAutoInsertStore?.() as AutoInsertStore | undefined;
         if (!store || cancelled) return;
-        const normalized = {
-          messages: Array.isArray(store.messages) ? store.messages : [],
-           enabled: store.enabled !== false,
+        const messages = Array.isArray(store.messages)
+          ? store.messages.filter((message) => typeof message === "string")
+          : [];
+        // Stores written before per-message switches have no flags: everything is on.
+        const flags = Array.isArray(store.messageEnabled) ? store.messageEnabled : [];
+        const normalized: SessionAutoInsert = {
+          enabled: store.enabled !== false,
+          messages,
+          messageEnabled: messages.map((_, index) => flags[index] !== false),
         };
         autoInsertStoreRef.current = normalized;
-         setSessionAutoInsert({ enabled: normalized.enabled, messages: normalized.messages });
+        setSessionAutoInsert(normalized);
       } catch { /* ignore */ }
     })();
     return () => { cancelled = true; };
@@ -1030,6 +1040,7 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
     try {
       const store = autoInsertStoreRef.current;
       store.messages = data.messages;
+      store.messageEnabled = data.messageEnabled;
        store.enabled = data.enabled;
        await window.lopster?.saveAutoInsert?.(data);
     } catch { /* ignore */ }
@@ -1951,8 +1962,14 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
 
   const handleAddAutoInsertMessage = useCallback((text: string) => {
     setSessionAutoInsert((prev) => {
-      const next = { ...prev, messages: [...prev.messages, text] };
+      // New messages start switched ON.
+      const next = {
+        ...prev,
+        messages: [...prev.messages, text],
+        messageEnabled: [...prev.messageEnabled, true],
+      };
       autoInsertStoreRef.current.messages = next.messages;
+      autoInsertStoreRef.current.messageEnabled = next.messageEnabled;
       void saveAutoInsert(next);
       return next;
     });
@@ -1960,8 +1977,29 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
 
   const handleRemoveAutoInsertMessage = useCallback((index: number) => {
     setSessionAutoInsert((prev) => {
-      const next = { ...prev, messages: prev.messages.filter((_, i) => i !== index) };
+      const next = {
+        ...prev,
+        messages: prev.messages.filter((_, i) => i !== index),
+        messageEnabled: prev.messages
+          .map((_, i) => prev.messageEnabled[i] !== false)
+          .filter((_, i) => i !== index),
+      };
       autoInsertStoreRef.current.messages = next.messages;
+      autoInsertStoreRef.current.messageEnabled = next.messageEnabled;
+      void saveAutoInsert(next);
+      return next;
+    });
+  }, []);
+
+  /** Per-message switch: unticked messages stay saved but are left out of sends. */
+  const handleToggleAutoInsertMessage = useCallback((index: number) => {
+    setSessionAutoInsert((prev) => {
+      if (index < 0 || index >= prev.messages.length) return prev;
+      const messageEnabled = prev.messages.map(
+        (_, i) => (i === index ? prev.messageEnabled[i] === false : prev.messageEnabled[i] !== false)
+      );
+      const next = { ...prev, messageEnabled };
+      autoInsertStoreRef.current.messageEnabled = messageEnabled;
       void saveAutoInsert(next);
       return next;
     });
@@ -1993,8 +2031,12 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
 
     const autoInsert = autoInsertStoreRef.current;
     const enabled = autoInsert.enabled;
-    if (!options?.skipAutoInsert && enabled && autoInsert && autoInsert.messages.length > 0) {
-      effectiveContent = [effectiveContent, ...autoInsert.messages].filter(Boolean).join("\n\n");
+    // Only ticked messages are appended; unticked ones stay saved but are skipped.
+    const enabledAutoInsertMessages = autoInsert.messages.filter(
+      (_, index) => (autoInsert.messageEnabled || [])[index] !== false
+    );
+    if (!options?.skipAutoInsert && enabled && enabledAutoInsertMessages.length > 0) {
+      effectiveContent = [effectiveContent, ...enabledAutoInsertMessages].filter(Boolean).join("\n\n");
     }
 
     let runSessionId = options?.sessionId || activeSessionIdRef.current;
@@ -2595,7 +2637,9 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
           }}
           autoInsertEnabled={sessionAutoInsert.enabled}
           autoInsertMessages={sessionAutoInsert.messages}
+          autoInsertMessageEnabled={sessionAutoInsert.messageEnabled}
           onToggleAutoInsert={handleToggleAutoInsert}
+          onToggleAutoInsertMessage={handleToggleAutoInsertMessage}
           onAddAutoInsertMessage={handleAddAutoInsertMessage}
           onRemoveAutoInsertMessage={handleRemoveAutoInsertMessage}
           agentTodos={agentTodos}

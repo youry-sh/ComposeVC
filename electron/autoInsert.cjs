@@ -7,6 +7,18 @@ function getStorePath(userDataPath) {
   return path.join(userDataPath, FILE_NAME);
 }
 
+/** Per-message switches for auto-insert.
+ *  Anything that is not an explicit `false` stays ON, so stores written before
+ *  the checkboxes existed keep inserting every message they contain. */
+function normalizeMessageEnabled(value, length) {
+  const source = Array.isArray(value) ? value : [];
+  const flags = [];
+  for (let index = 0; index < length; index += 1) {
+    flags.push(source[index] !== false);
+  }
+  return flags;
+}
+
 function normalizeStore(value) {
   const parsed = value && typeof value === "object" ? value : {};
   const messages = Array.isArray(parsed.messages)
@@ -34,6 +46,7 @@ function normalizeStore(value) {
   return {
     enabled: typeof parsed.enabled === "boolean" ? parsed.enabled : legacyEnabled,
     messages,
+    messageEnabled: normalizeMessageEnabled(parsed.messageEnabled, messages.length),
     sessions,
   };
 }
@@ -43,7 +56,7 @@ async function readAutoInsertStore(userDataPath) {
     const raw = await fs.promises.readFile(getStorePath(userDataPath), "utf8");
     return normalizeStore(JSON.parse(raw));
   } catch {
-    return { enabled: true, messages: [], sessions: {} };
+    return { enabled: true, messages: [], messageEnabled: [], sessions: {} };
   }
 }
 
@@ -53,6 +66,8 @@ async function saveAutoInsert(userDataPath, data) {
   if (Array.isArray(data.messages)) {
     store.messages = data.messages.filter((message) => typeof message === "string");
   }
+  const flags = Array.isArray(data.messageEnabled) ? data.messageEnabled : store.messageEnabled;
+  store.messageEnabled = normalizeMessageEnabled(flags, store.messages.length);
   await fs.promises.writeFile(getStorePath(userDataPath), JSON.stringify(store, null, 2), "utf8");
   return true;
 }

@@ -768,8 +768,13 @@ declare global {
       readAutoInsertStore: () => Promise<{
         enabled: boolean;
         messages: string[];
+        messageEnabled?: boolean[];
       }>;
-      saveAutoInsert: (data: { enabled: boolean; messages: string[] }) => Promise<boolean>;
+      saveAutoInsert: (data: {
+        enabled: boolean;
+        messages: string[];
+        messageEnabled?: boolean[];
+      }) => Promise<boolean>;
       onDeskPrompt: (callback: (payload: { text?: string }) => void) => () => void;
       onDeskClear: (callback: () => void) => () => void;
       deskReply: (payload: { text?: string; context?: string }) => void;

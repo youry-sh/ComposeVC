@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import TitleBar from "./components/TitleBar";
 import SettingsModal from "./components/SettingsModal";
-import ElementInspector from "./components/ElementInspector";
 import ProvidersModal from "./components/ProvidersModal";
 import SearchOverlay from "./components/SearchOverlay";
 import PromptCopyModal from "./components/PromptCopyModal";
@@ -70,7 +69,6 @@ const App: React.FC = () => {
   const [promptCopyOpen, setPromptCopyOpen] = useState(false);
   const [runnerSendOpen, setRunnerSendOpen] = useState(false);
   const [storageOpen, setStorageOpen] = useState(false);
-  const [inspectorActive, setInspectorActive] = useState(false);
   const [runnerSendTarget, setRunnerSendTarget] = useState<string | null>(null);
   const [customTools, setCustomTools] = useState<CustomTool[]>([]);
   const [appLanguage, setAppLanguage] = useState<AppLanguage>(() => getStoredLanguage());
@@ -526,8 +524,6 @@ const App: React.FC = () => {
         active={activePanel}
         onSelect={handlePanelSelect}
         onOpenProviders={() => setProvidersOpen(true)}
-        inspectorActive={inspectorActive}
-        onToggleInspector={() => setInspectorActive((v) => !v)}
         labels={{
           multiIde: t.multiIde,
           proxy: t.activityProxy,
