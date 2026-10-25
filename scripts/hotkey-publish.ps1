@@ -169,14 +169,67 @@ function Test-DirtyTree {
   }
 }
 
+# Content fingerprint of the committed project. The IDE auto-commits edits every
+# few seconds, so "git status is clean" does NOT mean "nothing changed" — we
+# compare the current tree with the tree of the last published release instead.
+function Get-TreeHash {
+  try {
+    $out = & git -C $ProjectRoot rev-parse "HEAD^{tree}" 2>$null
+    if ($LASTEXITCODE -ne 0 -or -not $out) { return "" }
+    return ([string]($out | Select-Object -First 1)).Trim()
+  } catch {
+    return ""
+  }
+}
+
+function Get-PublishStatePath {
+  $base = if ($env:LOCALAPPDATA) { $env:LOCALAPPDATA } else { $env:TEMP }
+  $dir = Join-Path $base "ComposeVC"
+  if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
+  return (Join-Path $dir "publish-state.json")
+}
+
+function Read-PublishState {
+  try {
+    $path = Get-PublishStatePath
+    if (-not (Test-Path $path)) { return $null }
+    return (Get-Content $path -Raw -ErrorAction Stop | ConvertFrom-Json)
+  } catch {
+    return $null
+  }
+}
+
+function Save-PublishState([string]$Tree) {
+  try {
+    $version = ""
+    $pkg = Join-Path $ProjectRoot "package.json"
+    if (Test-Path $pkg) {
+      $version = (Get-Content $pkg -Raw | ConvertFrom-Json).version
+    }
+    $payload = [pscustomobject]@{
+      tree        = $Tree
+      version     = $version
+      publishedAt = (Get-Date).ToString("o")
+    }
+    $json = $payload | ConvertTo-Json
+    [System.IO.File]::WriteAllText((Get-PublishStatePath), $json, (New-Object System.Text.UTF8Encoding($false)))
+  } catch { }
+}
+
 function Start-Publish {
   if ($script:Busy) {
     Show-Balloon "ComposeVC" "Сборка уже идёт — дождитесь завершения." "Warning"
     return
   }
-  if (-not $Force -and -not (Test-DirtyTree)) {
-    Show-Balloon "ComposeVC" "В проекте нет изменений — публиковать нечего." "Info"
-    return
+  if (-not $Force) {
+    $treeNow = Get-TreeHash
+    $state = Read-PublishState
+    $dirty = Test-DirtyTree
+    if (-not $dirty -and $treeNow -and $state -and $state.tree -and $state.tree -eq $treeNow) {
+      $verLabel = if ($state.version) { " (v$($state.version))" } else { "" }
+      Show-Balloon "ComposeVC" "Изменений с последнего релиза$verLabel нет — публиковать нечего." "Info"
+      return
+    }
   }
 
   $script:Busy = $true
@@ -239,6 +292,8 @@ $timer.add_Tick({
     $script:Busy = $false
     $script:Tray.Text = "ComposeVC Publish ($Keys)"
     if ($code -eq 0) {
+      $treeAfter = Get-TreeHash
+      if ($treeAfter) { Save-PublishState -Tree $treeAfter }
       Write-Log "publish finished OK"
       Show-Balloon "ComposeVC" "Обновление опубликовано — пользователи получат его автоматически." "Info"
     } else {
