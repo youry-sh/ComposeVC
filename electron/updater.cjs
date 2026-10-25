@@ -61,7 +61,9 @@ function defaultConfig() {
     token: "",
     channel: "latest",
     autoCheck: true,
-    autoDownload: true,
+    // Consent-only updates: nothing is downloaded until the user clicks
+    // "Скачать и обновить" in the update panel.
+    autoDownload: false,
   };
 }
 
@@ -249,8 +251,10 @@ function init(userDataPath) {
     return publicState();
   }
 
-  autoUpdater.autoDownload = config.autoDownload !== false;
-  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.autoDownload = config.autoDownload === true;
+  // Never install behind the user's back: the panel's "Обновить и перезапустить"
+  // is the only path (autoInstallOnAppQuit would apply it on quit).
+  autoUpdater.autoInstallOnAppQuit = false;
   autoUpdater.allowPrerelease = config.channel === "beta";
   autoUpdater.allowDowngrade = false;
   // electron-updater logs header/URL details; keep our own quiet logger.
