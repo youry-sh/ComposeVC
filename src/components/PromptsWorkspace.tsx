@@ -374,12 +374,15 @@ const PromptsWorkspace: React.FC = () => {
               </label>
               <label className="prompts-text-field">
                 <span>Текст промта</span>
-                <textarea
-                  value={text}
-                  onChange={(event) => onTextChange(event.target.value)}
-                  placeholder="Введите текст промта…"
-                  spellCheck={false}
-                />
+                <ChatMonoScroll ref={textScrollRef} className="prompts-text-scroll">
+                  <textarea
+                    ref={textareaRef}
+                    value={text}
+                    onChange={handleTextInput}
+                    placeholder="Введите текст промта…"
+                    spellCheck={false}
+                  />
+                </ChatMonoScroll>
               </label>
             </div>
           )}

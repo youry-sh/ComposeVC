@@ -8902,8 +8902,7 @@
   width: 3px;
   background: var(--ink-950);
 }
-.chat-workspace-item.is-active .chat-rail-dot { background: var(--ink-500); }
-.chat-workspace-item.is-running .chat-rail-dot {
+.chat-workspace-item.is-active .chat-rail-dot { background: var(--ink-500); }.chat-workspace-item.is-running .chat-rail-dot {
   background: var(--ink-950);
   animation: chat-rail-pulse 1.4s ease-in-out infinite;
 }
@@ -9496,33 +9495,6 @@
   border-left: 1px solid var(--border);
   border-right: 1px solid var(--border);
   background: var(--bg);
-}
-/* Split view only: a soft hairline in the pane's own random hue closes the
-   bottom edge, so two or three open chats are told apart at a glance. Purely
-   decorative — it never catches clicks and fades out towards both sides so it
-   reads as an accent, not a hard rule. */
-.chat-stage.is-split .chat-stage-pane.is-visible .chat-stage-frame::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 2px;
-  z-index: 3;
-  pointer-events: none;
-  background: var(--pane-accent, var(--accent));
-  opacity: .42;
-  border-radius: 1px;
-  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 16%, #000 84%, transparent 100%);
-  mask-image: linear-gradient(90deg, transparent 0%, #000 16%, #000 84%, transparent 100%);
-  animation: chat-pane-accent-in .26s ease-out both;
-}
-@keyframes chat-pane-accent-in {
-  from { opacity: 0; }
-  to { opacity: .42; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .chat-stage.is-split .chat-stage-pane.is-visible .chat-stage-frame::after { animation: none; }
 }
 
 /* Flat panel chrome inside the shell — no accent bar, no glass. */
@@ -12976,11 +12948,17 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
 }
 .prompts-title-field input:focus { border-color: var(--border-strong); }
 .prompts-title-field input::placeholder { color: var(--ink-400); }
-.prompts-text-field { flex: 1 1 auto; }
-.prompts-text-field textarea {
-  flex: 1 1 auto;
-  min-height: 0;
+.prompts-text-field { flex: 1 1 auto; min-height: 0; }
+/* Prompt text auto-grows with its content; the ChatMonoScroll wrapper owns the scrollbar. */
+.prompts-text-scroll { flex: 1 1 auto; min-height: 0; }
+.prompts-text-scroll textarea {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 100%;
+  flex: none;
   resize: none;
+  overflow: hidden;
   padding: 10px;
   border: 1px solid var(--border);
   border-radius: 2px;
@@ -12990,8 +12968,8 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   outline: none;
   white-space: pre-wrap;
 }
-.prompts-text-field textarea:focus { border-color: var(--border-strong); }
-.prompts-text-field textarea::placeholder { color: var(--ink-400); }
+.prompts-text-scroll textarea:focus { border-color: var(--border-strong); }
+.prompts-text-scroll textarea::placeholder { color: var(--ink-400); }
 .prompts-state {
   display: flex;
   flex-direction: column;
