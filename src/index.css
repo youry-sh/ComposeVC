@@ -12766,6 +12766,7 @@ body.cvc-inspecting * {
 
 /* ── auto-update badge (title bar) ─────────────────────────────────────── */
 .titlebar-update {
+  -webkit-app-region: no-drag;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -12880,6 +12881,7 @@ body.cvc-inspecting * {
 
 .titlebar-update-panel {
   position: fixed;
+  -webkit-app-region: no-drag;
   width: 332px;
   max-width: calc(100vw - 16px);
   display: flex;
