@@ -8053,7 +8053,6 @@
   .topbar-metrics { gap: 4px; }
   /* The hanging tab keeps its grip + caret; only the caption goes. */
   .titlebar-blinds-tab-label { display: none; }
-  .titlebar-blinds-tab { margin-left: 2px; }
 }
 
 /* < 860 — below the app's minimum width there is nothing left to trim without
@@ -8076,7 +8075,7 @@
   align-items: center;
   gap: 7px;
   height: 25px;
-  margin: 0 2px -1px -1px;
+  margin: 0 2px -1px 0;
   padding: 0 8px;
   border: 1px solid color-mix(in srgb, var(--border) 92%, transparent);
   border-bottom: 0;
@@ -8204,18 +8203,12 @@
   gap: 12px;
   height: 36px;
   padding: 0 14px;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--ink-50) 94%, transparent), color-mix(in srgb, var(--ink-0) 92%, transparent));
+  /* Faint slats under the title — the blind's fabric texture, layered BEHIND
+     the controls instead of overlaid on top of them. */
+  background:
+    repeating-linear-gradient(180deg, transparent 0 6px, color-mix(in srgb, var(--ink-950) 4%, transparent) 6px 7px),
+    linear-gradient(180deg, color-mix(in srgb, var(--ink-50) 94%, transparent), color-mix(in srgb, var(--ink-0) 92%, transparent));
   border-bottom: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border));
-}
-/* Faint slats across the head — the fabric texture of the blind, not a pattern
-   over the workspace content. */
-.blinds-panel-head::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.7;
-  background: repeating-linear-gradient(180deg, transparent 0 6px, color-mix(in srgb, var(--ink-950) 4%, transparent) 6px 7px);
 }
 .blinds-panel-body {
   display: flex;
