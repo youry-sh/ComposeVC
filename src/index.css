@@ -326,8 +326,8 @@
     --accent-soft: #ff8b78;
     --accent-muted: rgba(240, 68, 46, 0.12);
     --accent-2: #ffb3a3;
-    --focus-ring: rgba(240, 68, 46, 0.30);
-    --focus-border: #a03a2b;
+    --focus-ring: rgba(255, 255, 255, 0.16);
+    --focus-border: #4a4a4a;
     --selection: rgba(240, 68, 46, 0.24);
     --glow: rgba(240, 68, 46, 0.05);
 
@@ -13340,6 +13340,60 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
 @media (prefers-reduced-motion: reduce) {
   .titlebar-update-bar > i { transition: none; }
 }
+
+/* ── Graphite: dialogs & settings stay neutral ─────────────────────────────
+   No orange outlines or rings inside modals and the settings surface — the
+   accent lives in the chrome (active tab, chat rail, primary actions, live
+   dots), not on dialog frames, fields or selected rows. */
+[data-theme="graphite"] .settings-theme-row[aria-pressed="true"] {
+  border-color: var(--border-strong);
+  box-shadow: none;
+}
+[data-theme="graphite"] .settings-theme-row[aria-pressed="true"] .settings-theme-active-dot {
+  background-color: var(--ink-600) !important;
+  box-shadow: none;
+}
+[data-theme="graphite"] .settings-nav-item.is-active { box-shadow: none; }
+[data-theme="graphite"] .settings-nav-item.is-active::before {
+  background: var(--ink-600);
+  box-shadow: none;
+}
+[data-theme="graphite"] .settings-chip.is-active,
+[data-theme="graphite"] .settings-provider-row.is-active,
+[data-theme="graphite"] .provider-model-tile.is-selected {
+  border-color: var(--border-strong);
+}
+[data-theme="graphite"] .settings-provider-row.is-active { box-shadow: none; }
+[data-theme="graphite"] .settings-header-mark {
+  border-color: var(--border-strong);
+  background: var(--surface-2);
+  color: var(--ink-800);
+}
+[data-theme="graphite"] .settings-field-input:focus,
+[data-theme="graphite"] .settings-field-textarea:focus,
+[data-theme="graphite"] .theme-input:focus,
+[data-theme="graphite"] .theme-input:focus-within {
+  border-color: var(--focus-border) !important;
+  box-shadow: 0 0 0 1px var(--focus-ring) !important;
+}
+[data-theme="graphite"] .provider-model-tile.is-selected .provider-model-indicator {
+  border-color: var(--ink-700);
+  background: var(--ink-700);
+  box-shadow: none;
+}
+[data-theme="graphite"] .chat-history-search:focus-within {
+  border-color: var(--focus-border);
+  box-shadow: 0 0 0 1px var(--focus-ring);
+}
+[data-theme="graphite"] .chat-history-row.is-active {
+  border-color: var(--border-strong);
+  background: var(--surface-2);
+}
+[data-theme="graphite"] .chat-history-badge {
+  border-color: var(--border);
+  color: var(--ink-700);
+}
+[data-theme="graphite"] .prompt-copy-status.is-ok { color: var(--ink-700); }
 
 
 

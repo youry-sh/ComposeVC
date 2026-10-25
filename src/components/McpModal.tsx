@@ -221,7 +221,7 @@ const McpModal: React.FC<Props> = ({ open, onClose }) => {
                   const owned = installedByRegistry.get(card.name);
                   const active = selectedName === card.name;
                   return (
-                    <div key={`${card.name}:${card.version}`} role="button" tabIndex={0} onClick={() => { setSelectedName(card.name); setSecrets({}); }} onKeyDown={(event) => { if (event.key === "Enter") { setSelectedName(card.name); setSecrets({}); } }} className="mcp-market-card border px-3 py-2.5 text-left" style={{ borderColor: active ? "var(--accent)" : "var(--border)", background: active ? "var(--accent-muted)" : "transparent" }}>
+                    <div key={`${card.name}:${card.version}`} role="button" tabIndex={0} onClick={() => { setSelectedName(card.name); setSecrets({}); }} onKeyDown={(event) => { if (event.key === "Enter") { setSelectedName(card.name); setSecrets({}); } }} className="mcp-market-card border px-3 py-2.5 text-left" style={{ borderColor: active ? "var(--border-strong)" : "var(--border)", background: active ? "var(--surface-2)" : "transparent" }}>
                       <div className="flex items-start gap-2">
                         <div className="min-w-0 flex-1">
                           <div className="truncate text-[12px] font-medium text-ink-950">{card.title}</div>
@@ -251,7 +251,7 @@ const McpModal: React.FC<Props> = ({ open, onClose }) => {
             )}
             {tab === "installed" && !installed.length && <div className="p-8 text-center font-mono text-[10px] text-ink-500">NOTHING INSTALLED YET</div>}
             {tab === "installed" && installed.map((server) => (
-              <button key={server.id} type="button" onClick={() => { setSelectedName(server.id); setSecrets({}); }} className="mb-1 flex w-full items-center gap-3 border px-3 py-2.5 text-left" style={{ borderColor: selectedName === server.id ? "var(--accent)" : "var(--border)", background: selectedName === server.id ? "var(--accent-muted)" : "transparent" }}>
+              <button key={server.id} type="button" onClick={() => { setSelectedName(server.id); setSecrets({}); }} className="mb-1 flex w-full items-center gap-3 border px-3 py-2.5 text-left" style={{ borderColor: selectedName === server.id ? "var(--border-strong)" : "var(--border)", background: selectedName === server.id ? "var(--surface-2)" : "transparent" }}>
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-[12px] font-medium text-ink-950">{server.title || server.name}</div>
                   <div className="truncate font-mono text-[10px] text-ink-500">{server.marketplace?.name || server.name}</div>

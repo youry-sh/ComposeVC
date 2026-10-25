@@ -417,7 +417,7 @@ const CfMailSettings: React.FC = () => {
             <div className="settings-card-title !mb-0">CF Worker temp-mail</div>
             <span
               className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full"
-              style={{ backgroundColor: configured ? PRIMARY : "var(--ink-400)" }}
+              style={{ backgroundColor: configured ? "var(--ok)" : "var(--ink-400)" }}
               title={configured ? "Configured" : "Not configured"}
             />
           </div>
@@ -802,7 +802,7 @@ const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, 
                       >
                         <span
                           className="h-1.5 w-1.5 shrink-0 rounded-full"
-                          style={{ backgroundColor: mouseSnippets.enabled ? PRIMARY : "var(--ink-400)" }}
+                          style={{ backgroundColor: mouseSnippets.enabled ? "var(--ok)" : "var(--ink-400)" }}
                         />
                         {mouseSnippets.enabled ? labels.snippetsOn : labels.snippetsOff}
                       </span>
