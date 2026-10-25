@@ -21,8 +21,8 @@
  *
  * Private repo auth
  *   - publishing: `gh auth login` (repo scope) or GH_TOKEN in the environment
- *   - installed app: LOPSTER_UPDATE_TOKEN=github_pat_… at build time, or a token
- *     written to %APPDATA%/composevc/updater.json as {"token":"…"}
+ *   - the release itself goes to the PUBLIC releases repo (youry-sh/ComposeVC-releases),
+ *     so installed apps need no token; the source repo stays private
  */
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -31,6 +31,16 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
+
+// Public release feed repo — installers + latest.yml live here, sources stay
+// in the private ComposeVC repo. Override with --repo owner/name.
+const DEFAULT_RELEASE_REPO = "youry-sh/ComposeVC-releases";
+const RELEASE_REPO = String(
+  (() => {
+    const i = process.argv.indexOf("--repo");
+    return i >= 0 ? process.argv[i + 1] : DEFAULT_RELEASE_REPO;
+  })() || DEFAULT_RELEASE_REPO
+).trim();
 
 const argv = process.argv.slice(2);
 const has = (flag) => argv.includes(flag);
@@ -53,6 +63,8 @@ Options:
   --no-publish               build only (no GitHub release)
   --no-git                   do not commit/tag/push
   --allow-same-version       publish even if the version did not change
+  --repo owner/name          release feed repo (default youry-sh/ComposeVC-releases)
+  --no-create-repo           fail if the release repo does not exist yet
   --help                     this text
 `);
   process.exit(0);
@@ -155,13 +167,50 @@ const releaseNotes =
   `ComposeVC ${version}\n\nAutomatic update: installed apps pick this release up in the background and install it on the next restart.`;
 
 if (!noPublish) {
-  log(`creating GitHub release ${tag}…`);
+  // The feed repo must exist and be PUBLIC: installed apps read latest.yml
+  // without any credentials, while the source repo stays private.
+  const view = spawnSync("gh", ["repo", "view", RELEASE_REPO, "--json", "visibility"], {
+    cwd: root,
+    encoding: "utf8",
+  });
+  if (view.status !== 0) {
+    if (has("--no-create-repo")) {
+      fail(`release repo ${RELEASE_REPO} not found (drop --no-create-repo to create it)`);
+    }
+    log(`creating public release repo ${RELEASE_REPO}…`);
+    run(
+      "gh",
+      [
+        "repo",
+        "create",
+        RELEASE_REPO,
+        "--public",
+        "--description",
+        "ComposeVC installers + auto-update feed",
+      ],
+      { shell: process.platform === "win32" }
+    );
+  } else {
+    let visibility = "";
+    try {
+      visibility = String(JSON.parse(view.stdout || "{}").visibility || "").toUpperCase();
+    } catch {
+      /* ignore */
+    }
+    if (visibility && visibility !== "PUBLIC") {
+      fail(`release repo ${RELEASE_REPO} is ${visibility} — auto-update needs a PUBLIC releases repo`);
+    }
+  }
+
+  log(`creating GitHub release ${tag} in ${RELEASE_REPO}…`);
   const ghArgs = [
     "release",
     "create",
     tag,
     installer,
     latestYml,
+    "-R",
+    RELEASE_REPO,
     "--title",
     releaseTitle,
     "--notes",
@@ -186,10 +235,8 @@ log(`
 Done.
   version:   ${version}
   installer: ${path.relative(root, installer)}
-  feed:      latest.yml (uploaded to the ${tag} release)
+  feed:      ${RELEASE_REPO} → release ${tag} (latest.yml)
 
-Installed clients check GitHub Releases ~15 s after launch and every 4 h,
-download in the background and install on the next restart.
-If the repo stays private, build with LOPSTER_UPDATE_TOKEN=… so the shipped
-app can read its own release feed.
+Installed clients check that public release feed ~15 s after launch and every
+4 h, download in the background and install on the next restart.
 `);

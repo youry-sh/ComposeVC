@@ -83,13 +83,13 @@ extraResources:
   - from: release-assets/update-token.txt
     to: update-token.txt
 
-# Auto-update feed: GitHub Releases of the (private) project repo.
+# Auto-update feed: GitHub Releases of the PUBLIC releases repo.
+# The source repo stays private; only installers + latest.yml are public.
 # Publishing needs GH_TOKEN with `repo` scope — see scripts/publish-update.mjs.
 publish:
   provider: github
   owner: youry-sh
-  repo: ComposeVC
-  private: true
+  repo: ComposeVC-releases
   releaseType: release
 
 win:

@@ -6,8 +6,10 @@
  * title bar). The update artefacts are produced by scripts/publish-update.mjs,
  * which uploads `ComposeVC-Setup-<version>-x64.exe` + `latest.yml` to GitHub.
  *
- * Private repo auth (never logged, never committed):
- *   1. userData/updater.json          { "token": "github_pat_…" }
+ * Client auth is normally NOT required: the feed lives in the public releases
+ * repo (owner/repo below). A token is only needed if you point the updater at a
+ * private mirror — sources, in this order (never logged, never committed):
+ *   1. userData/updater.json          { "token": "github_pat_…", "private": true }
  *   2. env LOPSTER_UPDATE_TOKEN / GH_TOKEN / GITHUB_TOKEN
  *   3. resources/update-token.txt     (optional build-time token, see
  *      scripts/package-dist.mjs → LOPSTER_UPDATE_TOKEN)
@@ -20,7 +22,8 @@ const fs = require("fs");
 const path = require("path");
 
 const DEFAULT_OWNER = "youry-sh";
-const DEFAULT_REPO = "ComposeVC";
+// Public releases repo (installers + latest.yml). The source repo stays private.
+const DEFAULT_REPO = "ComposeVC-releases";
 const FIRST_CHECK_DELAY_MS = 15 * 1000;
 const CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000;
 const CONFIG_FILE = "updater.json";
@@ -53,6 +56,8 @@ function defaultConfig() {
   return {
     owner: DEFAULT_OWNER,
     repo: DEFAULT_REPO,
+    // Public release repo by default → no token needed on client machines.
+    private: false,
     token: "",
     channel: "latest",
     autoCheck: true,
@@ -67,6 +72,7 @@ function readConfig(file) {
     merged.owner = String(merged.owner || DEFAULT_OWNER).trim() || DEFAULT_OWNER;
     merged.repo = String(merged.repo || DEFAULT_REPO).trim() || DEFAULT_REPO;
     merged.token = typeof merged.token === "string" ? merged.token.trim() : "";
+    merged.private = merged.private === true;
     merged.channel = merged.channel === "beta" ? "beta" : "latest";
     merged.autoCheck = merged.autoCheck !== false;
     merged.autoDownload = merged.autoDownload !== false;
@@ -149,10 +155,10 @@ function setState(patch) {
 function describeError(error) {
   const raw = String(error?.message || error || "update failed");
   if (/404/.test(raw)) {
-    return `release feed not found for ${repoLabel()} — publish a release or configure an update token for the private repo`;
+    return `no published release found for ${repoLabel()} — run "npm run publish:update" to ship one`;
   }
   if (/401|403/.test(raw)) {
-    return `GitHub denied the update request for ${repoLabel()} — configure a valid update token`;
+    return `GitHub denied the update request for ${repoLabel()} — check that the releases repo is public or configure a token`;
   }
   if (/ENOTFOUND|EAI_AGAIN|ETIMEDOUT|ECONNREFUSED|network/i.test(raw)) {
     return "update server unreachable — check the internet connection";
@@ -173,7 +179,7 @@ function applyFeed() {
     provider: "github",
     owner: config.owner,
     repo: config.repo,
-    private: true,
+    private: config.private === true,
   };
   if (token) feed.token = token;
   autoUpdater.setFeedURL(feed);
@@ -314,6 +320,7 @@ function setConfig(patch) {
   if (typeof patch.repo === "string" && patch.repo.trim()) next.repo = patch.repo.trim();
   if (patch.channel === "beta" || patch.channel === "latest") next.channel = patch.channel;
   if (typeof patch.autoCheck === "boolean") next.autoCheck = patch.autoCheck;
+  if (typeof patch.private === "boolean") next.private = patch.private;
   if (typeof patch.autoDownload === "boolean") {
     next.autoDownload = patch.autoDownload;
     if (autoUpdater) autoUpdater.autoDownload = patch.autoDownload;
