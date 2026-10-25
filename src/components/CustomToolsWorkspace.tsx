@@ -7,10 +7,8 @@ import {
   Search,
   Wrench,
   Save,
-  Cable,
 } from "lucide-react";
 import { CustomTool } from "../types";
-import McpModal from "./McpModal";
 
 interface CustomToolsWorkspaceProps {
   tools: CustomTool[];
