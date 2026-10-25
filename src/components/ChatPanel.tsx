@@ -4316,7 +4316,10 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
       const docFiles = list.filter((file) => !isImageFile(file) && isSupportedChatFile(file));
       const problems: string[] = [];
       for (const file of unsupported.slice(0, 3)) {
-        problems.push(`${file.name || "файл"} — формат не поддерживается`);
+        const looksLikeFolder = !file.type && !String(file.name || "").includes(".");
+        problems.push(
+          `${file.name || "файл"} — ${looksLikeFolder ? "папки не поддерживаются" : "формат не поддерживается"}`
+        );
       }
       if (unsupported.length > 3) problems.push(`и ещё ${unsupported.length - 3} файл(ов)`);
       for (const file of imageFiles.filter((image) => image.size > MAX_CHAT_IMAGE_BYTES).slice(0, 2)) {
@@ -4336,7 +4339,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
           break;
         }
         if (file.size <= 0) {
-          problems.push(`${file.name || "файл"} — пустой файл`);
+          problems.push(`${file.name || "файл"} — пустой файл или папка`);
           continue;
         }
         if (file.size > CHAT_FILE_MAX_BYTES) {
@@ -5305,7 +5308,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
               <>
                 <button
                   onClick={handleSend}
-                  disabled={!input.trim() && pendingImages.length === 0}
+                  disabled={!input.trim() && pendingImages.length === 0 && pendingFiles.length === 0}
                   title={labels.queue}
                   className="h-7 px-2 flex items-center gap-1 rounded-md border border-ink-300 bg-ink-100 text-ink-900 text-[11px] outline-none disabled:opacity-30 disabled:cursor-not-allowed hover:bg-ink-150 transition-colors flex-shrink-0"
                 >
@@ -5323,7 +5326,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             ) : (
               <button
                 onClick={handleSend}
-                disabled={!input.trim() && pendingImages.length === 0}
+                disabled={!input.trim() && pendingImages.length === 0 && pendingFiles.length === 0}
                 className="chat-send-fab"
                 title={labels.send}
                 aria-label={labels.send}

@@ -8016,34 +8016,37 @@
 .topbar-wave-bars { flex: 0 0 auto; }
 .titlebar-spacer { flex: 1 1 auto; min-width: 4px; }
 
-/* < 1760 — full bar is ~1720 wide, so the nine tab captions go first; icons,
-   hover/active states and tooltips still identify every panel. */
-@media (max-width: 1759px) {
+/* < 1800 — while every caption is visible the bar needs ~1720px of text, so
+   the nine tab captions are the first thing to go; icons, hover/active states
+   and tooltips still identify every panel. A 60px cushion absorbs font/DPI
+   differences instead of clipping the last tab. */
+@media (max-width: 1799px) {
   .topbar-tab-label { display: none; }
   .topbar-tab { padding: 0 8px; }
   .titlebar-update-label { display: none; }
 }
 
-/* < 1360 — equalizer bars fold away, value + MEM/TOK/CTX stay: the numbers are
+/* < 1320 — equalizer bars fold away, value + MEM/TOK/CTX stay: the numbers are
    the information, the bars are the decoration. */
-@media (max-width: 1359px) {
+@media (max-width: 1319px) {
   .topbar-wave-bars { display: none; }
   .topbar-wave-group { gap: 0; padding: 0 7px; }
   .topbar-metrics { gap: 10px; }
 }
 
-/* < 1100 — the clock leaves before any live metric does. */
-@media (max-width: 1099px) {
+/* < 1080 — the clock leaves before any live metric does. */
+@media (max-width: 1079px) {
   .topbar-clock { display: none; }
 }
 
-/* < 960 — densest tier that still shows every metric (main window min is 900). */
-@media (max-width: 959px) {
+/* < 1000 — densest tier that still shows all three metrics (main window
+   minimum is 900, where this leaves ~60px of slack). */
+@media (max-width: 999px) {
   .titlebar-root { gap: 4px; }
   .topbar-tabs { gap: 1px; padding: 0 2px; }
   .topbar-tab { padding: 0 6px; }
-  .topbar-wave-group { padding: 0 5px; }
-  .topbar-metrics { gap: 6px; }
+  .topbar-wave-group { padding: 0 4px; }
+  .topbar-metrics { gap: 4px; }
   .titlebar-brand-block { padding: 0 8px; }
 }
 
