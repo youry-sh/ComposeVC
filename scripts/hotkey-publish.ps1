@@ -181,10 +181,10 @@ function Start-Publish {
   Write-Log "publish started ($Keys)"
   try { Add-Content -Path $script:LogFile -Value "===== $(Get-Date -Format o) =====" -Encoding UTF8 } catch { }
 
-  $args = "/c node scripts\publish-update.mjs --bump patch >> `"$($script:LogFile)`" 2>&1"
+  $cmdLine = "/c node scripts\publish-update.mjs --bump patch >> `"$($script:LogFile)`" 2>&1"
   $psi = New-Object System.Diagnostics.ProcessStartInfo
   $psi.FileName = "cmd.exe"
-  $psi.Arguments = $args
+  $psi.Arguments = $cmdLine
   $psi.WorkingDirectory = $ProjectRoot
   $psi.UseShellExecute = $false
   $psi.CreateNoWindow = $true
