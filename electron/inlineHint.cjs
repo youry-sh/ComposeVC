@@ -27,7 +27,7 @@ const SYSTEM_PROMPT = [
   "Rules:",
   "- Output ONLY the continuation text — no preamble, no quotes, no markdown fences, no explanation, no list markers added unless the draft already uses them.",
   "- Never start with a space or a newline.",
-  "- Keep it short: at most 16 words, at most 2 lines.",
+  "- Keep it short: at most 16 words, on ONE single line. Never insert a line break or a trailing newline.",
   "- Match the language of the draft exactly (Russian draft → Russian continuation).",
   "- Never repeat or paraphrase text that is already present in the draft.",
   "- Never offer help, never ask questions, never mention that you are an AI.",
@@ -72,12 +72,9 @@ function cleanContinuation(raw) {
   text = text.replace(/^```[a-zA-Z0-9_-]*\s*?\n?/, "").replace(/\n?```\s*$/, "");
   text = text.replace(/^\s*(?:continuation|completion|next)\s*:\s*/i, "");
   text = text.replace(/^["'`«]+/, "").replace(/["'`»]+$/, "");
-  text = text.replace(/^[ \t]+/, "").replace(/^\n+/, "");
-  text = text.replace(/[ \t]+$/, "");
-  // At most two lines of suggestion.
-  const lines = text.split("\n");
-  if (lines.length > 2) text = lines.slice(0, 2).join("\n");
-  text = text.replace(/\n{2,}/g, "\n");
+  text = text.replace(/^\s+/, "").replace(/[ \t]+$/, "");
+  // The ghost is drawn on a single line inside the composer — flatten breaks.
+  text = text.replace(/\s*\n+\s*/g, " ");
   if (text.length > MAX_HINT_CHARS) {
     const cut = text.slice(0, MAX_HINT_CHARS);
     const boundary = Math.max(cut.lastIndexOf(" "), cut.lastIndexOf("\n"));

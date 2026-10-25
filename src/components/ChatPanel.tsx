@@ -4362,7 +4362,10 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
         })
         .then((result) => {
           if (seq !== hintSeqRef.current) return;
-          const text = typeof result?.text === "string" ? result.text : "";
+          // A ghost is a single-line continuation: flatten any stray line break.
+          const text = (typeof result?.text === "string" ? result.text : "")
+            .replace(/\s*\n+\s*/g, " ")
+            .replace(/[ \t]+$/, "");
           if (!result?.ok || !text.trim()) return;
           setHint({ text, caret, draft });
         })
@@ -4384,6 +4387,18 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
     const box = hintOverlayRef.current;
     if (!el || !box) return;
     const style = window.getComputedStyle(el);
+    // The overlay is absolutely positioned inside the nearest positioned
+    // ancestor (the composer shell), so anchor it to the textarea's real rect.
+    const anchor = box.offsetParent instanceof HTMLElement ? box.offsetParent : null;
+    if (anchor) {
+      const anchorRect = anchor.getBoundingClientRect();
+      const anchorStyle = window.getComputedStyle(anchor);
+      const originLeft = anchorRect.left + (parseFloat(anchorStyle.borderLeftWidth) || 0);
+      const originTop = anchorRect.top + (parseFloat(anchorStyle.borderTopWidth) || 0);
+      const rect = el.getBoundingClientRect();
+      box.style.left = `${rect.left - originLeft}px`;
+      box.style.top = `${rect.top - originTop}px`;
+    }
     box.style.width = `${el.clientWidth}px`;
     box.style.height = `${el.clientHeight}px`;
     box.style.paddingTop = style.paddingTop;
@@ -5422,52 +5437,50 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
               )}
             </div>
           )}
-          <div className="relative min-w-0">
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => {
-                const value = e.target.value;
-                setInput(value);
-                setCaretPos(e.target.selectionStart ?? value.length);
-                setHint(null);
-                window.dispatchEvent(new CustomEvent("composevc-draft", { detail: { text: value } }));
-              }}
-              onSelect={(e) => {
-                const el = e.currentTarget;
-                const caret = el.selectionStart ?? 0;
-                setCaretPos(caret);
-                // A real selection has no single insertion point — drop the ghost.
-                if (el.selectionStart !== el.selectionEnd) setHint(null);
-              }}
-              onScroll={syncHintOverlay}
-              onBlur={() => setHint(null)}
-              onKeyDown={handleKeyDown}
-              onPaste={handlePasteImages}
-              placeholder={labels.askAnything}
-              rows={1}
-              style={{
-                minHeight: "40px",
-                maxHeight: `${INPUT_MAX_HEIGHT}px`,
-              }}
-              className="w-full bg-transparent px-4 pt-3 pb-2 text-[13px] leading-5 text-ink-950 placeholder-ink-600 resize-none outline-none scrollbar-chat overflow-y-auto"
-            />
-            {hint && hintVisible ? (
-              /* Ghost continuation sits under the real text: the same font metrics
-                 and padding keep it pixel-aligned with the caret, and it is muted
-                 so it reads as a suggestion rather than typed content. */
-              <div
-                ref={hintOverlayRef}
-                aria-hidden="true"
-                className="pointer-events-none absolute left-0 top-0 overflow-hidden whitespace-pre-wrap break-words text-[13px] leading-5 text-transparent"
-                style={{ padding: "12px 16px 8px" }}
-              >
-                <span style={{ visibility: "hidden" }}>{input.slice(0, hint.caret)}</span>
-                <span style={{ color: "var(--ink-500)", opacity: 0.62 }}>{hint.text}</span>
-                <span style={{ visibility: "hidden" }}>{input.slice(hint.caret)}</span>
-              </div>
-            ) : null}
-          </div>
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={(e) => {
+              const value = e.target.value;
+              setInput(value);
+              setCaretPos(e.target.selectionStart ?? value.length);
+              setHint(null);
+              window.dispatchEvent(new CustomEvent("composevc-draft", { detail: { text: value } }));
+            }}
+            onSelect={(e) => {
+              const el = e.currentTarget;
+              const caret = el.selectionStart ?? 0;
+              setCaretPos(caret);
+              // A real selection has no single insertion point — drop the ghost.
+              if (el.selectionStart !== el.selectionEnd) setHint(null);
+            }}
+            onScroll={syncHintOverlay}
+            onBlur={() => setHint(null)}
+            onKeyDown={handleKeyDown}
+            onPaste={handlePasteImages}
+            placeholder={labels.askAnything}
+            rows={1}
+            style={{
+              minHeight: "40px",
+              maxHeight: `${INPUT_MAX_HEIGHT}px`,
+            }}
+            className="w-full bg-transparent px-4 pt-3 pb-2 text-[13px] leading-5 text-ink-950 placeholder-ink-600 resize-none outline-none scrollbar-chat overflow-y-auto"
+          />
+          {hint && hintVisible ? (
+            /* Ghost continuation is absolutely positioned over the textarea (the
+               composer shell is the containing block), so it never shifts the
+               layout. Same font metrics + padding keep it aligned with the caret. */
+            <div
+              ref={hintOverlayRef}
+              aria-hidden="true"
+              className="pointer-events-none absolute overflow-hidden whitespace-pre-wrap break-words text-[13px] leading-5 text-transparent"
+              style={{ top: 0, left: 0, padding: "12px 16px 8px" }}
+            >
+              <span style={{ visibility: "hidden" }}>{input.slice(0, hint.caret)}</span>
+              <span style={{ color: "var(--ink-500)", opacity: 0.62 }}>{hint.text}</span>
+              <span style={{ visibility: "hidden" }}>{input.slice(hint.caret)}</span>
+            </div>
+          ) : null}
           <input
             ref={fileInputRef}
             type="file"
