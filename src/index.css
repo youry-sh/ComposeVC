@@ -10327,8 +10327,9 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
 }
 
 /* ══ Live tool strip ═══════════════════════════════════════════════════════
-   One folded line while the agent works: spinner, a phrase with a highlight
-   travelling across it, the tool-call counter and a disclosure arrow. */
+   Status line above the live tool cards: spinner, a phrase with a highlight
+   travelling across it and the tool-call counter. It is informational — the
+   cards themselves are always rendered below, nothing is folded behind it. */
 .tool-strip {
   display: flex;
   align-items: center;
@@ -10341,11 +10342,8 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   background: var(--surface-2);
   color: var(--ink-700);
   text-align: left;
-  cursor: pointer;
-  transition: border-color .12s ease, background .12s ease;
 }
-.tool-strip:hover { border-color: var(--border-strong); background: var(--surface-3); }
-.tool-strip.is-open { border-color: var(--border-strong); }
+.tool-strip.is-static { cursor: default; }
 .tool-strip-spin {
   flex: none;
   width: 12px;
@@ -10394,7 +10392,7 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   font-variant-numeric: tabular-nums;
   text-align: center;
 }
-.tool-strip-chevron { flex: none; font-size: 9px; color: var(--ink-500); }
+
 
 @media (prefers-reduced-motion: reduce) {
   .tool-strip-spin.is-running,

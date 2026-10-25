@@ -3907,6 +3907,12 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
 }) => {
   const [input, setInput] = useState("");
   const [pendingImages, setPendingImages] = useState<ChatImageAttachment[]>([]);
+  /** Text files attached to this chat (dropped from Explorer or picked). */
+  const [pendingFiles, setPendingFiles] = useState<ChatFileAttachment[]>([]);
+  /** Shown above the composer when some dropped files were refused. */
+  const [attachNotice, setAttachNotice] = useState<string | null>(null);
+  /** True while OS files are dragged over THIS chat panel. */
+  const [dragActive, setDragActive] = useState(false);
   const [lightbox, setLightbox] = useState<{ images: ChatImageAttachment[]; index: number } | null>(
     null
   );
@@ -3979,6 +3985,11 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   const [isResizing, setIsResizing] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const docInputRef = useRef<HTMLInputElement>(null);
+  /** Latest pending files — the async drop handler reads it between awaits. */
+  const pendingFilesRef = useRef<ChatFileAttachment[]>([]);
+  const attachNoticeTimer = useRef<number | null>(null);
+  const dragDepthRef = useRef(0);
   /** Root of this chat column — used so mouse/hotkey insert only hits the active panel */
   const panelRootRef = useRef<HTMLDivElement>(null);
   const toolsMenuRef = useRef<HTMLDivElement>(null);
