@@ -279,18 +279,43 @@ function init(userDataPath) {
   return publicState();
 }
 
-async function check() {
+async function check(options) {
+  const silent = options?.silent === true;
   if (!autoUpdater) return publicState();
   if (!app?.isPackaged) {
     return setState({ status: "dev", error: null });
   }
   if (state.status === "checking" || state.status === "downloading") return publicState();
+
+  // An already announced update survives a failed poll — the badge keeps
+  // pointing at it instead of dropping back to a neutral state.
+  const known =
+    state.status === "available" || state.status === "downloaded"
+      ? {
+          status: state.status,
+          version: state.version,
+          releaseNotes: state.releaseNotes,
+          releaseDate: state.releaseDate,
+        }
+      : null;
+
+  backgroundCheck = silent;
   try {
     applyFeed();
-    setState({ status: "checking", error: null });
+    if (!silent) setState({ status: "checking", error: null });
     await autoUpdater.checkForUpdates();
   } catch (error) {
-    setState({ status: "error", error: describeError(error), checkedAt: Date.now() });
+    if (known) {
+      setState({ ...known, error: null, checkedAt: Date.now() });
+    } else if (silent) {
+      // Polls run every few minutes; a transient network hiccup must not park
+      // the title bar in a permanent error state. Manual checks still report it.
+      setState({ status: "idle", error: null, checkedAt: Date.now() });
+    } else {
+      setState({ status: "error", error: describeError(error), checkedAt: Date.now() });
+    }
+  } finally {
+    backgroundCheck = false;
   }
   return publicState();
 }
@@ -359,17 +384,13 @@ function openReleasePage() {
 function schedule() {
   stopSchedule();
   if (!config.autoCheck) return;
-  firstTimer = setTimeout(() => void check(), FIRST_CHECK_DELAY_MS);
-  if (typeof firstTimer.unref === "function") firstTimer.unref();
-  intervalTimer = setInterval(() => void check(), CHECK_INTERVAL_MS);
+  // Immediate check on launch (nothing waits for a delay), then a steady poll.
+  void check({ silent: true });
+  intervalTimer = setInterval(() => void check({ silent: true }), CHECK_INTERVAL_MS);
   if (typeof intervalTimer.unref === "function") intervalTimer.unref();
 }
 
 function stopSchedule() {
-  if (firstTimer) {
-    clearTimeout(firstTimer);
-    firstTimer = null;
-  }
   if (intervalTimer) {
     clearInterval(intervalTimer);
     intervalTimer = null;

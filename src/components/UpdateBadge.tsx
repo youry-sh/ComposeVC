@@ -205,7 +205,9 @@ export default function UpdateBadge() {
       >
         {icon}
         {label ? <span className="titlebar-update-label">{label}</span> : null}
-        {status === "downloaded" ? <span className="titlebar-update-dot" aria-hidden /> : null}
+        {status === "downloaded" || status === "available" ? (
+          <span className="titlebar-update-dot" aria-hidden />
+        ) : null}
         {status === "downloading" ? (
           <span className="titlebar-update-track" aria-hidden>
             <i style={{ width: `${pct}%` }} />

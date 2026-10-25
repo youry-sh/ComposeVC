@@ -8023,6 +8023,12 @@
 @media (max-width: 1799px) {
   .topbar-tab-label { display: none; }
   .topbar-tab { padding: 0 8px; }
+}
+
+/* The update badge can grow a text label ("update available") at any moment, so
+   it gives up that label well before the tab captions do — the icon, its dot
+   and the tooltip/panel still carry the message. */
+@media (max-width: 1899px) {
   .titlebar-update-label { display: none; }
 }
 
@@ -13016,9 +13022,18 @@ body.cvc-inspecting * {
   color: var(--accent-fg);
 }
 
+/* A published update lights the trigger red so it cannot be missed. */
 .titlebar-update.is-available {
-  border-color: var(--border-strong);
-  color: var(--accent);
+  border-color: color-mix(in srgb, #e5534b 62%, var(--border));
+  background: color-mix(in srgb, #e5534b 16%, var(--surface));
+  color: #e5534b;
+  font-weight: 600;
+}
+
+.titlebar-update.is-available:hover {
+  border-color: #e5534b;
+  background: color-mix(in srgb, #e5534b 26%, var(--surface));
+  color: #ff6b60;
 }
 
 .titlebar-update.is-busy,
