@@ -8146,7 +8146,6 @@
   clip-path: inset(0 0 100% 0);
   pointer-events: none;
   visibility: hidden;
-  transform-origin: top center;
   -webkit-app-region: no-drag;
   transition: clip-path 0.42s cubic-bezier(0.22, 0.9, 0.16, 1), visibility 0s linear 0.42s;
 }

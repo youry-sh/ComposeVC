@@ -79,13 +79,22 @@ const TitleBar: React.FC<TitleBarProps> = ({
   const ctxPeak = useRef(1);
   const [blindsOpen, setBlindsOpen] = useState(false);
   const [blindsTab, setBlindsTab] = useState<"prompts">("prompts");
+  const blindsTabRef = useRef<HTMLButtonElement>(null);
+
+  /** Roll the blind up and hand focus back to the tab that unrolled it. */
+  const closeBlinds = () => {
+    setBlindsOpen(false);
+    blindsTabRef.current?.focus();
+  };
 
   // Esc rolls the blinds back up: the drawer is a full-width overlay, so the
   // keyboard needs a way out that does not require hunting for the pull rail.
   useEffect(() => {
     if (!blindsOpen) return;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setBlindsOpen(false);
+      if (event.key !== "Escape") return;
+      setBlindsOpen(false);
+      blindsTabRef.current?.focus();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -176,6 +185,7 @@ const TitleBar: React.FC<TitleBarProps> = ({
       {/* Шторы (blinds) — a low tab that hangs off the bottom edge of the bar.
           It rolls the drawer down like a real roller blind (see .blinds-roll). */}
       <button
+        ref={blindsTabRef}
         type="button"
         id="titlebar-blinds-tab"
         title="Шторы — Prompts и будущие вкладки"
@@ -302,7 +312,7 @@ const TitleBar: React.FC<TitleBarProps> = ({
         <button
           type="button"
           className="blinds-roll"
-          onClick={() => setBlindsOpen(false)}
+          onClick={closeBlinds}
           title="Свернуть шторы"
           aria-label="Свернуть шторы"
           tabIndex={blindsOpen ? 0 : -1}
