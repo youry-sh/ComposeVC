@@ -530,7 +530,7 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
   /** Rail label — custom name, else the numbered default. */
   const workspaceLabel = useCallback(
     (workspace: WorkspaceState, index: number) =>
-      workspace.name.trim() || `${labels.workspace} ${index + 1}`,
+      (workspace.name || "").trim() || `${labels.workspace} ${index + 1}`,
     [labels.workspace]
   );
 
