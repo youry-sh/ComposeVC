@@ -35,6 +35,11 @@ contextBridge.exposeInMainWorld("lopster", {
   webEngineCopyText: (text) => ipcRenderer.invoke("webengine:copyText", text || ""),
   webEngineCaptureScreenshot: (webContentsId) => ipcRenderer.invoke("webengine:captureScreenshot", webContentsId),
   webEngineClearCache: () => ipcRenderer.invoke("webengine:clearCache"),
+  // MultiIDE layout (workspaces + their chat panels) — disk-backed JSON store.
+  multiIdeLoadState: () => ipcRenderer.invoke("multiide:loadState"),
+  multiIdeSaveState: (patch) => ipcRenderer.invoke("multiide:saveState", patch || {}),
+  multiIdeLoadStateSync: () => ipcRenderer.sendSync("multiide:loadStateSync"),
+  multiIdeSaveStateSync: (patch) => ipcRenderer.sendSync("multiide:saveStateSync", patch || {}),
   // Ctrl+H pressed while a <webview> had focus — the shell opens its switcher.
   onOpenChatSwitcher: (callback) => {
     const listener = () => callback();
