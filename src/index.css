@@ -7249,17 +7249,11 @@
     margin-top: 1px;
   }
 
-  /* compact top bar on narrow windows */
-  @media (max-width: 1280px) {
-    .topbar-tab-label { display: none; }
-    .topbar-tab { padding: 0 8px; }
-  }
-  @media (max-width: 1040px) {
-    .topbar-wave-bars { display: none; }
-  }
-  @media (max-width: 860px) {
-    .topbar-clock-date { display: none; }
-  }
+  /* Narrow-window tiers for the top bar are owned in ONE place: the unlayered
+     "Title bar responsive ladder" further down (next to the top-bar re-skin).
+     Tiers used to live here, inside @layer components, where the unlayered
+     re-skin silently overrode them — that is why the MEM/TOK/CTX equalizer
+     ended up on top of the workspace tabs on narrow windows. */
 
   .titlebar-spacer {
     flex: 1 1 auto;
@@ -7999,6 +7993,65 @@
 .topbar-wave-value, .topbar-clock-time { font-family: var(--terminal-font); font-size: 10px; font-weight: 500; }
 .topbar-wave-label, .topbar-clock-date { font-family: var(--terminal-font); font-size: 8px; }
 .titlebar-btn { border-radius: 1px !important; }
+
+/* ── Title bar responsive ladder ─────────────────────────────────────────────
+   The top bar is a single non-wrapping row of fixed-size parts, so "responsive"
+   here means dropping a part at the exact width where it stops fitting — never
+   letting a part shrink into its neighbour. The bug this replaces: the nav
+   (`.topbar-tabs`, a shrinkable flex item) kept its natural width, overflowed
+   its own box and painted the workspace tabs underneath the MEM/TOK/CTX
+   equalizer; the old tiers could not stop it because they lived inside
+   `@layer components` and lost to this unlayered re-skin. Every rule below is
+   unlayered and comes last, so it is the single owner of this behaviour, and
+   the guards clip instead of overlap even if future content grows.
+
+   Budget (mono theme, Inter/terminal fallbacks): brand 113 · blinds 32 ·
+   window controls 169 · gaps ~40. Captioned tabs need 894, icon tabs 445,
+   the equalizer needs ~340 and the clock 64. */
+.titlebar-brand-block { flex: 0 0 auto; }
+.topbar-tabs { flex: 0 1 auto; overflow: hidden; }
+.topbar-tab { flex: 0 0 auto; }
+.topbar-metrics { flex: 0 1 auto; min-width: 0; overflow: hidden; }
+.topbar-wave-group { flex: 0 0 auto; }
+.topbar-wave-bars { flex: 0 0 auto; }
+.titlebar-spacer { flex: 1 1 auto; min-width: 4px; }
+
+/* < 1760 — full bar is ~1720 wide, so the nine tab captions go first; icons,
+   hover/active states and tooltips still identify every panel. */
+@media (max-width: 1759px) {
+  .topbar-tab-label { display: none; }
+  .topbar-tab { padding: 0 8px; }
+  .titlebar-update-label { display: none; }
+}
+
+/* < 1360 — equalizer bars fold away, value + MEM/TOK/CTX stay: the numbers are
+   the information, the bars are the decoration. */
+@media (max-width: 1359px) {
+  .topbar-wave-bars { display: none; }
+  .topbar-wave-group { gap: 0; padding: 0 7px; }
+  .topbar-metrics { gap: 10px; }
+}
+
+/* < 1100 — the clock leaves before any live metric does. */
+@media (max-width: 1099px) {
+  .topbar-clock { display: none; }
+}
+
+/* < 960 — densest tier that still shows every metric (main window min is 900). */
+@media (max-width: 959px) {
+  .titlebar-root { gap: 4px; }
+  .topbar-tabs { gap: 1px; padding: 0 2px; }
+  .topbar-tab { padding: 0 6px; }
+  .topbar-wave-group { padding: 0 5px; }
+  .topbar-metrics { gap: 6px; }
+  .titlebar-brand-block { padding: 0 8px; }
+}
+
+/* < 860 — below the app's minimum width there is nothing left to trim without
+   losing a panel entry: keep the tabs, drop the readouts whole (never sliced). */
+@media (max-width: 859px) {
+  .topbar-metrics { display: none; }
+}
 
 /* ── Шторы (blinds): drop-down drawer under the top bar, reserved for future tabs ── */
 .titlebar-blinds-toggle {

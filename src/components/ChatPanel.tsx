@@ -3996,7 +3996,8 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   /** Latest pending files — the async drop handler reads it between awaits. */
   const pendingFilesRef = useRef<ChatFileAttachment[]>([]);
   const attachNoticeTimer = useRef<number | null>(null);
-  const dragDepthRef = useRef(0);
+  /** Debounced hide for the drop overlay (dragleave flicker). */
+  const dragHideTimer = useRef<number | null>(null);
   /** Root of this chat column — used so mouse/hotkey insert only hits the active panel */
   const panelRootRef = useRef<HTMLDivElement>(null);
   const toolsMenuRef = useRef<HTMLDivElement>(null);
@@ -4275,6 +4276,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   useEffect(
     () => () => {
       if (attachNoticeTimer.current) window.clearTimeout(attachNoticeTimer.current);
+      if (dragHideTimer.current) window.clearTimeout(dragHideTimer.current);
     },
     []
   );
@@ -4282,7 +4284,10 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   /** A drop outside the window (or Esc) never fires dragleave here — clear the overlay. */
   useEffect(() => {
     const resetDrag = () => {
-      dragDepthRef.current = 0;
+      if (dragHideTimer.current) {
+        window.clearTimeout(dragHideTimer.current);
+        dragHideTimer.current = null;
+      }
       setDragActive(false);
     };
     window.addEventListener("dragend", resetDrag);
@@ -4430,10 +4435,27 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   const isOsFileDrag = (transfer?: DataTransfer | null): boolean =>
     Boolean(transfer && Array.from(transfer.types || []).includes("Files"));
 
+  /** Hide the overlay a beat after the pointer leaves — moving between child
+   *  elements fires leave/enter pairs that would otherwise flicker. */
+  const scheduleDragHide = () => {
+    if (dragHideTimer.current) window.clearTimeout(dragHideTimer.current);
+    dragHideTimer.current = window.setTimeout(() => {
+      dragHideTimer.current = null;
+      setDragActive(false);
+    }, 140);
+  };
+
+  const cancelDragHide = () => {
+    if (dragHideTimer.current) {
+      window.clearTimeout(dragHideTimer.current);
+      dragHideTimer.current = null;
+    }
+  };
+
   const handlePanelDragEnter = (e: React.DragEvent) => {
     if (!isOsFileDrag(e.dataTransfer)) return;
     e.preventDefault();
-    dragDepthRef.current += 1;
+    cancelDragHide();
     if (!dragActive) setDragActive(true);
   };
 
@@ -4441,12 +4463,13 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
     if (!isOsFileDrag(e.dataTransfer)) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = "copy";
+    cancelDragHide();
     if (!dragActive) setDragActive(true);
   };
 
   const handlePanelDragLeave = () => {
-    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
-    if (dragDepthRef.current === 0) setDragActive(false);
+    if (!dragActive) return;
+    scheduleDragHide();
   };
 
   /**
@@ -4457,7 +4480,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
     if (!isOsFileDrag(e.dataTransfer)) return;
     e.preventDefault();
     e.stopPropagation();
-    dragDepthRef.current = 0;
+    cancelDragHide();
     setDragActive(false);
     const dropped = e.dataTransfer?.files;
     if (dropped?.length) void addPendingAttachments(dropped);
