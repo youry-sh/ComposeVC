@@ -8,7 +8,8 @@
  * This module only:
  *  - spawns / stops the child,
  *  - relays its JSON log lines to the app (bounded ring buffer),
- *  - forwards control commands (status, ngrok-restart, guard-status, …) over stdin,
+ *  - forwards control commands (status, ngrok-restart, guard-status, …) over the
+ *    child channel (MessagePort for Electron utility processes, stdin otherwise),
  *  - forwards usage records (the app process is the single disk writer of
  *    usage-stats.json; the child records into the parent via the pipe),
  *  - auto-restarts the child a bounded number of times after a crash.
