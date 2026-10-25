@@ -336,6 +336,10 @@ let exiting = false;
 async function gracefulExit(code) {
   if (exiting) return;
   exiting = true;
+  // Safety net: a pending keep-alive socket / ngrok teardown must never keep
+  // the gateway process alive after the app asked it to stop.
+  const force = setTimeout(() => process.exit(code || 0), 2000);
+  if (typeof force.unref === "function") force.unref();
   try {
     await server.stop();
   } catch {
