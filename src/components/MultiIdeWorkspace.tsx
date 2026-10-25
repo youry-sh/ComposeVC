@@ -1128,7 +1128,7 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
             </button>
           </div>
           <span className="chat-rail-foot-count">
-            {activeWorkspaceSlots.length}/{MULTIIDE_MAX_SLOTS}
+            {activeWorkspaceSlots.length}/{MULTIIDE_CHATS_PER_WORKSPACE}
           </span>
         </footer>
       </aside>
