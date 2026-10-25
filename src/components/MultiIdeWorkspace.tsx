@@ -27,6 +27,8 @@ export const MULTIIDE_ACTIVE_KEY = "lopster-multiide-active";
 const MULTIIDE_ROWS_KEY = "lopster-multiide-rows";
 /** Hard ceiling — each panel holds a live agent session. */
 export const MULTIIDE_MAX_SLOTS = 6;
+/** Workspace ceiling — Alt+1…4 jump straight to these slots of the rail. */
+export const MULTIIDE_MAX_WORKSPACES = 4;
 /** Fixed id of the default workspace — pre-workspace chats attach here on migration. */
 export const DEFAULT_WORKSPACE_ID = "ws-default";
 const WORKSPACES_KEY = "lopster-multiide-workspaces";
@@ -96,6 +98,8 @@ interface MultiIdeWorkspaceProps {
   onOpenPrompts?: () => void;
   /** Open the MCP connector modal from the rail footer quick buttons. */
   onOpenMcp?: () => void;
+  /** Bring the MultiIDE panel to the front (used by the Alt+1…4 workspace hotkeys). */
+  onRequestFocus?: () => void;
 }
 
 function isAgentMode(value: unknown): value is MainAgentMode {
@@ -461,6 +465,7 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
   onOpenRunners,
   onOpenPrompts,
   onOpenMcp,
+  onRequestFocus,
 }) => {
   const [workspaceState, setWorkspaceState] = useState(() => loadWorkspaceState(slots));
   /** Folded side columns — restored from disk, saved on every toggle. */
@@ -753,6 +758,7 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
 
   // Create a new workspace with one fresh empty panel, then switch to it.
   const handleAddWorkspace = useCallback(() => {
+    if (workspaces.length >= MULTIIDE_MAX_WORKSPACES) return;
     if (slots.length >= MULTIIDE_MAX_SLOTS) return;
     const usedWs = new Set(workspaces.map((w) => w.id));
     let wsId = "";
