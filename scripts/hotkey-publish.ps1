@@ -31,6 +31,75 @@ Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 Add-Type -AssemblyName System.Core
 
+# Win32 message window for the global hotkey + the no-activate overlay window.
+# Compiled early so -Simulate / the overlay can use them before the hotkey is set up.
+$source = @"
+using System;
+using System.Windows.Forms;
+using System.Runtime.InteropServices;
+
+public class ComposeVCHotkeyWindow : Form
+{
+    public const int WM_HOTKEY = 0x0312;
+    [DllImport("user32.dll")] public static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
+    [DllImport("user32.dll")] public static extern bool UnregisterHotKey(IntPtr hWnd, int id);
+
+    public event Action<int> HotkeyPressed;
+
+    public ComposeVCHotkeyWindow()
+    {
+        ShowInTaskbar = false;
+        FormBorderStyle = FormBorderStyle.None;
+        StartPosition = FormStartPosition.Manual;
+        Location = new System.Drawing.Point(-4000, -4000);
+        Size = new System.Drawing.Size(1, 1);
+        ShowIcon = false;
+    }
+
+    public bool Register(int id, uint modifiers, uint key)
+    {
+        return RegisterHotKey(Handle, id, modifiers, key);
+    }
+
+    public void Unregister(int id)
+    {
+        try { UnregisterHotKey(Handle, id); } catch { }
+    }
+
+    protected override void WndProc(ref Message m)
+    {
+        if (m.Msg == WM_HOTKEY)
+        {
+            var handler = HotkeyPressed;
+            if (handler != null) handler(m.WParam.ToInt32());
+        }
+        base.WndProc(ref m);
+    }
+}
+
+// Borderless always-on-top overlay that never steals keyboard focus from the
+// app the user is working in (WS_EX_NOACTIVATE + WS_EX_TOOLWINDOW).
+public class ComposeVCOverlayWindow : Form
+{
+    protected override bool ShowWithoutActivation { get { return true; } }
+
+    protected override CreateParams CreateParams
+    {
+        get
+        {
+            CreateParams cp = base.CreateParams;
+            cp.ExStyle |= 0x08000000; // WS_EX_NOACTIVATE
+            cp.ExStyle |= 0x00000080; // WS_EX_TOOLWINDOW
+            return cp;
+        }
+    }
+}
+"@
+
+if (-not ("ComposeVCHotkeyWindow" -as [type])) {
+  Add-Type -ReferencedAssemblies System.Windows.Forms, System.Drawing -TypeDefinition $source -Language CSharp
+}
+
 $script:LogFile = Join-Path $env:TEMP "composevc-publish-hotkey.log"
 $script:Proc = $null
 $script:Busy = $false
@@ -320,72 +389,7 @@ function Resolve-Hotkey([string]$Spec) {
   return [pscustomobject]@{ Modifiers = $mods; VirtualKey = $vk }
 }
 
-$source = @"
-using System;
-using System.Windows.Forms;
-using System.Runtime.InteropServices;
-
-public class ComposeVCHotkeyWindow : Form
-{
-    public const int WM_HOTKEY = 0x0312;
-    [DllImport("user32.dll")] public static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
-    [DllImport("user32.dll")] public static extern bool UnregisterHotKey(IntPtr hWnd, int id);
-
-    public event Action<int> HotkeyPressed;
-
-    public ComposeVCHotkeyWindow()
-    {
-        ShowInTaskbar = false;
-        FormBorderStyle = FormBorderStyle.None;
-        StartPosition = FormStartPosition.Manual;
-        Location = new System.Drawing.Point(-4000, -4000);
-        Size = new System.Drawing.Size(1, 1);
-        ShowIcon = false;
-    }
-
-    public bool Register(int id, uint modifiers, uint key)
-    {
-        return RegisterHotKey(Handle, id, modifiers, key);
-    }
-
-    public void Unregister(int id)
-    {
-        try { UnregisterHotKey(Handle, id); } catch { }
-    }
-
-    protected override void WndProc(ref Message m)
-    {
-        if (m.Msg == WM_HOTKEY)
-        {
-            var handler = HotkeyPressed;
-            if (handler != null) handler(m.WParam.ToInt32());
-        }
-        base.WndProc(ref m);
-    }
-}
-
-// Borderless always-on-top overlay that never steals keyboard focus from the
-// app the user is working in (WS_EX_NOACTIVATE + WS_EX_TOOLWINDOW).
-public class ComposeVCOverlayWindow : Form
-{
-    protected override bool ShowWithoutActivation { get { return true; } }
-
-    protected override CreateParams CreateParams
-    {
-        get
-        {
-            CreateParams cp = base.CreateParams;
-            cp.ExStyle |= 0x08000000; // WS_EX_NOACTIVATE
-            cp.ExStyle |= 0x00000080; // WS_EX_TOOLWINDOW
-            return cp;
-        }
-    }
-}
-"@
-
-if (-not ("ComposeVCHotkeyWindow" -as [type])) {
-  Add-Type -ReferencedAssemblies System.Windows.Forms, System.Drawing -TypeDefinition $source -Language CSharp
-}
+# (Win32 hotkey/overlay types are compiled at the top of this script.)
 
 $hotkey = Resolve-Hotkey $Keys
 $hotkeyId = 0x4C31
