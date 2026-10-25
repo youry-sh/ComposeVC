@@ -100,8 +100,6 @@ const quietBtn =
   "ide-quiet-btn inline-flex h-7 shrink-0 items-center justify-center gap-1.5 px-2.5 text-[11px] leading-none outline-none transition-colors disabled:opacity-40 theme-soft";
 const primaryBtn =
   "ide-primary-btn inline-flex h-7 shrink-0 items-center justify-center gap-1.5 px-2.5 text-[11px] leading-none outline-none transition-colors disabled:opacity-40 ui-btn-primary";
-const fieldClass =
-  "ide-field h-8 w-full min-w-0 px-3 text-[12px] leading-none text-ink-950 placeholder-ink-500 outline-none";
 const fieldStyle: React.CSSProperties = {
   caretColor: "var(--accent)",
 };
