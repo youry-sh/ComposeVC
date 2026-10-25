@@ -286,12 +286,12 @@
     --radius-modal: 12px;
   }
 
-  /* ── Тёмно-серый (Graphite #171717) + красно-оранжевый ──────────────────
+  /* ── Тёмно-серый (Graphite #171717) — нейтральный тёмный ────────────────
      Charcoal chrome on a #171717 base: every layer steps ~4 lightness points
-     so panels read as elevation instead of one flat grey slab, and text stays
-     a soft warm-neutral instead of pure white. Exactly one saturated colour —
-     red-orange #f0442e — is allowed, and only where the interface needs a
-     signal: primary buttons, focus, selection, toggles and live state. */
+     so panels read as elevation instead of one flat grey slab. The accent slot
+     stays completely neutral — primary actions, focus, selection, toggles and
+     live state use the same light grey as the text, so nothing glares and no
+     single hue dominates a long session. */
   [data-theme="graphite"] {
     color-scheme: dark;
 
@@ -316,95 +316,95 @@
     --surface-3: #242424;
     --border: #282828;
     --border-strong: #383838;
-    --text: #e7e4e1;
-    --text-muted: #8d8a87;
-    --text-dim: #aaa6a2;
-    --text-soft: #94908d;
+    --text: #e3e3e3;
+    --text-muted: #909090;
+    --text-dim: #adadad;
+    --text-soft: #9a9a9a;
 
-    --accent: #f0442e;
-    --accent-fg: #1a0806;
-    --accent-hover: #ff5c46;
-    --accent-soft: #ff8b78;
-    --accent-muted: rgba(240, 68, 46, 0.12);
-    --accent-2: #ffb3a3;
-    --focus-ring: rgba(240, 68, 46, 0.30);
-    --focus-border: #a03a2b;
-    --selection: rgba(240, 68, 46, 0.24);
-    --glow: rgba(240, 68, 46, 0.05);
+    --accent: #e6e6e6;
+    --accent-fg: #101010;
+    --accent-hover: #f5f5f5;
+    --accent-soft: #c9c9c9;
+    --accent-muted: rgba(255, 255, 255, 0.07);
+    --accent-2: #b3b3b3;
+    --focus-ring: rgba(255, 255, 255, 0.16);
+    --focus-border: #4a4a4a;
+    --selection: rgba(255, 255, 255, 0.14);
+    --glow: rgba(255, 255, 255, 0.05);
 
-    --btn-primary-bg: #f0442e;
-    --btn-primary-fg: #1a0806;
-    --btn-primary-hover: #ff5c46;
-    --btn-primary-border: #c9371f;
+    --btn-primary-bg: #e8e8e8;
+    --btn-primary-fg: #101010;
+    --btn-primary-hover: #ffffff;
+    --btn-primary-border: #c9c9c9;
     --btn-secondary-bg: #202020;
-    --btn-secondary-fg: #d2cfcc;
+    --btn-secondary-fg: #d4d4d4;
     --btn-secondary-border: #2e2e2e;
     --btn-secondary-hover: #262626;
-    --btn-secondary-fg-hover: #f5f2f0;
+    --btn-secondary-fg-hover: #f3f3f3;
     --btn-secondary-border-hover: #404040;
 
-    --btn-ok-bg: #16211b;
-    --btn-ok-fg: #a6cbb3;
-    --btn-ok-hover: #1b2a22;
-    --btn-ok-border: #283c31;
-    --btn-warn-bg: #241d11;
-    --btn-warn-fg: #dcc295;
-    --btn-warn-hover: #2c2415;
-    --btn-warn-border: #42361f;
-    --btn-danger-bg: #2b1512;
-    --btn-danger-fg: #f2b9b2;
-    --btn-danger-hover: #341a16;
-    --btn-danger-border: #4c241d;
-    --btn-info-bg: #161d23;
-    --btn-info-fg: #a8bfd2;
-    --btn-info-hover: #1b242c;
-    --btn-info-border: #2b3a48;
+    --btn-ok-bg: #18221c;
+    --btn-ok-fg: #a6c4b0;
+    --btn-ok-hover: #1e2a23;
+    --btn-ok-border: #2a3a31;
+    --btn-warn-bg: #241e12;
+    --btn-warn-fg: #d6c096;
+    --btn-warn-hover: #2c2416;
+    --btn-warn-border: #3f3421;
+    --btn-danger-bg: #241413;
+    --btn-danger-fg: #e5b4b0;
+    --btn-danger-hover: #2c1917;
+    --btn-danger-border: #422523;
+    --btn-info-bg: #161c22;
+    --btn-info-fg: #adbdcb;
+    --btn-info-hover: #1b232a;
+    --btn-info-border: #2a3944;
     --btn-soft-bg: #202020;
-    --btn-soft-fg: #d2cfcc;
+    --btn-soft-fg: #d4d4d4;
     --btn-soft-border: #2e2e2e;
     --btn-soft-hover: #262626;
     --btn-ghost-hover: rgba(255, 255, 255, 0.055);
-    --btn-ghost-hover-fg: #f5f2f0;
+    --btn-ghost-hover-fg: #f3f3f3;
 
     --input-bg: #131313;
-    --input-fg: #e7e4e1;
+    --input-fg: #e3e3e3;
     --input-border: #2d2d2d;
     --input-border-hover: #3c3c3c;
     --panel-bg: #1a1a1a;
     --panel-border: #282828;
     --panel-header-bg: #1f1f1f;
     --hover-bg: rgba(255, 255, 255, 0.05);
-    --active-bg: rgba(240, 68, 46, 0.14);
-    --active-fg: #f8eeeb;
-    --active-border: #5b2a21;
+    --active-bg: rgba(255, 255, 255, 0.085);
+    --active-fg: #f5f5f5;
+    --active-border: #4a4a4a;
 
-    --toggle-on: #f0442e;
-    --toggle-on-border: #f0442e;
-    --toggle-thumb: #170706;
+    --toggle-on: #e6e6e6;
+    --toggle-on-border: #e6e6e6;
+    --toggle-thumb: #101010;
     --toggle-off-bg: #262626;
     --toggle-off-border: #383838;
 
-    --danger: #e5786d;
-    --danger-bg: #2b1512;
-    --danger-border: #4c241d;
-    --warn: #d9b475;
-    --warn-bg: #231c10;
-    --warn-border: #40341f;
-    --ok: #8dc09e;
-    --ok-bg: #14201a;
-    --ok-border: #263a2d;
-    --info: #98aec3;
-    --info-bg: #151c22;
-    --info-border: #2a3946;
+    --danger: #d97070;
+    --danger-bg: #201312;
+    --danger-border: #3d2020;
+    --warn: #c9a35e;
+    --warn-bg: #1c170e;
+    --warn-border: #3a3120;
+    --ok: #86b08a;
+    --ok-bg: #131c16;
+    --ok-border: #24382b;
+    --info: #93a9bd;
+    --info-bg: #141a20;
+    --info-border: #283742;
 
     --scrim: rgba(8, 8, 8, 0.82);
     --shadow-modal: 0 24px 80px rgba(0, 0, 0, 0.66);
     --shadow-menu: 0 12px 40px rgba(0, 0, 0, 0.56);
     --scrollbar: #343434;
     --scrollbar-hover: #4c4c4c;
-    --thinking-dot: #ff6a52;
-    --code-link: #ff8d78;
-    --code-link-hover: #ffc3b6;
+    --thinking-dot: #d6d6d6;
+    --code-link: #c9c9c9;
+    --code-link-hover: #ffffff;
     --chat-user-bg: #1f1f1f;
     --chat-assistant-bg: transparent;
     --sidebar-tint: #131313;
