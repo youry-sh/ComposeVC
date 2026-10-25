@@ -5178,6 +5178,8 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             {attachNotice}
           </div>
         )}
+          </div>
+        )}
         <div className="chat-composer-shell">
           {(pendingFiles.length > 0 || pendingImages.length > 0) && (
             <div className="chat-attach-tray">
