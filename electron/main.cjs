@@ -34,6 +34,7 @@ const instructions = require("./instructions.cjs");
 const agentPrompts = require("./agentPrompts.cjs");
 const { THINKING_MAX_PROMPT } = require("./thinkingMaxPrompt.cjs");
 const autoInsert = require("./autoInsert.cjs");
+const inlineHint = require("./inlineHint.cjs");
 const { LAB_IN_MODE_ID, runLabInPipeline } = require("./labIn/index.cjs");
 const {
   FORTANI_MODE_ID,
@@ -258,6 +259,8 @@ const defaultProviderConfig = {
     fortaniModelId: "",
     cloudflareAccountId: "",
     cloudflareApiToken: "",
+    inlineHintEnabled: false,
+    inlineHintModelId: "",
   },
 };
 
@@ -368,6 +371,12 @@ function normalizeAiRuntimeConfig(config) {
     typeof config?.cloudflareAccountId === "string" ? config.cloudflareAccountId.trim() : "";
   const cloudflareApiToken =
     typeof config?.cloudflareApiToken === "string" ? config.cloudflareApiToken.trim() : "";
+  const inlineHintModelId =
+    typeof config?.inlineHintModelId === "string"
+      ? config.inlineHintModelId.trim()
+      : typeof config?.inline_hint_model_id === "string"
+        ? config.inline_hint_model_id.trim()
+        : "";
   return {
     agentCompletionNotifications: config?.agentCompletionNotifications !== false,
     maxContextTokens,
@@ -377,6 +386,8 @@ function normalizeAiRuntimeConfig(config) {
     fortaniModelId,
     cloudflareAccountId,
     cloudflareApiToken,
+    inlineHintEnabled: config?.inlineHintEnabled === true,
+    inlineHintModelId,
   };
 }
 
@@ -2019,6 +2030,19 @@ ipcMain.handle("config:read", async () => {
   const config = await readProviderConfig();
   configureTelegramFromProviderConfig(config);
   return config;
+});
+
+/**
+ * Composer ghost-text autocomplete.
+ * Renderer sends the whole draft + caret; this never writes config or sessions.
+ */
+ipcMain.handle("inline-hint:suggest", async (_event, request = {}) => {
+  try {
+    const config = await readProviderConfig();
+    return await inlineHint.requestInlineHint({ config, request });
+  } catch (error) {
+    return { ok: false, error: error?.message || "Autocomplete failed" };
+  }
 });
 
 ipcMain.handle("telegram:runtimeContext", (event, context) => {
