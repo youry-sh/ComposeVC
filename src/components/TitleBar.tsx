@@ -158,28 +158,6 @@ const TitleBar: React.FC<TitleBarProps> = ({
 
   return (
     <div className="titlebar-root">
-      {/* Шторы (blinds) — a low tab that hangs off the bottom edge of the bar.
-          It rolls the drawer down like a real roller blind (see .blinds-roll). */}
-      <button
-        ref={blindsTabRef}
-        type="button"
-        id="titlebar-blinds-tab"
-        title="Шторы — Prompts и будущие вкладки"
-        aria-label={blindsOpen ? "Свернуть шторы" : "Развернуть шторы"}
-        aria-expanded={blindsOpen}
-        aria-controls="titlebar-blinds"
-        onClick={() => setBlindsOpen((v) => !v)}
-        className={`titlebar-blinds-tab ${blindsOpen ? "is-open" : ""}`}
-      >
-        <span className="titlebar-blinds-grip" aria-hidden>
-          <i />
-          <i />
-          <i />
-        </span>
-        <span className="titlebar-blinds-tab-label">ШТОРЫ</span>
-        <ChevronDown className="titlebar-blinds-caret" aria-hidden />
-      </button>
-
       <nav className="topbar-tabs" aria-label="Workspace panels">
         {tabs.map((tab) => (
           <button
