@@ -12976,9 +12976,9 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
 }
 .prompts-title-field input:focus { border-color: var(--border-strong); }
 .prompts-title-field input::placeholder { color: var(--ink-400); }
-.prompts-text-field { flex: 1 1 auto; min-height: 0; }
+.prompts-text-field { flex: 1 1 0; min-height: 0; }
 /* Prompt text auto-grows with its content; the ChatMonoScroll wrapper owns the scrollbar. */
-.prompts-text-scroll { flex: 1 1 auto; min-height: 0; }
+.prompts-text-scroll { flex: 1 1 0; min-height: 0; }
 .prompts-text-scroll textarea {
   display: block;
   width: 100%;
