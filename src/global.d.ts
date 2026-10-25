@@ -82,6 +82,31 @@ export type GitChangedFile = { code: string; staged: boolean; path: string };
 export type GitCommit = { hash: string; subject: string; author: string; when: string };
 
 declare global {
+  type MultiIdeDiskWorkspace = {
+    id: string;
+    /** User-visible name; "" means the rail shows "Workspace N". */
+    name?: string;
+    activeId?: string | null;
+    openIds?: string[];
+  };
+
+  type MultiIdeDiskSlot = {
+    id: string;
+    rootPath?: string | null;
+    sessionId?: string | null;
+    selectedModelId?: string | null;
+    agentMode?: string;
+    workspaceId?: string;
+  };
+
+  type MultiIdeDiskState = {
+    version?: number;
+    updatedAt?: number;
+    activeWorkspaceId?: string | null;
+    workspaces?: MultiIdeDiskWorkspace[];
+    slots?: MultiIdeDiskSlot[];
+  };
+
   type LocalAgentState = {
     agentDir: string;
     exists: boolean;
@@ -207,6 +232,19 @@ declare global {
       webEngineCopyText: (text: string) => Promise<{ ok: boolean; error?: string }>;
       webEngineCaptureScreenshot: (webContentsId: number) => Promise<{ ok: boolean; error?: string }>;
       webEngineClearCache: () => Promise<{ ok: boolean; error?: string }>;
+      // MultiIDE layout (workspaces + their chat panels) — disk-backed JSON store.
+      multiIdeLoadState: () => Promise<MultiIdeDiskState>;
+      multiIdeSaveState: (patch: {
+        slots?: MultiIdeDiskSlot[];
+        workspaces?: MultiIdeDiskWorkspace[];
+        activeWorkspaceId?: string | null;
+      }) => Promise<{ ok: boolean; state?: MultiIdeDiskState; error?: string }>;
+      multiIdeLoadStateSync: () => MultiIdeDiskState;
+      multiIdeSaveStateSync: (patch: {
+        slots?: MultiIdeDiskSlot[];
+        workspaces?: MultiIdeDiskWorkspace[];
+        activeWorkspaceId?: string | null;
+      }) => { ok: boolean; state?: MultiIdeDiskState; error?: string };
       onOpenChatSwitcher: (callback: () => void) => () => void;
       onFoldWebDock: (callback: () => void) => () => void;
       onStorageOpen: (callback: () => void) => () => void;

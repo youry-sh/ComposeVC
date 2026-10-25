@@ -850,29 +850,66 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
                 key={ws.id}
                 className={`chat-workspace-item${active ? " is-active" : ""}${wsRunning ? " is-running" : ""}`}
               >
-                <button
-                  type="button"
-                  className="chat-workspace-btn"
-                  onClick={() => switchWorkspace(ws.id)}
-                  title={`${labels.workspace} ${i + 1}`}
-                >
-                  <span className="chat-rail-dot" aria-hidden />
-                  <span className="chat-workspace-name">
-                    {labels.workspace} {i + 1}
-                  </span>
-                  <span
-                    className="chat-workspace-stats"
-                    title={`${labels.workspaceWorking}: ${working} · ${labels.workspaceDone}: ${completed}`}
-                    aria-label={`${labels.workspaceWorking}: ${working}, ${labels.workspaceDone}: ${completed}`}
+                {renamingId === ws.id ? (
+                  <div className="chat-workspace-btn is-editing">
+                    <span className="chat-rail-dot" aria-hidden />
+                    <input
+                      ref={renameInputRef}
+                      className="chat-workspace-rename"
+                      value={renameDraft}
+                      onChange={(event) => setRenameDraft(event.target.value)}
+                      onKeyDown={(event) => handleRenameKeyDown(event, ws.id)}
+                      onBlur={() => {
+                        if (renameCancelRef.current) {
+                          renameCancelRef.current = false;
+                          return;
+                        }
+                        commitRename(ws.id);
+                      }}
+                      maxLength={WORKSPACE_NAME_MAX}
+                      spellCheck={false}
+                      aria-label="Имя воркспейса"
+                      title="Enter — сохранить · Esc — отмена"
+                    />
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="chat-workspace-btn"
+                    onClick={() => switchWorkspace(ws.id)}
+                    onDoubleClick={() => beginRename(ws, i)}
+                    title={`${workspaceLabel(ws, i)} · двойной клик — переименовать`}
                   >
-                    <span className="chat-workspace-stat is-working">{working}</span>
-                    <span className="chat-workspace-stat-divider" aria-hidden>
-                      ·
+                    <span className="chat-rail-dot" aria-hidden />
+                    <span className="chat-workspace-name">{workspaceLabel(ws, i)}</span>
+                    <span
+                      className="chat-workspace-stats"
+                      title={`${labels.workspaceWorking}: ${working} · ${labels.workspaceDone}: ${completed}`}
+                      aria-label={`${labels.workspaceWorking}: ${working}, ${labels.workspaceDone}: ${completed}`}
+                    >
+                      <span className="chat-workspace-stat is-working">{working}</span>
+                      <span className="chat-workspace-stat-divider" aria-hidden>
+                        ·
+                      </span>
+                      <span className="chat-workspace-stat is-done">{completed}</span>
                     </span>
-                    <span className="chat-workspace-stat is-done">{completed}</span>
-                  </span>
-                </button>
-                {workspaces.length > 1 && (
+                  </button>
+                )}
+                {renamingId !== ws.id && (
+                  <button
+                    type="button"
+                    className="chat-workspace-action chat-workspace-rename-btn"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      beginRename(ws, i);
+                    }}
+                    title="Переименовать воркспейс"
+                    aria-label="Переименовать воркспейс"
+                  >
+                    <Pencil size={13} strokeWidth={1.9} aria-hidden />
+                  </button>
+                )}
+                {workspaces.length > 1 && renamingId !== ws.id && (
                   <button
                     type="button"
                     className="chat-workspace-close"
@@ -883,7 +920,7 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
                     title={labels.deleteWorkspace}
                     aria-label={labels.deleteWorkspace}
                   >
-                    <X size={12} strokeWidth={2} aria-hidden />
+                    <X size={13} strokeWidth={2} aria-hidden />
                   </button>
                 )}
               </div>
