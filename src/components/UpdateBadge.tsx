@@ -297,13 +297,6 @@ export default function UpdateBadge() {
             >
               {primaryLabel}
             </button>
-            <button
-              type="button"
-              className="titlebar-update-btn"
-              onClick={() => window.lopster?.updateOpenRelease()}
-            >
-              Что нового
-            </button>
           </div>
         </div>
       ) : null}
