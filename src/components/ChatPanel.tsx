@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import AsciiLogo from "./AsciiLogo";
 import LiveToolStrip from "./LiveToolStrip";
@@ -4419,7 +4419,9 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
     box.scrollTop = el.scrollTop;
   }, []);
 
-  useEffect(() => {
+  // Layout effect: size/position the ghost before the browser paints it, so it
+  // never appears with a stale width (that used to wrap the text early).
+  useLayoutEffect(() => {
     if (hint) syncHintOverlay();
   }, [hint, input, caretPos, syncHintOverlay]);
 

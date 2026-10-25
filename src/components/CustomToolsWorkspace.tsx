@@ -49,7 +49,6 @@ interface CustomToolsWorkspaceProps {
     pluginsIdeEmpty: string;
     pluginsIdeHint: string;
     customTools: string;
-    customToolsEmpty: string;
     customToolTitle: string;
     customToolTitlePlaceholder: string;
     customToolDescription: string;
