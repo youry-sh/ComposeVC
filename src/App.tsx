@@ -599,7 +599,6 @@ const App: React.FC = () => {
             <div className="flex-1 min-w-0 min-h-0 flex overflow-hidden">
               <CustomToolsWorkspace
                 tools={customTools}
-                onAdd={handleAddCustomTool}
                 onUpdate={handleUpdateCustomTool}
                 onRemove={handleRemoveCustomTool}
                 labels={chatPanelLabels}
