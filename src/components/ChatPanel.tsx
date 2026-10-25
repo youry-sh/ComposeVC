@@ -2495,22 +2495,63 @@ const AutoInsertModal: React.FC<{
           ) : filtered.length === 0 ? (
             <div className="text-[12px] text-ink-500">{labels.noResults}</div>
           ) : (
-            filtered.map((message, index) => (
-              <div
-                key={index}
-                className="group flex items-start gap-2 rounded-lg border border-ink-200 bg-ink-100 px-3 py-2"
-              >
-                <div className="min-w-0 flex-1 whitespace-pre-wrap break-words text-[12px] text-ink-800">
-                  {message}
-                </div>
-                <button
-                  onClick={() => onRemove(index)}
-                  className="h-6 w-6 flex-shrink-0 flex items-center justify-center rounded-md text-ink-500 outline-none opacity-0 transition-colors hover:bg-status-err-bg hover:text-status-err group-hover:opacity-100"
+            filtered.map(({ message, index }) => {
+              const active = messageEnabled[index] !== false;
+              return (
+                <div
+                  key={index}
+                  className={`group flex items-start gap-2 rounded-lg border border-ink-200 px-3 py-2 transition-colors ${
+                    active ? "bg-ink-100" : "bg-transparent"
+                  }`}
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ))
+                  {/* Tick = this message goes out; unticked stays saved but is skipped. */}
+                  <button
+                    type="button"
+                    role="checkbox"
+                    aria-checked={active}
+                    aria-label={active ? labels.autoInsertOn : labels.autoInsertOff}
+                    title={active ? labels.autoInsertOn : labels.autoInsertOff}
+                    onClick={() => onToggleMessage(index)}
+                    className={`mt-0.5 h-4 w-4 flex-shrink-0 flex items-center justify-center rounded-[4px] border outline-none transition-colors ${
+                      active
+                        ? "border-ink-400 bg-ink-200 text-ink-950"
+                        : "border-ink-300 bg-transparent text-transparent hover:border-ink-400"
+                    }`}
+                  >
+                    <Check className="w-3 h-3" />
+                  </button>
+                  <div
+                    className={`min-w-0 flex-1 whitespace-pre-wrap break-words text-[12px] ${
+                      active ? "text-ink-800" : "text-ink-500"
+                    }`}
+                  >
+                    {message}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void handleCopy(message, index)}
+                    title={labels.copy}
+                    aria-label={labels.copy}
+                    className="h-6 w-6 flex-shrink-0 flex items-center justify-center rounded-md text-ink-500 outline-none transition-colors hover:bg-ink-150 hover:text-ink-950"
+                  >
+                    {copiedIndex === index ? (
+                      <Check className="w-3.5 h-3.5" />
+                    ) : (
+                      <Copy className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onRemove(index)}
+                    title="Remove"
+                    aria-label="Remove"
+                    className="h-6 w-6 flex-shrink-0 flex items-center justify-center rounded-md text-ink-500 outline-none opacity-0 transition-colors hover:bg-status-err-bg hover:text-status-err group-hover:opacity-100 focus-visible:opacity-100"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              );
+            })
           )}
         </div>
 
@@ -3935,7 +3976,9 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   onRefreshSessions,
   autoInsertEnabled,
   autoInsertMessages,
+  autoInsertMessageEnabled = [],
   onToggleAutoInsert,
+  onToggleAutoInsertMessage,
   onAddAutoInsertMessage,
   onRemoveAutoInsertMessage,
   agentTodos,
