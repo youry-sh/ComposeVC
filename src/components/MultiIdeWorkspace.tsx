@@ -860,9 +860,13 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
   }, [activeWorkspaceSlots, statusBySlot]);
 
   return (
-    <div className="chat-shell theme-workspace flex-1 min-w-0 min-h-0 overflow-hidden">
+    <div
+      className={`chat-shell theme-workspace flex-1 min-w-0 min-h-0 overflow-hidden${
+        shellUi.railCollapsed ? " is-rail-collapsed" : ""
+      }${shellUi.asideCollapsed ? " is-aside-collapsed" : ""}`}
+    >
       {/* ── Left rail: every chat panel, the running one is marked ── */}
-      <aside className="chat-rail" aria-label={labels.chat || "Chats"}>
+      <aside className="chat-rail" aria-label={labels.chat || "Chats"} aria-hidden={shellUi.railCollapsed}>
         <header className="chat-rail-head">
           <span className="chat-rail-title">{labels.workspaces || "Workspaces"}</span>
           <div className="chat-rail-actions">
@@ -885,6 +889,16 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
               aria-label={labels.newChat || "New chat panel"}
             >
               +
+            </button>
+            <button
+              type="button"
+              className="chat-rail-add chat-rail-collapse"
+              onClick={toggleRail}
+              title="Скрыть панель чатов (Ctrl+B)"
+              aria-label="Скрыть панель чатов"
+              aria-expanded={!shellUi.railCollapsed}
+            >
+              <ChevronsLeft className="w-3.5 h-3.5" aria-hidden />
             </button>
           </div>
         </header>
