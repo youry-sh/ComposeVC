@@ -16,17 +16,6 @@ import McpModal from "./McpModal";
 
 interface CustomToolsWorkspaceProps {
   tools: CustomTool[];
-  onAdd: (input: {
-    name: string;
-    title?: string;
-    description?: string;
-    code?: string;
-    runtime?: string;
-    entry?: string;
-    tags?: string[];
-    inputSchema?: Record<string, unknown>;
-    dependencies?: string[];
-  }) => Promise<void>;
   onUpdate: (
     toolId: string,
     patch: {
@@ -84,47 +73,6 @@ interface CustomToolsWorkspaceProps {
   };
 }
 
-const DEFAULT_CODE = `const fs = require("fs");
-
-async function main(args, ctx) {
-  // args — call args; ctx — { toolDir, rootPath, userDataPath, toolsRoot }
-  return { ok: true, result: args };
-}
-
-async function run() {
-  const raw = fs.readFileSync(0, "utf8");
-  let payload = {};
-  try {
-    payload = raw ? JSON.parse(raw) : {};
-  } catch (err) {
-    process.stderr.write(String(err && err.message ? err.message : err));
-    process.exit(2);
-  }
-  const args = payload.args && typeof payload.args === "object" ? payload.args : {};
-  const ctx = payload.ctx && typeof payload.ctx === "object" ? payload.ctx : {};
-  try {
-    const result = await main(args, ctx);
-    process.stdout.write(JSON.stringify(result == null ? null : result));
-  } catch (err) {
-    process.stderr.write(String(err && err.stack ? err.stack : err));
-    process.exit(1);
-  }
-}
-
-run();
-`;
-
-/** Mirror of the backend `normalizeToolName`: derives a folder-safe slug from a title. */
-const slugifyName = (raw: string) =>
-  String(raw || "")
-    .trim()
-    .toLowerCase()
-    .replace(/^\/+/, "")
-    .replace(/[^a-z0-9_]+/g, "_")
-    .replace(/^_+|_+$/g, "")
-    .slice(0, 64);
-
-type PanelMode = "create" | "edit";
 type ImportMode = "skip" | "overwrite" | "rename";
 
 interface ImportPreviewTool {
