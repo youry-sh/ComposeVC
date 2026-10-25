@@ -4307,8 +4307,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
       if (!list.length) return;
 
       const imageFiles = list.filter((file) => isImageFile(file));
-      if (imageFiles.length) await addPendingImages(imageFiles);
-
       const unsupported = list.filter((file) => !isImageFile(file) && !isSupportedChatFile(file));
       const docFiles = list.filter((file) => !isImageFile(file) && isSupportedChatFile(file));
       const problems: string[] = [];
@@ -4316,6 +4314,12 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
         problems.push(`${file.name || "файл"} — формат не поддерживается`);
       }
       if (unsupported.length > 3) problems.push(`и ещё ${unsupported.length - 3} файл(ов)`);
+      for (const file of imageFiles.filter((image) => image.size > MAX_CHAT_IMAGE_BYTES).slice(0, 2)) {
+        problems.push(
+          `${file.name || "изображение"} — больше ${formatFileSize(MAX_CHAT_IMAGE_BYTES)}`
+        );
+      }
+      if (imageFiles.length) await addPendingImages(imageFiles);
 
       const next = [...pendingFilesRef.current];
       const before = next.length;
@@ -5181,7 +5185,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             multiple
             className="hidden"
             onChange={(e) => {
-              void addPendingImages(e.target.files);
+              void addPendingAttachments(e.target.files);
               e.target.value = "";
             }}
           />
