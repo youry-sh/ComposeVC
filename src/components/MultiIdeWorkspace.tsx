@@ -91,6 +91,10 @@ interface MultiIdeWorkspaceProps {
   onSlotsChange: (slots: MultiIdeSlotState[]) => void;
   /** Jump to the Runner workspace from the aside table. */
   onOpenRunners?: () => void;
+  /** Open the Prompts workspace from the rail footer quick buttons. */
+  onOpenPrompts?: () => void;
+  /** Open the MCP connector modal from the rail footer quick buttons. */
+  onOpenMcp?: () => void;
 }
 
 function isAgentMode(value: unknown): value is MainAgentMode {
@@ -454,6 +458,8 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
   slots,
   onSlotsChange,
   onOpenRunners,
+  onOpenPrompts,
+  onOpenMcp,
 }) => {
   const [workspaceState, setWorkspaceState] = useState(() => loadWorkspaceState(slots));
   /** Folded side columns — restored from disk, saved on every toggle. */
