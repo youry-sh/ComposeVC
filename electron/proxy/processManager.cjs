@@ -470,7 +470,7 @@ function writeToChild(payload) {
 }
 
 function command(command, payload, timeoutMs = CMD_TIMEOUT_MS) {
-  if (!child || (state !== "running" && state !== "starting")) {
+  if (!child || (state !== "running" && state !== "starting" && state !== "stopping")) {
     return Promise.reject(
       new Error(state === "external" ? "external proxy is not managed by the app" : "proxy process not running")
     );
