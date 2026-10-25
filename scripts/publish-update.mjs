@@ -188,7 +188,7 @@ if (!noPublish) {
         "--description",
         "ComposeVC installers + auto-update feed",
       ],
-      { shell: process.platform === "win32" }
+      { shell: false }
     );
   } else {
     let visibility = "";
@@ -218,7 +218,9 @@ if (!noPublish) {
   ];
   if (draft) ghArgs.push("--draft");
   if (prerelease) ghArgs.push("--prerelease");
-  run("gh", ghArgs, { shell: process.platform === "win32" });
+  // shell:false keeps "--title ComposeVC 1.0.4" as ONE argv — with a shell the
+  // title was split and gh tried to upload a file literally named "1.0.4".
+  run("gh", ghArgs, { shell: false });
 }
 
 /** Remember which tree was published so the hotkey agent can skip no-op runs. */
