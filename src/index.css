@@ -10744,9 +10744,140 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   box-shadow: none;
 }
 .chat-composer-shell > textarea,
-.chat-composer-images {
+.chat-composer-images,
+.chat-attach-tray,
+.chat-attach-note {
   flex: 1 0 100%;
   min-width: 0;
+}
+/* ── Attachments above the composer ──────────────────────────────────────
+   Dragged / picked files land here as flat 1px chips (images keep their
+   thumbs). Same tokens and terminal font as the rest of the composer. */
+.chat-attach-tray {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px 0;
+}
+.chat-attach-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+.chat-attach-files.is-message {
+  max-width: 100%;
+}
+.chat-attach-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  height: 24px;
+  padding: 0 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--panel-header-bg);
+  color: var(--ink-700);
+  font-family: var(--terminal-font);
+  font-size: 10.5px;
+  line-height: 1;
+  min-width: 0;
+}
+.chat-attach-files.is-message .chat-attach-chip {
+  background: transparent;
+}
+.chat-attach-chip.is-truncated {
+  border-style: dashed;
+}
+.chat-attach-chip-icon {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  color: var(--ink-500);
+}
+.chat-attach-chip-name {
+  min-width: 0;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-900);
+}
+.chat-attach-chip-size {
+  flex-shrink: 0;
+  color: var(--ink-500);
+  font-variant-numeric: tabular-nums;
+}
+.chat-attach-chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  margin-right: -2px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--ink-500);
+  cursor: pointer;
+  outline: none;
+  flex-shrink: 0;
+}
+.chat-attach-chip-remove:hover {
+  background: var(--ink-150);
+  color: var(--ink-950);
+}
+.chat-attach-note {
+  padding: 6px 10px 0;
+  font-family: var(--terminal-font);
+  font-size: 10px;
+  line-height: 1.4;
+  color: var(--ink-500);
+}
+/* Whole-column drop target: makes it obvious which chat receives the files. */
+.chat-drop-overlay {
+  position: absolute;
+  inset: 4px;
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  border: 1px dashed var(--border-strong);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  animation: fade-in 0.1s ease;
+}
+.chat-drop-overlay-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100% - 32px);
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink-900);
+  font-family: var(--terminal-font);
+  font-size: 11px;
+  line-height: 1.35;
+}
+.chat-drop-overlay-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--ink-600);
+}
+.chat-drop-overlay-title {
+  display: block;
+  color: var(--ink-950);
+}
+.chat-drop-overlay-hint {
+  display: block;
+  color: var(--ink-500);
+  font-size: 10px;
 }
 /* Chips keep to the left and stay content-sized; attach / context / send are
    the only controls on the right end of the row. */

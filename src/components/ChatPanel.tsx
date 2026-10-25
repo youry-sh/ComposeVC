@@ -73,7 +73,6 @@ import {
   CHAT_FILE_MAX_TEXT_CHARS,
   CHAT_FILE_MAX_TOTAL_CHARS,
   ChatFileAttachment,
-  ParsedAttachedFile,
   buildAttachedFilesBlock,
   chatFileKind,
   decodeTextBuffer,
@@ -3594,7 +3593,13 @@ const ChatImageThumbs: React.FC<{
 
 /** File chips — composer tray (removable) and sent bubbles (read-only). */
 const ChatFileChips: React.FC<{
-  files: Array<Partial<ChatFileAttachment> & ParsedAttachedFile>;
+  files: Array<{
+    id?: string;
+    name: string;
+    size?: number;
+    truncated?: boolean;
+    mimeType?: string;
+  }>;
   onRemove?: (id: string) => void;
   variant?: "composer" | "message";
 }> = ({ files, onRemove, variant = "composer" }) => {
