@@ -18,7 +18,8 @@ param(
   [string]$ProjectRoot = (Split-Path -Parent $PSScriptRoot),
   [switch]$InstallStartup,
   [switch]$SelfTest,
-  [switch]$Force
+  [switch]$Force,
+  [switch]$Simulate
 )
 
 $ErrorActionPreference = "Stop"
@@ -110,6 +111,24 @@ public class ComposeVCHotkeyWindow : Form
             if (handler != null) handler(m.WParam.ToInt32());
         }
         base.WndProc(ref m);
+    }
+}
+
+// Borderless always-on-top overlay that never steals keyboard focus from the
+// app the user is working in (WS_EX_NOACTIVATE + WS_EX_TOOLWINDOW).
+public class ComposeVCOverlayWindow : Form
+{
+    protected override bool ShowWithoutActivation { get { return true; } }
+
+    protected override CreateParams CreateParams
+    {
+        get
+        {
+            CreateParams cp = base.CreateParams;
+            cp.ExStyle |= 0x08000000; // WS_EX_NOACTIVATE
+            cp.ExStyle |= 0x00000080; // WS_EX_TOOLWINDOW
+            return cp;
+        }
     }
 }
 "@
