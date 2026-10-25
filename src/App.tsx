@@ -41,6 +41,7 @@ const App: React.FC = () => {
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [providersOpen, setProvidersOpen] = useState(false);
+  const [mcpOpen, setMcpOpen] = useState(false);
   const [activePanel, setActivePanel] = useState<Panel>(() => {
     try {
       const saved = window.localStorage.getItem("lopster-active-panel");
@@ -53,6 +54,7 @@ const App: React.FC = () => {
       if (saved === "docs") return "docs";
       if (saved === "customtools") return "customtools";
       if (saved === "usage") return "usage";
+      if (saved === "prompts") return "prompts";
     } catch {
       /* ignore */
     }
@@ -561,6 +563,8 @@ const App: React.FC = () => {
                 slots={multiIdeSlots}
                 onSlotsChange={setMultiIdeSlots}
                 onOpenRunners={() => setActivePanel("runner")}
+                onOpenPrompts={() => setActivePanel("prompts")}
+                onOpenMcp={() => setMcpOpen(true)}
               />
             </div>
           )}
