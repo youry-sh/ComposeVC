@@ -26,6 +26,8 @@
     "publish:update:minor": "node scripts/publish-update.mjs --bump minor",
     "publish:update:major": "node scripts/publish-update.mjs --bump major",
     "watch:publish": "node scripts/watch-publish.mjs",
+    "hotkey": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/hotkey-publish.ps1",
+    "hotkey:startup": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/hotkey-publish.ps1 -InstallStartup",
     "test:tools": "node tests/tools/ultra-tools.test.cjs",
     "test:notes": "node tests/notes/notesStore.test.cjs",
     "test:knowledge-archive": "node tests/knowledge/knowledgeArchive.test.cjs",
