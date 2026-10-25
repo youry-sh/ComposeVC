@@ -12955,9 +12955,8 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
 /* The title row keeps its height — the growing prompt text never squeezes it. */
 .prompts-title-field { flex: 0 0 auto; }
 .prompts-title-field > span,
-.prompts-text-field > span { flex: none; }
-.prompts-title-field > span,
 .prompts-text-field > span {
+  flex: none;
   font: 500 9px/1.2 var(--terminal-font);
   letter-spacing: 0.1em;
   text-transform: uppercase;
