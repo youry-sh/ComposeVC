@@ -25,7 +25,7 @@ export const MULTIIDE_STORAGE_KEY = "lopster-multiide-slots";
 export const MULTIIDE_ACTIVE_KEY = "lopster-multiide-active";
 const MULTIIDE_ROWS_KEY = "lopster-multiide-rows";
 /** Hard ceiling — each panel holds a live agent session. */
-export const MULTIIDE_MAX_SLOTS = 12;
+export const MULTIIDE_MAX_SLOTS = 6;
 /** Fixed id of the default workspace — pre-workspace chats attach here on migration. */
 export const DEFAULT_WORKSPACE_ID = "ws-default";
 const WORKSPACES_KEY = "lopster-multiide-workspaces";
