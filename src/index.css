@@ -157,127 +157,129 @@
     --radius-modal: 12px;
   }
 
-  /* ── Зима (Winter) — морозный стальной сумрак ──────────────────────────
-     Muted polar twilight: desaturated slate-blue surfaces, a low-glare frost
-     accent and no neon highlights. Same token shape as Mono so every
-     surface, tab and modal re-themes automatically. */
+  /* ── Зима (Winter) — холодный графит ────────────────────────────────────
+     Neutral graphite with a whisper of cold instead of a blue wash: surfaces
+     step by ~4 lightness points, borders stay hairline-quiet, and the one
+     colour in the UI is a muted steel-ice accent used only for focus, primary
+     controls and links. Body text is held below #d4dee4 so long sessions do
+     not glare the way the old high-contrast frost did. */
   [data-theme="winter"] {
     color-scheme: dark;
 
-    --ink-0: #080b0f;
-    --ink-50: #0b1015;
-    --ink-100: #0e141a;
-    --ink-150: #121a21;
-    --ink-200: #17212a;
-    --ink-250: #1d2933;
-    --ink-300: #24323d;
-    --ink-400: #334451;
-    --ink-500: #4a5c6b;
-    --ink-600: #687b8a;
-    --ink-700: #8698a6;
-    --ink-800: #a8b7c2;
-    --ink-900: #c7d3dc;
-    --ink-950: #e6edf2;
+    --ink-0: #090a0b;
+    --ink-50: #0c0e10;
+    --ink-100: #101316;
+    --ink-150: #14181b;
+    --ink-200: #191e22;
+    --ink-250: #1f252a;
+    --ink-300: #262d33;
+    --ink-400: #39444c;
+    --ink-500: #56636c;
+    --ink-600: #737f88;
+    --ink-700: #909ba3;
+    --ink-800: #b0bac1;
+    --ink-900: #ced6db;
+    --ink-950: #e8eef1;
 
-    --bg: #080b0f;
-    --surface: #0b1015;
-    --surface-2: #0e141a;
-    --surface-3: #121a21;
-    --border: #1a232b;
-    --border-strong: #2a3641;
-    --text: #dfe7ed;
-    --text-muted: #6d7d8a;
-    --text-dim: #8e9eab;
-    --text-soft: #7b8c99;
+    --bg: #090a0b;
+    --surface: #0c0e10;
+    --surface-2: #101316;
+    --surface-3: #14181b;
+    --border: #1b2126;
+    --border-strong: #283136;
+    --text: #cdd6db;
+    --text-muted: #6f7c85;
+    --text-dim: #97a3ab;
+    --text-soft: #808d96;
 
-    --accent: #9db9cb;
-    --accent-fg: #0b141b;
-    --accent-hover: #b6cddc;
-    --accent-soft: #b6cddc;
-    --accent-muted: rgba(157, 185, 203, 0.09);
-    --accent-2: #cddde8;
-    --focus-ring: rgba(157, 185, 203, 0.22);
-    --focus-border: #5a7d93;
-    --selection: rgba(157, 185, 203, 0.16);
-    --glow: rgba(157, 185, 203, 0.05);
+    --accent: #8fabb9;
+    --accent-fg: #090e12;
+    --accent-hover: #a3bcc8;
+    --accent-soft: #b9cdd7;
+    --accent-muted: rgba(143, 171, 185, 0.10);
+    --accent-2: #c9d9e1;
+    --focus-ring: rgba(143, 171, 185, 0.26);
+    --focus-border: #5c7280;
+    --selection: rgba(143, 171, 185, 0.18);
+    --glow: rgba(143, 171, 185, 0.04);
 
-    --btn-primary-bg: #a9c4d6;
-    --btn-primary-fg: #0b141b;
-    --btn-primary-hover: #bfd6e3;
-    --btn-primary-border: #93b0c3;
-    --btn-secondary-bg: #121a21;
-    --btn-secondary-fg: #c2d0da;
-    --btn-secondary-border: #26333d;
-    --btn-secondary-hover: #18222a;
-    --btn-secondary-fg-hover: #eaf1f6;
-    --btn-secondary-border-hover: #384855;
+    --btn-primary-bg: #9db5c2;
+    --btn-primary-fg: #090e12;
+    --btn-primary-hover: #b0c6d1;
+    --btn-primary-border: #87a1b0;
+    --btn-secondary-bg: #14181b;
+    --btn-secondary-fg: #c2ccd2;
+    --btn-secondary-border: #242c31;
+    --btn-secondary-hover: #1a1f23;
+    --btn-secondary-fg-hover: #e2e9ed;
+    --btn-secondary-border-hover: #333d44;
 
-    --btn-ok-bg: #12271f;
-    --btn-ok-fg: #a7d3bd;
-    --btn-ok-hover: #173128;
-    --btn-ok-border: #22412f;
-    --btn-warn-bg: #292314;
-    --btn-warn-fg: #e2cc9c;
-    --btn-warn-hover: #322a18;
-    --btn-warn-border: #423821;
-    --btn-danger-bg: #2a161a;
-    --btn-danger-fg: #ecc7c7;
-    --btn-danger-hover: #341b1f;
-    --btn-danger-border: #472327;
-    --btn-info-bg: #12202a;
-    --btn-info-fg: #a7c4d8;
-    --btn-info-hover: #172934;
-    --btn-info-border: #22384a;
-    --btn-soft-bg: #121a21;
-    --btn-soft-fg: #c2d0da;
-    --btn-soft-border: #26333d;
-    --btn-soft-hover: #18222a;
-    --btn-ghost-hover: rgba(157, 185, 203, 0.06);
-    --btn-ghost-hover-fg: #eaf1f6;
+    --btn-ok-bg: #101c17;
+    --btn-ok-fg: #9cc7b1;
+    --btn-ok-hover: #152420;
+    --btn-ok-border: #1e352b;
+    --btn-warn-bg: #1f1b12;
+    --btn-warn-fg: #d6c093;
+    --btn-warn-hover: #262116;
+    --btn-warn-border: #38301f;
+    --btn-danger-bg: #1f1315;
+    --btn-danger-fg: #dda9ab;
+    --btn-danger-hover: #271719;
+    --btn-danger-border: #3a2023;
+    --btn-info-bg: #111a20;
+    --btn-info-fg: #a3bccb;
+    --btn-info-hover: #16222a;
+    --btn-info-border: #1f3038;
+    --btn-soft-bg: #14181b;
+    --btn-soft-fg: #c2ccd2;
+    --btn-soft-border: #242c31;
+    --btn-soft-hover: #1a1f23;
+    --btn-ghost-hover: rgba(143, 171, 185, 0.06);
+    --btn-ghost-hover-fg: #e2e9ed;
 
-    --input-bg: #0c1218;
-    --input-fg: #dfe7ed;
-    --input-border: #212c35;
-    --input-border-hover: #31404c;
-    --panel-bg: #0b1015;
-    --panel-border: #1a232b;
-    --panel-header-bg: #0e141a;
-    --hover-bg: rgba(157, 185, 203, 0.04);
-    --active-bg: rgba(157, 185, 203, 0.08);
-    --active-fg: #eaf1f6;
-    --active-border: #3a4a57;
+    --input-bg: #0a0c0e;
+    --input-fg: #cdd6db;
+    --input-border: #1e252a;
+    --input-border-hover: #2c363c;
+    --panel-bg: #0c0e10;
+    --panel-border: #1b2126;
+    --panel-header-bg: #101316;
+    --hover-bg: rgba(205, 214, 219, 0.045);
+    --active-bg: rgba(205, 214, 219, 0.085);
+    --active-fg: #e2e9ed;
+    --active-border: #39444c;
 
-    --toggle-on: #9db9cb;
-    --toggle-on-border: #9db9cb;
-    --toggle-thumb: #0b141b;
-    --toggle-off-bg: #17212a;
-    --toggle-off-border: #2c3945;
+    --toggle-on: #8fabb9;
+    --toggle-on-border: #8fabb9;
+    --toggle-thumb: #090e12;
+    --toggle-off-bg: #191e22;
+    --toggle-off-border: #2b343a;
 
-    --danger: #d98a8a;
-    --danger-bg: #1e1013;
-    --danger-border: #422027;
-    --warn: #cbb07a;
-    --warn-bg: #1b160c;
-    --warn-border: #3a331f;
-    --ok: #86b8a1;
-    --ok-bg: #0d1a15;
-    --ok-border: #1f3a2e;
-    --info: #8eaec4;
-    --info-bg: #0d1620;
-    --info-border: #223344;
+    --danger: #d98b8e;
+    --danger-bg: #1c1113;
+    --danger-border: #3a2023;
+    --warn: #c9b07c;
+    --warn-bg: #191509;
+    --warn-border: #332c1c;
+    --ok: #86b79e;
+    --ok-bg: #0e1714;
+    --ok-border: #1f342c;
+    --info: #93b0c2;
+    --info-bg: #0e1519;
+    --info-border: #1f2d35;
 
-    --scrim: rgba(5, 8, 11, 0.82);
-    --shadow-modal: 0 24px 80px rgba(3, 6, 9, 0.85);
-    --shadow-menu: 0 12px 40px rgba(3, 6, 9, 0.75);
-    --scrollbar: #26333d;
-    --scrollbar-hover: #3a4a57;
-    --thinking-dot: #b6cddc;
-    --code-link: #9db9cb;
-    --code-link-hover: #c7dbe8;
-    --chat-user-bg: #101820;
+    --scrim: rgba(4, 6, 7, 0.84);
+    --shadow-modal: 0 24px 80px rgba(2, 4, 5, 0.85);
+    --shadow-menu: 0 12px 40px rgba(2, 4, 5, 0.75);
+    --scrollbar: #2b343a;
+    --scrollbar-hover: #3d494f;
+    --thinking-dot: #a3bcc8;
+    --code-link: #9db8c6;
+    --code-link-hover: #c3d6df;
+    --chat-user-bg: #10151a;
     --chat-assistant-bg: transparent;
-    --sidebar-tint: #070a0e;
-    --terminal-bg: #05080b;
+    --sidebar-tint: #070809;
+    --terminal-bg: #070809;
 
     --radius-control: 6px;
     --radius-card: 10px;
