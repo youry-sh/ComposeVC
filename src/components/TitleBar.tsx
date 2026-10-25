@@ -17,6 +17,7 @@ import {
   IcoPrompts,
 } from "./topIcons";
 import PromptsWorkspace from "./PromptsWorkspace";
+import UpdateBadge from "./UpdateBadge";
 import {
   CONTEXT_METRICS_EVENT,
   ContextMetricsDetail,
@@ -258,6 +259,7 @@ const TitleBar: React.FC<TitleBarProps> = ({
       </div>
 
       <div className="titlebar-controls">
+        <UpdateBadge />
         <button
           type="button"
           onClick={() => window.lopster?.minimize()}

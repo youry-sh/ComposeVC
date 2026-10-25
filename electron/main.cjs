@@ -1999,6 +1999,11 @@ ipcMain.handle("telegram:runtimeContext", (event, context) => {
 
 registerProxyHandlers(ipcMain, () => app.getPath("userData"));
 registerLocalAgentHandlers(ipcMain, () => app.getPath("userData"));
+try {
+  require("./updater.cjs").register(ipcMain);
+} catch (error) {
+  console.error("[updater] register failed:", error?.message || error);
+}
 
 ipcMain.handle("config:write", async (_event, config) => {
   return writeProviderConfig(config);
@@ -4693,6 +4698,16 @@ app.whenReady().then(async () => {
     });
   } catch (error) {
     console.error("[desk] bridge failed:", error?.message || error);
+  }
+
+  // Auto-update feed (GitHub Releases of the project repo). Safe in dev: the
+  // module reports status "dev" and never touches the network there.
+  try {
+    const updater = require("./updater.cjs");
+    updater.init(app.getPath("userData"));
+    updater.startAutoCheck();
+  } catch (error) {
+    console.error("[updater] init failed:", error?.message || error);
   }
 
   createWindow({ intro: true });

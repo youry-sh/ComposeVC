@@ -378,6 +378,22 @@ for (const drop of ["runtimeApp.cjs", "runtimeMain.cjs"]) {
   if (mdN) log(`stripped ${mdN} markdown file(s) from electron-hard`);
 }
 
+// --- 4b) Optional auto-update token (read-only, shipped in resources) ---
+// Private GitHub repo → electron-updater needs a token to read the feed.
+// Provide it at build time:  LOPSTER_UPDATE_TOKEN=github_pat_… node scripts/package-dist.mjs
+// The value is never logged and never written into project sources.
+{
+  const tokenFile = path.join(root, "release-assets", "update-token.txt");
+  const updateToken = String(process.env.LOPSTER_UPDATE_TOKEN || "").trim();
+  mkdirp(path.dirname(tokenFile));
+  fs.writeFileSync(tokenFile, updateToken, "utf8");
+  log(
+    updateToken
+      ? "auto-update token staged (resources/update-token.txt)"
+      : "no LOPSTER_UPDATE_TOKEN — installer will use the public feed / runtime token"
+  );
+}
+
 // --- 5) Ensure electron-builder present ---
 const ebLocal = path.join(root, "node_modules", "electron-builder", "cli.js");
 const ebBin = path.join(

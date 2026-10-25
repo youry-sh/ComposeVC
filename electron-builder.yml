@@ -79,6 +79,18 @@ extraResources:
     filter:
       - "**/*"
       - "!**/*.{md,markdown,mdx}"
+  # Optional read-only update token (empty file when not configured).
+  - from: release-assets/update-token.txt
+    to: update-token.txt
+
+# Auto-update feed: GitHub Releases of the (private) project repo.
+# Publishing needs GH_TOKEN with `repo` scope — see scripts/publish-update.mjs.
+publish:
+  provider: github
+  owner: youry-sh
+  repo: ComposeVC
+  private: true
+  releaseType: release
 
 win:
   target:

@@ -364,4 +364,16 @@ contextBridge.exposeInMainWorld("lopster", {
     ipcRenderer.on("sizeworkout:changed", listener);
     return () => ipcRenderer.removeListener("sizeworkout:changed", listener);
   },
+  // ---- auto-update (GitHub Releases of the project repo) -------------------
+  updateStatus: () => ipcRenderer.invoke("update:status"),
+  updateCheck: () => ipcRenderer.invoke("update:check"),
+  updateDownload: () => ipcRenderer.invoke("update:download"),
+  updateInstall: () => ipcRenderer.invoke("update:install"),
+  updateSetConfig: (patch) => ipcRenderer.invoke("update:set-config", patch || {}),
+  updateOpenRelease: () => ipcRenderer.invoke("update:open-release"),
+  onUpdateStatus: (callback) => {
+    const listener = (_event, payload) => callback(payload);
+    ipcRenderer.on("update:status", listener);
+    return () => ipcRenderer.removeListener("update:status", listener);
+  },
 });

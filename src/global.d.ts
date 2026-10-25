@@ -122,8 +122,51 @@ declare global {
     }
   }
 
+  interface ComposeVCUpdateStatus {
+    status:
+      | "idle"
+      | "dev"
+      | "checking"
+      | "available"
+      | "downloading"
+      | "downloaded"
+      | "up-to-date"
+      | "error";
+    currentVersion: string;
+    version?: string | null;
+    percent?: number;
+    transferred?: number;
+    total?: number;
+    bytesPerSecond?: number;
+    releaseNotes?: string;
+    releaseDate?: string | null;
+    checkedAt?: number | null;
+    error?: string | null;
+    repo?: string;
+    channel?: string;
+    autoCheck?: boolean;
+    autoDownload?: boolean;
+    hasToken?: boolean;
+    releasesUrl?: string;
+  }
+
   interface Window {
     lopster?: {
+      // ---- auto-update (GitHub Releases) ----
+      updateStatus: () => Promise<ComposeVCUpdateStatus>;
+      updateCheck: () => Promise<ComposeVCUpdateStatus>;
+      updateDownload: () => Promise<ComposeVCUpdateStatus>;
+      updateInstall: () => Promise<{ ok: boolean; error?: string }>;
+      updateSetConfig: (patch: {
+        token?: string;
+        owner?: string;
+        repo?: string;
+        channel?: "latest" | "beta";
+        autoCheck?: boolean;
+        autoDownload?: boolean;
+      }) => Promise<ComposeVCUpdateStatus>;
+      updateOpenRelease: () => Promise<{ ok: boolean; url?: string }>;
+      onUpdateStatus: (callback: (status: ComposeVCUpdateStatus) => void) => () => void;
       terminalEnsure: (id: "1" | "2") => Promise<{ id: string; pid: number; cwd: string }>;
       terminalInput: (id: "1" | "2", data: string) => void;
       terminalResize: (id: "1" | "2", cols: number, rows: number) => void;
