@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 
 /**
- * One line instead of a wall of tool cards.
+ * Status line that sits above the live tool cards.
  *
- * While a turn runs the tools collapse into a single shimmering status line
- * with a counter; clicking it reveals the full stream. Streaming answer text
- * is never hidden by this — only the tool cards are.
+ * The cards themselves are ALWAYS on screen while the turn runs — nothing is
+ * folded behind a disclosure arrow, so you see every tool the moment it
+ * starts. This line only reports state: spinner, the agent's own status (or a
+ * rotating phrase) and the call counter.
  */
 
 const PHRASES = [
@@ -20,15 +21,13 @@ const PHRASE_MS = 2600;
 type Props = {
   /** How many tool calls this turn has made so far. */
   count: number;
-  open: boolean;
-  onToggle: () => void;
   /** The agent's own status line, preferred over the rotating phrases. */
   statusLabel?: string | null;
-  /** Still streaming — drives the spinner and the shimmer. */
+  /** Still streaming — drives the spinner. */
   running?: boolean;
 };
 
-const LiveToolStrip: React.FC<Props> = ({ count, open, onToggle, statusLabel, running = true }) => {
+const LiveToolStrip: React.FC<Props> = ({ count, statusLabel, running = true }) => {
   const [phraseIndex, setPhraseIndex] = useState(0);
 
   useEffect(() => {
@@ -40,12 +39,7 @@ const LiveToolStrip: React.FC<Props> = ({ count, open, onToggle, statusLabel, ru
   const text = statusLabel || PHRASES[phraseIndex];
 
   return (
-    <button
-      type="button"
-      className={`tool-strip${open ? " is-open" : ""}${running ? " is-running" : ""}`}
-      onClick={onToggle}
-      title={open ? "Hide tool calls" : "Show tool calls"}
-    >
+    <div className={`tool-strip is-static${running ? " is-running" : ""}`}>
       <span className={`tool-strip-spin${running ? " is-running" : ""}`} aria-hidden>
         {running ? "⠋" : "·"}
       </span>
@@ -59,10 +53,7 @@ const LiveToolStrip: React.FC<Props> = ({ count, open, onToggle, statusLabel, ru
       <span className="tool-strip-count" title={`${count} tool calls`}>
         {count}
       </span>
-      <span className="tool-strip-chevron" aria-hidden>
-        {open ? "▾" : "▸"}
-      </span>
-    </button>
+    </div>
   );
 };
 

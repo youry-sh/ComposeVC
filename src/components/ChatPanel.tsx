@@ -12,6 +12,9 @@ import {
   Copy,
   Eye,
   EyeOff,
+  FileCode2,
+  FileJson,
+  FileSpreadsheet,
   FileText,
   FolderTree,
   Globe,
@@ -19,6 +22,7 @@ import {
   ImagePlus,
   Layers,
   ListPlus,
+  Paperclip,
   PenLine,
   Pencil,
   Plus,
@@ -62,6 +66,22 @@ import BackgroundTasks from "./BackgroundTasks";
 import MarkdownContent from "./markdown/MarkdownContent";
 import { computeLineDiff } from "../utils/diff";
 import { INSERT_INPUT_EVENT, InsertChatInputDetail } from "../utils/mouseSnippets";
+import {
+  CHAT_FILE_ACCEPT,
+  CHAT_FILE_MAX_BYTES,
+  CHAT_FILE_MAX_FILES,
+  CHAT_FILE_MAX_TEXT_CHARS,
+  CHAT_FILE_MAX_TOTAL_CHARS,
+  ChatFileAttachment,
+  ParsedAttachedFile,
+  buildAttachedFilesBlock,
+  chatFileKind,
+  decodeTextBuffer,
+  formatFileSize,
+  isImageFile,
+  isSupportedChatFile,
+  splitAttachedFiles,
+} from "../utils/chatAttachments";
 
 export type LiveTimelineItem =
   | { kind: "text"; id: string; text: string }
@@ -3480,17 +3500,22 @@ const CompactedSummaryCard: React.FC<{ count: string; summary: string }> = ({ co
 
 const MessageActions: React.FC<{
   content: string;
+  /**
+   * Text written to the clipboard. For turns with inlined attachments the raw
+   * <attached-file> blocks stay out of the clipboard / bubble.
+   */
+  copyContent?: string;
   role: ChatMessage["role"];
   images?: ChatImageAttachment[];
   retryLabel: string;
   retryDisabled?: boolean;
   showCopy?: boolean;
   onRetry: (content: string, images?: ChatImageAttachment[]) => void;
-}> = ({ content, role, images, retryLabel, retryDisabled = false, showCopy = true, onRetry }) => {
+}> = ({ content, copyContent, role, images, retryLabel, retryDisabled = false, showCopy = true, onRetry }) => {
   const [copied, setCopied] = useState(false);
 
   const copyMessage = async () => {
-    await navigator.clipboard?.writeText(content);
+    await navigator.clipboard?.writeText(copyContent ?? content);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 900);
   };
@@ -3561,6 +3586,51 @@ const ChatImageThumbs: React.FC<{
               </button>
             )}
           </div>
+        );
+      })}
+    </div>
+  );
+};
+
+/** File chips — composer tray (removable) and sent bubbles (read-only). */
+const ChatFileChips: React.FC<{
+  files: Array<Partial<ChatFileAttachment> & ParsedAttachedFile>;
+  onRemove?: (id: string) => void;
+  variant?: "composer" | "message";
+}> = ({ files, onRemove, variant = "composer" }) => {
+  if (!files?.length) return null;
+  return (
+    <div className={`chat-attach-files${variant === "message" ? " is-message" : ""}`}>
+      {files.map((file, index) => {
+        const name = file.name || "file";
+        const kind = chatFileKind(name);
+        const Glyph =
+          kind === "code" ? FileCode2 : kind === "data" ? FileJson : kind === "sheet" ? FileSpreadsheet : FileText;
+        const sizeLabel = file.size ? formatFileSize(file.size) : "";
+        return (
+          <span
+            key={file.id || `${name}-${index}`}
+            className={`chat-attach-chip${file.truncated ? " is-truncated" : ""}`}
+            title={`${name}${sizeLabel ? ` · ${sizeLabel}` : ""}${file.truncated ? " · обрезан по лимиту" : ""}`}
+          >
+            <Glyph className="chat-attach-chip-icon" aria-hidden />
+            <span className="chat-attach-chip-name">{name}</span>
+            {sizeLabel ? <span className="chat-attach-chip-size">{sizeLabel}</span> : null}
+            {onRemove && file.id ? (
+              <button
+                type="button"
+                className="chat-attach-chip-remove"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onRemove(file.id as string);
+                }}
+                title="Убрать файл"
+                aria-label={`Убрать ${name}`}
+              >
+                <X className="w-3 h-3" />
+              </button>
+            ) : null}
+          </span>
         );
       })}
     </div>
@@ -3840,8 +3910,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   const [lightbox, setLightbox] = useState<{ images: ChatImageAttachment[]; index: number } | null>(
     null
   );
-  /** Live tool cards stay folded behind the status strip until asked for. */
-  const [liveToolsOpen, setLiveToolsOpen] = useState(false);
   /** Queue item currently being edited inline (id → draft text). */
   const [editingQueueId, setEditingQueueId] = useState<string | null>(null);
   const [editingQueueText, setEditingQueueText] = useState("");
@@ -3867,25 +3935,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
     return null;
   }, [liveTimeline]);
   const hasLiveTimelineText = lastLiveTextId !== null;
-
-  /**
-   * ask_user / ask_otp pause the run waiting for the human, so their card must
-   * stay visible even while the tool strip is folded — otherwise you never see
-   * that an answer is being asked for. Also true for a sub-agent whose nested
-   * unit is waiting on an ask.
-   */
-  const isAskStep = useCallback((s?: AgentToolProgress | null): boolean => {
-    if (!s) return false;
-    if (s.name === "ask_user" || s.name === "ask_otp") return true;
-    return Boolean(
-      Array.isArray(s.units) &&
-        s.units.some(
-          (u) =>
-            Array.isArray(u.children) &&
-            u.children.some((c) => c.name === "ask_user" || c.name === "ask_otp")
-        )
-    );
-  }, []);
 
   /** Live sub-agent tally for the compact bar above the composer. */
   const subagentLive = useMemo(() => {
@@ -4637,18 +4686,13 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             <div className="mb-2 text-[11px] font-semibold text-ink-950 tracking-tight">
               ComposeVC
             </div>
-            {/* One collapsed line instead of a card per tool call. */}
+            {/* Status line only — the cards below are never folded away. */}
             {toolActivity.length > 0 && (
-              <LiveToolStrip
-                count={toolActivity.length}
-                open={liveToolsOpen}
-                onToggle={() => setLiveToolsOpen((value) => !value)}
-                statusLabel={statusLabel}
-              />
+              <LiveToolStrip count={toolActivity.length} statusLabel={statusLabel} />
             )}
-            {/* Only the newest chunk — the answer being written — is ever shown,
-                open or closed. The commentary between tool calls is dropped
-                rather than repeated, and expanding reveals tool cards only. */}
+            {/* Only the newest chunk — the answer being written — is ever shown.
+                The commentary between tool calls is dropped rather than
+                repeated; every tool card stays visible. */}
             {liveTimeline.length > 0 ? (
               <>
                 {liveTimeline.map((item) => {
@@ -4658,8 +4702,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                   }
                   const step = toolActivity.find((s) => s.toolCallId === item.toolCallId);
                   if (!step) return null;
-                  // Folded: hide every tool card EXCEPT an ask waiting for you.
-                  if (!liveToolsOpen && !isAskStep(step)) return null;
                   return (
                     <ToolActivityList
                       key={item.id}
@@ -4678,34 +4720,28 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
               </>
             ) : (
               <>
-                {(() => {
-                  // Open → everything; folded → only asks waiting for you.
-                  const steps = liveToolsOpen ? toolActivity : toolActivity.filter(isAskStep);
-                  return steps.length > 0 ? (
-                    <ToolActivityList
-                      steps={steps}
-                      more={labels.more}
-                      moreCount={labels.moreCount}
-                      collapse={labels.collapse}
-                      collapseUnits={labels.collapseUnits}
-                      allUnitsCount={labels.allUnitsCount}
-                    />
-                  ) : null;
-                })()}
+                {toolActivity.length > 0 && (
+                  <ToolActivityList
+                    steps={toolActivity}
+                    more={labels.more}
+                    moreCount={labels.moreCount}
+                    collapse={labels.collapse}
+                    collapseUnits={labels.collapseUnits}
+                    allUnitsCount={labels.allUnitsCount}
+                  />
+                )}
                 {assistantDrafts.slice(-1).map((text, index) => (
                   <MarkdownContent key={`${index}-${text.slice(0, 24)}`} content={text} />
                 ))}
               </>
             )}
-            {/* Tools that somehow missed timeline ids still show at the end.
-                Folded: still surface any orphan ask waiting for you. */}
+            {/* Tools that somehow missed timeline ids still show at the end. */}
             {liveTimeline.length > 0 &&
               (() => {
                 const shown = new Set(
                   liveTimeline.filter((i) => i.kind === "tool").map((i) => (i as { toolCallId: string }).toolCallId)
                 );
-                let orphan = toolActivity.filter((s) => s.toolCallId && !shown.has(s.toolCallId));
-                if (!liveToolsOpen) orphan = orphan.filter(isAskStep);
+                const orphan = toolActivity.filter((s) => s.toolCallId && !shown.has(s.toolCallId));
                 return orphan.length > 0 ? (
                   <ToolActivityList
                     steps={orphan}
