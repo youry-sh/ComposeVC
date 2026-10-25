@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Minus, Square, X } from "lucide-react";
+import { ChevronDown, Minus, Square, X } from "lucide-react";
 import {
   IcoMulti,
   IcoProxy,
@@ -12,7 +12,6 @@ import {
   IcoWebEngine,
   IcoDocs,
   IcoUsage,
-  IcoBlinds,
   IcoPrompts,
 } from "./topIcons";
 import PromptsWorkspace from "./PromptsWorkspace";
@@ -163,20 +162,25 @@ const TitleBar: React.FC<TitleBarProps> = ({
 
   return (
     <div className="titlebar-root">
-      <div className="titlebar-brand-block">
-        <span className="titlebar-brand-copy" aria-label="ComposeVC">COMPOSE//VC</span>
-      </div>
-
-      {/* Шторы (blinds) — the arrow that reveals the future-tabs drawer */}
+      {/* Шторы (blinds) — a low tab that hangs off the bottom edge of the bar.
+          It rolls the drawer down like a real roller blind (see .blinds-roll). */}
       <button
         type="button"
-        title="Шторы (blinds)"
-        aria-label="Toggle blinds"
+        id="titlebar-blinds-tab"
+        title="Шторы — Prompts и будущие вкладки"
+        aria-label={blindsOpen ? "Свернуть шторы" : "Развернуть шторы"}
         aria-expanded={blindsOpen}
+        aria-controls="titlebar-blinds"
         onClick={() => setBlindsOpen((v) => !v)}
-        className={`titlebar-blinds-toggle ${blindsOpen ? "is-open" : ""}`}
+        className={`titlebar-blinds-tab ${blindsOpen ? "is-open" : ""}`}
       >
-        <IcoBlinds className="titlebar-blinds-ico" />
+        <span className="titlebar-blinds-grip" aria-hidden>
+          <i />
+          <i />
+          <i />
+        </span>
+        <span className="titlebar-blinds-tab-label">ШТОРЫ</span>
+        <ChevronDown className="titlebar-blinds-caret" aria-hidden />
       </button>
 
       <nav className="topbar-tabs" aria-label="Workspace panels">
@@ -273,13 +277,32 @@ const TitleBar: React.FC<TitleBarProps> = ({
       </div>
 
       {/* ── ШТОРЫ (blinds) drawer ──────────────────────────────────────────
-          Drop-down drawer under the top bar. Tabs register here — each tab is a
-          <button className="blinds-tab"> in the head, and its workspace renders
-          in the body. "Prompts" is the first tab. */}
+          The drawer is clipped to zero at the top and unrolls downward; the
+          roller bar rides the leading edge and settles as the pull rail that
+          rolls it back up. Tabs register here — each one is a
+          <button className="blinds-tab"> in the head, its workspace renders in
+          the body. "Prompts" is the first tab. */}
       <div
+        id="titlebar-blinds"
         className={`titlebar-blinds-panel ${blindsOpen ? "is-open" : ""}`}
         aria-hidden={!blindsOpen}
       >
+        {/* Roller: travels with the reveal, then doubles as the close handle. */}
+        <button
+          type="button"
+          className="blinds-roll"
+          onClick={() => setBlindsOpen(false)}
+          title="Свернуть шторы"
+          aria-label="Свернуть шторы"
+          tabIndex={blindsOpen ? 0 : -1}
+        >
+          <span className="blinds-roll-grip" aria-hidden>
+            <i />
+            <i />
+            <i />
+            <i />
+          </span>
+        </button>
         <div className="blinds-panel-head">
           <span className="titlebar-blinds-panel-title">ШТОРЫ</span>
           <button
