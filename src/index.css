@@ -10745,8 +10745,7 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
 }
 .chat-composer-shell > textarea,
 .chat-composer-images,
-.chat-attach-tray,
-.chat-attach-note {
+.chat-attach-tray {
   flex: 1 0 100%;
   min-width: 0;
 }
@@ -10830,7 +10829,7 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   color: var(--ink-950);
 }
 .chat-attach-note {
-  padding: 6px 10px 0;
+  padding: 0 2px 2px;
   font-family: var(--terminal-font);
   font-size: 10px;
   line-height: 1.4;

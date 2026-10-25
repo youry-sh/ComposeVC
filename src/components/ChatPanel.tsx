@@ -4279,6 +4279,22 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
     []
   );
 
+  /** A drop outside the window (or Esc) never fires dragleave here — clear the overlay. */
+  useEffect(() => {
+    const resetDrag = () => {
+      dragDepthRef.current = 0;
+      setDragActive(false);
+    };
+    window.addEventListener("dragend", resetDrag);
+    window.addEventListener("drop", resetDrag);
+    window.addEventListener("blur", resetDrag);
+    return () => {
+      window.removeEventListener("dragend", resetDrag);
+      window.removeEventListener("drop", resetDrag);
+      window.removeEventListener("blur", resetDrag);
+    };
+  }, []);
+
   /**
    * One entry point for every way files arrive (OS drop, paperclip, paste):
    * images go to the vision list, supported text files are inlined, everything
@@ -4424,8 +4440,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
     if (!dragActive) setDragActive(true);
   };
 
-  const handlePanelDragLeave = (e: React.DragEvent) => {
-    if (!isOsFileDrag(e.dataTransfer)) return;
+  const handlePanelDragLeave = () => {
     dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
     if (dragDepthRef.current === 0) setDragActive(false);
   };
@@ -5118,6 +5133,11 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             )}
           </div>
         )}
+        {attachNotice && (
+          <div className="chat-attach-note" role="status">
+            {attachNotice}
+          </div>
+        )}
         <div className="chat-composer-shell">
           {(pendingFiles.length > 0 || pendingImages.length > 0) && (
             <div className="chat-attach-tray">
@@ -5135,11 +5155,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                   onRemove={(id) => setPendingImages((prev) => prev.filter((img) => img.id !== id))}
                 />
               )}
-            </div>
-          )}
-          {attachNotice && (
-            <div className="chat-attach-note" role="status">
-              {attachNotice}
             </div>
           )}
           <textarea
