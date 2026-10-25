@@ -8,10 +8,13 @@
     powershell -NoProfile -ExecutionPolicy Bypass -File scripts\hotkey-publish.ps1
     ... -InstallStartup     добавить в автозагрузку Windows
     ... -SelfTest           проверить регистрацию хоткея и выйти
+    ... -Simulate           показать оверлей прогресса (без публикации)
     ... -Force              публиковать даже если в git нет изменений
     ... -Keys "Alt+Shift+O" другая комбинация
 
-  Пока агент запущен, в трее виден значок ComposeVC Publish.
+  Пока агент запущен, в трее виден значок ComposeVC Publish, а во время сборки
+  справа внизу появляется полупрозрачная шкала прогресса (исчезает сама через
+  пару секунд после завершения).
 #>
 param(
   [string]$Keys = "Ctrl+Shift+O",
