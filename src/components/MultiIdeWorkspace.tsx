@@ -6,7 +6,7 @@ import GitBadge from "./GitBadge";
 import ThinkingIndicator from "./ThinkingIndicator";
 import { CustomTool, MainAgentMode, ProviderConfig } from "../types";
 import { HotkeyDefinition, matchesHotkey } from "../utils/hotkeys";
-import { LayoutGrid, X } from "lucide-react";
+import { LayoutGrid, Pencil, X } from "lucide-react";
 
 /** Ctrl+H (Cmd+H on macOS) — the chat switcher, matched by physical key. */
 const SWITCHER_HOTKEY: HotkeyDefinition = { code: "KeyH", modifiers: ["mod"] };
@@ -46,6 +46,8 @@ export type MultiIdeSlotState = {
  *  lives here so switching workspaces restores exactly what the user left behind. */
 export type WorkspaceState = {
   id: string;
+  /** User-visible name. "" → the rail falls back to "Workspace N". */
+  name: string;
   activeId: string | null;
   openIds: string[];
 };
@@ -112,63 +114,122 @@ export function defaultMultiIdeSlots(): MultiIdeSlotState[] {
   return [emptySlot("multi-1", DEFAULT_WORKSPACE_ID)];
 }
 
-export function loadMultiIdeSlots(): MultiIdeSlotState[] {
+export const WORKSPACE_NAME_MAX = 48;
+
+/** Read the disk-backed layout once (sync bridge keeps the existing
+ *  synchronous state initializers). Null when the file is absent/unreadable. */
+function readDiskState(): MultiIdeDiskState | null {
   try {
-    const raw = window.localStorage.getItem(MULTIIDE_STORAGE_KEY);
-    if (!raw) return defaultMultiIdeSlots();
-    const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed) || parsed.length === 0) return defaultMultiIdeSlots();
-    // A session belongs to exactly one panel. Older builds could save the same
-    // session ID into two slots when they opened the same folder, so keep the
-    // first owner and return the later panel(s) to an empty draft.
-    const claimedSessionIds = new Set<string>();
-    const usedIds = new Set<string>();
-    const slots = parsed.slice(0, MULTIIDE_MAX_SLOTS).map((entry, index) => {
-      const item = entry as Partial<MultiIdeSlotState> | undefined;
-      let id = typeof item?.id === "string" && item.id ? item.id : `multi-${index + 1}`;
-      while (usedIds.has(id)) id = `${id}-${index + 1}`;
-      usedIds.add(id);
-      const requestedSessionId = typeof item?.sessionId === "string" ? item.sessionId : null;
-      const sessionId = requestedSessionId && !claimedSessionIds.has(requestedSessionId)
-        ? requestedSessionId
-        : null;
-      if (sessionId) claimedSessionIds.add(sessionId);
-      return {
-        id,
-        rootPath: typeof item?.rootPath === "string" ? item.rootPath : null,
-        sessionId,
-        selectedModelId: typeof item?.selectedModelId === "string" ? item.selectedModelId : null,
-        agentMode: isAgentMode(item?.agentMode) ? item.agentMode : ("lopster" as MainAgentMode),
-        workspaceId:
-          typeof item?.workspaceId === "string" && item.workspaceId
-            ? item.workspaceId
-            : DEFAULT_WORKSPACE_ID,
-      };
-    });
-    return slots.length ? slots : defaultMultiIdeSlots();
+    const state = window.lopster?.multiIdeLoadStateSync?.();
+    return state && typeof state === "object" ? state : null;
   } catch {
-    return defaultMultiIdeSlots();
+    return null;
   }
 }
 
-export function saveMultiIdeSlots(slots: MultiIdeSlotState[]) {
-  try {
-    window.localStorage.setItem(
-      MULTIIDE_STORAGE_KEY,
-      JSON.stringify(
-        slots.map((s) => ({
-          id: s.id,
-          rootPath: s.rootPath,
-          sessionId: s.sessionId,
-          selectedModelId: s.selectedModelId,
-          agentMode: s.agentMode,
-          workspaceId: s.workspaceId,
-        }))
-      )
-    );
-  } catch {
-    /* ignore */
+type LayoutPatch = {
+  slots?: MultiIdeDiskSlot[];
+  workspaces?: MultiIdeDiskWorkspace[];
+  activeWorkspaceId?: string | null;
+};
+
+/**
+ * Disk is the source of truth. localStorage is only (a) read once to migrate a
+ * pre-store layout and (b) a fallback when the bridge is unavailable (plain web
+ * dev) or an IPC write fails — so a failed write can never lose the layout.
+ */
+function writeLayoutPatch(patch: LayoutPatch, fallback: () => void): void {
+  const api = window.lopster;
+  if (!api?.multiIdeSaveState) {
+    fallback();
+    return;
   }
+  try {
+    void Promise.resolve(api.multiIdeSaveState(patch))
+      .then((result) => {
+        if (!result || result.ok === false) fallback();
+      })
+      .catch(fallback);
+  } catch {
+    fallback();
+  }
+}
+
+/** Synchronous write used on pagehide — async IPC would not land in time. */
+function flushLayoutPatch(patch: LayoutPatch): boolean {
+  const api = window.lopster;
+  if (!api?.multiIdeSaveStateSync) return false;
+  try {
+    const result = api.multiIdeSaveStateSync(patch);
+    return Boolean(result && result.ok);
+  } catch {
+    return false;
+  }
+}
+
+/** Shared validation for both the legacy localStorage payload and disk state. */
+function normalizeSlots(parsed: unknown): MultiIdeSlotState[] {
+  if (!Array.isArray(parsed) || parsed.length === 0) return [];
+  // A session belongs to exactly one panel. Older builds could save the same
+  // session ID into two slots when they opened the same folder, so keep the
+  // first owner and return the later panel(s) to an empty draft.
+  const claimedSessionIds = new Set<string>();
+  const usedIds = new Set<string>();
+  const slots = parsed.slice(0, MULTIIDE_MAX_SLOTS).map((entry, index) => {
+    const item = entry as Partial<MultiIdeSlotState> | undefined;
+    let id = typeof item?.id === "string" && item.id ? item.id : `multi-${index + 1}`;
+    while (usedIds.has(id)) id = `${id}-${index + 1}`;
+    usedIds.add(id);
+    const requestedSessionId = typeof item?.sessionId === "string" ? item.sessionId : null;
+    const sessionId = requestedSessionId && !claimedSessionIds.has(requestedSessionId)
+      ? requestedSessionId
+      : null;
+    if (sessionId) claimedSessionIds.add(sessionId);
+    return {
+      id,
+      rootPath: typeof item?.rootPath === "string" ? item.rootPath : null,
+      sessionId,
+      selectedModelId: typeof item?.selectedModelId === "string" ? item.selectedModelId : null,
+      agentMode: isAgentMode(item?.agentMode) ? item.agentMode : ("lopster" as MainAgentMode),
+      workspaceId:
+        typeof item?.workspaceId === "string" && item.workspaceId
+          ? item.workspaceId
+          : DEFAULT_WORKSPACE_ID,
+    };
+  });
+  return slots;
+}
+
+export function loadMultiIdeSlots(): MultiIdeSlotState[] {
+  const diskSlots = normalizeSlots(readDiskState()?.slots);
+  if (diskSlots.length) return diskSlots;
+  try {
+    const raw = window.localStorage.getItem(MULTIIDE_STORAGE_KEY);
+    if (!raw) return defaultMultiIdeSlots();
+    const legacy = normalizeSlots(JSON.parse(raw) as unknown);
+    if (legacy.length) return legacy;
+  } catch {
+    /* corrupt legacy payload → fresh default */
+  }
+  return defaultMultiIdeSlots();
+}
+
+export function saveMultiIdeSlots(slots: MultiIdeSlotState[]) {
+  const payload = slots.map((s) => ({
+    id: s.id,
+    rootPath: s.rootPath,
+    sessionId: s.sessionId,
+    selectedModelId: s.selectedModelId,
+    agentMode: s.agentMode,
+    workspaceId: s.workspaceId,
+  }));
+  writeLayoutPatch({ slots: payload }, () => {
+    try {
+      window.localStorage.setItem(MULTIIDE_STORAGE_KEY, JSON.stringify(payload));
+    } catch {
+      /* ignore */
+    }
+  });
 }
 
 function folderName(path: string | null): string | null {
