@@ -161,6 +161,15 @@ const TEXT_FILENAMES = new Set([
   "authors",
   "requirements",
   "cmakelists.txt",
+  ".env",
+  ".gitignore",
+  ".gitattributes",
+  ".editorconfig",
+  ".npmrc",
+  ".prettierrc",
+  ".babelrc",
+  ".dockerignore",
+  ".htaccess",
 ]);
 
 const TEXT_MIME_HINTS = [
@@ -340,6 +349,10 @@ export function splitAttachedFiles(content: string): {
   attachmentsBlock: string;
 } {
   const source = content || "";
+  // Fast path: most user turns have no attachments — leave them byte-identical.
+  if (!source.includes("<attached-file")) {
+    return { displayText: source, files: [], attachmentsBlock: "" };
+  }
   const files: ParsedAttachedFile[] = [];
   const blocks: string[] = [];
   const displayText = source
