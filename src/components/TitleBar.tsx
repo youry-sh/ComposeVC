@@ -21,7 +21,7 @@ import {
   formatTokenCount,
 } from "./StatusBar";
 
-type Panel = "multiide" | "webengine" | "proxy" | "settings" | "customtools" | "runner" | "terminal" | "knowledge" | "docs" | "usage" | "prompts";
+type Panel = "multiide" | "webengine" | "proxy" | "settings" | "customtools" | "runner" | "terminal" | "knowledge" | "docs" | "usage";
 
 interface TitleBarProps {
   subtitle?: string;

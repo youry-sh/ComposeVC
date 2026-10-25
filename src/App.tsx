@@ -30,7 +30,7 @@ import {
 import { CustomTool, ProjectSearchResult, ProviderConfig } from "./types";
 import { dispatchInsertChatInput, loadMouseSnippets, textForMouseButton } from "./utils/mouseSnippets";
 
-type Panel = "multiide" | "webengine" | "proxy" | "settings" | "customtools" | "runner" | "terminal" | "knowledge" | "docs" | "usage" | "prompts";
+type Panel = "multiide" | "webengine" | "proxy" | "settings" | "customtools" | "runner" | "terminal" | "knowledge" | "docs" | "usage";
 
 const App: React.FC = () => {
   const [rootPath, setRootPath] = useState<string | null>(null);
@@ -664,6 +664,8 @@ const App: React.FC = () => {
       <StorageModal open={storageOpen} onClose={() => setStorageOpen(false)} />
 
       <McpModal open={mcpOpen} onClose={() => setMcpOpen(false)} />
+
+      <PromptsModal open={promptsOpen} onClose={() => setPromptsOpen(false)} />
 
       <SettingsModal
         open={settingsOpen}
