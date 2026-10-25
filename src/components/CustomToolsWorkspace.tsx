@@ -674,13 +674,13 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
               </span>
               <span className="tabular-nums text-[10px] text-ink-500">{filteredTools.length}</span>
               <div className="relative ml-auto min-w-0 flex-1 sm:max-w-[260px]">
-                <Search className="pointer-events-none absolute left-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-500" />
+                <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-500" />
                 <input
                   type="text"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder={labels.customToolsSearch}
-                  className="ide-search-input h-7 w-full min-w-0 bg-transparent pl-6 pr-0 text-[12px] text-ink-950 placeholder-ink-500 outline-none"
+                  className="ide-search-input h-7 w-full min-w-0 bg-transparent pl-7 pr-1 text-[12px] leading-7 text-ink-950 placeholder-ink-500 outline-none"
                   style={fieldStyle}
                 />
               </div>
@@ -696,9 +696,9 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
             </div>
             <div className="ide-library-list max-h-[32vh] min-h-0 overflow-y-auto px-1.5 pb-1.5 scrollbar-thin">
               {filteredTools.length === 0 ? (
-                <div className="px-2 py-6 text-center text-[11px] text-ink-500">
-                  {tools.length === 0 ? labels.customToolsEmpty : labels.noResults}
-                </div>
+                tools.length === 0 ? null : (
+                  <div className="px-2 py-2 text-[11px] font-normal text-ink-500">{labels.noResults}</div>
+                )
               ) : (
                 filteredTools.map((tool) => {
                   const active = selectedId === tool.id;
