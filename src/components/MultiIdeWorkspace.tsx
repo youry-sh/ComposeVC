@@ -6,7 +6,7 @@ import GitBadge from "./GitBadge";
 import ThinkingIndicator from "./ThinkingIndicator";
 import { CustomTool, MainAgentMode, ProviderConfig } from "../types";
 import { HotkeyDefinition, matchesHotkey } from "../utils/hotkeys";
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, LayoutGrid, Pencil, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronsLeft, LayoutGrid, Pencil, X } from "lucide-react";
 
 /** Ctrl+H (Cmd+H on macOS) — the chat switcher, matched by physical key. */
 const SWITCHER_HOTKEY: HotkeyDefinition = { code: "KeyH", modifiers: ["mod"] };
