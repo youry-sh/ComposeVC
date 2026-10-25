@@ -24,8 +24,8 @@ const path = require("path");
 const DEFAULT_OWNER = "youry-sh";
 // Public releases repo (installers + latest.yml). The source repo stays private.
 const DEFAULT_REPO = "ComposeVC-releases";
-const FIRST_CHECK_DELAY_MS = 15 * 1000;
-const CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000;
+// Launch → check immediately, then keep polling every 5 minutes while the app runs.
+const CHECK_INTERVAL_MS = 5 * 60 * 1000;
 const CONFIG_FILE = "updater.json";
 
 let app = null;
@@ -33,8 +33,9 @@ let shell = null;
 let autoUpdater = null;
 let configPath = null;
 let config = defaultConfig();
-let firstTimer = null;
 let intervalTimer = null;
+/** True while a timed background poll runs — it must not flip the visible badge. */
+let backgroundCheck = false;
 let started = false;
 let packagedToken = "";
 
@@ -188,7 +189,12 @@ function applyFeed() {
 }
 
 function attachEvents() {
-  autoUpdater.on("checking-for-update", () => setState({ status: "checking", error: null }));
+  autoUpdater.on("checking-for-update", () => {
+    // A background poll must not blank an update that is already announced —
+    // otherwise the red badge would blink to a spinner every 5 minutes.
+    if (backgroundCheck && (state.status === "available" || state.status === "downloaded")) return;
+    setState({ status: "checking", error: null });
+  });
 
   autoUpdater.on("update-available", (info) => {
     setState({
