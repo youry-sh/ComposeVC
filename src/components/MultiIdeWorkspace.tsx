@@ -1159,7 +1159,32 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
         runningPanels={runningPanels}
         activeRootPath={activeWorkspaceSlots.find((s) => s.id === activeSlotId)?.rootPath || null}
         onOpenRunners={onOpenRunners}
+        onCollapse={toggleAside}
       />
+
+      {/* ── Folded columns leave a pull tab on the edge they came from ── */}
+      {shellUi.railCollapsed && (
+        <button
+          type="button"
+          className="chat-shell-handle is-left"
+          onClick={toggleRail}
+          title="Показать панель чатов (Ctrl+B)"
+          aria-label="Показать панель чатов"
+        >
+          <ChevronRight size={13} strokeWidth={2} aria-hidden />
+        </button>
+      )}
+      {shellUi.asideCollapsed && (
+        <button
+          type="button"
+          className="chat-shell-handle is-right"
+          onClick={toggleAside}
+          title="Показать панель статистики (Ctrl+Shift+B)"
+          aria-label="Показать правую панель"
+        >
+          <ChevronLeft size={13} strokeWidth={2} aria-hidden />
+        </button>
+      )}
 
       {switcherOpen && (
         <ChatSwitcherModal
