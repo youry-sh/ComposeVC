@@ -12952,6 +12952,10 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
 }
 .prompts-title-field,
 .prompts-text-field { display: flex; flex-direction: column; gap: 6px; min-height: 0; }
+/* The title row keeps its height — the growing prompt text never squeezes it. */
+.prompts-title-field { flex: 0 0 auto; }
+.prompts-title-field > span,
+.prompts-text-field > span { flex: none; }
 .prompts-title-field > span,
 .prompts-text-field > span {
   font: 500 9px/1.2 var(--terminal-font);
@@ -12960,6 +12964,7 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   color: var(--ink-500);
 }
 .prompts-title-field input {
+  flex: none;
   height: 32px;
   padding: 0 10px;
   border: 1px solid var(--border);
