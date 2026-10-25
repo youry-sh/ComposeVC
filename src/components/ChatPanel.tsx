@@ -3974,6 +3974,14 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
     return { running, done, total };
   }, [toolActivity]);
 
+  /** Anything sitting between the transcript and the composer (queue, banners…). */
+  const hasComposerContext =
+    subagentLive.running > 0 ||
+    messageQueue.length > 0 ||
+    Boolean(compactionBanner) ||
+    Boolean(labInPackage) ||
+    Boolean(attachNotice);
+
   const latestAssistantDraft = assistantDrafts.length > 0
     ? assistantDrafts[assistantDrafts.length - 1]
     : "";
@@ -4978,13 +4986,25 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
       </ChatMonoScroll>
 
       {/* Input */}
-      <div className="relative px-3 pb-3 pt-1.5 min-w-0 z-[1]">
-        {/* Plain sub-agents surface as one compact line here, not as live rows in the chat. */}
-        <SubagentBar
-          running={subagentLive.running}
-          done={subagentLive.done}
-          total={subagentLive.total}
-        />
+      <div className="relative min-w-0 z-[1]">
+        {!compactionBanner && compactNotice && (
+          <div className="pointer-events-none absolute bottom-3 left-1/2 z-20 w-[calc(100%-24px)] -translate-x-1/2 animate-fade-in">
+            <div className="flex items-center gap-2 rounded-lg border border-ink-200 bg-ink-100/95 px-3 py-2 shadow-2xl backdrop-blur-sm">
+              <Sparkles
+                className={`w-3.5 h-3.5 flex-shrink-0 ${compactNotice.tone === "error" ? "text-status-err" : "text-ink-500"}`}
+              />
+              <div className="min-w-0 text-[11px] text-ink-800">{compactNotice.text}</div>
+            </div>
+          </div>
+        )}
+        {hasComposerContext && (
+          <div className="chat-composer-context">
+            {/* Plain sub-agents surface as one compact line here, not as live rows in the chat. */}
+            <SubagentBar
+              running={subagentLive.running}
+              done={subagentLive.done}
+              total={subagentLive.total}
+            />
         {messageQueue.length > 0 && (
           <div className="chat-queue mb-2">
             <div className="chat-queue-head">
@@ -5136,16 +5156,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             label={labels.compactedBanner}
             msgsSavedTokens={labels.msgsSavedTokens}
           />
-        )}
-        {!compactionBanner && compactNotice && (
-          <div className="pointer-events-none absolute bottom-3 left-1/2 z-20 w-[calc(100%-24px)] -translate-x-1/2 animate-fade-in">
-            <div className="flex items-center gap-2 rounded-lg border border-ink-200 bg-ink-100/95 px-3 py-2 shadow-2xl backdrop-blur-sm">
-              <Sparkles
-                className={`w-3.5 h-3.5 flex-shrink-0 ${compactNotice.tone === "error" ? "text-status-err" : "text-ink-500"}`}
-              />
-              <div className="min-w-0 text-[11px] text-ink-800">{compactNotice.text}</div>
-            </div>
-          </div>
         )}
         {labInPackage && (
           <div className="mb-1.5 flex items-center gap-2">
