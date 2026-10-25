@@ -152,6 +152,10 @@ if ($InstallStartup) {
   $lnk.Description = "ComposeVC: $Keys — собрать и опубликовать обновление"
   $lnk.Save()
   Write-Host "[hotkey] автозагрузка включена: $lnkPath"
+  Write-Host "[hotkey] агент запустится при следующем входе в Windows."
+  Write-Host "[hotkey] запустить сейчас: scripts\hotkey-publish.cmd"
+  $form.Unregister($hotkeyId)
+  exit 0
 }
 
 function Test-DirtyTree {
