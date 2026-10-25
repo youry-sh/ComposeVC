@@ -51,6 +51,253 @@ function Show-Balloon([string]$Title, [string]$Text, [string]$Kind = "Info") {
   } catch { }
 }
 
+# ── translucent publish progress overlay (bottom-right of the screen) ──────
+$script:OverlayForm = $null
+$script:OverlayFill = $null
+$script:OverlayStageLabel = $null
+$script:OverlayPctLabel = $null
+$script:OverlayTrack = $null
+$script:OverlayPercent = 0
+$script:OverlayHideAt = $null
+$script:OverlayLogOffset = 0
+$script:OverlayTail = ""
+$script:OverlayUploadTick = 0
+
+function Initialize-Overlay {
+  if ($script:OverlayForm -and -not $script:OverlayForm.IsDisposed) { return }
+
+  $form = New-Object ComposeVCOverlayWindow
+  $form.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::None
+  $form.StartPosition = [System.Windows.Forms.FormStartPosition]::Manual
+  $form.ShowInTaskbar = $false
+  $form.TopMost = $true
+  $form.Width = 330
+  $form.Height = 80
+  $form.BackColor = [System.Drawing.Color]::FromArgb(18, 18, 18)
+  $form.Opacity = 0
+
+  $path = New-Object System.Drawing.Drawing2D.GraphicsPath
+  $r = 10
+  $w = $form.Width
+  $h = $form.Height
+  $path.AddArc(0, 0, $r, $r, 180, 90)
+  $path.AddArc($w - $r - 1, 0, $r, $r, 270, 90)
+  $path.AddArc($w - $r - 1, $h - $r - 1, $r, $r, 0, 90)
+  $path.AddArc(0, $h - $r - 1, $r, $r, 90, 90)
+  $path.CloseFigure()
+  $form.Region = New-Object System.Drawing.Region($path)
+
+  $title = New-Object System.Windows.Forms.Label
+  $title.Text = "ПУБЛИКАЦИЯ ОБНОВЛЕНИЯ"
+  $title.Font = New-Object System.Drawing.Font("Segoe UI", 7.5, [System.Drawing.FontStyle]::Bold)
+  $title.ForeColor = [System.Drawing.Color]::FromArgb(140, 140, 140)
+  $title.BackColor = $form.BackColor
+  $title.SetBounds(16, 12, 220, 14)
+  $form.Controls.Add($title)
+
+  $stage = New-Object System.Windows.Forms.Label
+  $stage.Text = "Подготовка…"
+  $stage.Font = New-Object System.Drawing.Font("Segoe UI", 8.5)
+  $stage.ForeColor = [System.Drawing.Color]::FromArgb(232, 232, 232)
+  $stage.BackColor = $form.BackColor
+  $stage.AutoEllipsis = $true
+  $stage.SetBounds(16, 29, 232, 18)
+  $form.Controls.Add($stage)
+
+  $pct = New-Object System.Windows.Forms.Label
+  $pct.Text = "0%"
+  $pct.Font = New-Object System.Drawing.Font("Segoe UI", 8.5, [System.Drawing.FontStyle]::Bold)
+  $pct.ForeColor = [System.Drawing.Color]::FromArgb(157, 185, 203)
+  $pct.BackColor = $form.BackColor
+  $pct.TextAlign = [System.Drawing.ContentAlignment]::MiddleRight
+  $pct.SetBounds(252, 28, 62, 18)
+  $form.Controls.Add($pct)
+
+  $track = New-Object System.Windows.Forms.Panel
+  $track.SetBounds(16, 57, 298, 4)
+  $track.BackColor = [System.Drawing.Color]::FromArgb(42, 42, 42)
+  $form.Controls.Add($track)
+
+  $fill = New-Object System.Windows.Forms.Panel
+  $fill.SetBounds(0, 0, 0, 4)
+  $fill.BackColor = [System.Drawing.Color]::FromArgb(157, 185, 203)
+  $track.Controls.Add($fill)
+
+  $form.add_Paint({
+    param($sender, $e)
+    try {
+      $pen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(48, 255, 255, 255), 1)
+      $e.Graphics.DrawRectangle($pen, 0, 0, $sender.Width - 1, $sender.Height - 1)
+      $pen.Dispose()
+    } catch { }
+  })
+
+  $script:OverlayForm = $form
+  $script:OverlayStageLabel = $stage
+  $script:OverlayPctLabel = $pct
+  $script:OverlayTrack = $track
+  $script:OverlayFill = $fill
+}
+
+function Move-OverlayToCorner {
+  if (-not $script:OverlayForm) { return }
+  try {
+    $wa = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
+    $script:OverlayForm.Left = $wa.Right - $script:OverlayForm.Width - 24
+    $script:OverlayForm.Top = $wa.Bottom - $script:OverlayForm.Height - 24
+  } catch { }
+}
+
+function Show-PublishOverlay([string]$StageText = "Подготовка…") {
+  Initialize-Overlay
+  Move-OverlayToCorner
+  $script:OverlayPercent = 0
+  $script:OverlayHideAt = $null
+  $script:OverlayUploadTick = 0
+  $script:OverlayTail = ""
+  $script:OverlayStageLabel.Text = $StageText
+  $script:OverlayPctLabel.Text = "0%"
+  $script:OverlayFill.Width = 0
+  $script:OverlayFill.BackColor = [System.Drawing.Color]::FromArgb(157, 185, 203)
+  $script:OverlayPctLabel.ForeColor = [System.Drawing.Color]::FromArgb(157, 185, 203)
+  if (-not $script:OverlayForm.Visible) { $script:OverlayForm.Show() }
+  $script:OverlayForm.TopMost = $true
+}
+
+function Set-PublishProgress([double]$Percent, [string]$StageText) {
+  if (-not $script:OverlayForm) { return }
+  $next = [Math]::Max($script:OverlayPercent, [Math]::Min(100, $Percent))
+  $script:OverlayPercent = $next
+  $maxWidth = [Math]::Max(0, $script:OverlayTrack.Width)
+  $script:OverlayFill.Width = [int]($maxWidth * $next / 100)
+  if ($StageText) { $script:OverlayStageLabel.Text = $StageText }
+  $script:OverlayPctLabel.Text = ("{0}%" -f [int][Math]::Round($next))
+}
+
+function Complete-PublishOverlay([bool]$Ok, [string]$StageText) {
+  if (-not $script:OverlayForm) { return }
+  if ($Ok) {
+    Set-PublishProgress 100 $StageText
+  } else {
+    $script:OverlayStageLabel.Text = $StageText
+    $script:OverlayFill.BackColor = [System.Drawing.Color]::FromArgb(229, 83, 75)
+    $script:OverlayPctLabel.ForeColor = [System.Drawing.Color]::FromArgb(229, 83, 75)
+    $script:OverlayFill.Width = [Math]::Max(6, $script:OverlayTrack.Width)
+  }
+  $script:OverlayHideAt = (Get-Date).AddSeconds($(if ($Ok) { 2.2 } else { 4.0 }))
+}
+
+function Update-OverlayFrame {
+  if (-not $script:OverlayForm -or $script:OverlayForm.IsDisposed) { return }
+  $form = $script:OverlayForm
+  $target = 0.94
+  if ($script:OverlayHideAt -and (Get-Date) -ge $script:OverlayHideAt) { $target = 0.0 }
+  $delta = $target - $form.Opacity
+  if ([Math]::Abs($delta) -lt 0.02) {
+    $form.Opacity = $target
+    if ($target -eq 0 -and $script:OverlayHideAt) {
+      $form.Hide()
+      $script:OverlayHideAt = $null
+    }
+    return
+  }
+  $step = if ($delta -gt 0) { [Math]::Min(0.09, $delta) } else { [Math]::Max(-0.14, $delta) }
+  $form.Opacity = [Math]::Max(0.0, [Math]::Min(1.0, $form.Opacity + $step))
+}
+
+# Reads only the bytes appended since the publish started, so milestones from
+# older runs can never push the bar to 100%.
+function Read-NewPublishLog {
+  try {
+    if (-not (Test-Path $script:LogFile)) { return "" }
+    $fs = [System.IO.File]::Open($script:LogFile, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+    try {
+      $len = $fs.Length
+      if ($script:OverlayLogOffset -gt $len) { $script:OverlayLogOffset = 0 }
+      $fs.Position = $script:OverlayLogOffset
+      $count = [int]($len - $script:OverlayLogOffset)
+      if ($count -le 0) { return "" }
+      if ($count -gt 262144) { $count = 262144 }
+      $buffer = New-Object byte[] $count
+      $read = $fs.Read($buffer, 0, $count)
+      $script:OverlayLogOffset += $read
+      return [System.Text.Encoding]::UTF8.GetString($buffer, 0, $read)
+    } finally {
+      $fs.Close()
+    }
+  } catch {
+    return ""
+  }
+}
+
+function Update-PublishProgress {
+  if (-not $script:OverlayForm) { return }
+  $chunk = Read-NewPublishLog
+  if ($chunk) {
+    $script:OverlayTail += $chunk
+    if ($script:OverlayTail.Length -gt 12000) {
+      $script:OverlayTail = $script:OverlayTail.Substring($script:OverlayTail.Length - 12000)
+    }
+  }
+  $text = $script:OverlayTail
+  if (-not $text) { return }
+
+  $pct = 0
+  $stage = ""
+
+  if ($text -match "\[package-dist\] building anti") { $pct = 4; $stage = "Сборка anti.exe" }
+  if ($text -match "\[package-dist\] staging anti") { $pct = 9; $stage = "Подготовка ресурсов" }
+  if ($text -match "\[package-dist\] building renderer") { $pct = 15; $stage = "Сборка интерфейса" }
+
+  $m = [regex]::Match($text, "\[harden\][^\r\n]*?(\d+)/(\d+)")
+  if ($m.Success) {
+    $done = [int]$m.Groups[1].Value
+    $total = [int]$m.Groups[2].Value
+    if ($total -gt 0) {
+      $pct = 18 + [int](24 * $done / $total)
+      $stage = "Обфускация кода ($done/$total)"
+    }
+  }
+
+  if ($text -match "electron-builder NSIS Setup EXE") { $pct = 46; $stage = "Упаковка приложения" }
+  if ($text -match "packaging\s+platform=") { $pct = 52; $stage = "Упаковка приложения" }
+  if ($text -match "building\s+target=nsis") { $pct = 62; $stage = "Сборка установщика" }
+  if ($text -match "\[package-dist\] done\.") { $pct = 76; $stage = "Проверка артефактов" }
+  if ($text -match "\[publish\] installer ready") { $pct = 82; $stage = "Установщик готов" }
+  if ($text -match "creating GitHub release") { $pct = 86; $stage = "Загрузка на GitHub" }
+  if ($text -match "\[publish\] Done\.") { $pct = 100; $stage = "Готово" }
+
+  # gh prints no upload progress — creep slowly while the 224 MB asset uploads.
+  if ($pct -ge 86 -and $pct -lt 100) {
+    $script:OverlayUploadTick++
+    $pct = [Math]::Min(96, 86 + [int]($script:OverlayUploadTick / 2))
+    $stage = "Загрузка на GitHub"
+  }
+
+  if ($pct -gt 0) { Set-PublishProgress $pct $stage }
+}
+
+if ($Simulate) {
+  Show-PublishOverlay "Проверка интерфейса"
+  $stages = @("Сборка anti.exe", "Сборка интерфейса", "Обфускация кода", "Сборка установщика", "Загрузка на GitHub", "Готово")
+  for ($i = 0; $i -le 100; $i += 2) {
+    $idx = [Math]::Min($stages.Count - 1, [int]($i / (100 / $stages.Count)))
+    Set-PublishProgress $i $stages[$idx]
+    Update-OverlayFrame
+    [System.Windows.Forms.Application]::DoEvents()
+    Start-Sleep -Milliseconds 45
+  }
+  Complete-PublishOverlay $true "Опубликовано"
+  for ($t = 0; $t -lt 100; $t++) {
+    Update-OverlayFrame
+    [System.Windows.Forms.Application]::DoEvents()
+    Start-Sleep -Milliseconds 45
+    if (-not $script:OverlayForm.Visible -and -not $script:OverlayHideAt) { break }
+  }
+  Write-Host "[overlay] simulate OK"
+  exit 0
+}
+
 function Resolve-Hotkey([string]$Spec) {
   $mods = 0; $vk = 0
   foreach ($raw in ($Spec -split "\+")) {
