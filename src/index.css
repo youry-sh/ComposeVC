@@ -2023,7 +2023,7 @@
     align-items: center;
     gap: 6px;
     align-self: flex-start;
-    margin: 6px 6px 4px;
+    margin: 8px 16px 6px;
     padding: 3px 9px;
     border: 1px solid var(--border-strong);
     border-radius: 999px;
@@ -2074,7 +2074,7 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 6px;
-    margin: 0 6px 6px;
+    margin: 0 16px 8px;
   }
   .bg-task {
     display: inline-flex;
@@ -10954,7 +10954,7 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 8px 10px 0;
+  padding: 10px 16px 0;
 }
 .chat-attach-files {
   display: flex;
@@ -11082,8 +11082,8 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   order: 1;
   flex: 0 1 auto;
   min-width: 0;
-  gap: 4px;
-  padding: 2px 0 7px 8px;
+  gap: 6px;
+  padding: 4px 0 9px 16px;
 }
 .chat-composer-actions {
   order: 2;
@@ -11091,7 +11091,7 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   justify-content: flex-end;
   gap: 2px;
   margin-left: auto;
-  padding: 2px 8px 7px 4px;
+  padding: 2px 16px 9px 6px;
 }
 
 /* Flat controls — no pills, no glass, no colour. */
@@ -11199,7 +11199,7 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   grid-template-columns: minmax(0, 1fr) auto auto;
   flex: 1 0 100%;
   width: 100%;
-  padding: 0 6px 4px;
+  padding: 0 16px 6px;
   gap: 4px;
   overflow: visible;
 }
@@ -11235,7 +11235,7 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   justify-content: flex-end;
   flex-wrap: nowrap;
   gap: 4px;
-  padding: 0 6px 6px;
+  padding: 0 16px 9px;
 }
 .chat-stage.is-split .chat-composer-icon-btn,
 .chat-stage.is-split .context-ring,
