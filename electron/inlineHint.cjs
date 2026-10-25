@@ -72,7 +72,7 @@ function cleanContinuation(raw) {
   text = text.replace(/^```[a-zA-Z0-9_-]*\s*?\n?/, "").replace(/\n?```\s*$/, "");
   text = text.replace(/^\s*(?:continuation|completion|next)\s*:\s*/i, "");
   text = text.replace(/^["'`«]+/, "").replace(/["'`»]+$/, "");
-  text = text.replace(/^[ \t]+/, "");
+  text = text.replace(/^[ \t]+/, "").replace(/^\n+/, "");
   text = text.replace(/[ \t]+$/, "");
   // At most two lines of suggestion.
   const lines = text.split("\n");

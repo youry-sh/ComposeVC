@@ -4299,6 +4299,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
         el.focus();
         const end = el.value.length;
         el.setSelectionRange(end, end);
+        setCaretPos(end);
       });
     };
     window.addEventListener(INSERT_INPUT_EVENT, onInsert as EventListener);
@@ -4449,6 +4450,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
       const end = value.length;
       el.focus();
       el.setSelectionRange(end, end);
+      setCaretPos(end);
     });
   };
 
@@ -5457,7 +5459,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
               <div
                 ref={hintOverlayRef}
                 aria-hidden="true"
-                title=""
                 className="pointer-events-none absolute left-0 top-0 overflow-hidden whitespace-pre-wrap break-words text-[13px] leading-5 text-transparent"
                 style={{ padding: "12px 16px 8px" }}
               >
