@@ -5018,12 +5018,20 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                         <span
                           className="chat-queue-text"
                           title={
-                            item.content ||
-                            (item.images?.length ? `${item.images.length} image(s)` : "")
+                            queued.displayText ||
+                            (queued.files.length
+                              ? queued.files.map((file) => file.name).join(", ")
+                              : item.images?.length
+                                ? `${item.images.length} image(s)`
+                                : "")
                           }
                         >
-                          {item.content ||
-                            (item.images?.length ? `🖼 ${item.images.length} image(s)` : "")}
+                          {queued.displayText ||
+                            (queued.files.length
+                              ? `📎 ${queued.files.map((file) => file.name).join(", ")}`
+                              : item.images?.length
+                                ? `🖼 ${item.images.length} image(s)`
+                                : "")}
                         </span>
                         <button
                           type="button"
@@ -5044,7 +5052,8 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                             className="chat-queue-remove chat-queue-edit"
                             onClick={() => {
                               setEditingQueueId(item.id);
-                              setEditingQueueText(item.content || "");
+                              setEditingQueueText(queued.displayText);
+                              setEditingQueueBlocks(queued.attachmentsBlock);
                             }}
                             title={labels.queueEdit}
                             aria-label="Edit queue message"
