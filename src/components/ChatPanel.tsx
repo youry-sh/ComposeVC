@@ -4254,20 +4254,127 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
     });
   }, []);
 
+  const applyPendingFiles = useCallback((next: ChatFileAttachment[]) => {
+    pendingFilesRef.current = next;
+    setPendingFiles(next);
+  }, []);
+
+  const flashAttachNotice = useCallback((text: string) => {
+    setAttachNotice(text);
+    if (attachNoticeTimer.current) window.clearTimeout(attachNoticeTimer.current);
+    attachNoticeTimer.current = window.setTimeout(() => setAttachNotice(null), 6000);
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (attachNoticeTimer.current) window.clearTimeout(attachNoticeTimer.current);
+    },
+    []
+  );
+
+  /**
+   * One entry point for every way files arrive (OS drop, paperclip, paste):
+   * images go to the vision list, supported text files are inlined, everything
+   * else is reported above the composer instead of disappearing silently.
+   */
+  const addPendingAttachments = useCallback(
+    async (files: FileList | File[] | null | undefined) => {
+      if (!files) return;
+      const list = Array.from(files as File[]).filter(Boolean);
+      if (!list.length) return;
+
+      const imageFiles = list.filter((file) => isImageFile(file));
+      if (imageFiles.length) await addPendingImages(imageFiles);
+
+      const unsupported = list.filter((file) => !isImageFile(file) && !isSupportedChatFile(file));
+      const docFiles = list.filter((file) => !isImageFile(file) && isSupportedChatFile(file));
+      const problems: string[] = [];
+      for (const file of unsupported.slice(0, 3)) {
+        problems.push(`${file.name || "файл"} — формат не поддерживается`);
+      }
+      if (unsupported.length > 3) problems.push(`и ещё ${unsupported.length - 3} файл(ов)`);
+
+      const next = [...pendingFilesRef.current];
+      const before = next.length;
+      let totalChars = next.reduce((sum, file) => sum + file.text.length, 0);
+
+      for (const file of docFiles) {
+        if (next.length >= CHAT_FILE_MAX_FILES) {
+          problems.push(`не больше ${CHAT_FILE_MAX_FILES} файлов на сообщение`);
+          break;
+        }
+        if (file.size <= 0) {
+          problems.push(`${file.name || "файл"} — пустой файл`);
+          continue;
+        }
+        if (file.size > CHAT_FILE_MAX_BYTES) {
+          problems.push(
+            `${file.name || "файл"} — больше ${formatFileSize(CHAT_FILE_MAX_BYTES)}`
+          );
+          continue;
+        }
+        if (next.some((item) => item.name === file.name && item.size === file.size)) continue;
+        const room = CHAT_FILE_MAX_TOTAL_CHARS - totalChars;
+        if (room <= 0) {
+          problems.push(
+            `лимит текста на сообщение исчерпан (${CHAT_FILE_MAX_TOTAL_CHARS.toLocaleString("ru-RU")} символов)`
+          );
+          break;
+        }
+        try {
+          let text = decodeTextBuffer(await file.arrayBuffer());
+          let truncated = false;
+          if (text.length > CHAT_FILE_MAX_TEXT_CHARS) {
+            text = text.slice(0, CHAT_FILE_MAX_TEXT_CHARS);
+            truncated = true;
+          }
+          if (text.length > room) {
+            text = text.slice(0, room);
+            truncated = true;
+          }
+          if (!text.trim()) {
+            problems.push(`${file.name || "файл"} — нет текстового содержимого`);
+            continue;
+          }
+          totalChars += text.length;
+          next.push({
+            id: `file-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+            name: file.name || "file",
+            size: file.size,
+            mimeType: file.type || undefined,
+            text,
+            truncated,
+          });
+        } catch {
+          problems.push(`${file.name || "файл"} — не удалось прочитать`);
+        }
+      }
+
+      if (next.length !== before) applyPendingFiles(next);
+      if (problems.length) flashAttachNotice(problems.join(" · "));
+    },
+    [addPendingImages, applyPendingFiles, flashAttachNotice]
+  );
+
   const handleSend = () => {
     const text = input.trim();
     const images = pendingImages.length ? [...pendingImages] : undefined;
-    if (!text && !images?.length) return;
+    const filesBlock = buildAttachedFilesBlock(pendingFiles);
+    // Attachments travel inside the user turn, so queue/retry/history all keep them.
+    const content = [text, filesBlock].filter(Boolean).join("\n\n");
+    if (!content && !images?.length) return;
     if (text) {
       pushInputHistory(text);
     }
     historyIndexRef.current = -1;
     draftBeforeHistoryRef.current = "";
     stickToBottomRef.current = true;
-    onSend(text, images);
+    onSend(content, images);
     setInput("");
     window.dispatchEvent(new CustomEvent("composevc-draft", { detail: { text: "" } }));
     setPendingImages([]);
+    applyPendingFiles([]);
+    setAttachNotice(null);
     const pin = () => messagesScrollRef.current?.scrollToBottom({ smooth: false });
     pin();
     requestAnimationFrame(pin);
@@ -4292,14 +4399,42 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
     void addPendingImages(files);
   };
 
-  const handleDropImages = (e: React.DragEvent) => {
-    const files = e.dataTransfer?.files;
-    if (!files?.length) return;
-    const hasImage = Array.from(files).some((f) => f.type.startsWith("image/"));
-    if (!hasImage) return;
+  /** OS drags carry "Files"; internal slot drags do not. */
+  const isOsFileDrag = (transfer?: DataTransfer | null): boolean =>
+    Boolean(transfer && Array.from(transfer.types || []).includes("Files"));
+
+  const handlePanelDragEnter = (e: React.DragEvent) => {
+    if (!isOsFileDrag(e.dataTransfer)) return;
+    e.preventDefault();
+    dragDepthRef.current += 1;
+    if (!dragActive) setDragActive(true);
+  };
+
+  const handlePanelDragOver = (e: React.DragEvent) => {
+    if (!isOsFileDrag(e.dataTransfer)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+    if (!dragActive) setDragActive(true);
+  };
+
+  const handlePanelDragLeave = (e: React.DragEvent) => {
+    if (!isOsFileDrag(e.dataTransfer)) return;
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+    if (dragDepthRef.current === 0) setDragActive(false);
+  };
+
+  /**
+   * Drop anywhere on THIS chat column → attach to this chat. The pending state
+   * lives inside ChatPanel, so a split view never mixes attachments between chats.
+   */
+  const handlePanelDrop = (e: React.DragEvent) => {
+    if (!isOsFileDrag(e.dataTransfer)) return;
     e.preventDefault();
     e.stopPropagation();
-    void addPendingImages(files);
+    dragDepthRef.current = 0;
+    setDragActive(false);
+    const dropped = e.dataTransfer?.files;
+    if (dropped?.length) void addPendingAttachments(dropped);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
