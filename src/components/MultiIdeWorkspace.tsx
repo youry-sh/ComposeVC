@@ -455,6 +455,20 @@ function hasSlotDrag(data: DataTransfer): boolean {
   return Array.from(data.types).includes(SLOT_DRAG);
 }
 
+/**
+ * Split view paints one soft hairline along the bottom of every open pane so
+ * two (or three) chats are told apart at a glance. The hue comes from the pane
+ * id, so it looks random but never flickers: the same pane keeps its colour
+ * across re-renders and restarts, and neighbouring panes land ~137° apart
+ * because of the golden-angle step.
+ */
+function paneAccent(id: string): string {
+  let hash = 0;
+  for (let i = 0; i < id.length; i += 1) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  const hue = Math.round((hash * 137.508) % 360);
+  return `hsl(${hue} 72% 64%)`;
+}
+
 const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
   providerConfig,
   customTools,
@@ -1181,7 +1195,15 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
                 : undefined
             }
           >
-            <div className="chat-stage-frame" style={row > 0 ? { borderLeft: "1px solid var(--border)" } : undefined}>
+            <div
+              className="chat-stage-frame"
+              style={
+                {
+                  ...(row > 0 ? { borderLeft: "1px solid var(--border)" } : null),
+                  "--pane-accent": paneAccent(slot.id),
+                } as React.CSSProperties
+              }
+            >
               {openIds.length > 1 && visible && (
                 <button
                   type="button"

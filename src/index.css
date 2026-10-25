@@ -9497,6 +9497,33 @@
   border-right: 1px solid var(--border);
   background: var(--bg);
 }
+/* Split view only: a soft hairline in the pane's own random hue closes the
+   bottom edge, so two or three open chats are told apart at a glance. Purely
+   decorative — it never catches clicks and fades out towards both sides so it
+   reads as an accent, not a hard rule. */
+.chat-stage.is-split .chat-stage-pane.is-visible .chat-stage-frame::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  z-index: 3;
+  pointer-events: none;
+  background: var(--pane-accent, var(--accent));
+  opacity: .42;
+  border-radius: 1px;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 16%, #000 84%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0%, #000 16%, #000 84%, transparent 100%);
+  animation: chat-pane-accent-in .26s ease-out both;
+}
+@keyframes chat-pane-accent-in {
+  from { opacity: 0; }
+  to { opacity: .42; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chat-stage.is-split .chat-stage-pane.is-visible .chat-stage-frame::after { animation: none; }
+}
 
 /* Flat panel chrome inside the shell — no accent bar, no glass. */
 .chat-shell .multi-slot { background: transparent; }
