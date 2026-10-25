@@ -18,6 +18,24 @@ const { spawn } = require("child_process");
 const http = require("http");
 const path = require("path");
 
+/**
+ * Electron `utilityProcess` is only available in the app's main process (it is
+ * absent when this module is required from plain node — tests, CLI tools).
+ * Packaged builds flip the RunAsNode fuse off, so `process.execPath` can no
+ * longer act as a plain node binary: the proxy child MUST be an Electron
+ * utility process there. Both transports are supported below.
+ */
+let utilityProcess = null;
+try {
+  // eslint-disable-next-line global-require
+  const electronApi = require("electron");
+  if (electronApi && typeof electronApi.utilityProcess?.fork === "function") {
+    utilityProcess = electronApi.utilityProcess;
+  }
+} catch {
+  /* plain node — no Electron runtime */
+}
+
 const MAX_LOGS = 200;
 const START_TIMEOUT_MS = 20000;
 const STOP_TIMEOUT_MS = 5000;
@@ -26,6 +44,7 @@ const MAX_RESTARTS = 3;
 const RESTART_WINDOW_MS = 60000;
 
 let child = null;
+let transport = "stdio"; // "stdio" = child_process pipes | "port" = Electron utility process
 let userDataPath = null;
 let state = "idle"; // idle | starting | running | external | stopping
 let statusCache = null;
@@ -192,12 +211,48 @@ async function detectExternal() {
 
 function spawnChild(ud, opts = {}) {
   const entry = path.join(__dirname, "standalone.cjs");
-  const args = [entry, "--userData", ud, "--stdio"];
-  if (opts.port != null) args.push("--port", String(Number(opts.port) || 8787));
-  if (opts.host) args.push("--host", String(opts.host));
-  const env = { ...process.env, ELECTRON_RUN_AS_NODE: "1" };
+  const flags = ["--userData", ud, "--stdio"];
+  if (opts.port != null) flags.push("--port", String(Number(opts.port) || 8787));
+  if (opts.host) flags.push("--host", String(opts.host));
 
-  const proc = spawn(process.execPath, args, {
+  // Preferred path (dev + packaged): a real Electron utility process. It runs
+  // standalone.cjs with Node + asar support and survives the RunAsNode fuse
+  // being disabled, which is what broke the packaged build (the old code
+  // spawned process.execPath as "node" and got a second GUI instance instead).
+  // utility processes have no stdin — the JSON channel uses MessagePort.
+  if (utilityProcess) {
+    const proc = utilityProcess.fork(entry, flags, {
+      env: { ...process.env },
+      stdio: ["ignore", "pipe", "pipe"],
+      serviceName: "ComposeVC Proxy Gateway",
+    });
+    transport = "port";
+    child = proc;
+    exitPromise = new Promise((resolve) => {
+      proc.on("exit", (code) => {
+        onChildExit(code, null);
+        resolve({ code, signal: null });
+      });
+    });
+    proc.on("message", (msg) => handleChildMessage(msg));
+    if (proc.stdout) {
+      proc.stdout.setEncoding("utf8");
+      proc.stdout.on("data", onChildStdout);
+    }
+    if (proc.stderr) {
+      proc.stderr.setEncoding("utf8");
+      proc.stderr.on("data", (d) => {
+        const line = String(d).trim();
+        if (line) pushLog({ level: "error", msg: line });
+      });
+    }
+    return proc;
+  }
+
+  // Fallback for plain node hosts (tests / tooling): classic node child.
+  transport = "stdio";
+  const env = { ...process.env, ELECTRON_RUN_AS_NODE: "1" };
+  const proc = spawn(process.execPath, [entry, ...flags], {
     env,
     stdio: ["pipe", "pipe", "pipe"],
     windowsHide: true,

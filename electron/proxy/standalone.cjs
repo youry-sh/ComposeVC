@@ -119,7 +119,31 @@ function defaultUserData() {
 let stdioMode = false;
 let userDataPath = null;
 
+/**
+ * Electron utility processes (used by the packaged app) have NO stdin at all,
+ * so the JSON control channel rides on the parent MessagePort instead. Plain
+ * node runs (manual terminal, non-Electron spawn) keep the newline-delimited
+ * stdio protocol.
+ */
+const parentPort = (() => {
+  try {
+    const port = process.parentPort;
+    return port && typeof port.postMessage === "function" ? port : null;
+  } catch {
+    return null;
+  }
+})();
+let portMode = false;
+
 function send(obj) {
+  if (portMode) {
+    try {
+      parentPort.postMessage(obj);
+    } catch {
+      /* parent gone (app quit) */
+    }
+    return;
+  }
   if (!stdioMode) return;
   try {
     process.stdout.write(JSON.stringify(obj) + "\n");
@@ -268,6 +292,19 @@ async function handleCommand(cmd) {
 
 function setupControlChannel() {
   if (!stdioMode) return;
+  if (parentPort) {
+    // Electron utility process: stdin does not exist, so commands + logs travel
+    // over the parent MessagePort. (Touching process.stdin here would fire an
+    // immediate 'end' and shut the gateway down.)
+    portMode = true;
+    parentPort.on("message", (event) => {
+      const cmd = event && typeof event === "object" && "data" in event ? event.data : event;
+      if (cmd) void handleCommand(cmd);
+    });
+    // Parent closed its end (app quit) → stop the gateway with it.
+    parentPort.on("close", () => void gracefulExit(0));
+    return;
+  }
   let buf = "";
   process.stdin.setEncoding("utf8");
   process.stdin.on("data", (chunk) => {
@@ -313,7 +350,7 @@ async function main() {
     printHelp();
     process.exit(0);
   }
-  stdioMode = args.stdio;
+  stdioMode = Boolean(args.stdio) || Boolean(parentPort);
   userDataPath = args.userData || defaultUserData();
   process.title = "lopster-proxy";
 
