@@ -4817,7 +4817,9 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
         <AutoInsertModal
           enabled={autoInsertEnabled}
           messages={autoInsertMessages}
+          messageEnabled={autoInsertMessageEnabled}
           onToggle={onToggleAutoInsert}
+          onToggleMessage={(index) => onToggleAutoInsertMessage?.(index)}
           onAdd={onAddAutoInsertMessage}
           onRemove={onRemoveAutoInsertMessage}
           onClose={() => setAutoInsertModalOpen(false)}
@@ -4830,6 +4832,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             autoInsertPlaceholder: labels.autoInsertPlaceholder,
             autoInsertAdd: labels.autoInsertAdd,
             autoInsertSearch: labels.autoInsertSearch,
+            copy: labels.queueCopy,
             noResults: labels.noResults,
           }}
         />
