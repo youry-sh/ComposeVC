@@ -9217,25 +9217,32 @@
   outline-offset: -1px;
 }
 .chat-stage-frame { position: relative; }
+/* The row-unpin X lives in the pane corner, on top of the chat header. The
+   folder picker (.multi-slot-folder) is flex:1 and used to run underneath it, so
+   the X looked glued to "select folder" and stole its clicks. Reserve a gutter
+   for the button instead of letting the two overlap. */
+.chat-stage.is-split .chat-stage-pane.is-visible .multi-slot-header {
+  padding-right: 44px;
+}
 .chat-stage-unpin {
   position: absolute;
-  top: 6px;
+  top: 5px;
   right: 8px;
   z-index: 4;
-  width: 20px;
-  height: 20px;
+  width: 26px;
+  height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 6px;
   background: var(--surface);
   color: var(--ink-600);
   line-height: 1;
   cursor: pointer;
   transition: background .14s ease, color .14s ease, border-color .14s ease, box-shadow .14s ease;
 }
-.chat-stage-unpin svg { width: 12px; height: 12px; display: block; transition: transform .16s ease; }
+.chat-stage-unpin svg { width: 13px; height: 13px; display: block; transition: transform .16s ease; }
 .chat-stage-unpin:hover {
   background: var(--active-bg);
   border-color: var(--border-strong);
