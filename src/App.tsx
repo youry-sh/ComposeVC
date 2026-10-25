@@ -563,7 +563,7 @@ const App: React.FC = () => {
                 slots={multiIdeSlots}
                 onSlotsChange={setMultiIdeSlots}
                 onOpenRunners={() => setActivePanel("runner")}
-                onOpenPrompts={() => setActivePanel("prompts")}
+                onOpenPrompts={() => setPromptsOpen(true)}
                 onOpenMcp={() => setMcpOpen(true)}
                 onRequestFocus={() => setActivePanel("multiide")}
               />
