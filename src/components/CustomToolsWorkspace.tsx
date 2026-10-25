@@ -5,7 +5,6 @@ import {
   Plug,
   Puzzle,
   Search,
-  Upload,
   Wrench,
   Save,
   Cable,
@@ -46,49 +45,12 @@ interface CustomToolsWorkspaceProps {
     customToolDisabled: string;
     customToolsSearch: string;
     customToolExport: string;
-    customToolExportAll: string;
     customToolExportOne: string;
-    customToolImport: string;
-    customToolImportAll: string;
-    customToolImportOne: string;
-    customToolImportPick: string;
-    customToolImportPickHint: string;
-    customToolImportSelected: string;
-    customToolImportCancel: string;
-    customToolCopyPack: string;
     customToolCopyOne: string;
     customToolCopied: string;
     customToolExportSaved: string;
-    customToolImportDone: string;
-    customToolImportMode: string;
-    customToolImportSkip: string;
-    customToolImportOverwrite: string;
-    customToolImportRename: string;
     noResults: string;
   };
-}
-
-type ImportMode = "skip" | "overwrite" | "rename";
-
-interface ImportPreviewTool {
-  index?: number;
-  id?: string;
-  name?: string;
-  title?: string;
-  description?: string;
-  kind?: string;
-  enabled?: boolean;
-  tags?: string[];
-  valid?: boolean;
-  error?: string | null;
-}
-
-interface ImportPickState {
-  path?: string | null;
-  text: string;
-  format?: "zip" | "json" | string | null;
-  tools: ImportPreviewTool[];
-  selected: number[];
 }
 
 const quietBtn =
@@ -113,8 +75,6 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [importMode, setImportMode] = useState<ImportMode>("skip");
-  const [importPick, setImportPick] = useState<ImportPickState | null>(null);
   const [mcpOpen, setMcpOpen] = useState(false);
 
   const filteredTools = useMemo(() => {
