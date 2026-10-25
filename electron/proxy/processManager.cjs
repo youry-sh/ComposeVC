@@ -423,11 +423,7 @@ async function start(ud, opts = {}) {
   }
 
   if (child) {
-    try {
-      child.kill("SIGKILL");
-    } catch {
-      /* */
-    }
+    hardKill();
     child = null;
   }
 
@@ -462,6 +458,16 @@ async function start(ud, opts = {}) {
   });
 }
 
+/** Write one control message to the child over the active transport. */
+function writeToChild(payload) {
+  if (!child) throw new Error("proxy process not running");
+  if (transport === "port") {
+    child.postMessage(payload);
+    return;
+  }
+  child.stdin.write(JSON.stringify(payload) + "\n");
+}
+
 function command(command, payload, timeoutMs = CMD_TIMEOUT_MS) {
   if (!child || (state !== "running" && state !== "starting")) {
     return Promise.reject(
@@ -476,7 +482,7 @@ function command(command, payload, timeoutMs = CMD_TIMEOUT_MS) {
     }, timeoutMs);
     pending.set(id, { resolve, reject, timer });
     try {
-      child.stdin.write(JSON.stringify({ id, command, payload }) + "\n");
+      writeToChild({ id, command, payload });
     } catch (e) {
       pending.delete(id);
       clearTimeout(timer);
@@ -539,11 +545,7 @@ async function stop() {
       exitPromise,
       new Promise((resolve) => {
         setTimeout(() => {
-          try {
-            child && child.kill("SIGKILL");
-          } catch {
-            /* */
-          }
+          hardKill();
           resolve(null);
         }, STOP_TIMEOUT_MS);
       }),
@@ -557,23 +559,32 @@ async function stop() {
   return await status();
 }
 
-/** Fire-and-forget teardown for app quit (child also exits when stdin closes). */
+/** Terminate the child immediately on whichever transport it runs. */
+function hardKill() {
+  if (!child) return;
+  try {
+    if (transport === "port") child.kill();
+    else child.kill("SIGKILL");
+  } catch {
+    /* already gone */
+  }
+}
+
+/** Fire-and-forget teardown for app quit (the child also dies with its parent). */
 function kill() {
   stopRequested = true;
   if (child) {
-    try {
-      child.stdin.end();
-    } catch {
-      /* */
-    }
-    const timer = setTimeout(() => {
+    if (transport === "port") {
+      hardKill();
+    } else {
       try {
-        child && child.kill("SIGKILL");
+        child.stdin.end();
       } catch {
         /* */
       }
-    }, 1500);
-    if (typeof timer.unref === "function") timer.unref();
+      const timer = setTimeout(() => hardKill(), 1500);
+      if (typeof timer.unref === "function") timer.unref();
+    }
   }
   child = null;
   state = "idle";
