@@ -9,7 +9,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import ChatMonoScroll from "./ChatMonoScroll";
+import ChatMonoScroll, { type ChatMonoScrollHandle } from "./ChatMonoScroll";
 
 type Prompt = {
   id: string;
@@ -42,6 +42,8 @@ const PromptsWorkspace: React.FC = () => {
   const [savedFlash, setSavedFlash] = useState(false);
   const [copiedFlash, setCopiedFlash] = useState(false);
   const titleRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const textScrollRef = useRef<ChatMonoScrollHandle>(null);
   const flashTimer = useRef<number | null>(null);
 
   const clearFlash = useCallback(() => {
@@ -215,6 +217,35 @@ const PromptsWorkspace: React.FC = () => {
     setDirty(true);
     setSavedFlash(false);
     setCopiedFlash(false);
+  };
+
+  // The prompt text grows with its content, so the ChatMonoScroll wrapper owns
+  // the visible scrollbar instead of the field's native one.
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    const fit = () => {
+      el.style.height = "auto";
+      el.style.height = `${el.scrollHeight}px`;
+    };
+    fit();
+    const target = textScrollRef.current?.getViewport();
+    if (!target || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(fit);
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [text]);
+
+  const handleTextInput = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const el = event.target;
+    // Typing at the end should keep the caret (and the growing text) in view.
+    const typingAtEnd = el.selectionStart >= el.value.length - 1;
+    onTextChange(el.value);
+    if (!typingAtEnd) return;
+    requestAnimationFrame(() => {
+      const viewport = textScrollRef.current?.getViewport();
+      if (viewport) viewport.scrollTop = viewport.scrollHeight;
+    });
   };
 
   const filtered = useMemo(() => {
