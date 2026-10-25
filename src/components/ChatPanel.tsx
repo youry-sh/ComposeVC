@@ -4324,7 +4324,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
     if (!el) return;
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, INPUT_MAX_HEIGHT)}px`;
-    syncHintOverlay();
   }, [input]);
 
   // ── Ghost-text prompt autocomplete ───────────────────────────────────────
@@ -4617,6 +4616,8 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
     stickToBottomRef.current = true;
     onSend(content, images);
     setInput("");
+    setCaretPos(0);
+    setHint(null);
     window.dispatchEvent(new CustomEvent("composevc-draft", { detail: { text: "" } }));
     setPendingImages([]);
     applyPendingFiles([]);
@@ -4701,6 +4702,20 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Ghost suggestion: Tab inserts it, Escape dismisses it. Everything else
+    // (typing, arrows, Enter) leaves the hint to be regenerated normally.
+    if (hintVisible) {
+      if (e.key === "Tab" && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        e.preventDefault();
+        acceptInlineHint();
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setHint(null);
+        return;
+      }
+    }
     // Shell-like input history: ↑ older / ↓ newer (only when not mid multi-line edit)
     if (e.key === "ArrowUp" || e.key === "ArrowDown") {
       const el = inputRef.current;

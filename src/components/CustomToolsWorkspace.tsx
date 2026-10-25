@@ -2,10 +2,12 @@ import React, { useState, useEffect, useMemo } from "react";
 import {
   Copy,
   Download,
+  Plus,
+  Plug,
+  Puzzle,
   Search,
   Upload,
   Wrench,
-  X,
   Save,
   Cable,
 } from "lucide-react";
@@ -42,28 +44,24 @@ interface CustomToolsWorkspaceProps {
   ) => Promise<void>;
   onRemove: (toolId: string) => Promise<void>;
   labels: {
+    pluginTab: string;
+    pluginsIde: string;
+    pluginsIdeEmpty: string;
+    pluginsIdeHint: string;
     customTools: string;
-    customToolsHint: string;
     customToolsEmpty: string;
     customToolTitle: string;
     customToolTitlePlaceholder: string;
     customToolDescription: string;
     customToolDescriptionPlaceholder: string;
-    customToolBody: string;
-    customToolBodyPlaceholder: string;
-    customToolRuntime: string;
+    customToolAdd: string;
     customToolSaving: string;
-    customToolDependencies: string;
-    customToolDependenciesEmpty: string;
-    customToolDependenciesHint: string;
     customToolSave: string;
     customToolDelete: string;
     customToolEnabled: string;
     customToolDisabled: string;
     customToolsSearch: string;
-    customToolTags: string;
-    customToolTagsPlaceholder: string;
-    customToolInvalidJson: string;
+    customToolNameRequired: string;
     customToolExport: string;
     customToolExportAll: string;
     customToolExportOne: string;
