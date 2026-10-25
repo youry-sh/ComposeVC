@@ -2648,6 +2648,10 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
           providers={providerConfig.providers}
            models={displayModels}
           selectedModelId={selectedModelId || undefined}
+          inlineHint={{
+            enabled: providerConfig.aiRuntime?.inlineHintEnabled === true,
+            modelId: providerConfig.aiRuntime?.inlineHintModelId || "",
+          }}
           onSelectModel={handleSelectModel}
           agentMode={agentMode}
           onSelectAgentMode={handleSelectAgentMode}

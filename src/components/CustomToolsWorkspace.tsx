@@ -115,12 +115,6 @@ async function run() {
 run();
 `;
 
-const RUNTIME_ENTRY: Record<string, string> = {
-  node: "main.js",
-  python: "main.py",
-  powershell: "main.ps1",
-};
-
 /** Mirror of the backend `normalizeToolName`: derives a folder-safe slug from a title. */
 const slugifyName = (raw: string) =>
   String(raw || "")
@@ -177,10 +171,6 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [runtime, setRuntime] = useState("node");
-  const [codeText, setCodeText] = useState(DEFAULT_CODE);
-  const [tagsText, setTagsText] = useState("");
-  const [dependencies, setDependencies] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [busyShare, setBusyShare] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -209,10 +199,6 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
       setPanelMode("create");
       setTitle("");
       setDescription("");
-      setRuntime("node");
-      setCodeText(DEFAULT_CODE);
-      setTagsText("");
-      setDependencies([]);
       setError(null);
     }
   }, [tools, selectedId]);
@@ -220,10 +206,6 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
   const resetCreateForm = () => {
     setTitle("");
     setDescription("");
-    setRuntime("node");
-    setCodeText(DEFAULT_CODE);
-    setTagsText("");
-    setDependencies([]);
     setError(null);
   };
 
@@ -233,37 +215,13 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
     resetCreateForm();
   };
 
-  const openEdit = async (tool: CustomTool) => {
+  const openEdit = (tool: CustomTool) => {
     setPanelMode("edit");
     setSelectedId(tool.id);
     setTitle(tool.title || "");
     setDescription(tool.description || "");
-    const rt =
-      (tool.body as { runtime?: string } | undefined)?.runtime ||
-      (tool as { runtime?: string }).runtime ||
-      "node";
-    setRuntime(rt);
-    setTagsText((tool.tags || []).join(", "));
-    setDependencies(tool.dependencies || []);
     setError(null);
-    try {
-      const file = await window.lopster?.readCustomToolFile?.(tool.id);
-      if (file?.content) {
-        setCodeText(file.content);
-      } else {
-        setCodeText(DEFAULT_CODE);
-      }
-    } catch {
-      setCodeText(DEFAULT_CODE);
-    }
   };
-
-  const parseTags = (raw: string) =>
-    raw
-      .split(/[,;\n]+/)
-      .map((t) => t.trim())
-      .filter(Boolean)
-      .slice(0, 20);
 
   const selectedTool = selectedId ? tools.find((t) => t.id === selectedId) : undefined;
   // Identity: derived once from the title on create; the persisted name is preserved
@@ -271,44 +229,37 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
   const derivedName =
     panelMode === "edit" && selectedTool ? selectedTool.name : slugifyName(title);
 
-  const canSave = Boolean(derivedName && codeText.trim());
+  const canSave = Boolean(derivedName);
 
   const handleSave = async () => {
     const trimmedName = derivedName;
     const trimmedTitle = title.trim();
     const trimmedDescription = description.trim();
-    const trimmedCode = codeText;
-    if (!trimmedName || !trimmedCode.trim()) {
-      setError(labels.customToolInvalidJson);
+    if (!trimmedName) {
+      setError(labels.customToolNameRequired);
       return;
     }
 
     setSaving(true);
     setError(null);
+    setStatusMsg(null);
     try {
-      const tags = parseTags(tagsText);
-      const entry = RUNTIME_ENTRY[runtime] || "main.js";
       if (panelMode === "edit" && selectedId) {
+        // Only the catalog metadata is edited here; entry code, runtime, tags and
+        // connections stay untouched on disk (the agent owns the tool folder).
         await onUpdate(selectedId, {
           name: trimmedName,
           title: trimmedTitle || undefined,
           description: trimmedDescription || undefined,
-          code: trimmedCode,
-          runtime,
-          entry,
-          tags,
-          dependencies,
         });
       } else {
         await onAdd({
           name: trimmedName,
           title: trimmedTitle || undefined,
           description: trimmedDescription || undefined,
-          code: trimmedCode,
-          runtime,
-          entry,
-          tags,
-          dependencies,
+          code: DEFAULT_CODE,
+          runtime: "node",
+          entry: "main.js",
         });
         resetCreateForm();
       }
