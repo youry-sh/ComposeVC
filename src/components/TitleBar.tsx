@@ -21,7 +21,7 @@ import {
   formatTokenCount,
 } from "./StatusBar";
 
-type Panel = "multiide" | "webengine" | "proxy" | "settings" | "customtools" | "runner" | "terminal" | "knowledge" | "docs" | "usage";
+type Panel = "multiide" | "webengine" | "proxy" | "settings" | "customtools" | "runner" | "terminal" | "knowledge" | "docs" | "usage" | "prompts";
 
 interface TitleBarProps {
   subtitle?: string;
@@ -249,50 +249,6 @@ const TitleBar: React.FC<TitleBarProps> = ({
         >
           <X className="w-4 h-4" />
         </button>
-      </div>
-
-      {/* ── ШТОРЫ (blinds) drawer ──────────────────────────────────────────
-          The drawer is clipped to zero at the top and unrolls downward; the
-          roller bar rides the leading edge and settles as the pull rail that
-          rolls it back up. Tabs register here — each one is a
-          <button className="blinds-tab"> in the head, its workspace renders in
-          the body. "Prompts" is the first tab. */}
-      <div
-        id="titlebar-blinds"
-        className={`titlebar-blinds-panel ${blindsOpen ? "is-open" : ""}`}
-        aria-hidden={!blindsOpen}
-      >
-        {/* Roller: travels with the reveal, then doubles as the close handle. */}
-        <button
-          type="button"
-          className="blinds-roll"
-          onClick={closeBlinds}
-          title="Свернуть шторы"
-          aria-label="Свернуть шторы"
-          tabIndex={blindsOpen ? 0 : -1}
-        >
-          <span className="blinds-roll-grip" aria-hidden>
-            <i />
-            <i />
-            <i />
-            <i />
-          </span>
-        </button>
-        <div className="blinds-panel-head">
-          <span className="titlebar-blinds-panel-title">ШТОРЫ</span>
-          <button
-            type="button"
-            className={`blinds-tab${blindsTab === "prompts" ? " is-active" : ""}`}
-            onClick={() => setBlindsTab("prompts")}
-            aria-pressed={blindsTab === "prompts"}
-          >
-            <IcoPrompts className="blinds-tab-ico" />
-            <span>Prompts</span>
-          </button>
-        </div>
-        <div className="blinds-panel-body">
-          {blindsTab === "prompts" && <PromptsWorkspace />}
-        </div>
       </div>
     </div>
   );

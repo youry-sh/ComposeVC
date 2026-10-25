@@ -8,6 +8,8 @@ import ProxyWorkspace from "./components/ProxyWorkspace";
 import RunnerWorkspace from "./components/RunnerWorkspace";
 import RunnerSendModal from "./components/RunnerSendModal";
 import CustomToolsWorkspace from "./components/CustomToolsWorkspace";
+import PromptsWorkspace from "./components/PromptsWorkspace";
+import McpModal from "./components/McpModal";
 import TerminalWorkspace from "./components/TerminalWorkspace";
 import StorageModal from "./components/StorageModal";
 import KnowledgeWorkspace from "./components/KnowledgeWorkspace";
@@ -28,7 +30,7 @@ import {
 import { CustomTool, ProjectSearchResult, ProviderConfig } from "./types";
 import { dispatchInsertChatInput, loadMouseSnippets, textForMouseButton } from "./utils/mouseSnippets";
 
-type Panel = "multiide" | "webengine" | "proxy" | "settings" | "customtools" | "runner" | "terminal" | "knowledge" | "docs" | "usage";
+type Panel = "multiide" | "webengine" | "proxy" | "settings" | "customtools" | "runner" | "terminal" | "knowledge" | "docs" | "usage" | "prompts";
 
 const App: React.FC = () => {
   const [rootPath, setRootPath] = useState<string | null>(null);
