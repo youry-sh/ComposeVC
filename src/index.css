@@ -7098,16 +7098,10 @@
     z-index: 50;
   }
 
-  .titlebar-brand-block {
-    display: flex;
-    align-items: center;
-    padding: 0 10px;
-    height: 100%;
-    min-width: 0;
-    -webkit-app-region: drag;
-  }
+  /* The COMPOSE//VC wordmark lives in the update panel masthead now — the title
+     bar starts with the blinds tab. */
 
-  /* ── top bar nav tabs ── */
+/* ── top bar nav tabs ── */
   .topbar-tabs {
     display: flex;
     align-items: center;
@@ -7920,17 +7914,8 @@
   border-bottom-color: color-mix(in srgb, var(--border) 80%, transparent);
   font-family: "Inter", system-ui, sans-serif;
 }
-.titlebar-brand-block {
-  gap: 8px;
-  padding: 0 13px 0 11px;
-  border-right: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
-}
-.titlebar-brand-copy {
-  color: var(--ink-900);
-  font: 700 11px/1 var(--terminal-font);
-  letter-spacing: .14em;
-  white-space: nowrap;
-}
+/* The brand wordmark is no longer part of the title bar (it now heads the update
+   panel), so the bar gives its ~113px back to the workspace tabs. */
 .topbar-tabs { gap: 2px; padding: 0 4px; }
 .topbar-tab {
   height: 28px;
@@ -8018,10 +8003,10 @@
    unlayered and comes last, so it is the single owner of this behaviour, and
    the guards clip instead of overlap even if future content grows.
 
-   Budget (mono theme, Inter/terminal fallbacks): brand 113 · blinds 32 ·
+   Budget (mono theme, Inter/terminal fallbacks): blinds tab 96 ·
    window controls 169 · gaps ~40. Captioned tabs need 894, icon tabs 445,
    the equalizer needs ~340 and the clock 64. */
-.titlebar-brand-block { flex: 0 0 auto; }
+.titlebar-blinds-tab { flex: 0 0 auto; }
 .topbar-tabs { flex: 0 1 auto; overflow: hidden; }
 .topbar-tab { flex: 0 0 auto; }
 .topbar-metrics { flex: 0 1 auto; min-width: 0; overflow: hidden; }
@@ -8066,7 +8051,9 @@
   .topbar-tab { padding: 0 6px; }
   .topbar-wave-group { padding: 0 4px; }
   .topbar-metrics { gap: 4px; }
-  .titlebar-brand-block { padding: 0 8px; }
+  /* The hanging tab keeps its grip + caret; only the caption goes. */
+  .titlebar-blinds-tab-label { display: none; }
+  .titlebar-blinds-tab { margin-left: 2px; }
 }
 
 /* < 860 — below the app's minimum width there is nothing left to trim without
