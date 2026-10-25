@@ -11734,12 +11734,12 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
 }
 .knowledge-workspace.is-neural {
   display: block;
-  background: #070707;
+  background: var(--bg);
 }
 .knowledge-neural {
   position: absolute;
   inset: 0;
-  background: #070707;
+  background: var(--bg);
 }
 .knowledge-neural canvas {
   display: block;
