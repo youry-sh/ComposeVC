@@ -5353,6 +5353,20 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
         </div>
       </div>
 
+      {dragActive && (
+        <div className="chat-drop-overlay" aria-hidden>
+          <div className="chat-drop-overlay-card">
+            <Paperclip className="chat-drop-overlay-icon" />
+            <span className="min-w-0">
+              <span className="chat-drop-overlay-title">Отпустите, чтобы прикрепить к этому чату</span>
+              <span className="chat-drop-overlay-hint">
+                Изображения и текстовые файлы · до {CHAT_FILE_MAX_FILES} шт.
+              </span>
+            </span>
+          </div>
+        </div>
+      )}
+
       {lightbox && (
         <ChatImageLightbox
           images={lightbox.images}
