@@ -13,6 +13,12 @@
  *   - anti/cmd, anti/internal, anti/patches, anti/profiles (~2GB)
  *   - node_modules/electron (devDependency)
  *
+ * Locked output:
+ *   If release/win-unpacked is held by a running app (its resources/app.asar is
+ *   open without FILE_SHARE_DELETE — e.g. ComposeVC itself), electron-builder
+ *   cannot empty it. The script then packages into release/.build-<ts> and
+ *   copies the installer artifacts into release/. It never kills the running app.
+ *
  * Usage:
  *   node scripts/package-dist.mjs
  *   node scripts/package-dist.mjs --dir
@@ -55,6 +61,8 @@ Options:
 
 Output:
   release/ComposeVC-Setup-<version>-x64.exe
+  If release/win-unpacked is in use by a running app, the build is staged in
+  release/.build-<ts> and the installer artifacts are copied into release/.
 `);
   process.exit(0);
 }
@@ -95,18 +103,6 @@ function rmrf(p) {
 
 function sleep(ms) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
-}
-
-/** True when another process holds a handle that blocks writes/deletes. */
-function isFileLocked(file) {
-  if (!exists(file)) return false;
-  try {
-    const fd = fs.openSync(file, "r+");
-    fs.closeSync(fd);
-    return false;
-  } catch (error) {
-    return ["EBUSY", "EPERM", "EACCES"].includes(error?.code);
-  }
 }
 
 /**
@@ -485,7 +481,6 @@ if (!exists(path.join(root, "node_modules", "@electron", "fuses"))) {
 // --- 6) electron-builder ---
 const releaseDir = path.join(root, "release");
 const primaryAppOut = path.join(releaseDir, "win-unpacked");
-const primaryAsar = path.join(primaryAppOut, "resources", "app.asar");
 
 // A running ComposeVC (or anything that mapped the previous app.asar) makes
 // Windows refuse to clear release/win-unpacked, and electron-builder aborts in
