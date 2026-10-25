@@ -567,7 +567,7 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
   // the window goes away instead of relying on an async IPC round-trip.
   useEffect(() => {
     const flush = () => {
-      flushWorkspaceState(workspacesRef.current, activeWorkspaceIdRef.current);
+      flushWorkspaceState(workspacesRef.current, activeWorkspaceIdRef.current, shellUiRef.current);
     };
     const onVisibility = () => {
       if (document.visibilityState === "hidden") flush();
