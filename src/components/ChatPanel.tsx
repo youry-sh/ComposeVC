@@ -3919,6 +3919,8 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   /** Queue item currently being edited inline (id → draft text). */
   const [editingQueueId, setEditingQueueId] = useState<string | null>(null);
   const [editingQueueText, setEditingQueueText] = useState("");
+  /** Attachment blocks kept out of the inline editor and put back on save. */
+  const [editingQueueBlocks, setEditingQueueBlocks] = useState("");
   /** Queue item whose text was just copied (id → brief checkmark). */
   const [copiedQueueId, setCopiedQueueId] = useState<string | null>(null);
   const copiedTimer = useRef<number | null>(null);
@@ -4953,6 +4955,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             <div className="chat-queue-list">
               {messageQueue.map((item, index) => {
                 const isEditing = editingQueueId === item.id;
+                const queued = splitAttachedFiles(item.content || "");
                 return (
                   <div key={item.id} className={`chat-queue-item${isEditing ? " is-editing" : ""}`}>
                     <span className="chat-queue-index">{String(index + 1).padStart(2, "0")}</span>
@@ -4966,12 +4969,15 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                             if (event.key === "Enter" && !event.shiftKey) {
                               event.preventDefault();
                               const value = editingQueueText.trim();
-                              if (value) onEditQueuedMessage?.(item.id, value);
+                              const full = [value, editingQueueBlocks].filter(Boolean).join("\n\n");
+                              if (full) onEditQueuedMessage?.(item.id, full);
                               setEditingQueueId(null);
                               setEditingQueueText("");
+                              setEditingQueueBlocks("");
                             } else if (event.key === "Escape") {
                               setEditingQueueId(null);
                               setEditingQueueText("");
+                              setEditingQueueBlocks("");
                             }
                           }}
                           rows={2}
@@ -4983,9 +4989,11 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                           className="chat-queue-remove chat-queue-edit-save"
                           onClick={() => {
                             const value = editingQueueText.trim();
-                            if (value) onEditQueuedMessage?.(item.id, value);
+                            const full = [value, editingQueueBlocks].filter(Boolean).join("\n\n");
+                            if (full) onEditQueuedMessage?.(item.id, full);
                             setEditingQueueId(null);
                             setEditingQueueText("");
+                            setEditingQueueBlocks("");
                           }}
                           title={labels.queueSave}
                           aria-label="Save"
