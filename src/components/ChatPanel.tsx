@@ -2444,6 +2444,11 @@ const AutoInsertModal: React.FC<{
             <div className="mt-0.5 text-[11px] text-ink-500 truncate">{labels.autoInsertHint}</div>
           </div>
           <div className="flex items-center gap-2.5 flex-shrink-0">
+            {messages.length > 0 && (
+              <span className="text-[10px] font-medium tabular-nums text-ink-500">
+                {activeCount}/{messages.length}
+              </span>
+            )}
             <span className="text-[10px] font-medium uppercase tracking-wider text-ink-500">
               {enabled ? labels.autoInsertOn : labels.autoInsertOff}
             </span>
