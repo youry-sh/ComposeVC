@@ -1,10 +1,12 @@
 /**
  * ComposeVC auto-updater — GitHub Releases feed for the private project repo.
  *
- * Flow: on launch (packaged build) → check the newest release → download the
- * NSIS installer in the background → install it on quit (or on demand from the
- * title bar). The update artefacts are produced by scripts/publish-update.mjs,
- * which uploads `ComposeVC-Setup-<version>-x64.exe` + `latest.yml` to GitHub.
+ * Flow: on launch (packaged build) → check the newest release immediately, then
+ * re-check every 5 minutes while the app runs. A published update lights the
+ * title-bar trigger red; nothing is downloaded or installed until the user
+ * confirms in that panel. The update artefacts are produced by
+ * scripts/publish-update.mjs, which uploads
+ * `ComposeVC-Setup-<version>-x64.exe` + `latest.yml` to GitHub.
  *
  * Client auth is normally NOT required: the feed lives in the public releases
  * repo (owner/repo below). A token is only needed if you point the updater at a
