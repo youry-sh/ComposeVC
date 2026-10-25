@@ -26,7 +26,7 @@
 @layer base {
   /*
    * Theme tokens — every surface/control should use these.
-   * Switch via <html data-theme="mono|winter|crimson">.
+   * Switch via <html data-theme="mono|winter|crimson|graphite">.
    *
    * ink-0 … ink-950: chrome ladder (bg → text). Dark themes: 0=darkest.
    * Light themes invert the ladder so existing Tailwind classes keep working.
@@ -408,6 +408,135 @@
     --chat-assistant-bg: transparent;
     --sidebar-tint: #060505;
     --terminal-bg: #050404;
+
+    --radius-control: 6px;
+    --radius-card: 10px;
+    --radius-modal: 12px;
+  }
+
+  /* ── Тёмно-серый (Graphite #171717) + красно-оранжевый ──────────────────
+     Charcoal chrome on a #171717 base: every layer steps ~4 lightness points
+     so panels read as elevation instead of one flat grey slab, and text stays
+     a soft warm-neutral instead of pure white. Exactly one saturated colour —
+     red-orange #f0442e — is allowed, and only where the interface needs a
+     signal: primary buttons, focus, selection, toggles and live state. */
+  [data-theme="graphite"] {
+    color-scheme: dark;
+
+    --ink-0: #171717;
+    --ink-50: #1b1b1b;
+    --ink-100: #1f1f1f;
+    --ink-150: #242424;
+    --ink-200: #2a2a2a;
+    --ink-250: #313131;
+    --ink-300: #393939;
+    --ink-400: #4a4a4a;
+    --ink-500: #666666;
+    --ink-600: #888888;
+    --ink-700: #a5a5a5;
+    --ink-800: #c3c3c3;
+    --ink-900: #dedede;
+    --ink-950: #f0f0f0;
+
+    --bg: #171717;
+    --surface: #1a1a1a;
+    --surface-2: #1f1f1f;
+    --surface-3: #242424;
+    --border: #282828;
+    --border-strong: #383838;
+    --text: #e7e4e1;
+    --text-muted: #8d8a87;
+    --text-dim: #aaa6a2;
+    --text-soft: #94908d;
+
+    --accent: #f0442e;
+    --accent-fg: #1a0806;
+    --accent-hover: #ff5c46;
+    --accent-soft: #ff8b78;
+    --accent-muted: rgba(240, 68, 46, 0.12);
+    --accent-2: #ffb3a3;
+    --focus-ring: rgba(240, 68, 46, 0.30);
+    --focus-border: #a03a2b;
+    --selection: rgba(240, 68, 46, 0.24);
+    --glow: rgba(240, 68, 46, 0.05);
+
+    --btn-primary-bg: #f0442e;
+    --btn-primary-fg: #1a0806;
+    --btn-primary-hover: #ff5c46;
+    --btn-primary-border: #c9371f;
+    --btn-secondary-bg: #202020;
+    --btn-secondary-fg: #d2cfcc;
+    --btn-secondary-border: #2e2e2e;
+    --btn-secondary-hover: #262626;
+    --btn-secondary-fg-hover: #f5f2f0;
+    --btn-secondary-border-hover: #404040;
+
+    --btn-ok-bg: #16211b;
+    --btn-ok-fg: #a6cbb3;
+    --btn-ok-hover: #1b2a22;
+    --btn-ok-border: #283c31;
+    --btn-warn-bg: #241d11;
+    --btn-warn-fg: #dcc295;
+    --btn-warn-hover: #2c2415;
+    --btn-warn-border: #42361f;
+    --btn-danger-bg: #2b1512;
+    --btn-danger-fg: #f2b9b2;
+    --btn-danger-hover: #341a16;
+    --btn-danger-border: #4c241d;
+    --btn-info-bg: #161d23;
+    --btn-info-fg: #a8bfd2;
+    --btn-info-hover: #1b242c;
+    --btn-info-border: #2b3a48;
+    --btn-soft-bg: #202020;
+    --btn-soft-fg: #d2cfcc;
+    --btn-soft-border: #2e2e2e;
+    --btn-soft-hover: #262626;
+    --btn-ghost-hover: rgba(255, 255, 255, 0.055);
+    --btn-ghost-hover-fg: #f5f2f0;
+
+    --input-bg: #131313;
+    --input-fg: #e7e4e1;
+    --input-border: #2d2d2d;
+    --input-border-hover: #3c3c3c;
+    --panel-bg: #1a1a1a;
+    --panel-border: #282828;
+    --panel-header-bg: #1f1f1f;
+    --hover-bg: rgba(255, 255, 255, 0.05);
+    --active-bg: rgba(240, 68, 46, 0.14);
+    --active-fg: #f8eeeb;
+    --active-border: #5b2a21;
+
+    --toggle-on: #f0442e;
+    --toggle-on-border: #f0442e;
+    --toggle-thumb: #170706;
+    --toggle-off-bg: #262626;
+    --toggle-off-border: #383838;
+
+    --danger: #e5786d;
+    --danger-bg: #2b1512;
+    --danger-border: #4c241d;
+    --warn: #d9b475;
+    --warn-bg: #231c10;
+    --warn-border: #40341f;
+    --ok: #8dc09e;
+    --ok-bg: #14201a;
+    --ok-border: #263a2d;
+    --info: #98aec3;
+    --info-bg: #151c22;
+    --info-border: #2a3946;
+
+    --scrim: rgba(8, 8, 8, 0.82);
+    --shadow-modal: 0 24px 80px rgba(0, 0, 0, 0.66);
+    --shadow-menu: 0 12px 40px rgba(0, 0, 0, 0.56);
+    --scrollbar: #343434;
+    --scrollbar-hover: #4c4c4c;
+    --thinking-dot: #ff6a52;
+    --code-link: #ff8d78;
+    --code-link-hover: #ffc3b6;
+    --chat-user-bg: #1f1f1f;
+    --chat-assistant-bg: transparent;
+    --sidebar-tint: #131313;
+    --terminal-bg: #141414;
 
     --radius-control: 6px;
     --radius-card: 10px;

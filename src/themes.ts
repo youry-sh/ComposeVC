@@ -6,7 +6,7 @@
  * Tailwind `ink-*` / `status-*` / `accent` map to those variables.
  */
 
-export type ThemeId = "mono" | "winter" | "crimson";
+export type ThemeId = "mono" | "winter" | "crimson" | "graphite";
 
 export type ThemeMeta = {
   id: ThemeId;
@@ -41,6 +41,13 @@ export const THEMES: ThemeMeta[] = [
     description: "Чёрный уголь с одним алым акцентом и нейтральной пепельной отделкой.",
     type: "dark",
     swatches: ["#080808", "#1a1717", "#d94246", "#ddd5cf"],
+  },
+  {
+    id: "graphite",
+    name: "Тёмно-серый",
+    description: "Графит #171717 с одним красно-оранжевым акцентом — сигнал только на действиях и фокусе.",
+    type: "dark",
+    swatches: ["#171717", "#2a2a2a", "#f0442e", "#e7e4e1"],
   },
 ];
 

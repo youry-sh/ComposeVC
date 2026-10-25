@@ -55,6 +55,20 @@ const THEME_PALETTES = {
     bar: "#e5484d",
     shadow: "0 12px 32px rgba(3, 2, 2, 0.70)",
   },
+  graphite: {
+    surface: "#171717",
+    surface2: "#1f1f1f",
+    border: "#282828",
+    borderStrong: "#3a3a3a",
+    text: "#f2efec",
+    muted: "#8d8a87",
+    dim: "#aaa6a2",
+    accent: "#f0442e",
+    accentSoft: "rgba(240, 68, 46, 0.12)",
+    accentBorder: "rgba(240, 68, 46, 0.30)",
+    bar: "#f0442e",
+    shadow: "0 12px 32px rgba(0, 0, 0, 0.55)",
+  },
 };
 
 function resolvePalette(theme) {
