@@ -565,6 +565,7 @@ const App: React.FC = () => {
                 onOpenRunners={() => setActivePanel("runner")}
                 onOpenPrompts={() => setActivePanel("prompts")}
                 onOpenMcp={() => setMcpOpen(true)}
+                onRequestFocus={() => setActivePanel("multiide")}
               />
             </div>
           )}

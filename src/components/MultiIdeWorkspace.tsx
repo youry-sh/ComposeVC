@@ -791,6 +791,29 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
     );
   }, []);
 
+  /**
+   * Alt+1…4 — jump straight to that workspace in rail order. The rail is the
+   * single source of truth, so the mapping is positional: Alt+1 is the first
+   * workspace, Alt+4 the fourth (which is also the ceiling).
+   */
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (!event.altKey || event.ctrlKey || event.metaKey) return;
+      const match = /^(?:Digit|Numpad)([1-9])$/.exec(event.code);
+      if (!match) return;
+      const index = Number(match[1]) - 1;
+      if (index < 0 || index >= MULTIIDE_MAX_WORKSPACES) return;
+      const target = workspacesRef.current[index];
+      if (!target) return;
+      event.preventDefault();
+      event.stopPropagation();
+      switchWorkspace(target.id);
+      onRequestFocus?.();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onRequestFocus, switchWorkspace]);
+
   const handleCloseSlot = useCallback(
     (slotId: string) => {
       if (activeWorkspaceSlots.length <= 1) return;
@@ -887,7 +910,7 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
               type="button"
               className="chat-rail-add"
               onClick={handleAddWorkspace}
-              disabled={stableSlots.length >= MULTIIDE_MAX_SLOTS}
+              disabled={workspaces.length >= MULTIIDE_MAX_WORKSPACES || stableSlots.length >= MULTIIDE_MAX_SLOTS}
               title={labels.newWorkspace || "New workspace"}
               aria-label={labels.newWorkspace || "New workspace"}
             >
@@ -960,7 +983,7 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
                     className="chat-workspace-btn"
                     onClick={() => switchWorkspace(ws.id)}
                     onDoubleClick={() => beginRename(ws, i)}
-                    title={`${workspaceLabel(ws, i)} · двойной клик — переименовать`}
+                    title={`${workspaceLabel(ws, i)}${i < MULTIIDE_MAX_WORKSPACES ? ` · Alt+${i + 1}` : ""} · двойной клик — переименовать`}
                   >
                     <span className="chat-rail-dot" aria-hidden />
                     <span className="chat-workspace-name">{workspaceLabel(ws, i)}</span>
