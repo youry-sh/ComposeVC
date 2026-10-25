@@ -242,9 +242,15 @@ function normalizeWorkspace(raw: unknown, index: number): WorkspaceState {
   const item = (raw ?? {}) as Partial<WorkspaceState>;
   return {
     id: typeof item.id === "string" && item.id ? item.id : `ws-${index + 1}`,
+    name:
+      typeof item.name === "string"
+        ? item.name.replace(/\s+/g, " ").trim().slice(0, WORKSPACE_NAME_MAX)
+        : "",
     activeId: typeof item.activeId === "string" ? item.activeId : null,
     openIds: Array.isArray(item.openIds)
-      ? item.openIds.filter((x): x is string => typeof x === "string")
+      ? item.openIds
+          .filter((x): x is string => typeof x === "string")
+          .slice(0, MAX_ROWS)
       : [],
   };
 }
@@ -274,6 +280,7 @@ function seedDefaultWorkspace(slots: MultiIdeSlotState[]): {
     workspaces: [
       {
         id: DEFAULT_WORKSPACE_ID,
+        name: "",
         activeId,
         openIds: openIds.length ? openIds.slice(0, MAX_ROWS) : [firstId],
       },
@@ -282,39 +289,124 @@ function seedDefaultWorkspace(slots: MultiIdeSlotState[]): {
   };
 }
 
-/** Workspace store + active id, persisted alongside the slots array. */
+function uniqueWorkspaces(raw: unknown): WorkspaceState[] {
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set<string>();
+  const out: WorkspaceState[] = [];
+  raw.forEach((entry, index) => {
+    const workspace = normalizeWorkspace(entry, index);
+    if (!workspace.id || seen.has(workspace.id)) return;
+    seen.add(workspace.id);
+    out.push(workspace);
+  });
+  return out;
+}
+
+/** Every chat panel must belong to a rendered workspace, otherwise its chats are
+ *  unreachable after a partial/corrupt store. */
+function ensureWorkspaceCoverage(
+  workspaces: WorkspaceState[],
+  slots: MultiIdeSlotState[]
+): WorkspaceState[] {
+  const known = new Set(workspaces.map((workspace) => workspace.id));
+  const missing = Array.from(
+    new Set(slots.map((slot) => slot.workspaceId).filter((id) => Boolean(id) && !known.has(id)))
+  );
+  if (!missing.length) return workspaces;
+  return [
+    ...workspaces,
+    ...missing.map((id) => {
+      const own = slots.filter((slot) => slot.workspaceId === id);
+      return {
+        id,
+        name: "",
+        activeId: own[0]?.id ?? null,
+        openIds: own.slice(0, MAX_ROWS).map((slot) => slot.id),
+      };
+    }),
+  ];
+}
+
+function pickActiveWorkspaceId(
+  requested: string | null | undefined,
+  workspaces: WorkspaceState[]
+): string {
+  return requested && workspaces.some((workspace) => workspace.id === requested)
+    ? requested
+    : workspaces[0].id;
+}
+
+/** Workspace store + active id — disk first, legacy localStorage only to migrate. */
 export function loadWorkspaceState(slots: MultiIdeSlotState[]): {
   workspaces: WorkspaceState[];
   activeWorkspaceId: string;
 } {
+  const disk = readDiskState();
+  const diskWorkspaces = uniqueWorkspaces(disk?.workspaces);
+  if (diskWorkspaces.length) {
+    const workspaces = ensureWorkspaceCoverage(diskWorkspaces, slots);
+    return {
+      workspaces,
+      activeWorkspaceId: pickActiveWorkspaceId(disk?.activeWorkspaceId, workspaces),
+    };
+  }
   try {
     const raw = JSON.parse(window.localStorage.getItem(WORKSPACES_KEY) || "null") as unknown;
     const rawActive = window.localStorage.getItem(WORKSPACE_ACTIVE_KEY);
-    if (Array.isArray(raw) && raw.length) {
-      const workspaces = raw.map(normalizeWorkspace).filter((w) => Boolean(w.id));
-      if (!workspaces.length) return seedDefaultWorkspace(slots);
-      const active =
-        rawActive && workspaces.some((w) => w.id === rawActive) ? rawActive : workspaces[0].id;
-      return { workspaces, activeWorkspaceId: active };
+    const legacyWorkspaces = uniqueWorkspaces(raw);
+    if (legacyWorkspaces.length) {
+      const workspaces = ensureWorkspaceCoverage(legacyWorkspaces, slots);
+      return {
+        workspaces,
+        activeWorkspaceId: pickActiveWorkspaceId(rawActive, workspaces),
+      };
     }
   } catch {
-    /* fall through to migration */
+    /* fall through to a fresh default workspace */
   }
   return seedDefaultWorkspace(slots);
 }
 
 export function saveWorkspaceState(workspaces: WorkspaceState[], activeWorkspaceId: string) {
-  try {
-    window.localStorage.setItem(
-      WORKSPACES_KEY,
-      JSON.stringify(
-        workspaces.map((w) => ({ id: w.id, activeId: w.activeId, openIds: w.openIds }))
-      )
-    );
-    window.localStorage.setItem(WORKSPACE_ACTIVE_KEY, activeWorkspaceId);
-  } catch {
-    /* ignore */
-  }
+  const payload = workspaces.map((workspace) => ({
+    id: workspace.id,
+    name: workspace.name,
+    activeId: workspace.activeId,
+    openIds: workspace.openIds,
+  }));
+  writeLayoutPatch({ workspaces: payload, activeWorkspaceId }, () => {
+    try {
+      window.localStorage.setItem(
+        WORKSPACES_KEY,
+        JSON.stringify(
+          payload.map((workspace) => ({
+            id: workspace.id,
+            activeId: workspace.activeId,
+            openIds: workspace.openIds,
+          }))
+        )
+      );
+      window.localStorage.setItem(WORKSPACE_ACTIVE_KEY, activeWorkspaceId);
+    } catch {
+      /* ignore */
+    }
+  });
+}
+
+/** Synchronous flush for pagehide — guarantees a fresh rename is on disk. */
+export function flushWorkspaceState(
+  workspaces: WorkspaceState[],
+  activeWorkspaceId: string
+): boolean {
+  return flushLayoutPatch({
+    workspaces: workspaces.map((workspace) => ({
+      id: workspace.id,
+      name: workspace.name,
+      activeId: workspace.activeId,
+      openIds: workspace.openIds,
+    })),
+    activeWorkspaceId,
+  });
 }
 
 /** Live per-panel status pushed up by MultiChatSlot. */
