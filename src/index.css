@@ -10913,22 +10913,32 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
 }
 
 /* ══ Composer dock ═════════════════════════════════════════════════════════
-   One card: the textarea on top, and a single control row under it —
-   model / agent mode / tools on the left, attach / context / send on the
-   right. The row wraps as a second flex line, `order` puts the chips first
-   even though they come last in the DOM. */
+   The composer is the bottom edge of the chat column, not a floating card:
+   one hairline on top + a soft surface wash, edge to edge. Inner padding keeps
+   the text and controls off the panel borders, and the left/right insets line
+   up with the transcript above. */
+.chat-composer-context {
+  min-width: 0;
+  padding: 8px 16px 4px;
+}
 .chat-composer-shell {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--input-bg);
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface) 30%, transparent) 0%,
+    color-mix(in srgb, var(--surface) 62%, transparent) 100%
+  );
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
+  transition: border-color .15s ease;
 }
 .chat-composer-shell:focus-within {
-  border-color: var(--border-strong);
+  border-top-color: color-mix(in srgb, var(--accent) 38%, var(--border));
   box-shadow: none;
 }
 .chat-composer-shell > textarea,

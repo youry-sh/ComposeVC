@@ -5214,7 +5214,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
               minHeight: "40px",
               maxHeight: `${INPUT_MAX_HEIGHT}px`,
             }}
-            className="w-full bg-transparent px-3.5 pt-2.5 pb-1.5 text-[13px] leading-5 text-ink-950 placeholder-ink-600 resize-none outline-none scrollbar-chat overflow-y-auto"
+            className="w-full bg-transparent px-4 pt-3 pb-2 text-[13px] leading-5 text-ink-950 placeholder-ink-600 resize-none outline-none scrollbar-chat overflow-y-auto"
           />
           <input
             ref={fileInputRef}
