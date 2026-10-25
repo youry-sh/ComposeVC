@@ -8632,7 +8632,16 @@
 [data-theme="graphite"] .md-ai .md-h4::before {
   background: var(--ink-600);
 }
-[data-theme="graphite"] .md-ai .md-bullet { background: var(--ink-600); }
+[data-theme="graphite"] .md-ai .md-bullet { background: var(--ink-600); box-shadow: none; }
+[data-theme="graphite"] .md-ai .md-num { color: var(--ink-600); }
+[data-theme="graphite"] .md-ai .md-link {
+  color: var(--ink-800);
+  text-decoration-color: color-mix(in srgb, var(--ink-700) 55%, transparent);
+}
+[data-theme="graphite"] .md-ai .md-link:hover {
+  color: var(--ink-950);
+  text-decoration-color: color-mix(in srgb, var(--ink-800) 60%, transparent);
+}
 [data-theme="graphite"] .md-ai .md-quote {
   border-left-color: var(--ink-500);
   background: color-mix(in srgb, var(--ink-200) 55%, transparent);
