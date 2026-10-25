@@ -1797,6 +1797,43 @@ ipcMain.handle("webengine:copyText", (_event, text) => {
   }
 });
 
+// ── MultiIDE layout: workspaces (with names) + their chat panels ────────────
+// The renderer keeps its synchronous initializers by reading the JSON file once
+// through a sync bridge; every change then writes a patch (slots OR workspaces)
+// so the two independent save effects can never overwrite each other.
+ipcMain.handle("multiide:loadState", () => {
+  try {
+    return multiIdeStore.readState(app.getPath("userData"));
+  } catch {
+    return multiIdeStore.emptyState();
+  }
+});
+
+ipcMain.on("multiide:loadStateSync", (event) => {
+  try {
+    event.returnValue = multiIdeStore.readState(app.getPath("userData"));
+  } catch {
+    event.returnValue = multiIdeStore.emptyState();
+  }
+});
+
+ipcMain.handle("multiide:saveState", (_event, patch) => {
+  try {
+    return { ok: true, state: multiIdeStore.savePatch(app.getPath("userData"), patch) };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+/** Used on pagehide so a rename is on disk before the window disappears. */
+ipcMain.on("multiide:saveStateSync", (event, patch) => {
+  try {
+    event.returnValue = { ok: true, state: multiIdeStore.savePatch(app.getPath("userData"), patch) };
+  } catch (error) {
+    event.returnValue = { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
 // Probe common dev-server ports on localhost and return the first one that is
 // actually listening. Bounded parallel connect attempts — never blocks the UI.
 const WEBENGINE_DEV_PORTS = [
