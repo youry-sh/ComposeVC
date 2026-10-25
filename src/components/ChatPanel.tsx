@@ -4764,7 +4764,16 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                 ? messages[msgIndex - 1]!.toolSteps
                 : undefined;
           const isUser = msg.role === "user";
-          const hasBody = Boolean(msg.content?.trim()) || (isUser && Boolean(msg.images?.length));
+          // Files the user attached live inside the turn as <attached-file> blocks.
+          // The bubble shows chips + the typed text; the raw blocks stay in the
+          // transcript so retry / later turns still give the model the content.
+          const parsedAttachments = isUser ? splitAttachedFiles(msg.content || "") : null;
+          const attachedFiles = parsedAttachments?.files || [];
+          const displayContent = parsedAttachments ? parsedAttachments.displayText : msg.content;
+          const hasBody =
+            Boolean(displayContent?.trim()) ||
+            attachedFiles.length > 0 ||
+            (isUser && Boolean(msg.images?.length));
 
           return (
             <div key={msg.id} className="animate-fade-in">
@@ -4800,11 +4809,16 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                     />
                   </div>
                 )}
+                {attachedFiles.length > 0 && (
+                  <div className="mb-2">
+                    <ChatFileChips files={attachedFiles} variant="message" />
+                  </div>
+                )}
                 {hasBody ? (
                   <>
-                    {msg.content?.trim() ? (
+                    {displayContent?.trim() ? (
                       <>
-                        <MarkdownContent content={msg.content} />
+                        <MarkdownContent content={displayContent} />
                         {summarySteps && summarySteps.length > 0 && (
                           <ChangedFilesSummary steps={summarySteps} rootPath={rootPath} />
                         )}
@@ -4812,11 +4826,12 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                     ) : null}
                     <MessageActions
                       content={msg.content}
+                      copyContent={displayContent || ""}
                       role={msg.role}
                       images={msg.images}
                       retryLabel={labels.retry}
                       retryDisabled={thinking}
-                      showCopy={Boolean(msg.content?.trim())}
+                      showCopy={Boolean(displayContent?.trim())}
                       onRetry={(text, imgs) => {
                         stickToBottomRef.current = true;
                         onSend(text, imgs, { skipAutoInsert: true });
