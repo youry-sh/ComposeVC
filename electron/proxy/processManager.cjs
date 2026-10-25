@@ -360,7 +360,7 @@ function onChildExit(code, signal) {
     }
     return;
   }
-  if (state === "stopping") {
+  if (state === "stopping" || stopRequested) {
     state = "idle";
     pushLog({ level: "info", msg: `Proxy process stopped (code ${code})` });
     return;
