@@ -77,7 +77,7 @@ function readConfig(file) {
     merged.private = merged.private === true;
     merged.channel = merged.channel === "beta" ? "beta" : "latest";
     merged.autoCheck = merged.autoCheck !== false;
-    merged.autoDownload = merged.autoDownload !== false;
+    merged.autoDownload = merged.autoDownload === true;
     return merged;
   } catch {
     return defaultConfig();
