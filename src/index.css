@@ -286,129 +286,128 @@
     --radius-modal: 12px;
   }
 
-  /* ── Тёмно-серый (Graphite #171717) — нейтральный тёмный ────────────────
-     Charcoal chrome on a #171717 base: every layer steps ~4 lightness points
-     so panels read as elevation instead of one flat grey slab. The accent slot
-     stays completely neutral — primary actions, focus, selection, toggles and
-     live state use the same light grey as the text, so nothing glares and no
-     single hue dominates a long session. */
+  /* ── Чёрный (Graphite) — чёрная база + красно-оранжевый #f0442e ─────────
+     Near-black chrome on a #080808 base: layers still step a few lightness
+     points so panels read as elevation, while exactly one saturated colour —
+     the red-orange accent — marks primary actions, focus, selection, toggles
+     and live state. */
   [data-theme="graphite"] {
     color-scheme: dark;
 
-    --ink-0: #171717;
-    --ink-50: #1b1b1b;
-    --ink-100: #1f1f1f;
-    --ink-150: #242424;
-    --ink-200: #2a2a2a;
-    --ink-250: #313131;
-    --ink-300: #393939;
-    --ink-400: #4a4a4a;
-    --ink-500: #707070;
-    --ink-600: #8b8b8b;
-    --ink-700: #a8a8a8;
-    --ink-800: #c6c6c6;
+    --ink-0: #080808;
+    --ink-50: #0c0c0c;
+    --ink-100: #101010;
+    --ink-150: #151515;
+    --ink-200: #1b1b1b;
+    --ink-250: #222222;
+    --ink-300: #2a2a2a;
+    --ink-400: #3a3a3a;
+    --ink-500: #5d5d5d;
+    --ink-600: #7f7f7f;
+    --ink-700: #a0a0a0;
+    --ink-800: #c2c2c2;
     --ink-900: #dedede;
     --ink-950: #f0f0f0;
 
-    --bg: #171717;
-    --surface: #1a1a1a;
-    --surface-2: #1f1f1f;
-    --surface-3: #242424;
-    --border: #282828;
-    --border-strong: #383838;
-    --text: #e3e3e3;
-    --text-muted: #909090;
-    --text-dim: #adadad;
-    --text-soft: #9a9a9a;
+    --bg: #080808;
+    --surface: #0d0d0d;
+    --surface-2: #121212;
+    --surface-3: #171717;
+    --border: #1f1f1f;
+    --border-strong: #2e2e2e;
+    --text: #e7e4e1;
+    --text-muted: #8d8a87;
+    --text-dim: #aaa6a2;
+    --text-soft: #94908d;
 
-    --accent: #e6e6e6;
-    --accent-fg: #101010;
-    --accent-hover: #f5f5f5;
-    --accent-soft: #c9c9c9;
-    --accent-muted: rgba(255, 255, 255, 0.07);
-    --accent-2: #b3b3b3;
-    --focus-ring: rgba(255, 255, 255, 0.16);
-    --focus-border: #4a4a4a;
-    --selection: rgba(255, 255, 255, 0.14);
-    --glow: rgba(255, 255, 255, 0.05);
+    --accent: #f0442e;
+    --accent-fg: #180705;
+    --accent-hover: #ff5c46;
+    --accent-soft: #ff8b78;
+    --accent-muted: rgba(240, 68, 46, 0.12);
+    --accent-2: #ffb3a3;
+    --focus-ring: rgba(240, 68, 46, 0.30);
+    --focus-border: #a03a2b;
+    --selection: rgba(240, 68, 46, 0.24);
+    --glow: rgba(240, 68, 46, 0.05);
 
-    --btn-primary-bg: #e8e8e8;
-    --btn-primary-fg: #101010;
-    --btn-primary-hover: #ffffff;
-    --btn-primary-border: #c9c9c9;
-    --btn-secondary-bg: #202020;
-    --btn-secondary-fg: #d4d4d4;
-    --btn-secondary-border: #2e2e2e;
-    --btn-secondary-hover: #262626;
-    --btn-secondary-fg-hover: #f3f3f3;
-    --btn-secondary-border-hover: #404040;
+    --btn-primary-bg: #f0442e;
+    --btn-primary-fg: #180705;
+    --btn-primary-hover: #ff5c46;
+    --btn-primary-border: #c9371f;
+    --btn-secondary-bg: #161616;
+    --btn-secondary-fg: #d2cfcc;
+    --btn-secondary-border: #242424;
+    --btn-secondary-hover: #1c1c1c;
+    --btn-secondary-fg-hover: #f5f2f0;
+    --btn-secondary-border-hover: #363636;
 
-    --btn-ok-bg: #18221c;
-    --btn-ok-fg: #a6c4b0;
-    --btn-ok-hover: #1e2a23;
-    --btn-ok-border: #2a3a31;
-    --btn-warn-bg: #241e12;
-    --btn-warn-fg: #d6c096;
-    --btn-warn-hover: #2c2416;
-    --btn-warn-border: #3f3421;
-    --btn-danger-bg: #241413;
-    --btn-danger-fg: #e5b4b0;
-    --btn-danger-hover: #2c1917;
-    --btn-danger-border: #422523;
-    --btn-info-bg: #161c22;
-    --btn-info-fg: #adbdcb;
-    --btn-info-hover: #1b232a;
-    --btn-info-border: #2a3944;
-    --btn-soft-bg: #202020;
-    --btn-soft-fg: #d4d4d4;
-    --btn-soft-border: #2e2e2e;
-    --btn-soft-hover: #262626;
-    --btn-ghost-hover: rgba(255, 255, 255, 0.055);
-    --btn-ghost-hover-fg: #f3f3f3;
+    --btn-ok-bg: #101c16;
+    --btn-ok-fg: #9dc7b0;
+    --btn-ok-hover: #15241c;
+    --btn-ok-border: #1f352a;
+    --btn-warn-bg: #1f1a11;
+    --btn-warn-fg: #d8c092;
+    --btn-warn-hover: #262015;
+    --btn-warn-border: #382f1e;
+    --btn-danger-bg: #2a1113;
+    --btn-danger-fg: #f0b6b6;
+    --btn-danger-hover: #331518;
+    --btn-danger-border: #4a1e21;
+    --btn-info-bg: #111a20;
+    --btn-info-fg: #a3bccb;
+    --btn-info-hover: #16222a;
+    --btn-info-border: #1f3038;
+    --btn-soft-bg: #161616;
+    --btn-soft-fg: #d2cfcc;
+    --btn-soft-border: #242424;
+    --btn-soft-hover: #1c1c1c;
+    --btn-ghost-hover: rgba(255, 255, 255, 0.05);
+    --btn-ghost-hover-fg: #f5f2f0;
 
-    --input-bg: #131313;
-    --input-fg: #e3e3e3;
-    --input-border: #2d2d2d;
-    --input-border-hover: #3c3c3c;
-    --panel-bg: #1a1a1a;
-    --panel-border: #282828;
-    --panel-header-bg: #1f1f1f;
-    --hover-bg: rgba(255, 255, 255, 0.05);
-    --active-bg: rgba(255, 255, 255, 0.085);
-    --active-fg: #f5f5f5;
-    --active-border: #4a4a4a;
+    --input-bg: #070707;
+    --input-fg: #e7e4e1;
+    --input-border: #222222;
+    --input-border-hover: #313131;
+    --panel-bg: #0d0d0d;
+    --panel-border: #1f1f1f;
+    --panel-header-bg: #121212;
+    --hover-bg: rgba(255, 255, 255, 0.045);
+    --active-bg: rgba(240, 68, 46, 0.14);
+    --active-fg: #f8eeeb;
+    --active-border: #5b2a21;
 
-    --toggle-on: #e6e6e6;
-    --toggle-on-border: #e6e6e6;
-    --toggle-thumb: #101010;
-    --toggle-off-bg: #262626;
-    --toggle-off-border: #383838;
+    --toggle-on: #f0442e;
+    --toggle-on-border: #f0442e;
+    --toggle-thumb: #170706;
+    --toggle-off-bg: #1b1b1b;
+    --toggle-off-border: #2e2e2e;
 
-    --danger: #d97070;
-    --danger-bg: #201312;
-    --danger-border: #3d2020;
-    --warn: #c9a35e;
-    --warn-bg: #1c170e;
+    --danger: #ef7777;
+    --danger-bg: #261012;
+    --danger-border: #442023;
+    --warn: #d5b874;
+    --warn-bg: #1e190f;
     --warn-border: #3a3120;
-    --ok: #86b08a;
-    --ok-bg: #131c16;
-    --ok-border: #24382b;
-    --info: #93a9bd;
-    --info-bg: #141a20;
-    --info-border: #283742;
+    --ok: #86c29c;
+    --ok-bg: #0d1712;
+    --ok-border: #1f3629;
+    --info: #90b1c7;
+    --info-bg: #0e1419;
+    --info-border: #1f2f3a;
 
-    --scrim: rgba(8, 8, 8, 0.82);
-    --shadow-modal: 0 24px 80px rgba(0, 0, 0, 0.66);
-    --shadow-menu: 0 12px 40px rgba(0, 0, 0, 0.56);
-    --scrollbar: #343434;
-    --scrollbar-hover: #4c4c4c;
-    --thinking-dot: #d6d6d6;
-    --code-link: #c9c9c9;
-    --code-link-hover: #ffffff;
-    --chat-user-bg: #1f1f1f;
+    --scrim: rgba(0, 0, 0, 0.84);
+    --shadow-modal: 0 24px 80px rgba(0, 0, 0, 0.78);
+    --shadow-menu: 0 12px 40px rgba(0, 0, 0, 0.68);
+    --scrollbar: #2e2e2e;
+    --scrollbar-hover: #454545;
+    --thinking-dot: #ff6a52;
+    --code-link: #ff8d78;
+    --code-link-hover: #ffc3b6;
+    --chat-user-bg: #141414;
     --chat-assistant-bg: transparent;
-    --sidebar-tint: #131313;
-    --terminal-bg: #141414;
+    --sidebar-tint: #060606;
+    --terminal-bg: #080808;
 
     --radius-control: 6px;
     --radius-card: 10px;
