@@ -38,18 +38,14 @@ interface CustomToolsWorkspaceProps {
     pluginsIdeEmpty: string;
     pluginsIdeHint: string;
     customTools: string;
-    customToolTitle: string;
-    customToolTitlePlaceholder: string;
     customToolDescription: string;
     customToolDescriptionPlaceholder: string;
-    customToolAdd: string;
     customToolSaving: string;
     customToolSave: string;
     customToolDelete: string;
     customToolEnabled: string;
     customToolDisabled: string;
     customToolsSearch: string;
-    customToolNameRequired: string;
     customToolExport: string;
     customToolExportAll: string;
     customToolExportOne: string;
@@ -179,7 +175,7 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
   const handleDelete = async (toolId: string) => {
     try {
       await onRemove(toolId);
-      if (selectedId === toolId) openCreate();
+      if (selectedId === toolId) closeSelection();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete custom tool");
     }
@@ -610,7 +606,7 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
                     >
                       <button
                         type="button"
-                        onClick={() => openEdit(tool)}
+                        onClick={() => openTool(tool)}
                         className="flex min-w-0 flex-1 items-center gap-2 text-left outline-none"
                         title={tool.description || tool.name}
                       >
@@ -665,43 +661,32 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
             </div>
           </div>
 
-          <div className="ide-library-editor-body min-h-0 flex-1 overflow-y-auto px-5 py-4 scrollbar-thin">
-            <div className="grid max-w-[560px] gap-4">
-              <label className="grid min-w-0 gap-1.5">
-                <span className={labelClass}>{labels.customToolTitle}</span>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder={labels.customToolTitlePlaceholder}
-                  className={fieldClass}
-                  style={fieldStyle}
-                />
-              </label>
-              <label className="grid min-w-0 gap-1.5">
-                <span className={labelClass}>{labels.customToolDescription}</span>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder={labels.customToolDescriptionPlaceholder}
-                  rows={3}
-                  className="ide-field w-full min-w-0 resize-y px-3 py-2 text-[12px] leading-5 text-ink-950 placeholder-ink-500 outline-none"
-                  style={fieldStyle}
-                />
-              </label>
-            </div>
-            {error && <div className="mt-3 text-[11px] text-status-err">{error}</div>}
-          </div>
-          <div className="ide-library-footer flex shrink-0 items-center justify-between gap-2 border-t border-ink-200 px-4 py-2.5">
-            <div className="flex min-w-0 items-center gap-1">
-              {panelMode === "edit" && selectedId ? (
-                <>
+          {selectedTool ? (
+            <>
+              <div className="ide-library-editor-body min-h-0 flex-1 overflow-y-auto px-5 py-4 scrollbar-thin">
+                <div className="grid max-w-[560px] gap-4">
+                  <label className="grid min-w-0 gap-1.5">
+                    <span className={labelClass}>{labels.customToolDescription}</span>
+                    <textarea
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder={labels.customToolDescriptionPlaceholder}
+                      rows={3}
+                      className="ide-field w-full min-w-0 resize-y px-3 py-2 text-[12px] leading-5 text-ink-950 placeholder-ink-500 outline-none"
+                      style={fieldStyle}
+                    />
+                  </label>
+                </div>
+                {error && <div className="mt-3 text-[11px] text-status-err">{error}</div>}
+              </div>
+              <div className="ide-library-footer flex shrink-0 items-center justify-between gap-2 border-t border-ink-200 px-4 py-2.5">
+                <div className="flex min-w-0 items-center gap-1">
                   <button
                     type="button"
                     onClick={() =>
                       void handleExport({
-                        ids: [selectedId],
-                        names: derivedName ? [derivedName] : undefined,
+                        ids: [selectedTool.id],
+                        names: [selectedTool.name],
                       })
                     }
                     disabled={busyShare}
@@ -715,8 +700,8 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
                     type="button"
                     onClick={() =>
                       void handleCopyPack({
-                        ids: [selectedId],
-                        names: derivedName ? [derivedName] : undefined,
+                        ids: [selectedTool.id],
+                        names: [selectedTool.name],
                       })
                     }
                     disabled={busyShare}
@@ -726,22 +711,22 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
                     <Copy className="h-3.5 w-3.5" />
                     <span className="hidden sm:inline">{labels.customToolCopyOne}</span>
                   </button>
-                </>
-              ) : null}
-            </div>
-            <div className="flex shrink-0 items-center gap-1">
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={saving || !canSave}
-                className={primaryBtn}
-                title={panelMode === "edit" ? labels.customToolSave : labels.customToolAdd}
-              >
-                <Save className="h-3.5 w-3.5" />
-                {saving ? labels.customToolSaving : labels.customToolSave}
-              </button>
-            </div>
-          </div>
+                </div>
+                <div className="flex shrink-0 items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={saving}
+                    className={primaryBtn}
+                    title={labels.customToolSave}
+                  >
+                    <Save className="h-3.5 w-3.5" />
+                    {saving ? labels.customToolSaving : labels.customToolSave}
+                  </button>
+                </div>
+              </div>
+            </>
+          ) : null}
         </section>
       </div>
       <McpModal open={mcpOpen} onClose={() => setMcpOpen(false)} />
