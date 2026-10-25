@@ -557,23 +557,36 @@ $script:Tray.ContextMenuStrip = $menu
 $timer = New-Object System.Windows.Forms.Timer
 $timer.Interval = 700
 $timer.add_Tick({
-  if ($script:Proc -and $script:Proc.HasExited) {
-    $code = $script:Proc.ExitCode
-    $script:Proc = $null
-    $script:Busy = $false
-    $script:Tray.Text = "ComposeVC Publish ($Keys)"
-    if ($code -eq 0) {
-      $treeAfter = Get-TreeHash
-      if ($treeAfter) { Save-PublishState -Tree $treeAfter }
-      Write-Log "publish finished OK"
-      Show-Balloon "ComposeVC" "Обновление опубликовано — пользователи получат его автоматически." "Info"
-    } else {
-      Write-Log "publish failed with exit $code"
-      Show-Balloon "ComposeVC" "Публикация не удалась (код $code). Подробности в логе." "Error"
-    }
+  if (-not $script:Proc) { return }
+  if (-not $script:Proc.HasExited) {
+    Update-PublishProgress
+    return
+  }
+
+  $code = $script:Proc.ExitCode
+  $script:Proc = $null
+  $script:Busy = $false
+  $script:Tray.Text = "ComposeVC Publish ($Keys)"
+  if ($code -eq 0) {
+    $treeAfter = Get-TreeHash
+    if ($treeAfter) { Save-PublishState -Tree $treeAfter }
+    Write-Log "publish finished OK"
+    Set-PublishProgress 100 "Готово"
+    Complete-PublishOverlay $true "Опубликовано — пользователи получат обновление"
+    Show-Balloon "ComposeVC" "Обновление опубликовано — пользователи получат его автоматически." "Info"
+  } else {
+    Write-Log "publish failed with exit $code"
+    Complete-PublishOverlay $false "Ошибка публикации — смотрите лог"
+    Show-Balloon "ComposeVC" "Публикация не удалась (код $code). Подробности в логе." "Error"
   }
 })
 $timer.Start()
+
+# Smooth fade in/out for the progress overlay.
+$fadeTimer = New-Object System.Windows.Forms.Timer
+$fadeTimer.Interval = 30
+$fadeTimer.add_Tick({ Update-OverlayFrame })
+$fadeTimer.Start()
 
 Write-Log "hotkey agent ready: $Keys → $ProjectRoot (log: $($script:LogFile))"
 
@@ -581,6 +594,10 @@ try {
   [System.Windows.Forms.Application]::Run()
 } finally {
   $timer.Stop()
+  $fadeTimer.Stop()
+  if ($script:OverlayForm) {
+    try { $script:OverlayForm.Close(); $script:OverlayForm.Dispose() } catch { }
+  }
   $form.Unregister($hotkeyId)
   $form.Dispose()
   if ($script:Tray) {
