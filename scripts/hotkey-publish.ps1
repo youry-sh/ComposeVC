@@ -504,6 +504,11 @@ function Start-Publish {
   Write-Log "publish started ($Keys)"
   try { Add-Content -Path $script:LogFile -Value "===== $(Get-Date -Format o) =====" -Encoding UTF8 } catch { }
 
+  # Bottom-right progress overlay (bottom-right of the screen, translucent).
+  Show-PublishOverlay "Запуск сборки…"
+  $script:OverlayLogOffset = 0
+  try { $script:OverlayLogOffset = (Get-Item $script:LogFile).Length } catch { }
+
   $cmdLine = "/c node scripts\publish-update.mjs --bump patch >> `"$($script:LogFile)`" 2>&1"
   $psi = New-Object System.Diagnostics.ProcessStartInfo
   $psi.FileName = "cmd.exe"
