@@ -80,6 +80,17 @@ const TitleBar: React.FC<TitleBarProps> = ({
   const [blindsOpen, setBlindsOpen] = useState(false);
   const [blindsTab, setBlindsTab] = useState<"prompts">("prompts");
 
+  // Esc rolls the blinds back up: the drawer is a full-width overlay, so the
+  // keyboard needs a way out that does not require hunting for the pull rail.
+  useEffect(() => {
+    if (!blindsOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setBlindsOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [blindsOpen]);
+
   // live clock + date (1s tick)
   useEffect(() => {
     const tick = () => {
