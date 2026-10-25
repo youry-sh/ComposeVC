@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from "react";
 import {
   Copy,
   Download,
-  Plus,
   Plug,
   Puzzle,
   Search,
