@@ -496,14 +496,11 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
     <div className="ide-tools-shell flex h-full w-full flex-col overflow-hidden" style={{ background: "var(--bg)" }}>
       <div className="ide-library-header flex h-10 shrink-0 items-center justify-between gap-3 border-b border-ink-200 px-4">
         <div className="flex min-w-0 items-center gap-2.5">
-          <Wrench className="h-3.5 w-3.5 shrink-0 text-ink-600" />
+          <Puzzle className="h-3.5 w-3.5 shrink-0 text-ink-600" />
           <h2 className="min-w-0 truncate text-[13px] font-medium tracking-[-0.01em] text-ink-950">
-            {labels.customTools}
+            {labels.pluginTab}
           </h2>
           <span className="tabular-nums text-[10px] text-ink-500">{tools.length}</span>
-          <span className="hidden min-w-0 truncate text-[11px] text-ink-500 xl:inline">
-            {labels.customToolsHint}
-          </span>
         </div>
         <div className="flex shrink-0 items-center gap-1">
           <button type="button" onClick={() => setMcpOpen(true)} className={primaryBtn} title="Model Context Protocol servers">
