@@ -579,6 +579,7 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
 
   const handleRenameKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLInputElement>, workspaceId: string) => {
+      if (event.nativeEvent.isComposing) return;
       if (event.key === "Enter") {
         event.preventDefault();
         event.stopPropagation();
