@@ -11027,7 +11027,7 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   color: var(--ink-950);
 }
 .chat-attach-note {
-  padding: 0 2px 2px;
+  padding: 0;
   font-family: var(--terminal-font);
   font-size: 10px;
   line-height: 1.4;
