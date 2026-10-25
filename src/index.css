@@ -1436,18 +1436,30 @@
     margin-top: -6px;
   }
 
-  /* User prompt — a quiet accent frame so the ask reads as a distinct block
-     instead of melting into the assistant/tool stream around it. Every value
-     is theme-driven; no fixed colours. */
+  /* User prompt — a quiet tinted block instead of a bright accent frame.
+     The outline is a solid hairline barely one step above --border, so it
+     separates the turn from the assistant stream without drawing the eye;
+     ownership is carried by the soft inner rail on the left plus the tinted
+     fill. Every value is theme-driven; no fixed colours. */
   .chat-msg-user {
     position: relative;
     min-width: 0;
-    padding: 10px 12px 8px;
-    border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border));
-    border-left: 2px solid color-mix(in srgb, var(--accent) 48%, var(--border));
+    padding: 9px 13px 9px 16px;
+    border: 1px solid color-mix(in srgb, var(--accent) 9%, var(--border));
     border-radius: var(--radius-card);
-    background: color-mix(in srgb, var(--accent) 4%, var(--chat-user-bg));
-    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--ink-950) 5%, transparent);
+    background: color-mix(in srgb, var(--accent) 2.5%, var(--chat-user-bg));
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--ink-950) 4%, transparent);
+  }
+  .chat-msg-user::before {
+    content: "";
+    position: absolute;
+    left: 6px;
+    top: 10px;
+    bottom: 10px;
+    width: 2px;
+    border-radius: 1px;
+    background: color-mix(in srgb, var(--accent) 20%, var(--border));
+    pointer-events: none;
   }
   .chat-msg-user-label {
     color: color-mix(in srgb, var(--accent) 42%, var(--ink-950));
