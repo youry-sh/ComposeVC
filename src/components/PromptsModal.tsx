@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { X } from "lucide-react";
+import ChatMonoScroll from "./ChatMonoScroll";
 import PromptsWorkspace from "./PromptsWorkspace";
 import { IcoPrompts } from "./topIcons";
 
@@ -56,9 +57,11 @@ const PromptsModal: React.FC<PromptsModalProps> = ({ open, onClose }) => {
             <X className="h-4 w-4" />
           </button>
         </header>
-        <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
-          <PromptsWorkspace />
-        </div>
+        <ChatMonoScroll className="prompts-modal-scroll min-h-0 min-w-0 flex-1">
+          <div className="flex h-full min-h-[520px] min-w-0">
+            <PromptsWorkspace />
+          </div>
+        </ChatMonoScroll>
       </div>
     </div>
   );
