@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import SphereBloom from "./SphereBloom";
+import AsideRadar from "./AsideRadar";
 import GitPanel from "./GitPanel";
 import { RunnerJob } from "../types";
 import {
@@ -202,9 +202,9 @@ const ChatAside: React.FC<Props> = ({ chatCount, runningPanels, activeRootPath, 
         )}
       </section>
 
-      {/* Idle decoration — a gold spell sphere floating inside its magic circle. */}
-      <section className="aside-block aside-block-war">
-        <SphereBloom />
+      {/* Idle decoration — a monospace radar sweep, no fake metrics. */}
+      <section className="aside-block aside-block-signal">
+        <AsideRadar />
       </section>
     </aside>
   );
