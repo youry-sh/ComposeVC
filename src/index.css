@@ -8626,7 +8626,7 @@
 .chat-shell {
   position: relative;
   display: grid;
-  grid-template-columns: 188px minmax(0, 1fr) 188px;
+  grid-template-columns: 200px minmax(0, 1fr) 200px;
   background: var(--bg);
   font-feature-settings: "tnum" 0;
 }
@@ -11238,11 +11238,11 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
 /* Narrow windows: give the chat the room instead of the reserved column. */
 @media (max-width: 1320px) {
   .chat-shell {
-    grid-template-columns: 176px minmax(0, 1fr) 176px;
+    grid-template-columns: 188px minmax(0, 1fr) 188px;
   }
 }
 @media (max-width: 1080px) {
-  .chat-shell { grid-template-columns: 176px minmax(0, 1fr); }
+  .chat-shell { grid-template-columns: 188px minmax(0, 1fr); }
   .chat-aside { display: none; }
 }
 
