@@ -9223,16 +9223,53 @@
 
 .chat-rail-foot {
   flex: 0 0 auto;
-  height: 26px;
   display: flex;
-  align-items: center;
-  padding: 0 14px;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 8px 8px;
   border-top: 1px solid var(--border);
   font-family: var(--terminal-font);
   font-size: 10px;
   letter-spacing: .06em;
   color: var(--ink-500);
 }
+/* Rail footer quick buttons — three per row, extra rows wrap downward. */
+.chat-rail-quick {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+.chat-rail-quick-btn {
+  min-width: 0;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 4px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--ink-700);
+  font: inherit;
+  letter-spacing: .06em;
+  cursor: pointer;
+  transition: color .12s ease, background .12s ease, border-color .12s ease;
+}
+.chat-rail-quick-btn svg { width: 12px; height: 12px; flex: none; display: block; }
+.chat-rail-quick-btn span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chat-rail-quick-btn:hover {
+  color: var(--ink-950);
+  background: var(--active-bg);
+  border-color: var(--border-strong);
+}
+.chat-rail-quick-btn:focus-visible { outline: 1px solid var(--focus-ring); outline-offset: 1px; }
+.chat-rail-foot-count { text-align: right; }
 
 /* ── Ctrl+H switcher: the rail's list as a modal ──
    Needed because the media dock can cover the rail entirely. */

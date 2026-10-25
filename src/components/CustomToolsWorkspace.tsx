@@ -75,7 +75,6 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [mcpOpen, setMcpOpen] = useState(false);
 
   const filteredTools = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -210,12 +209,6 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
             {labels.pluginTab}
           </h2>
           <span className="tabular-nums text-[10px] text-ink-500">{tools.length}</span>
-        </div>
-        <div className="flex shrink-0 items-center gap-1">
-          <button type="button" onClick={() => setMcpOpen(true)} className={primaryBtn} title="Model Context Protocol servers">
-            <Cable className="h-3.5 w-3.5" />
-            MCP
-          </button>
         </div>
       </div>
 
@@ -414,7 +407,6 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
           ) : null}
         </section>
       </div>
-      <McpModal open={mcpOpen} onClose={() => setMcpOpen(false)} />
     </div>
   );
 };
