@@ -304,8 +304,9 @@ function install() {
     return { ok: false, error: "no downloaded update yet" };
   }
   try {
-    // isSilent=false → user sees the installer progress; force run after update.
-    setImmediate(() => autoUpdater.quitAndInstall(false, true));
+    // isSilent=true → unattended NSIS update; forceRunAfter=true → the app
+    // reopens by itself once the installer finishes (close → update → open).
+    setImmediate(() => autoUpdater.quitAndInstall(true, true));
     return { ok: true };
   } catch (error) {
     return { ok: false, error: describeError(error) };
