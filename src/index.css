@@ -9643,115 +9643,176 @@
 .tone-off .aside-dot { background: var(--ink-300); opacity: .5; }
 .tone-off .aside-name-text { opacity: .55; }
 
-/* ── Idle ASCII skirmish at the bottom of the aside ── */
-.aside-block-war {
+/* ── Signal radar at the bottom of the aside ───────────────────────────────
+   Pinned to the bottom of the right column, above nothing: it is the last
+   block, so it keeps its natural height and never fights the runner table. */
+.aside-block-signal {
   flex: 0 0 auto;
   margin-top: auto;
   border-top: 1px solid var(--border);
   border-bottom: 0;
-  /* No side padding: the bases sit flush with the panel edges. */
-  padding: 8px 0 8px;
+  padding: 8px 8px 10px;
   overflow: hidden;
 }
-.aside-block-war .ascii-war-hud { padding: 0 12px; }
 
-/* ── Sphere bloom (idle decoration, right column) ──────────────────────
-   The gold "anime spell" sphere from the Neural view, floating inside its
-   slowly turning magic circle on a pure CSS loop. */
-.sphere-bloom {
+/* ── Signal radar (idle decoration, right column) ─────────────────────────
+   A monospace HUD sweep instead of the old spell sphere: hairline grid, two
+   range rings, a rotating accent wedge with a bright leading edge, and three
+   blips that flash as the beam crosses them. One composited rotation plus a
+   few opacity tweens — no timers, no React state, no layout work per frame.
+   Colours are theme tokens, so mono / winter / crimson re-tint it for free. */
+.aside-radar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.aside-radar-scope {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--ink-950) 12%, var(--border));
+  background:
+    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 68%),
+    color-mix(in srgb, var(--ink-0) 55%, transparent);
+  box-shadow: inset 0 0 18px color-mix(in srgb, var(--accent) 8%, transparent);
+  overflow: hidden;
+}
+.aside-radar-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(to right, color-mix(in srgb, var(--ink-950) 7%, transparent) 0 1px, transparent 1px 12px),
+    repeating-linear-gradient(to bottom, color-mix(in srgb, var(--ink-950) 7%, transparent) 0 1px, transparent 1px 12px);
+  opacity: 0.7;
+}
+.aside-radar-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--ink-950) 10%, transparent);
+}
+.aside-radar-ring--outer { width: 72%; height: 72%; }
+.aside-radar-ring--inner {
+  width: 40%;
+  height: 40%;
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--ink-950) 8%, transparent);
+}
+.aside-radar-axis {
+  position: absolute;
+  background: color-mix(in srgb, var(--ink-950) 8%, transparent);
+}
+.aside-radar-axis--h { left: 6%; right: 6%; top: 50%; height: 1px; }
+.aside-radar-axis--v { top: 6%; bottom: 6%; left: 50%; width: 1px; }
+.aside-radar-sweep {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  transform-origin: 50% 50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg 208deg,
+    color-mix(in srgb, var(--accent) 4%, transparent) 250deg,
+    color-mix(in srgb, var(--accent) 20%, transparent) 344deg,
+    color-mix(in srgb, var(--accent) 42%, transparent) 360deg
+  );
+  animation: aside-radar-sweep 4.8s linear infinite;
+  will-change: transform;
+}
+/* Leading edge of the wedge, drawn from the centre upwards. */
+.aside-radar-sweep::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 50%;
+  width: 1px;
+  height: 48%;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 78%, transparent), transparent 92%);
+  opacity: 0.85;
+}
+.aside-radar-blip {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  margin: -1.5px 0 0 -1.5px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 55%, transparent);
+  opacity: 0;
+  animation: aside-radar-blip 4.8s linear infinite;
+}
+/* Delays are phase-locked to the 4.8s beam so each blip lights when it is hit. */
+.aside-radar-blip--1 { left: 68%; top: 34%; animation-delay: -4.16s; }
+.aside-radar-blip--2 { left: 32%; top: 62%; animation-delay: -1.65s; }
+.aside-radar-blip--3 { left: 57%; top: 74%; animation-delay: -2.63s; }
+.aside-radar-core {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  margin: -2.5px 0 0 -2.5px;
+  border-radius: 50%;
+  background: var(--ink-950);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 45%, transparent);
+  animation: aside-radar-core 2.4s ease-in-out infinite;
+}
+.aside-radar-hud {
   display: flex;
   align-items: center;
-  justify-content: center;
-  height: 122px;
-  padding: 6px 0 2px;
+  gap: 6px;
+  font: 500 9px/1 var(--terminal-font);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
-.sphere-svg {
-  width: 112px;
-  height: 112px;
-  overflow: visible;
+.aside-radar-tag { color: color-mix(in srgb, var(--ink-950) 38%, transparent); }
+.aside-radar-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: color-mix(in srgb, var(--accent) 55%, var(--ink-600));
 }
-.sphere-glow {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: sb-glow-pulse 5s ease-in-out infinite;
+.aside-radar-state i {
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: aside-radar-dot 1.5s ease-in-out infinite;
 }
-.sphere-ring-spin {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: sb-ring-spin 14s linear infinite;
-}
-.sphere-ring-outer {
-  fill: none;
-  stroke: var(--border-strong);
-  stroke-width: 2;
-  opacity: 0.9;
-}
-.sphere-ring-inner {
-  fill: none;
-  stroke: var(--border);
-  stroke-width: 1;
-  opacity: 0.6;
-}
-.sphere-tick {
-  stroke: var(--ink-500);
-  stroke-width: 1;
-  opacity: 0.6;
-}
-.sphere-ring-orb {
-  fill: var(--ink-950);
-}
-.sphere-glyph {
-  fill: var(--ink-950);
-  font: 600 12px "Noto Sans JP", "Yu Gothic", "Meiryo", serif;
-  opacity: 0.95;
-  animation: sb-glyph-pulse 6s ease-in-out infinite;
-}
-.sphere-core {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: sb-float 6s ease-in-out infinite;
-}
-.sphere-orbit {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: sb-orbit 7s linear infinite;
-}
-.sphere-dot {
-  fill: var(--ink-950);
-  animation: sb-dot-pulse 7s ease-in-out infinite;
-}
-.sphere-dot--2 {
-  animation-delay: -3.5s;
-}
+.aside-radar-state i:nth-child(2) { animation-delay: 0.18s; }
+.aside-radar-state i:nth-child(3) { animation-delay: 0.36s; }
 
-@keyframes sb-ring-spin { to { transform: rotate(360deg); } }
-@keyframes sb-orbit { to { transform: rotate(360deg); } }
-@keyframes sb-float {
-  0%, 100% { transform: translateY(0) scale(0.94); }
-  50%      { transform: translateY(-3px) scale(1.07); }
+@keyframes aside-radar-sweep { to { transform: rotate(360deg); } }
+@keyframes aside-radar-blip {
+  0% { opacity: 1; }
+  6% { opacity: 0.85; }
+  30% { opacity: 0.12; }
+  100% { opacity: 0; }
 }
-@keyframes sb-glow-pulse {
-  0%, 100% { transform: scale(0.82); opacity: 0.45; }
-  50%      { transform: scale(1.14); opacity: 1; }
+@keyframes aside-radar-core {
+  0%, 100% { opacity: 0.5; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.15); }
 }
-@keyframes sb-glyph-pulse {
-  0%, 100% { opacity: 0.55; }
-  50%      { opacity: 1; }
-}
-@keyframes sb-dot-pulse {
-  0%, 100% { opacity: 0.3; }
-  50%      { opacity: 1; }
+@keyframes aside-radar-dot {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sphere-glow,
-  .sphere-ring-spin,
-  .sphere-glyph,
-  .sphere-core,
-  .sphere-orbit,
-  .sphere-dot {
+  .aside-radar-sweep,
+  .aside-radar-blip,
+  .aside-radar-core,
+  .aside-radar-state i {
     animation: none;
   }
+  .aside-radar-sweep { transform: rotate(38deg); }
+  .aside-radar-blip { opacity: 0.32; }
+  .aside-radar-core { opacity: 0.8; }
 }
 
 /* ── Media dock: a real browser pinned to the bottom of the right column ──
