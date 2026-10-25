@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { ChevronsRight } from "lucide-react";
 import AsideRadar from "./AsideRadar";
 import GitPanel from "./GitPanel";
 import { RunnerJob } from "../types";
@@ -24,6 +25,8 @@ type Props = {
   /** Folder of the panel currently on screen — drives the Git section. */
   activeRootPath: string | null;
   onOpenRunners?: () => void;
+  /** Fold this column away — the shell leaves a pull tab in its place. */
+  onCollapse?: () => void;
 };
 
 function relativeTime(ts?: number | null): string {
@@ -75,7 +78,13 @@ const StatTile: React.FC<{ label: string; value: string; title?: string }> = ({
   </div>
 );
 
-const ChatAside: React.FC<Props> = ({ chatCount, runningPanels, activeRootPath, onOpenRunners }) => {
+const ChatAside: React.FC<Props> = ({
+  chatCount,
+  runningPanels,
+  activeRootPath,
+  onOpenRunners,
+  onCollapse,
+}) => {
   const [tokens, setTokens] = useState("0");
   const [requests, setRequests] = useState("0");
   const [contextBySlot, setContextBySlot] = useState<Record<string, number>>({});
@@ -145,7 +154,21 @@ const ChatAside: React.FC<Props> = ({ chatCount, runningPanels, activeRootPath, 
       <section className="aside-block">
         <header className="aside-head">
           <span className="aside-title">Overview</span>
-          {runningPanels > 0 && <span className="aside-head-note">{runningPanels} active</span>}
+          <span className="aside-head-right">
+            {runningPanels > 0 && <span className="aside-head-note">{runningPanels} active</span>}
+            {onCollapse && (
+              <button
+                type="button"
+                className="aside-collapse"
+                onClick={onCollapse}
+                title="Скрыть панель (Ctrl+Shift+B)"
+                aria-label="Скрыть правую панель"
+                aria-expanded
+              >
+                <ChevronsRight size={13} strokeWidth={2} aria-hidden />
+              </button>
+            )}
+          </span>
         </header>
         <div className="aside-stats">
           <StatTile label="Tokens" value={tokens} title="Proxy usage — total tokens" />

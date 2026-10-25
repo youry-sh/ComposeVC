@@ -8630,6 +8630,51 @@
   grid-template-columns: 200px minmax(0, 1fr) 200px;
   background: var(--bg);
   font-feature-settings: "tnum" 0;
+  transition: grid-template-columns .18s ease;
+}
+
+/* Folded columns give their width back to the chat stage. The panel itself is
+   only made invisible — it stays mounted, so no state or scroll position dies. */
+.chat-shell.is-rail-collapsed { grid-template-columns: 0 minmax(0, 1fr) 200px; }
+.chat-shell.is-aside-collapsed { grid-template-columns: 200px minmax(0, 1fr) 0; }
+.chat-shell.is-rail-collapsed.is-aside-collapsed { grid-template-columns: 0 minmax(0, 1fr) 0; }
+
+/* Pull tab left behind on the edge of a folded column. */
+.chat-shell-handle {
+  position: absolute;
+  top: 50%;
+  z-index: 40;
+  width: 16px;
+  height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--surface);
+  color: var(--ink-500);
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition: background .12s ease, color .12s ease, border-color .12s ease;
+  animation: chat-shell-handle-in .16s ease both;
+}
+.chat-shell-handle.is-left { left: 2px; }
+.chat-shell-handle.is-right { right: 2px; }
+.chat-shell-handle svg { width: 13px; height: 13px; display: block; }
+.chat-shell-handle:hover {
+  background: var(--hover-bg);
+  border-color: var(--border-strong);
+  color: var(--ink-950);
+}
+.chat-shell-handle:focus-visible { outline: 1px solid var(--focus-ring); outline-offset: 1px; }
+@keyframes chat-shell-handle-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chat-shell { transition: none; }
+  .chat-shell-handle { animation: none; }
 }
 
 /* ── Left rail ── */
@@ -8640,6 +8685,13 @@
   flex-direction: column;
   overflow: hidden;
   background: var(--surface);
+  transition: opacity .14s ease, visibility 0s linear 0s;
+}
+.chat-shell.is-rail-collapsed .chat-rail {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .14s ease, visibility 0s linear .14s;
 }
 .chat-rail-head {
   flex: 0 0 auto;
@@ -8688,6 +8740,8 @@
   align-items: center;
   gap: 4px;
 }
+/* Fold trigger — same square as the two "add" buttons, one step quieter. */
+.chat-rail-collapse { width: 24px; height: 24px; }
 .chat-workspace-list {
   flex: 0 0 auto;
   display: flex;
@@ -9480,6 +9534,14 @@
   overflow: hidden;
   background: var(--surface);
   border-left: 1px solid var(--border);
+  transition: opacity .14s ease, visibility 0s linear 0s;
+}
+.chat-shell.is-aside-collapsed .chat-aside {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  border-left-color: transparent;
+  transition: opacity .14s ease, visibility 0s linear .14s;
 }
 .aside-block {
   flex: 0 0 auto;
@@ -9516,6 +9578,35 @@
   font-variant-numeric: tabular-nums;
   color: var(--ink-500);
 }
+/* Active count + fold trigger share the right edge of a block header. */
+.aside-head-right {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.aside-collapse {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--ink-500);
+  cursor: pointer;
+  transition: background .12s ease, color .12s ease, border-color .12s ease;
+}
+.aside-collapse svg { width: 13px; height: 13px; display: block; }
+.aside-collapse:hover {
+  background: var(--hover-bg);
+  border-color: var(--border);
+  color: var(--ink-950);
+}
+.aside-collapse:focus-visible { outline: 1px solid var(--focus-ring); outline-offset: 1px; }
 
 /* Stat tiles — one 2×2 square, cells split by hairlines, no colour. */
 .aside-stats {
@@ -9674,7 +9765,7 @@
    range rings, a rotating accent wedge with a bright leading edge, and three
    blips that flash as the beam crosses them. One composited rotation plus a
    few opacity tweens — no timers, no React state, no layout work per frame.
-   Colours are theme tokens, so mono / winter / crimson re-tint it for free.
+   Colours are theme tokens, so mono / winter / graphite re-tint it for free.
    No caption under the scope: the block stays pure geometry. */
 .aside-radar {
   display: flex;

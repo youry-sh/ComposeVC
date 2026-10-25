@@ -7,7 +7,7 @@ import React from "react";
  * leading edge and three blips that flash as the beam reaches them. The whole
  * motion is one composited CSS rotation plus a few opacity tweens, so it costs
  * no JS timers, no React re-renders and no layout work per frame. Every colour
- * comes from the theme tokens, so mono / winter / crimson re-tint it on their
+ * comes from the theme tokens, so mono / winter / graphite re-tint it on their
  * own, and `prefers-reduced-motion` freezes it into a readable still frame.
  */
 const AsideRadar: React.FC = () => (
