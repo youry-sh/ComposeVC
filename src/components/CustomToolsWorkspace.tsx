@@ -832,19 +832,18 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
                 </>
               ) : null}
             </div>
-            {panelMode === "edit" ? (
-              <div className="flex shrink-0 items-center gap-1">
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  disabled={saving || !canSave}
-                  className={primaryBtn}
-                >
-                  <Save className="h-3.5 w-3.5" />
-                  {saving ? labels.customToolSaving : labels.customToolSave}
-                </button>
-              </div>
-            ) : null}
+            <div className="flex shrink-0 items-center gap-1">
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={saving || !canSave}
+                className={primaryBtn}
+                title={panelMode === "edit" ? labels.customToolSave : labels.customToolAdd}
+              >
+                <Save className="h-3.5 w-3.5" />
+                {saving ? labels.customToolSaving : labels.customToolSave}
+              </button>
+            </div>
           </div>
         </section>
       </div>
