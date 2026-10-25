@@ -9000,6 +9000,15 @@
   border-radius: 0;
   background: var(--ink-950);
 }
+/* Graphite: orange marks the live/selected chat in the rail. */
+[data-theme="graphite"] .chat-rail-item.is-active::before { background: var(--accent); }
+[data-theme="graphite"] .chat-rail-item.is-active {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 24%, var(--border));
+}
+[data-theme="graphite"] .chat-rail-item.is-running .chat-rail-dot {
+  background: var(--accent);
+  box-shadow: 0 0 0 3px rgba(240, 68, 46, 0.13);
+}
 .chat-rail-btn {
   flex: 1 1 auto;
   min-width: 0;
