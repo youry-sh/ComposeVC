@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ChevronDown, Minus, Square, X } from "lucide-react";
+import { Minus, Square, X } from "lucide-react";
 import {
   IcoMulti,
   IcoProxy,
@@ -12,9 +12,7 @@ import {
   IcoWebEngine,
   IcoDocs,
   IcoUsage,
-  IcoPrompts,
 } from "./topIcons";
-import PromptsWorkspace from "./PromptsWorkspace";
 import UpdateBadge from "./UpdateBadge";
 import {
   CONTEXT_METRICS_EVENT,
@@ -77,28 +75,6 @@ const TitleBar: React.FC<TitleBarProps> = ({
   const memPeak = useRef(1);
   const tokPeak = useRef(1);
   const ctxPeak = useRef(1);
-  const [blindsOpen, setBlindsOpen] = useState(false);
-  const [blindsTab, setBlindsTab] = useState<"prompts">("prompts");
-  const blindsTabRef = useRef<HTMLButtonElement>(null);
-
-  /** Roll the blind up and hand focus back to the tab that unrolled it. */
-  const closeBlinds = () => {
-    setBlindsOpen(false);
-    blindsTabRef.current?.focus();
-  };
-
-  // Esc rolls the blinds back up: the drawer is a full-width overlay, so the
-  // keyboard needs a way out that does not require hunting for the pull rail.
-  useEffect(() => {
-    if (!blindsOpen) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      setBlindsOpen(false);
-      blindsTabRef.current?.focus();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [blindsOpen]);
 
   // live clock + date (1s tick)
   useEffect(() => {
