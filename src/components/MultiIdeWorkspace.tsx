@@ -6,7 +6,8 @@ import GitBadge from "./GitBadge";
 import ThinkingIndicator from "./ThinkingIndicator";
 import { CustomTool, MainAgentMode, ProviderConfig } from "../types";
 import { HotkeyDefinition, matchesHotkey } from "../utils/hotkeys";
-import { ChevronLeft, ChevronRight, ChevronsLeft, LayoutGrid, Pencil, X } from "lucide-react";
+import { Cable, ChevronLeft, ChevronRight, ChevronsLeft, LayoutGrid, Pencil, X } from "lucide-react";
+import { IcoPrompts } from "./topIcons";
 
 /** Ctrl+H (Cmd+H on macOS) — the chat switcher, matched by physical key. */
 const SWITCHER_HOTKEY: HotkeyDefinition = { code: "KeyH", modifiers: ["mod"] };
@@ -1072,7 +1073,29 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
         </div>
 
         <footer className="chat-rail-foot">
-          {activeWorkspaceSlots.length}/{MULTIIDE_MAX_SLOTS}
+          <div className="chat-rail-quick">
+            <button
+              type="button"
+              className="chat-rail-quick-btn"
+              onClick={onOpenPrompts}
+              title="Prompts"
+            >
+              <IcoPrompts />
+              <span>Prompts</span>
+            </button>
+            <button
+              type="button"
+              className="chat-rail-quick-btn"
+              onClick={onOpenMcp}
+              title="MCP"
+            >
+              <Cable aria-hidden />
+              <span>MCP</span>
+            </button>
+          </div>
+          <span className="chat-rail-foot-count">
+            {activeWorkspaceSlots.length}/{MULTIIDE_MAX_SLOTS}
+          </span>
         </footer>
       </aside>
 
