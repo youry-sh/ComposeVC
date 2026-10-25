@@ -110,6 +110,41 @@ function isFileLocked(file) {
 }
 
 /**
+ * Non-destructive lock probe for the previous unpacked build.
+ *
+ * Windows blocks the delete (and the rename) of a directory while any file
+ * inside it is open without FILE_SHARE_DELETE — exactly what a running Electron
+ * app does to its resources/app.asar. Opening the file ourselves is not enough
+ * (Node shares delete), so rename the directory away and straight back: that
+ * needs the same permission a delete needs and touches no contents.
+ */
+function isDirLocked(dir) {
+  if (!exists(dir)) return false;
+  const probe = `${dir}.lockprobe`;
+  try {
+    if (exists(probe)) {
+      // Leftover from an interrupted probe — restore/clean it, never guess.
+      if (exists(dir)) fs.rmSync(probe, { recursive: true, force: true });
+      else fs.renameSync(probe, dir);
+    }
+  } catch {
+    /* the probe below reports the real state */
+  }
+  try {
+    fs.renameSync(dir, probe);
+    fs.renameSync(probe, dir);
+    return false;
+  } catch {
+    try {
+      if (exists(probe) && !exists(dir)) fs.renameSync(probe, dir);
+    } catch {
+      fail(`lock probe left ${probe}; rename it back to ${dir} manually`);
+    }
+    return true;
+  }
+}
+
+/**
  * Clear a build directory with retries. Windows refuses to remove files that a
  * running process (or antivirus) still has open — e.g. the previous app.asar of
  * a running ComposeVC build — so callers fall back to a staged output instead of
@@ -457,7 +492,7 @@ const primaryAsar = path.join(primaryAppOut, "resources", "app.asar");
 // EnsureEmptyDir before packaging a single file. Never kill the user's running
 // app — build into a sibling output and publish the artifacts into release/.
 let buildOutput = releaseDir;
-let stagedOutput = isFileLocked(primaryAsar);
+let stagedOutput = isDirLocked(primaryAppOut);
 if (!stagedOutput && exists(primaryAppOut) && !tryClearDir(primaryAppOut)) {
   stagedOutput = true;
 }
