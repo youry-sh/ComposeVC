@@ -12,7 +12,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const VERSION = 1;
+const VERSION = 2;
 const STATE_FILE = "multiide_state.json";
 const MAX_SLOTS = 12;
 const MAX_WORKSPACES = 64;
@@ -63,6 +63,18 @@ function normalizeSlot(raw, index) {
   };
 }
 
+/**
+ * Shell chrome state — which side columns are folded away. Global, not per
+ * workspace: folding the rail is a quirk of the window, not of a chat set.
+ */
+function normalizeUi(raw) {
+  const item = raw && typeof raw === "object" ? raw : {};
+  return {
+    railCollapsed: item.railCollapsed === true,
+    asideCollapsed: item.asideCollapsed === true,
+  };
+}
+
 function normalizeState(raw) {
   const item = raw && typeof raw === "object" ? raw : {};
 
@@ -94,13 +106,21 @@ function normalizeState(raw) {
     version: VERSION,
     updatedAt: Number(item.updatedAt) || 0,
     activeWorkspaceId,
+    ui: normalizeUi(item.ui),
     workspaces,
     slots,
   };
 }
 
 function emptyState() {
-  return { version: VERSION, updatedAt: 0, activeWorkspaceId: null, workspaces: [], slots: [] };
+  return {
+    version: VERSION,
+    updatedAt: 0,
+    activeWorkspaceId: null,
+    ui: normalizeUi(null),
+    workspaces: [],
+    slots: [],
+  };
 }
 
 function readState(userDataPath) {
@@ -145,6 +165,11 @@ function savePatch(userDataPath, patch) {
     updatedAt: Date.now(),
     activeWorkspaceId:
       "activeWorkspaceId" in source ? source.activeWorkspaceId : current.activeWorkspaceId,
+    // ui is a partial merge: a patch may flip one column and leave the other.
+    ui:
+      source.ui && typeof source.ui === "object"
+        ? { ...current.ui, ...source.ui }
+        : current.ui,
     workspaces: Array.isArray(source.workspaces) ? source.workspaces : current.workspaces,
     slots: Array.isArray(source.slots) ? source.slots : current.slots,
   });

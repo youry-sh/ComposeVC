@@ -4986,7 +4986,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
       </ChatMonoScroll>
 
       {/* Input */}
-      <div className="relative min-w-0 z-[1]">
+      <div className="chat-input-dock relative min-w-0 z-[1]">
         {!compactionBanner && compactNotice && (
           <div className="pointer-events-none absolute bottom-3 left-1/2 z-20 w-[calc(100%-32px)] -translate-x-1/2 animate-fade-in">
             <div className="flex items-center gap-2 rounded-lg border border-ink-200 bg-ink-100/95 px-3 py-2 shadow-2xl backdrop-blur-sm">

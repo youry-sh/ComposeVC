@@ -11020,7 +11020,18 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
    up with the transcript above. */
 .chat-composer-context {
   min-width: 0;
+  max-height: min(40vh, 320px);
   padding: 8px 16px 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+/* The dock is the panel's bottom edge: it keeps its own height (the transcript
+   above is the part that yields), so a short window can never squeeze the
+   textarea row out of the frame. */
+.chat-input-dock {
+  flex: 0 0 auto;
+  min-width: 0;
+  min-height: 0;
 }
 .chat-composer-shell {
   display: flex;
@@ -11178,21 +11189,28 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   font-size: 10px;
 }
 /* Chips keep to the left and stay content-sized; attach / context / send are
-   the only controls on the right end of the row. */
+   the only controls on the right end of the row.
+   Both rows wrap INSIDE the panel: when the window (or a split pane) gets
+   narrower than the controls need, they move to a second line instead of
+   sliding past the chat frame. */
 .chat-chip-row {
   order: 1;
   flex: 0 1 auto;
+  flex-wrap: wrap;
   min-width: 0;
-  gap: 6px;
-  padding: 4px 0 9px 16px;
+  gap: 4px 6px;
+  padding: 4px 0 6px 16px;
 }
 .chat-composer-actions {
   order: 2;
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  min-width: 0;
   justify-content: flex-end;
   gap: 2px;
+  row-gap: 4px;
   margin-left: auto;
-  padding: 2px 16px 9px 6px;
+  padding: 2px 16px 6px 6px;
 }
 
 /* Flat controls — no pills, no glass, no colour. */
@@ -11334,7 +11352,7 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   width: 100%;
   margin-left: 0;
   justify-content: flex-end;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 4px;
   padding: 0 16px 9px;
 }

@@ -99,10 +99,18 @@ declare global {
     workspaceId?: string;
   };
 
+  type MultiIdeDiskUi = {
+    /** Left column (workspaces + chat panels) folded away. */
+    railCollapsed?: boolean;
+    /** Right column (overview + runners) folded away. */
+    asideCollapsed?: boolean;
+  };
+
   type MultiIdeDiskState = {
     version?: number;
     updatedAt?: number;
     activeWorkspaceId?: string | null;
+    ui?: MultiIdeDiskUi;
     workspaces?: MultiIdeDiskWorkspace[];
     slots?: MultiIdeDiskSlot[];
   };
@@ -238,12 +246,14 @@ declare global {
         slots?: MultiIdeDiskSlot[];
         workspaces?: MultiIdeDiskWorkspace[];
         activeWorkspaceId?: string | null;
+        ui?: MultiIdeDiskUi;
       }) => Promise<{ ok: boolean; state?: MultiIdeDiskState; error?: string }>;
       multiIdeLoadStateSync: () => MultiIdeDiskState;
       multiIdeSaveStateSync: (patch: {
         slots?: MultiIdeDiskSlot[];
         workspaces?: MultiIdeDiskWorkspace[];
         activeWorkspaceId?: string | null;
+        ui?: MultiIdeDiskUi;
       }) => { ok: boolean; state?: MultiIdeDiskState; error?: string };
       onOpenChatSwitcher: (callback: () => void) => () => void;
       onFoldWebDock: (callback: () => void) => () => void;

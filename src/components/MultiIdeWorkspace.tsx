@@ -6,10 +6,13 @@ import GitBadge from "./GitBadge";
 import ThinkingIndicator from "./ThinkingIndicator";
 import { CustomTool, MainAgentMode, ProviderConfig } from "../types";
 import { HotkeyDefinition, matchesHotkey } from "../utils/hotkeys";
-import { LayoutGrid, Pencil, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, LayoutGrid, Pencil, X } from "lucide-react";
 
 /** Ctrl+H (Cmd+H on macOS) — the chat switcher, matched by physical key. */
 const SWITCHER_HOTKEY: HotkeyDefinition = { code: "KeyH", modifiers: ["mod"] };
+/** Ctrl+B folds the chat rail away; Ctrl+Shift+B does the same for the aside. */
+const RAIL_HOTKEY: HotkeyDefinition = { code: "KeyB", modifiers: ["mod"] };
+const ASIDE_HOTKEY: HotkeyDefinition = { code: "KeyB", modifiers: ["mod", "shift"] };
 
 /**
  * Single centred chat panel + a left rail of chat panels.
@@ -131,7 +134,27 @@ type LayoutPatch = {
   slots?: MultiIdeDiskSlot[];
   workspaces?: MultiIdeDiskWorkspace[];
   activeWorkspaceId?: string | null;
+  ui?: MultiIdeDiskUi;
 };
+
+/** Which of the two side columns are folded away. Persisted with the layout. */
+type ChatShellUi = { railCollapsed: boolean; asideCollapsed: boolean };
+
+const DEFAULT_SHELL_UI: ChatShellUi = { railCollapsed: false, asideCollapsed: false };
+
+function readShellUi(): ChatShellUi {
+  const ui = readDiskState()?.ui;
+  if (!ui || typeof ui !== "object") return DEFAULT_SHELL_UI;
+  return {
+    railCollapsed: ui.railCollapsed === true,
+    asideCollapsed: ui.asideCollapsed === true,
+  };
+}
+
+/** Folding is pure chrome — a missing bridge just leaves it in-memory for the session. */
+function saveShellUi(ui: ChatShellUi) {
+  writeLayoutPatch({ ui }, () => {});
+}
 
 /**
  * Disk is the source of truth. localStorage is only (a) read once to migrate a
@@ -397,7 +420,8 @@ export function saveWorkspaceState(workspaces: WorkspaceState[], activeWorkspace
 /** Synchronous flush for pagehide — guarantees a fresh rename is on disk. */
 export function flushWorkspaceState(
   workspaces: WorkspaceState[],
-  activeWorkspaceId: string
+  activeWorkspaceId: string,
+  ui?: ChatShellUi
 ): boolean {
   return flushLayoutPatch({
     workspaces: workspaces.map((workspace) => ({
@@ -407,6 +431,7 @@ export function flushWorkspaceState(
       openIds: workspace.openIds,
     })),
     activeWorkspaceId,
+    ...(ui ? { ui } : {}),
   });
 }
 
@@ -431,6 +456,8 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
   onOpenRunners,
 }) => {
   const [workspaceState, setWorkspaceState] = useState(() => loadWorkspaceState(slots));
+  /** Folded side columns — restored from disk, saved on every toggle. */
+  const [shellUi, setShellUi] = useState<ChatShellUi>(readShellUi);
   const workspaces = workspaceState.workspaces;
   const activeWorkspaceId = workspaceState.activeWorkspaceId;
   const activeWorkspace = workspaces.find((w) => w.id === activeWorkspaceId) || workspaces[0];
@@ -450,14 +477,40 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
   /** Latest persisted state for the sync pagehide flush. */
   const workspacesRef = useRef(workspaces);
   const activeWorkspaceIdRef = useRef(activeWorkspaceId);
+  const shellUiRef = useRef(shellUi);
   workspacesRef.current = workspaces;
   activeWorkspaceIdRef.current = activeWorkspaceId;
+  shellUiRef.current = shellUi;
+
+  const toggleRail = useCallback(() => {
+    const next = { ...shellUiRef.current, railCollapsed: !shellUiRef.current.railCollapsed };
+    setShellUi(next);
+    saveShellUi(next);
+  }, []);
+
+  const toggleAside = useCallback(() => {
+    const next = { ...shellUiRef.current, asideCollapsed: !shellUiRef.current.asideCollapsed };
+    setShellUi(next);
+    saveShellUi(next);
+  }, []);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (!matchesHotkey(event, SWITCHER_HOTKEY)) return;
-      event.preventDefault();
-      setSwitcherOpen((prev) => !prev);
+      if (matchesHotkey(event, SWITCHER_HOTKEY)) {
+        event.preventDefault();
+        setSwitcherOpen((prev) => !prev);
+        return;
+      }
+      // Shift is required for the aside, so test it before the plain rail stroke.
+      if (matchesHotkey(event, ASIDE_HOTKEY)) {
+        event.preventDefault();
+        toggleAside();
+        return;
+      }
+      if (matchesHotkey(event, RAIL_HOTKEY)) {
+        event.preventDefault();
+        toggleRail();
+      }
     };
     window.addEventListener("keydown", onKey);
     // Same stroke from inside a <webview>: the guest owns the keyboard there,
@@ -467,7 +520,7 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
       window.removeEventListener("keydown", onKey);
       unsub?.();
     };
-  }, []);
+  }, [toggleAside, toggleRail]);
 
   // Slots belonging to the active workspace — the rail only shows these.
   const activeWorkspaceSlots = useMemo(
