@@ -132,16 +132,3 @@ export const IcoPrompts: React.FC<IconProps> = ({ className }) => (
     <path d="M9.5 5.2 h3 M9.5 8 h3 M9.5 10.8 h1.6" />
   </svg>
 );
-
-/** Inspector — pick cursor (finger) for the F12-style element picker */
-export const IcoInspector: React.FC<IconProps> = ({ className }) => (
-  <svg viewBox="0 0 16 16" fill="none" className={className}>
-    <path
-      d="M3.2 1.6 L3.2 12.1 L7.2 8.9 L9.3 13.6 L11.4 12.7 L9.3 8.2 L13.6 7.1 Z"
-      fill="currentColor"
-      stroke="currentColor"
-      strokeWidth="1"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
