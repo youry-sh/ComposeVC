@@ -93,6 +93,42 @@ function rmrf(p) {
   fs.rmSync(p, { recursive: true, force: true });
 }
 
+function sleep(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+/** True when another process holds a handle that blocks writes/deletes. */
+function isFileLocked(file) {
+  if (!exists(file)) return false;
+  try {
+    const fd = fs.openSync(file, "r+");
+    fs.closeSync(fd);
+    return false;
+  } catch (error) {
+    return ["EBUSY", "EPERM", "EACCES"].includes(error?.code);
+  }
+}
+
+/**
+ * Clear a build directory with retries. Windows refuses to remove files that a
+ * running process (or antivirus) still has open — e.g. the previous app.asar of
+ * a running ComposeVC build — so callers fall back to a staged output instead of
+ * killing the user's app.
+ */
+function tryClearDir(dir, attempts = 4) {
+  if (!exists(dir)) return true;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      fs.rmSync(dir, { recursive: true, force: true, maxRetries: 2, retryDelay: 120 });
+    } catch {
+      /* retry below */
+    }
+    if (!exists(dir)) return true;
+    if (attempt < attempts - 1) sleep(300);
+  }
+  return false;
+}
+
 function mkdirp(p) {
   fs.mkdirSync(p, { recursive: true });
 }
@@ -412,8 +448,32 @@ if (!exists(path.join(root, "node_modules", "@electron", "fuses"))) {
 }
 
 // --- 6) electron-builder ---
+const releaseDir = path.join(root, "release");
+const primaryAppOut = path.join(releaseDir, "win-unpacked");
+const primaryAsar = path.join(primaryAppOut, "resources", "app.asar");
+
+// A running ComposeVC (or anything that mapped the previous app.asar) makes
+// Windows refuse to clear release/win-unpacked, and electron-builder aborts in
+// EnsureEmptyDir before packaging a single file. Never kill the user's running
+// app — build into a sibling output and publish the artifacts into release/.
+let buildOutput = releaseDir;
+let stagedOutput = isFileLocked(primaryAsar);
+if (!stagedOutput && exists(primaryAppOut) && !tryClearDir(primaryAppOut)) {
+  stagedOutput = true;
+}
+if (stagedOutput) {
+  buildOutput = path.join(releaseDir, `.build-${Date.now().toString(36)}`);
+  mkdirp(buildOutput);
+  log("release/win-unpacked is locked by a running app (usually ComposeVC itself).");
+  log(`packaging into ${path.relative(root, buildOutput)} and copying artifacts to release/…`);
+}
+
 const ebArgs = ["--win", "--x64", "--config", "electron-builder.yml"];
 if (dirOnly) ebArgs.push("--dir");
+if (stagedOutput) {
+  // Relative path — no spaces/quoting issues, resolved against the project root.
+  ebArgs.push(`--config.directories.output=${path.relative(root, buildOutput)}`);
+}
 // Never publish to GitHub etc.
 ebArgs.push("--publish", "never");
 
@@ -424,7 +484,55 @@ if (exists(ebBin)) {
   run("npx", ["electron-builder", ...ebArgs]);
 }
 
-const releaseDir = path.join(root, "release");
+// --- 6b) staged output → release/ (installer artifacts only) ---
+if (stagedOutput) {
+  const moved = [];
+  const unpackedKept = [];
+  for (const name of fs.readdirSync(buildOutput)) {
+    const from = path.join(buildOutput, name);
+    let st;
+    try {
+      st = fs.statSync(from);
+    } catch {
+      continue;
+    }
+    if (st.isDirectory()) {
+      if (name.endsWith("-unpacked")) unpackedKept.push(from);
+      continue;
+    }
+    if (name === "builder-debug.yml") continue;
+    const to = path.join(releaseDir, name);
+    try {
+      if (exists(to)) fs.rmSync(to, { force: true });
+      fs.renameSync(from, to);
+      moved.push(name);
+    } catch (error) {
+      try {
+        fs.copyFileSync(from, to);
+        moved.push(name);
+      } catch {
+        fail(
+          `cannot write ${name} into release/ — close the process using it (${
+            error instanceof Error ? error.message : String(error)
+          })`
+        );
+      }
+    }
+  }
+  if (moved.length) log(`artifacts published to release/: ${moved.join(", ")}`);
+  if (dirOnly && unpackedKept.length) {
+    for (const p of unpackedKept) {
+      log(`unpacked build kept at ${p} (release/win-unpacked is locked)`);
+    }
+    log("— run it from there, or close the app holding release/win-unpacked and rebuild.");
+  } else {
+    // NSIS build: the staged unpacked tree is disposable.
+    if (!tryClearDir(buildOutput, 2)) {
+      log(`note: staged build dir could not be removed yet: ${buildOutput}`);
+    }
+  }
+}
+
 log("done.");
 if (exists(releaseDir)) {
   log(`artifacts in ${releaseDir}:`);
