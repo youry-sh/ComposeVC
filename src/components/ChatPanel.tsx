@@ -4487,6 +4487,10 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
           ? "h-full w-full flex-1 border-0"
           : `flex-shrink-0 border-l border-ink-200 ${isResizing ? "" : "animate-fade-in"}`
       }`}
+      onDragEnter={handlePanelDragEnter}
+      onDragOver={handlePanelDragOver}
+      onDragLeave={handlePanelDragLeave}
+      onDrop={handlePanelDrop}
       style={
         fill
           ? { width: "100%", minWidth: 0, maxWidth: "none", height: "100%" }
@@ -5077,24 +5081,28 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             )}
           </div>
         )}
-        <div
-          className="chat-composer-shell"
-          onDragOver={(e) => {
-            if (e.dataTransfer?.types?.includes("Files")) {
-              e.preventDefault();
-              e.dataTransfer.dropEffect = "copy";
-            }
-          }}
-          onDrop={handleDropImages}
-        >
-          {pendingImages.length > 0 && (
-            <div className="chat-composer-images px-3 pt-2.5">
-              <ChatImageThumbs
-                images={pendingImages}
-                size="sm"
-                onOpen={(index) => setLightbox({ images: pendingImages, index })}
-                onRemove={(id) => setPendingImages((prev) => prev.filter((img) => img.id !== id))}
+        <div className="chat-composer-shell">
+          {(pendingFiles.length > 0 || pendingImages.length > 0) && (
+            <div className="chat-attach-tray">
+              <ChatFileChips
+                files={pendingFiles}
+                onRemove={(id) =>
+                  applyPendingFiles(pendingFilesRef.current.filter((file) => file.id !== id))
+                }
               />
+              {pendingImages.length > 0 && (
+                <ChatImageThumbs
+                  images={pendingImages}
+                  size="sm"
+                  onOpen={(index) => setLightbox({ images: pendingImages, index })}
+                  onRemove={(id) => setPendingImages((prev) => prev.filter((img) => img.id !== id))}
+                />
+              )}
+            </div>
+          )}
+          {attachNotice && (
+            <div className="chat-attach-note" role="status">
+              {attachNotice}
             </div>
           )}
           <textarea
@@ -5125,7 +5133,27 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
               e.target.value = "";
             }}
           />
+          <input
+            ref={docInputRef}
+            type="file"
+            accept={CHAT_FILE_ACCEPT}
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              void addPendingAttachments(e.target.files);
+              e.target.value = "";
+            }}
+          />
           <div className="chat-composer-actions min-w-0">
+            <button
+              type="button"
+              onClick={() => docInputRef.current?.click()}
+              title="Прикрепить файлы (или перетащите их в этот чат)"
+              className="chat-composer-icon-btn"
+              aria-label="Attach files"
+            >
+              <Paperclip className="w-3.5 h-3.5" />
+            </button>
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
