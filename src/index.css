@@ -8139,7 +8139,9 @@
   padding-bottom: 12px;
   background: var(--bg);
   border-bottom: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border));
-  box-shadow: var(--shadow-menu, 0 12px 40px rgba(0, 0, 0, 0.45));
+  /* No outer shadow: clip-path would cut it off at the reveal edge, so the
+     drawer keeps a crisp hairline instead of a shadow that pops in late. */
+  box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--ink-950) 6%, transparent);
   /* Rolled up: the whole drawer is clipped at its top edge, exactly like a
      blind wound onto its roller. No transform, so fixed children stay put. */
   clip-path: inset(0 0 100% 0);
@@ -8175,7 +8177,11 @@
   background: linear-gradient(180deg, color-mix(in srgb, var(--ink-50) 96%, transparent), color-mix(in srgb, var(--ink-0) 90%, transparent));
   color: var(--ink-400);
   cursor: pointer;
-  box-shadow: 0 6px 16px -8px rgba(0, 0, 0, 0.6);
+  /* Inset shading keeps the bar readable inside the clip (an outer shadow would
+     be cut away at the reveal edge). */
+  box-shadow:
+    inset 0 -1px 0 color-mix(in srgb, var(--ink-950) 12%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--ink-50) 88%, transparent);
   transition: top 0.42s cubic-bezier(0.22, 0.9, 0.16, 1), background 0.15s ease, color 0.15s ease;
 }
 .titlebar-blinds-panel.is-open .blinds-roll { top: calc(100% - 12px); }
