@@ -221,6 +221,25 @@ if (!noPublish) {
   run("gh", ghArgs, { shell: process.platform === "win32" });
 }
 
+/** Remember which tree was published so the hotkey agent can skip no-op runs. */
+function writePublishState() {
+  try {
+    const gitTree = spawnSync("git", ["rev-parse", "HEAD^{tree}"], { cwd: root, encoding: "utf8" });
+    const tree = String(gitTree.stdout || "").trim();
+    if (!tree) return;
+    const base = process.env.LOCALAPPDATA || process.env.TEMP || root;
+    const dir = path.join(base, "ComposeVC");
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(
+      path.join(dir, "publish-state.json"),
+      JSON.stringify({ tree, version, publishedAt: new Date().toISOString() }, null, 2),
+      "utf8"
+    );
+  } catch {
+    /* best-effort bookkeeping */
+  }
+}
+
 if (!noGit) {
   log("committing + tagging + pushing…");
   run("git", ["add", "-A"]);
@@ -229,6 +248,7 @@ if (!noGit) {
   run("git", ["tag", "-f", tag]);
   run("git", ["push", "origin", "HEAD"]);
   run("git", ["push", "origin", tag, "--force"]);
+  writePublishState();
 }
 
 log(`

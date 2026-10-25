@@ -120,6 +120,27 @@ function changedCount() {
     .filter(Boolean).length;
 }
 
+function currentTree() {
+  const res = spawnSync("git", ["rev-parse", "HEAD^{tree}"], { cwd: root, encoding: "utf8" });
+  if (res.status !== 0) return "";
+  return String(res.stdout || "").trim();
+}
+
+function publishStatePath() {
+  const base = process.env.LOCALAPPDATA || process.env.TEMP || root;
+  return path.join(base, "ComposeVC", "publish-state.json");
+}
+
+/** Tree hash of the last published release (written by publish-update / hotkey). */
+function lastPublishedTree() {
+  try {
+    const raw = JSON.parse(fs.readFileSync(publishStatePath(), "utf8"));
+    return String(raw?.tree || "").trim();
+  } catch {
+    return "";
+  }
+}
+
 function runPublish() {
   if (publishing) {
     pending = true;
@@ -132,8 +153,14 @@ function runPublish() {
     schedule(waitSec * 1000 + 500);
     return;
   }
-  if (!isDirty()) {
-    log("git tree is clean — nothing to publish");
+
+  // The IDE auto-commits edits, so a clean `git status` does not mean "nothing
+  // changed" — compare the current tree with the last published release.
+  const tree = currentTree();
+  const published = lastPublishedTree();
+  const changed = isDirty() || !tree || !published || tree !== published;
+  if (!changed) {
+    log("nothing new since the last published release — skipping");
     return;
   }
 
