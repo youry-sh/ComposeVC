@@ -156,7 +156,10 @@ interface ChatPanelProps {
   onRefreshSessions?: () => void;
   autoInsertEnabled: boolean;
   autoInsertMessages: string[];
+  /** Per-message switches, aligned with autoInsertMessages (missing = on). */
+  autoInsertMessageEnabled?: boolean[];
   onToggleAutoInsert: () => void;
+  onToggleAutoInsertMessage?: (index: number) => void;
   onAddAutoInsertMessage: (text: string) => void;
   onRemoveAutoInsertMessage: (index: number) => void;
   agentTodos: TodoItem[];
@@ -2362,7 +2365,9 @@ const ChatBookmarksModal: React.FC<{
 const AutoInsertModal: React.FC<{
   enabled: boolean;
   messages: string[];
+  messageEnabled: boolean[];
   onToggle: () => void;
+  onToggleMessage: (index: number) => void;
   onAdd: (text: string) => void;
   onRemove: (index: number) => void;
   onClose: () => void;
@@ -2375,21 +2380,56 @@ const AutoInsertModal: React.FC<{
     autoInsertPlaceholder: string;
     autoInsertAdd: string;
     autoInsertSearch: string;
+    copy: string;
     noResults: string;
   };
-}> = ({ enabled, messages, onToggle, onAdd, onRemove, onClose, labels }) => {
+}> = ({
+  enabled,
+  messages,
+  messageEnabled,
+  onToggle,
+  onToggleMessage,
+  onAdd,
+  onRemove,
+  onClose,
+  labels,
+}) => {
   const [draft, setDraft] = useState("");
   const [search, setSearch] = useState("");
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const copyTimerRef = useRef<number | null>(null);
 
-  const filtered = search.trim()
-    ? messages.filter((m) => m.toLowerCase().includes(search.trim().toLowerCase()))
-    : messages;
+  useEffect(
+    () => () => {
+      if (copyTimerRef.current) window.clearTimeout(copyTimerRef.current);
+    },
+    []
+  );
+
+  const query = search.trim().toLowerCase();
+  // Keep the ORIGINAL index so search never removes/toggles the wrong row.
+  const indexed = messages.map((message, index) => ({ message, index }));
+  const filtered = query
+    ? indexed.filter(({ message }) => message.toLowerCase().includes(query))
+    : indexed;
+  const activeCount = messages.filter((_, index) => messageEnabled[index] !== false).length;
 
   const handleAdd = () => {
     const trimmed = draft.trim();
     if (!trimmed) return;
     onAdd(trimmed);
     setDraft("");
+  };
+
+  const handleCopy = async (text: string, index: number) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedIndex(index);
+      if (copyTimerRef.current) window.clearTimeout(copyTimerRef.current);
+      copyTimerRef.current = window.setTimeout(() => setCopiedIndex(null), 1200);
+    } catch {
+      /* clipboard unavailable — ignore */
+    }
   };
 
   return (

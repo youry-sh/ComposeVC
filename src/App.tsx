@@ -668,11 +668,6 @@ const App: React.FC = () => {
         labels={t}
         onChange={saveProviderConfig}
       />
-
-      <ElementInspector
-        active={inspectorActive}
-        onExit={() => setInspectorActive(false)}
-      />
     </div>
   );
 };

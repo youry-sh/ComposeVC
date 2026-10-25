@@ -209,15 +209,6 @@ const TitleBar: React.FC<TitleBarProps> = ({
         >
           <IcoSettings className="topbar-tab-ico" />
         </button>
-        <button
-          type="button"
-          title="Инспектор элементов (Inspect DOM / React)"
-          aria-pressed={inspectorActive === true}
-          onClick={onToggleInspector}
-          className={`topbar-tab topbar-tab-icon ${inspectorActive ? "is-active" : ""}`}
-        >
-          <IcoInspector className="topbar-tab-ico" />
-        </button>
       </nav>
 
       <div className="titlebar-spacer" />
