@@ -1,8 +1,8 @@
-﻿{
+{
   "name": "composevc",
   "private": true,
   "version": "1.0.3",
-  "description": "ComposeVC вЂ” AI IDE with ANTI fingerprint browser",
+  "description": "ComposeVC — AI IDE with ANTI fingerprint browser",
   "author": "ComposeVC",
   "type": "module",
   "main": "electron/main.cjs",
@@ -119,4 +119,3 @@
     ]
   }
 }
-
