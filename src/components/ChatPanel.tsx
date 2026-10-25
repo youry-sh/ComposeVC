@@ -4564,11 +4564,17 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                   messages[msgIndex - 1]!.toolSteps!.length > 0
                 ? messages[msgIndex - 1]!.toolSteps
                 : undefined;
+          const isUser = msg.role === "user";
+          const hasBody = Boolean(msg.content?.trim()) || (isUser && Boolean(msg.images?.length));
 
           return (
             <div key={msg.id} className="animate-fade-in">
               {!isToolsOnly && (
-                <div className="mb-2 text-[11px] font-semibold text-ink-950 tracking-tight">
+                <div
+                  className={`mb-2 text-[11px] font-semibold tracking-tight${
+                    isUser ? " chat-msg-user-label" : " text-ink-950"
+                  }`}
+                >
                   {msg.role === "assistant" ? "ComposeVC" : "You"}
                 </div>
               )}
@@ -4585,42 +4591,44 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                   allUnitsCount={labels.allUnitsCount}
                 />
               )}
-              {msg.images && msg.images.length > 0 && (
-                <div className="mb-2">
-                  <ChatImageThumbs
-                    images={msg.images}
-                    size="md"
-                    onOpen={(index) => setLightbox({ images: msg.images || [], index })}
-                  />
-                </div>
-              )}
-              {msg.content?.trim() || (msg.role === "user" && msg.images?.length) ? (
-                <>
-                  {msg.content?.trim() ? (
-                    <>
-                      <MarkdownContent content={msg.content} />
-                      {summarySteps && summarySteps.length > 0 && (
-                        <ChangedFilesSummary steps={summarySteps} rootPath={rootPath} />
-                      )}
-                    </>
-                  ) : null}
-                  <MessageActions
-                    content={msg.content}
-                    role={msg.role}
-                    images={msg.images}
-                    retryLabel={labels.retry}
-                    retryDisabled={thinking}
-                    showCopy={Boolean(msg.content?.trim())}
-                    onRetry={(text, imgs) => {
-                      stickToBottomRef.current = true;
-                      onSend(text, imgs, { skipAutoInsert: true });
-                      const pin = () => messagesScrollRef.current?.scrollToBottom({ smooth: false });
-                      pin();
-                      requestAnimationFrame(pin);
-                    }}
-                  />
-                </>
-              ) : null}
+              <div className={isUser && hasBody ? "chat-msg-user" : undefined}>
+                {msg.images && msg.images.length > 0 && (
+                  <div className="mb-2">
+                    <ChatImageThumbs
+                      images={msg.images}
+                      size="md"
+                      onOpen={(index) => setLightbox({ images: msg.images || [], index })}
+                    />
+                  </div>
+                )}
+                {hasBody ? (
+                  <>
+                    {msg.content?.trim() ? (
+                      <>
+                        <MarkdownContent content={msg.content} />
+                        {summarySteps && summarySteps.length > 0 && (
+                          <ChangedFilesSummary steps={summarySteps} rootPath={rootPath} />
+                        )}
+                      </>
+                    ) : null}
+                    <MessageActions
+                      content={msg.content}
+                      role={msg.role}
+                      images={msg.images}
+                      retryLabel={labels.retry}
+                      retryDisabled={thinking}
+                      showCopy={Boolean(msg.content?.trim())}
+                      onRetry={(text, imgs) => {
+                        stickToBottomRef.current = true;
+                        onSend(text, imgs, { skipAutoInsert: true });
+                        const pin = () => messagesScrollRef.current?.scrollToBottom({ smooth: false });
+                        pin();
+                        requestAnimationFrame(pin);
+                      }}
+                    />
+                  </>
+                ) : null}
+              </div>
             </div>
           );
         })}

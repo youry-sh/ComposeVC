@@ -1436,6 +1436,23 @@
     margin-top: -6px;
   }
 
+  /* User prompt — a quiet accent frame so the ask reads as a distinct block
+     instead of melting into the assistant/tool stream around it. Every value
+     is theme-driven; no fixed colours. */
+  .chat-msg-user {
+    position: relative;
+    min-width: 0;
+    padding: 10px 12px 8px;
+    border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border));
+    border-left: 2px solid color-mix(in srgb, var(--accent) 48%, var(--border));
+    border-radius: var(--radius-card);
+    background: color-mix(in srgb, var(--accent) 4%, var(--chat-user-bg));
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--ink-950) 5%, transparent);
+  }
+  .chat-msg-user-label {
+    color: color-mix(in srgb, var(--accent) 42%, var(--ink-950));
+  }
+
   .chat-composer-shell {
     position: relative;
     min-width: 0;
