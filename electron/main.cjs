@@ -24,6 +24,7 @@ const memory = require("./memory.cjs");
 const gitService = require("./gitService.cjs");
 const storageStore = require("./storageStore.cjs");
 const webEngineStore = require("./webEngineStore.cjs");
+const multiIdeStore = require("./multiIdeStore.cjs");
 const workTimerStore = require("./workTimerStore.cjs");
 const backgroundTasks = require("./backgroundTasks.cjs");
 const telegramTool = require("./tools/telegram.cjs");
