@@ -408,47 +408,6 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
             <Cable className="h-3.5 w-3.5" />
             MCP
           </button>
-          <select
-            value={importMode}
-            onChange={(e) => setImportMode(e.target.value as ImportMode)}
-            className="ide-compact-select h-7 max-w-[120px] bg-transparent px-1.5 text-[11px] text-ink-700 outline-none"
-            style={{ borderBottom: "1px solid var(--border)" }}
-            title={labels.customToolImportMode}
-            disabled={busyShare}
-          >
-            <option value="skip">{labels.customToolImportSkip}</option>
-            <option value="overwrite">{labels.customToolImportOverwrite}</option>
-            <option value="rename">{labels.customToolImportRename}</option>
-          </select>
-          <button
-            type="button"
-            onClick={() => void handleImport()}
-            disabled={busyShare}
-            className={quietBtn}
-            title={labels.customToolImport}
-          >
-            <Upload className="h-3.5 w-3.5" />
-            <span className="hidden md:inline">{labels.customToolImport}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleExport()}
-            disabled={busyShare || tools.length === 0}
-            className={quietBtn}
-            title={labels.customToolExportAll}
-          >
-            <Download className="h-3.5 w-3.5" />
-            <span className="hidden md:inline">{labels.customToolExportAll}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleCopyPack()}
-            disabled={busyShare || tools.length === 0}
-            className={quietBtn}
-            title={labels.customToolCopyPack}
-          >
-            <Copy className="h-3.5 w-3.5" />
-          </button>
         </div>
       </div>
 
@@ -457,87 +416,6 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
         <div className="flex shrink-0 items-center gap-2 border-b border-ink-200 px-4 py-1.5 text-[11px]">
           {statusMsg && <span className="text-ink-600">{statusMsg}</span>}
           {error && <span className="text-status-err">{error}</span>}
-        </div>
-      )}
-
-      {/* Import picker */}
-      {importPick && (
-        <div className="shrink-0 border-b border-ink-200 px-4 py-2.5">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="text-[12px] font-medium tracking-[-0.01em] text-ink-950">
-                {labels.customToolImportPick}
-              </div>
-              <div className="mt-0.5 text-[11px] text-ink-500">{labels.customToolImportPickHint}</div>
-              {importPick.path ? (
-                <div className="mt-0.5 truncate font-mono text-[10px] text-ink-500">{importPick.path}</div>
-              ) : null}
-            </div>
-            <div className="flex shrink-0 items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setImportPick(null)}
-                disabled={busyShare}
-                className={quietBtn}
-              >
-                {labels.customToolImportCancel}
-              </button>
-              <button
-                type="button"
-                onClick={() => void handleImportAllFromPick()}
-                disabled={busyShare}
-                className={quietBtn}
-              >
-                {labels.customToolImportAll}
-              </button>
-              <button
-                type="button"
-                onClick={() => void handleImportSelected()}
-                disabled={busyShare || importPick.selected.length === 0}
-                className={primaryBtn}
-              >
-                {labels.customToolImportSelected}
-                {importPick.selected.length ? ` (${importPick.selected.length})` : ""}
-              </button>
-            </div>
-          </div>
-          <div className="mt-2 max-h-[140px] space-y-0.5 overflow-y-auto scrollbar-thin">
-            {importPick.tools.map((tool) => {
-              const idx = Number(tool.index ?? 0);
-              const checked = importPick.selected.includes(idx);
-              const label = tool.title || tool.name || `#${idx}`;
-              return (
-                <label
-                  key={`${idx}-${tool.name || "tool"}`}
-                  className="flex cursor-pointer items-start gap-2 rounded-md px-2 py-1.5 transition-colors"
-                  style={{
-                    background: checked ? "var(--accent-muted)" : "transparent",
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggleImportPickIndex(idx)}
-                    className="mt-0.5"
-                    disabled={busyShare}
-                  />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[12px] font-medium text-ink-950">{label}</span>
-                    <span className="block truncate font-mono text-[10px] text-ink-500">
-                      {tool.name || "—"}
-                      {tool.kind ? ` · ${tool.kind}` : ""}
-                    </span>
-                    {tool.description ? (
-                      <span className="block truncate text-[10px] text-ink-500">{tool.description}</span>
-                    ) : null}
-                    {tool.error ? (
-                      <span className="block truncate text-[10px] text-status-err">{tool.error}</span>
-                    ) : null}
-                  </span>
-                </label>
-              );
-            })}
-          </div>
         </div>
       )}
 
