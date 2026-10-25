@@ -381,6 +381,7 @@ export function saveWorkspaceState(workspaces: WorkspaceState[], activeWorkspace
         JSON.stringify(
           payload.map((workspace) => ({
             id: workspace.id,
+            name: workspace.name,
             activeId: workspace.activeId,
             openIds: workspace.openIds,
           }))
