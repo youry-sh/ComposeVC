@@ -8,7 +8,7 @@ import ProxyWorkspace from "./components/ProxyWorkspace";
 import RunnerWorkspace from "./components/RunnerWorkspace";
 import RunnerSendModal from "./components/RunnerSendModal";
 import CustomToolsWorkspace from "./components/CustomToolsWorkspace";
-import PromptsWorkspace from "./components/PromptsWorkspace";
+import PromptsModal from "./components/PromptsModal";
 import McpModal from "./components/McpModal";
 import TerminalWorkspace from "./components/TerminalWorkspace";
 import StorageModal from "./components/StorageModal";
@@ -42,6 +42,7 @@ const App: React.FC = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [providersOpen, setProvidersOpen] = useState(false);
   const [mcpOpen, setMcpOpen] = useState(false);
+  const [promptsOpen, setPromptsOpen] = useState(false);
   const [activePanel, setActivePanel] = useState<Panel>(() => {
     try {
       const saved = window.localStorage.getItem("lopster-active-panel");
@@ -54,7 +55,6 @@ const App: React.FC = () => {
       if (saved === "docs") return "docs";
       if (saved === "customtools") return "customtools";
       if (saved === "usage") return "usage";
-      if (saved === "prompts") return "prompts";
     } catch {
       /* ignore */
     }
@@ -625,11 +625,6 @@ const App: React.FC = () => {
           {activePanel === "usage" && (
             <div className="flex-1 min-w-0 min-h-0 flex overflow-hidden">
               <UsageWorkspace />
-            </div>
-          )}
-          {activePanel === "prompts" && (
-            <div className="flex-1 min-w-0 min-h-0 flex overflow-hidden">
-              <PromptsWorkspace />
             </div>
           )}
         </div>
