@@ -96,8 +96,6 @@ type ExpertSlot = {
   contextTokens: number;
   contextLimit: number;
   error: string | null;
-  historyOpen: boolean;
-  saveOpen: boolean;
   modelOpen: boolean;
   confirmReset: boolean;
 };
@@ -156,8 +154,6 @@ function createSlots(): ExpertSlot[] {
     contextTokens: 0,
     contextLimit: 0,
     error: null,
-    historyOpen: false,
-    saveOpen: false,
     modelOpen: false,
     confirmReset: false,
   }));
@@ -535,7 +531,6 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
       }
       const res = await window.lopster?.expertSaveSession?.(slot.sessionId, name);
       if (res?.ok) {
-        patchSlot(slotId, { saveOpen: false });
         setModal(null);
         pushToast("Session saved");
       } else {
