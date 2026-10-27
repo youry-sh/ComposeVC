@@ -306,6 +306,20 @@ async function execute(userDataPath, job, executable, args, options = {}) {
   });
   active.set(job.id, { child, cancel: () => { canceled = true; killTree(child); } });
 
+  let abortListener = null;
+  if (options.signal) {
+    abortListener = () => {
+      canceled = true;
+      killTree(child);
+    };
+    try {
+      if (options.signal.aborted) abortListener();
+      else options.signal.addEventListener("abort", abortListener, { once: true });
+    } catch {
+      /* ignore */
+    }
+  }
+
   const emitProgress = (stage, percent) => {
     const value = Math.max(0, Math.min(100, Number(percent) || 0));
     if (value === lastProgress && stage === options.lastStage) return;
@@ -382,6 +396,13 @@ async function execute(userDataPath, job, executable, args, options = {}) {
   });
   clearTimeout(timer);
   active.delete(job.id);
+  if (abortListener && options.signal) {
+    try {
+      options.signal.removeEventListener("abort", abortListener);
+    } catch {
+      /* ignore */
+    }
+  }
   await new Promise((resolve) => {
     logStream.end(resolve);
   });
@@ -492,6 +513,7 @@ async function runPlan(userDataPath, config, plan, options = {}) {
   current = await execute(userDataPath, current, blender.executable, args, {
     timeoutSec: config?.timeoutSec || 900,
     onProgress: options.onProgress,
+    signal: options.signal,
     version: blender.version,
   });
   await store.pruneJobs(userDataPath, store.MAX_JOBS).catch(() => {});
