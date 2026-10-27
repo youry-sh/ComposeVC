@@ -318,7 +318,7 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
         if (!slot.rootPath) continue;
         try {
           const status = await window.lopster?.expertStudyStatus?.(slot.rootPath);
-          const meta = status?.meta as ExpertStudyMeta | undefined;
+          const meta = status?.meta as unknown as ExpertStudyMeta | undefined;
           if (cancelled || !meta) continue;
           setSlots((prev) =>
             prev.map((item) => (item.id === slot.id ? { ...item, study: meta } : item))
@@ -658,7 +658,7 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
         if (res?.study) {
           setSlots((prev) =>
             prev.map((item) =>
-              item.id === slotId ? { ...item, study: res.study as ExpertStudyMeta, running: false } : item
+              item.id === slotId ? { ...item, study: res.study as unknown as ExpertStudyMeta, running: false } : item
             )
           );
         }

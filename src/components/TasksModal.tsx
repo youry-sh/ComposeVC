@@ -321,7 +321,7 @@ const TasksModal: React.FC<TasksModalProps> = ({ onClose }) => {
     <div
       className="fixed inset-0 z-[200] flex items-center justify-center p-4 theme-scrim animate-fade-in"
       role="presentation"
-      onClick={onClose}
+      onClick={handleClose}
     >
       <section
         className="tasks-modal bg-ink-0 border border-ink-200 rounded-xl overflow-hidden flex flex-col shadow-modal"

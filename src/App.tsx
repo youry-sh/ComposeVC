@@ -75,8 +75,7 @@ const App: React.FC = () => {
       return true;
     }
   });
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [promptCopyOpen, setPromptCopyOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);  const [promptCopyOpen, setPromptCopyOpen] = useState(false);
   const [runnerSendOpen, setRunnerSendOpen] = useState(false);
   const [storageOpen, setStorageOpen] = useState(false);
   const [runnerSendTarget, setRunnerSendTarget] = useState<string | null>(null);
