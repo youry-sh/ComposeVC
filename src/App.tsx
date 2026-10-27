@@ -22,6 +22,7 @@ import MultiIdeWorkspace, {
   saveMultiIdeSlots,
   MultiIdeSlotState,
 } from "./components/MultiIdeWorkspace";
+import ExpertWorkspace from "./components/ExpertWorkspace";
 import {
   AppLanguage,
   applyLanguage,
@@ -31,7 +32,7 @@ import {
 import { CustomTool, ProjectSearchResult, ProviderConfig } from "./types";
 import { dispatchInsertChatInput, loadMouseSnippets, textForMouseButton } from "./utils/mouseSnippets";
 
-type Panel = "multiide" | "webengine" | "proxy" | "settings" | "customtools" | "plugins" | "runner" | "terminal" | "knowledge" | "docs" | "usage";
+type Panel = "multiide" | "expert" | "webengine" | "proxy" | "settings" | "customtools" | "plugins" | "runner" | "terminal" | "knowledge" | "docs" | "usage";
 
 const App: React.FC = () => {
   const [rootPath, setRootPath] = useState<string | null>(null);
@@ -48,6 +49,7 @@ const App: React.FC = () => {
     try {
       const saved = window.localStorage.getItem("lopster-active-panel");
       if (saved === "files" || saved === "multiide") return "multiide";
+      if (saved === "expert") return "expert";
       if (saved === "proxy") return "proxy";
       if (saved === "runner") return "runner";
       if (saved === "terminal") return "terminal";
@@ -66,7 +68,7 @@ const App: React.FC = () => {
   const [multiIdeMounted, setMultiIdeMounted] = useState(() => {
     try {
       const saved = window.localStorage.getItem("lopster-active-panel");
-      return saved !== "proxy";
+      return saved !== "proxy" && saved !== "expert";
     } catch {
       return true;
     }
