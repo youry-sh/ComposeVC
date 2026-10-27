@@ -320,6 +320,7 @@ function listSessions(userDataPath, rootPath) {
     const raw = readJson(path.join(dir, entry.name));
     if (!raw) continue;
     const session = normalizeSession(raw, entry.name.replace(/\.json$/, ""));
+    if (/^(savedcopy|svs)-/i.test(session.sessionId)) continue;
     if (wanted && String(session.rootPath || "").trim().toLowerCase() !== wanted) continue;
     if (!session.messages.length) continue;
     out.push(summaryOf(session));
@@ -395,6 +396,11 @@ function deleteSaved(userDataPath, savedId) {
     } catch {
       /* already gone */
     }
+  }
+  // Snapshots written by the first build lived under sessions/; remove them so
+  // they never show up as regular chats.
+  if (entry.sessionId && /^(savedcopy|svs)-/i.test(entry.sessionId)) {
+    deleteSession(userDataPath, entry.sessionId);
   }
   return { deleted: true };
 }
