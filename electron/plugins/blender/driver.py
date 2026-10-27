@@ -2783,6 +2783,30 @@ def execute_plan(plan, out_dir):
     if export_specs:
         if isinstance(export_specs, (str, dict)):
             export_specs = [export_specs]
+        auto_bake = False
+        for spec in export_specs:
+            if not isinstance(spec, dict):
+                continue
+            fmt = str(spec.get("format", "GLB")).upper()
+            preset = str(spec.get("preset", "")).lower()
+            wants_textures = preset in ("unity", "godot", "web", "unreal") or fmt in ("GLB", "GLTF")
+            if wants_textures and spec.get("auto_bake", True) is not False and materials_need_bake():
+                auto_bake = True
+                break
+        if auto_bake:
+            progress("bake", 88)
+            resolution = as_int(plan.get("bake_resolution", 1024), 1024)
+            auto_spec = {
+                "objects": [obj.name for obj in scene().objects if obj.type == "MESH"],
+                "passes": ["BASE_COLOR", "ROUGHNESS", "NORMAL"],
+                "width": resolution,
+                "height": resolution,
+                "margin": 8,
+                "apply": True,
+                "samples": as_int(plan.get("bake_samples", 4), 4),
+                "dir": "textures",
+            }
+            bake_results.extend(bake_plan(auto_spec, out_dir))
         progress("export", 92)
         for spec in export_specs:
             exports.extend(export_scene(spec, out_dir))
