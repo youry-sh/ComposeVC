@@ -580,7 +580,7 @@ async function run(action, input, context) {
       const result = await blenderAssets.downloadAsset(userDataPath, {
         id,
         type: pick(input, "type", "asset_type", "kind") || "textures",
-        resolution: pick(input, "resolution", "res") || "1k",
+        resolution: pick(input, "asset_resolution", "resolution_asset", "resolution", "res") || "1k",
         force: input.force === true,
       });
       const usage = JSON.stringify(result.usage, null, 2);
@@ -725,17 +725,26 @@ async function run(action, input, context) {
 module.exports = {
   name: "blender",
   description:
-    "Full control of the installed Blender via background bpy — build game-ready 3D scenes, materials and assets for the user. " +
-    "Use it whenever the user wants a 3D model, prop, character base, environment, texture work, a render, or an export for Unity/Unreal/Godot. " +
-    "Actions: status (is Blender installed + plugin config), probe (engines/exporters/addons), scene (BUILD from a declarative plan: objects, PBR materials with procedural or image textures, modifiers, lighting presets, camera, render, bake, export), " +
-    "python (arbitrary bpy script — full power, no limits), render (re-render an existing .blend with new camera/lights/settings), export (existing .blend → GLB/GLTF/FBX/OBJ/USD/STL/PLY/BLEND), import (bring GLB/FBX/OBJ/STL/USD into a build), " +
-    "inspect (objects/materials/polycounts of a .blend), bake (procedural materials → image textures), jobs/job/cancel/delete_job (history + logs), config (engine, resolution, samples, export format, Blender path), copy_artifacts (copy results into a folder), open_output, open_gui (open the .blend in Blender's UI). " +
-    "Scene building is declarative: plan.objects[] + plan.materials[] + lighting/camera/render/export. Always inspect the result (renders/exports) and iterate for quality. " +
-    "Textures: either procedural (noise/voronoi/wood/brick/…) or image files — generate texture images with the generate_image tool, save them, then reference the paths. " +
+    "Full control of the installed Blender via background bpy — build production-quality, game-ready 3D assets, materials, effects and animations. " +
+    "Use it whenever the user wants a 3D model, prop, weapon, environment, character base, texture work, render, animation, or an export for Unity/Unreal/Godot/web. " +
+    "Actions: status, probe, scene (BUILD from a declarative plan), python (arbitrary bpy script — full power, no limits), render, export, import, inspect, bake, " +
+    "jobs/job/cancel/delete_job, config, copy_artifacts, open_output, open_gui, " +
+    "addons / addon_search / addon_install / addon_enable / addon_disable (the agent can find and install ANY Blender add-on or extension itself, and it is auto-enabled for later jobs), " +
+    "asset_search / asset_download / asset_list / asset_remove (CC0 PBR textures, HDRIs and models from Poly Haven downloaded into the local vault with ready-to-paste material/world specs). " +
+    "Scene building is declarative: plan.objects[] + plan.materials[] (presets, procedural or image PBR maps, normal/roughness/metalness) + lighting/camera/render/export. " +
+    "QUALITY BAR — this is the difference between a useful asset and junk nobody can import: " +
+    "(1) always give every surface a real material: use preset (steel/wood/stone/fabric/leather/glass/gold/emissive/hologram/rust/…), a procedural texture or downloaded PBR maps — never leave default flat grey; " +
+    "(2) model at a sane real-world scale (unit METRIC), add bevels/weight so silhouette reads, ensure UVs, apply scale and set origin with optimize {apply_scale, origin:'center_floor'}; " +
+    "(3) for game assets set quality {require_textures:true, require_uv:true, max_polygons:…} and export.preset unity|unreal|godot|web, then READ result.quality and FIX every issue and re-run until quality.game_ready=true; " +
+    "(4) presentation matters: pick a lighting preset, a camera (hero/three_quarter), render 2–3 views, add render.effects bloom and optional turntable frames; " +
+    "(5) use downloaded CC0 maps (asset_search/asset_download) or generate_image textures for unique looks, and bake procedural materials for GLB when the target engine needs baked maps. " +
+    "ANIMATION: objects[].animation keyframes (location/rotation/scale), material emission animation, armatures[] with auto-weights, scene frame range — glTF/FBX export carries animations. " +
+    "EFFECTS: render.effects bloom/glare + chromatic dispersion (compositor), emissive materials, hologram/transparent blends, world HDRI/sky, turntable renders. " +
+    "Scene outputs are real files: .blend, PNG renders, GLB/GLTF/FBX/OBJ/USD/STL/PLY, baked textures — all inside the job folder and copyable to the project. " +
     PLAN_REFERENCE +
-    "\nTips: default lighting preset 'studio' + camera 'three_quarter' + EEVEE 1600×1000 produce a presentable render in seconds. " +
-    "For game assets use bake {passes:['BASE_COLOR','ROUGHNESS','NORMAL'], apply:true} then export GLB so textures travel with the model. " +
-    "Every result carries bit=1 (done) / bit=0 (failed), the job id, output paths and a scene summary.",
+    "\nTips: 'studio' + camera 'three_quarter' + EEVEE 1600×1000 is a good default preview; run action=job after a build to read warnings/quality; " +
+    "use action=addon_search when a task needs a specialized add-on (auto-rigging, retopology, scattering, etc.) and install it yourself instead of telling the user to do it. " +
+    "Every result carries bit=1 (done) / bit=0 (failed), job id, artifact paths, scene stats, quality score and add-on report.",
   isReadOnly: false,
   inputSchema: {
     type: "object",
@@ -756,9 +765,17 @@ module.exports = {
         description: "scene shorthand: studio | three_point | product | sunset | dramatic | outdoor | none",
       },
       camera: { description: "scene shorthand: preset name or camera object" },
-      render: { description: "scene shorthand: render settings object, or false to skip rendering" },
+      render: { description: "scene shorthand: render settings object (views/turntable/effects), or false to skip rendering" },
+      effects: { type: "object", description: "scene shorthand: render effects {bloom, chromatic}" },
       export: { description: "scene shorthand: export spec object/array, or false" },
       bake: { type: "object", description: "scene shorthand: texture bake settings" },
+      quality: { type: "object", description: "scene shorthand: quality audit config (require_textures, require_uv, max_polygons)" },
+      optimize: { type: "object", description: "scene shorthand: apply scale / weld / triangulate / origin" },
+      armatures: { type: "array", items: { type: "object" }, description: "scene shorthand: armatures with bones and auto-weights" },
+      animation: { type: "object", description: "scene shorthand: frame_start/frame_end/fps" },
+      addons: { type: "array", items: { type: "string" }, description: "modules to enable before building" },
+      install_addons: { type: "array", items: { type: "object" }, description: "scene: install add-on zips before building" },
+      disable_addons: { type: "array", items: { type: "string" }, description: "scene: modules to disable" },
       save: { description: "scene shorthand: .blend filename (or false)" },
       reset: { type: "boolean", description: "scene shorthand: wipe the scene before building (default true)" },
       source: { type: "string", description: "path to an existing .blend to open instead of resetting" },
@@ -776,9 +793,19 @@ module.exports = {
       output_dir: { type: "string", description: "copy results into this folder (scene/export actions)" },
       auto_render: { type: "boolean", description: "config: render automatically on scene builds" },
       timeout_sec: { type: "number", description: "config: job timeout in seconds" },
-      enabled: { type: "boolean", description: "config: enable/disable the Blender plugin" },
+      enabled: { type: "boolean", description: "config: enable/disable the Blender plugin; addon_install: enable after install" },
       job: { type: "string", description: "job id for job/cancel/delete_job/copy_artifacts/open_output" },
-      limit: { type: "number", description: "jobs: how many recent jobs to return" },
+      id: { type: "string", description: "addon_pkg_id / asset id (asset_search results) / extension id" },
+      pkg_id: { type: "string", description: "addon_install: extension package id from addon_search" },
+      module: { type: "string", description: "addon_enable/addon_disable: Blender module name" },
+      query: { type: "string", description: "addon_search / asset_search: search words" },
+      type: { type: "string", description: "asset_search: textures | hdris | models" },
+      categories: { type: "string", description: "asset_search: Poly Haven category filter" },
+      resolution_asset: { type: "string", description: "asset_download: 1k | 2k | 4k | 8k" },
+      asset_resolution: { type: "string", description: "asset_download: 1k | 2k | 4k | 8k" },
+      url: { type: "string", description: "addon_install: direct .zip URL" },
+      path: { type: "string", description: "addon_install: local .zip path" },
+      limit: { type: "number", description: "jobs / addon_search / asset_search: result limit" },
       include_log: { type: "boolean", description: "action=job: include the tail of the Blender log" },
       title: { type: "string", description: "human title for this job" },
     },
