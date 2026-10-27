@@ -91,7 +91,9 @@ function pickFocus(roundId, scan, readFiles) {
   );
   const matches = (regex) => files.filter((file) => regex.test(file.p));
   let picked = [];
-  if (roundId === "architecture") {
+  if (roundId.startsWith("coverage")) {
+    picked = [...byScore.filter(notRead), ...byScore];
+  } else if (roundId === "architecture") {
     const entries = new Set(scan?.entrypoints || []);
     picked = [...files.filter((file) => entries.has(file.p)), ...byUsed];
   } else if (roundId === "core") {

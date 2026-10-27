@@ -278,21 +278,15 @@ function applyProgressToLiveState(state: SessionLiveState, progress: AgentToolPr
   }
 
   if (progress.type === "assistant_thinking") {
-    // Native provider reasoning is part of a normal model response. It must not
-    // impersonate the explicit custom Thinking-max tool/process in the UI.
-    if (progress.phase === "reasoning" && !next.thinkingMaxLocked) return next;
+    // Native provider reasoning is not part of the visible stream; only the
+    // explicit think tool reports start/end phases for the UI process.
+    if (progress.phase === "reasoning") return next;
     const added = typeof progress.tokenDelta === "number" ? progress.tokenDelta : 0;
     if (progress.phase === "end") {
-      return next.thinkingMaxLocked
-        ? {
-            ...next,
-            thinkingDraft: null,
-            agentStatusLabel: `Thinking-max${next.thinkingTokens > 0 ? ` · ≈${next.thinkingTokens.toLocaleString()} tokens` : ""}`,
-          }
-        : { ...next, thinkingDraft: null, thinkingTokens: 0, agentStatusLabel: null };
+      return { ...next, thinkingDraft: null, thinkingTokens: 0, agentStatusLabel: null };
     }
     const previous = Number.isFinite(next.thinkingTokens) ? next.thinkingTokens : 0;
-    const total = progress.phase === "start" && !next.thinkingMaxLocked ? added : previous + added;
+    const total = progress.phase === "start" ? added : previous + added;
     const cycleLabel = progress.thinkCycle && progress.thinkCycleTarget
       ? ` ${progress.thinkCycle}/${progress.thinkCycleTarget}`
       : "";
@@ -302,7 +296,7 @@ function applyProgressToLiveState(state: SessionLiveState, progress: AgentToolPr
       thinkingTokens: total,
       // Locally tokenized from the actual reasoning stream. Marked approximate because
       // providers may use a different tokenizer and usually report exact usage only at end.
-      agentStatusLabel: `Thinking-max${cycleLabel}${total > 0 ? ` · ≈${total.toLocaleString()} tokens` : ""}`,
+      agentStatusLabel: `Thinking${cycleLabel}${total > 0 ? ` · ≈${total.toLocaleString()} tokens` : ""}`,
     };
   }
 
