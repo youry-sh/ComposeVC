@@ -14665,6 +14665,43 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
 }
 .expert-empty-btn svg { width: 12px; height: 12px; }
 .expert-empty-btn:hover { background: var(--hover-bg); color: var(--ink-950); }
+.expert-empty-btn.is-quiet {
+  border-color: var(--border);
+  color: var(--ink-600);
+}
+.expert-empty-btn.is-quiet:hover { color: var(--ink-950); }
+.expert-empty.is-project { gap: 5px; }
+.expert-empty-project {
+  margin: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--terminal-font);
+  font-size: 13px;
+  letter-spacing: .02em;
+  color: var(--ink-950);
+}
+.expert-empty-path {
+  margin: -1px 0 2px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl;
+  text-align: center;
+  font-family: var(--terminal-font);
+  font-size: 9px;
+  color: var(--ink-500);
+}
+.expert-empty-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
 
 .expert-dock {
   flex: 0 0 auto;
@@ -14794,22 +14831,23 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
 .expert-modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 9000;
-  display: grid;
-  place-items: center;
-  padding: 24px;
+  z-index: 10050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
   background: rgba(0, 0, 0, .58);
 }
 .expert-modal {
   display: flex;
   flex-direction: column;
-  width: min(620px, 100%);
-  max-height: min(620px, calc(100vh - 64px));
+  width: min(640px, 100%);
+  max-height: min(660px, calc(100vh - 56px));
   overflow: hidden;
   border: 1px solid var(--border-strong);
   border-radius: 8px;
   background: var(--panel-bg);
-  box-shadow: var(--shadow-menu);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, .55);
   color: var(--ink-900);
 }
 .expert-modal-head {
@@ -14818,7 +14856,7 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  padding: 13px 14px 11px;
+  padding: 14px 16px 12px;
   border-bottom: 1px solid var(--border);
 }
 .expert-modal-kicker {
@@ -14833,13 +14871,75 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   font-weight: 600;
   color: var(--ink-950);
 }
-.expert-modal-body { padding: 12px 14px 14px; min-height: 0; }
-.expert-modal-body.is-scroll { flex: 1 1 auto; overflow-y: auto; }
+.expert-modal-tabs {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--panel-header-bg) 55%, transparent);
+  min-height: 33px;
+}
+.expert-modal-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-500);
+  font-family: var(--terminal-font);
+  font-size: 9.5px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.expert-modal-tab > span {
+  padding: 0 4px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-size: 8.5px;
+  letter-spacing: 0;
+  color: var(--ink-500);
+  font-variant-numeric: tabular-nums;
+}
+.expert-modal-tab:hover { color: var(--ink-900); }
+.expert-modal-tab.is-active { color: var(--ink-950); }
+.expert-modal-tab.is-active > span { border-color: var(--border-strong); color: var(--ink-800); }
+.expert-modal-tab.is-active::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: -1px;
+  height: 1px;
+  background: var(--accent);
+}
+.expert-modal-tabs-hint {
+  margin-left: auto;
+  max-width: 46%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--terminal-font);
+  font-size: 9px;
+  color: var(--ink-500);
+}
+.expert-modal-body { padding: 12px 16px 14px; min-height: 0; }
+.expert-modal-body.is-scroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 8px 10px 12px;
+}
 .expert-modal-loading {
   display: flex;
   align-items: center;
   gap: 7px;
-  padding: 18px 4px;
+  padding: 22px 8px;
   font-size: 11px;
   color: var(--ink-500);
 }
@@ -14851,28 +14951,33 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   color: var(--ink-500);
 }
 .expert-modal-empty {
-  padding: 10px;
+  padding: 16px 14px;
   border: 1px dashed var(--border);
   border-radius: 5px;
   font-size: 11px;
+  line-height: 1.5;
   color: var(--ink-500);
+  text-align: center;
 }
 .expert-session-list { list-style: none; margin: 0; padding: 0; }
 .expert-session-item {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
+  min-height: 46px;
   border-bottom: 1px solid var(--border);
 }
+.expert-session-item:first-child { border-top: 1px solid var(--border); }
 .expert-session-item:last-child { border-bottom: 0; }
 .expert-session-open {
   flex: 1 1 auto;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 7px 4px;
+  gap: 3px;
+  padding: 8px;
   border: 0;
+  border-radius: 4px;
   background: transparent;
   color: var(--ink-900);
   text-align: left;
@@ -14883,16 +14988,20 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
 .expert-session-title {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   font-size: 11.5px;
   color: var(--ink-950);
 }
 .expert-session-title svg { width: 10px; height: 10px; flex: none; color: var(--ink-500); }
+.expert-session-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .expert-session-meta {
+  padding-left: 16px;
   font-family: var(--terminal-font);
   font-size: 9px;
   color: var(--ink-500);
@@ -14902,8 +15011,8 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   flex: none;
   display: grid;
   place-items: center;
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   padding: 0;
   border: 0;
   border-radius: 4px;
