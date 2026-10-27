@@ -2543,12 +2543,15 @@ def apply_baked_textures(results, objects):
 
 
 def materials_need_bake():
-    for mat in bpy.data.materials:
-        if not mat.use_nodes:
+    for obj in scene().objects:
+        if obj.type != "MESH":
             continue
-        for node in mat.node_tree.nodes:
-            if node.type in PROCEDURAL_NODE_TYPES:
-                return True
+        for mat in obj.data.materials:
+            if mat is None or not mat.use_nodes:
+                continue
+            for node in mat.node_tree.nodes:
+                if node.type in PROCEDURAL_NODE_TYPES:
+                    return True
     return False
 
 
