@@ -1508,7 +1508,30 @@ def _zip_addon_info(path):
     return unique, extension_id
 
 
+def addon_installed(module):
+    try:
+        import addon_utils
+
+        for entry in addon_utils.modules(refresh=True):
+            if getattr(entry, "__name__", "") == module:
+                return True
+        loaded, enabled = addon_utils.check(module)
+        return bool(loaded or enabled)
+    except Exception:
+        return False
+
+
 def enable_addon_module(module):
+    """Enable an add-on the way Blender itself does it.
+
+    `default_set=True` + `persistent=True` matters: add-ons with services/UI
+    registration (MPFB, Rigify helpers, etc.) raise errors when enabled in
+    transient mode, and the enabled state otherwise disappears on reload.
+    """
+    import importlib
+
+    import addon_utils
+
     candidates = [module]
     if not module.startswith("bl_ext."):
         candidates.append("bl_ext.user_default." + module)
@@ -1516,19 +1539,68 @@ def enable_addon_module(module):
     last_error = ""
     for candidate in candidates:
         try:
-            bpy.ops.preferences.addon_enable(module=candidate)
-            return candidate, ""
+            addon_utils.enable(candidate, default_set=True, persistent=True)
         except Exception as exc:
             last_error = str(exc)
+            try:
+                bpy.ops.preferences.addon_enable(module=candidate)
+            except Exception as exc2:
+                last_error = str(exc2)
+                continue
+        try:
+            loaded, enabled = addon_utils.check(candidate)
+        except Exception:
+            loaded, enabled = (False, False)
+        if not enabled:
+            last_error = last_error or ("add-on did not report enabled: %s" % candidate)
+            continue
+        try:
+            importlib.import_module(candidate)
+        except Exception as exc:
+            # Some add-ons only register operators (no importable side effects);
+            # keep them enabled and surface the import error to the caller.
+            return candidate, "enabled but import failed: %s" % exc
+        return candidate, ""
     return "", last_error
 
 
 def disable_addon_module(module):
     try:
-        bpy.ops.preferences.addon_disable(module=module)
-        return True, ""
+        import addon_utils
+
+        addon_utils.disable(module, default_set=True)
+        try:
+            _loaded, enabled = addon_utils.check(module)
+        except Exception:
+            enabled = False
+        if enabled:
+            bpy.ops.preferences.addon_disable(module=module)
+            _loaded, enabled = addon_utils.check(module)
+        return not enabled, ""
     except Exception as exc:
         return False, str(exc)
+
+
+def try_install_extension_module(module):
+    """Best-effort install for a missing `bl_ext.user_default.<pkg>` entry."""
+    if not module.startswith("bl_ext."):
+        return False, "not an extension module"
+    package_id = module.split(".")[-1]
+    if not package_id:
+        return False, "empty package id"
+    attempts = [
+        {"pkg_id": package_id, "enable_on_install": True},
+        {"pkg_id": package_id, "repo": "user_default", "enable_on_install": True},
+    ]
+    last_error = ""
+    for kwargs in attempts:
+        try:
+            bpy.ops.extensions.package_install(**kwargs)
+            return True, ""
+        except Exception as exc:
+            last_error = str(exc)
+    return False, last_error
+
 
 
 def install_addon(path, enable=True):
