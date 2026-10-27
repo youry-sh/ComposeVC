@@ -271,6 +271,7 @@ declare global {
                   | "runner"
                   | "terminal"
                   | "customtools"
+                  | "plugins"
                   | "knowledge"
                   | "docs"
                   | "usage";
