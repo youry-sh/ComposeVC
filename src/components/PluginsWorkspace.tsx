@@ -120,6 +120,7 @@ const PluginsWorkspace: React.FC = () => {
   const [demoBusy, setDemoBusy] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [previews, setPreviews] = useState<Record<string, string>>({});
+  const [previewFailures, setPreviewFailures] = useState<Record<string, boolean>>({});
   const [logs, setLogs] = useState<Record<string, string>>({});
   const [logBusy, setLogBusy] = useState(false);
   const pendingListRefresh = useRef<number | null>(null);
@@ -240,7 +241,11 @@ const PluginsWorkspace: React.FC = () => {
     if (!job || !job.previewPath || previews[job.id]) return;
     let alive = true;
     void window.lopster?.pluginsPreview?.(job.id).then((result) => {
-      if (!alive || !result?.ok || !result.dataUrl) return;
+      if (!alive) return;
+      if (!result?.ok || !result.dataUrl) {
+        setPreviewFailures((prev) => ({ ...prev, [job.id]: true }));
+        return;
+      }
       setPreviews((prev) => {
         const next: Record<string, string> = { ...prev, [job.id]: result.dataUrl as string };
         const ids = Object.keys(next);
@@ -966,7 +971,9 @@ const PluginsWorkspace: React.FC = () => {
                           />
                         </div>
                       ) : selectedJob.previewPath ? (
-                        <div className="text-[10px] text-ink-500">Превью загружается…</div>
+                        <div className="text-[10px] text-ink-500">
+                          {previewFailures[selectedJob.id] ? "Превью недоступно — откройте папку задачи." : "Превью загружается…"}
+                        </div>
                       ) : null}
                       {selectedJob.renders.length > 0 && (
                         <div className="grid gap-0.5 font-mono text-[10px] leading-4 text-ink-600">
