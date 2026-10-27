@@ -59,6 +59,7 @@ interface CustomToolsWorkspaceProps {
     customToolTags: string;
     customToolDependencies: string;
     customToolDependenciesEmpty: string;
+    customToolImportCancel: string;
     noResults: string;
   };
 }
@@ -173,6 +174,7 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
   };
 
   const selectedTool = selectedId ? tools.find((t) => t.id === selectedId) : undefined;
+  const selectedEnabled = selectedTool ? selectedTool.enabled !== false : false;
   const dirty = !!selectedTool && description !== (selectedTool.description || "");
 
   const handleSave = async () => {
@@ -428,24 +430,58 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
         <section className="flex min-h-0 min-w-0 flex-1 flex-col" style={{ background: "var(--bg)" }}>
           {selectedTool ? (
             <>
-              <div className="ide-library-editor-body min-h-0 flex-1 overflow-y-auto px-5 py-4 scrollbar-thin">
-                <div className="grid max-w-[560px] gap-4">
-                  <label className="grid min-w-0 gap-1.5">
-                    <span className={labelClass}>{labels.customToolDescription}</span>
-                    <textarea
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      placeholder={labels.customToolDescriptionPlaceholder}
-                      rows={3}
-                      className="ide-field w-full min-w-0 resize-y px-3 py-2 text-[12px] leading-5 text-ink-950 placeholder-ink-500 outline-none"
-                      style={fieldStyle}
-                    />
-                  </label>
+              <div
+                className="flex shrink-0 flex-wrap items-start gap-3 border-b px-5 py-4 lg:px-7"
+                style={{ borderColor: "var(--border)", background: "var(--panel-header-bg)" }}
+              >
+                <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                  <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    <h3 className="min-w-0 truncate text-[14px] font-semibold tracking-[-0.01em] text-ink-950">
+                      {selectedTool.title || selectedTool.name}
+                    </h3>
+                    <span
+                      className="inline-flex shrink-0 items-center gap-1 rounded-[2px] border px-1.5 py-[1px] text-[9px] font-medium uppercase tracking-[0.08em]"
+                      style={{
+                        borderColor: "var(--border)",
+                        color: selectedEnabled ? "var(--ink-700)" : "var(--ink-500)",
+                      }}
+                    >
+                      <span
+                        className="h-1 w-1 rounded-full"
+                        style={{ background: selectedEnabled ? "var(--ok)" : "var(--ink-400)" }}
+                      />
+                      {selectedEnabled ? labels.customToolEnabled : labels.customToolDisabled}
+                    </span>
+                  </div>
+                  <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-ink-500">
+                    <span className="min-w-0 truncate font-mono">{selectedTool.name}</span>
+                    <span aria-hidden>·</span>
+                    <span className="whitespace-nowrap">
+                      {labels.customToolRuntime}{" "}
+                      <span className="font-mono lowercase text-ink-600">{runtimeOf(selectedTool)}</span>
+                    </span>
+                    <span aria-hidden>·</span>
+                    <span className="min-w-0 truncate font-mono">{entryOf(selectedTool)}</span>
+                    {selectedTool.updatedAt ? (
+                      <>
+                        <span aria-hidden>·</span>
+                        <span className="whitespace-nowrap">{formatStamp(selectedTool.updatedAt)}</span>
+                      </>
+                    ) : null}
+                  </div>
                 </div>
-                {error && <div className="mt-3 text-[11px] text-status-err">{error}</div>}
-              </div>
-              <div className="ide-library-footer flex shrink-0 items-center justify-between gap-2 border-t border-ink-200 px-4 py-2.5">
-                <div className="flex min-w-0 items-center gap-1">
+                <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => void handleToggle(selectedTool)}
+                    className={quietBtn}
+                    title={selectedEnabled ? labels.customToolDisabled : labels.customToolEnabled}
+                  >
+                    <Power className="h-3.5 w-3.5" />
+                    <span className="hidden xl:inline">
+                      {selectedEnabled ? labels.customToolDisabled : labels.customToolEnabled}
+                    </span>
+                  </button>
                   <button
                     type="button"
                     onClick={() =>
@@ -459,7 +495,7 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
                     title={labels.customToolExportOne}
                   >
                     <Download className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">{labels.customToolExportOne}</span>
+                    <span className="hidden xl:inline">{labels.customToolExportOne}</span>
                   </button>
                   <button
                     type="button"
@@ -474,14 +510,40 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
                     title={labels.customToolCopyOne}
                   >
                     <Copy className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">{labels.customToolCopyOne}</span>
+                    <span className="hidden xl:inline">{labels.customToolCopyOne}</span>
                   </button>
-                </div>
-                <div className="flex shrink-0 items-center gap-1">
+                  {confirmDeleteId === selectedTool.id ? (
+                    <span className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => void handleDelete(selectedTool.id)}
+                        className="ui-btn-danger h-7 px-2 text-[10px]"
+                      >
+                        {labels.customToolDelete}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDeleteId(null)}
+                        className={quietBtn}
+                        title={labels.customToolImportCancel}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDeleteId(selectedTool.id)}
+                      className={quietBtn}
+                      title={labels.customToolDelete}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={handleSave}
-                    disabled={saving}
+                    disabled={saving || !dirty}
                     className={primaryBtn}
                     title={labels.customToolSave}
                   >
@@ -490,8 +552,147 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
                   </button>
                 </div>
               </div>
+
+              <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 lg:px-7 scrollbar-thin">
+                <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_288px]">
+                  <div className="flex min-w-0 flex-col gap-5">
+                    <label className="grid min-w-0 gap-1.5">
+                      <span className={labelClass}>{labels.customToolDescription}</span>
+                      <textarea
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        placeholder={labels.customToolDescriptionPlaceholder}
+                        rows={4}
+                        className="ide-field w-full min-w-0 resize-y px-3 py-2 text-[12px] leading-5 text-ink-950 placeholder-ink-500 outline-none"
+                        style={fieldStyle}
+                      />
+                    </label>
+
+                    <div className="grid min-w-0 gap-1.5">
+                      <span className={labelClass}>{labels.customToolTags}</span>
+                      <div className="flex min-h-[26px] min-w-0 flex-wrap items-center gap-1.5">
+                        {(selectedTool.tags || []).length ? (
+                          (selectedTool.tags || []).map((tag) => (
+                            <span
+                              key={tag}
+                              className="rounded-[2px] border px-1.5 py-[1px] font-mono text-[10px] text-ink-600"
+                              style={{ borderColor: "var(--border)", background: "var(--input-bg)" }}
+                            >
+                              {tag}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-[11px] text-ink-500">—</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid min-w-0 gap-1.5">
+                      <span className={labelClass}>{labels.customToolDependencies}</span>
+                      <div className="flex min-h-[26px] min-w-0 flex-wrap items-center gap-1.5">
+                        {(selectedTool.dependencies || []).length ? (
+                          (selectedTool.dependencies || []).map((dependency) => (
+                            <span
+                              key={dependency}
+                              className="inline-flex items-center gap-1 rounded-[2px] border px-1.5 py-[1px] font-mono text-[10px] text-ink-600"
+                              style={{ borderColor: "var(--border)", background: "var(--input-bg)" }}
+                            >
+                              <Link2 className="h-3 w-3 shrink-0 text-ink-500" />
+                              {dependency}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-[11px] leading-4 text-ink-500">
+                            {labels.customToolDependenciesEmpty}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid min-w-0 gap-1.5">
+                      <span className="min-w-0 truncate font-mono text-[10px] font-medium uppercase tracking-[0.1em] text-ink-500">
+                        inputSchema
+                      </span>
+                      <pre className="ide-code-editor max-h-[240px] min-w-0 overflow-auto px-3 py-2 font-mono text-[10.5px] leading-4 text-ink-700 scrollbar-thin">
+                        {JSON.stringify(
+                          selectedTool.inputSchema || { type: "object", properties: {} },
+                          null,
+                          2
+                        )}
+                      </pre>
+                    </div>
+                  </div>
+
+                  <aside className="flex min-w-0 flex-col gap-3">
+                    <div
+                      className="overflow-hidden rounded-[2px] border"
+                      style={{ borderColor: "var(--border)", background: "var(--surface)" }}
+                    >
+                      <div
+                        className="border-b px-3 py-2 font-mono text-[10px] uppercase tracking-[0.1em] text-ink-500"
+                        style={{ borderColor: "var(--border)" }}
+                      >
+                        tool.json
+                      </div>
+                      <div className="grid grid-cols-[74px_minmax(0,1fr)] gap-x-3 gap-y-2 px-3 py-2.5">
+                        <span className="font-mono text-[10px] text-ink-500">runtime</span>
+                        <span className="min-w-0 break-all font-mono text-[11px] text-ink-950">
+                          {runtimeOf(selectedTool)}
+                        </span>
+                        <span className="font-mono text-[10px] text-ink-500">entry</span>
+                        <span className="min-w-0 break-all font-mono text-[11px] text-ink-950">
+                          {entryOf(selectedTool)}
+                        </span>
+                        <span className="font-mono text-[10px] text-ink-500">timeout_ms</span>
+                        <span className="min-w-0 break-all font-mono text-[11px] text-ink-950">
+                          {timeoutOf(selectedTool) ? `${timeoutOf(selectedTool)} ms` : "—"}
+                        </span>
+                        <span className="font-mono text-[10px] text-ink-500">updatedAt</span>
+                        <span className="min-w-0 break-all font-mono text-[11px] text-ink-950">
+                          {formatStamp(selectedTool.updatedAt) || "—"}
+                        </span>
+                        <span className="font-mono text-[10px] text-ink-500">toolDir</span>
+                        <span className="min-w-0 break-all font-mono text-[10px] leading-4 text-ink-600">
+                          {toolDirOf(selectedTool) || "—"}
+                        </span>
+                      </div>
+                    </div>
+                  </aside>
+                </div>
+              </div>
             </>
-          ) : null}
+          ) : (
+            <div className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto px-6 py-10 scrollbar-thin">
+              <div className="w-full max-w-[620px]">
+                <div className="flex items-start gap-3">
+                  <span
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[2px] border"
+                    style={{ borderColor: "var(--border)", background: "var(--surface)" }}
+                  >
+                    <Wrench className="h-4 w-4 text-ink-500" />
+                  </span>
+                  <div className="min-w-0">
+                    <h3 className="text-[14px] font-medium text-ink-950">{labels.customTools}</h3>
+                    <p className="mt-1 text-[11px] leading-5 text-ink-500">{labels.customToolsEmpty}</p>
+                  </div>
+                </div>
+                <div
+                  className="mt-5 overflow-hidden rounded-[2px] border"
+                  style={{ borderColor: "var(--border)", background: "var(--surface)" }}
+                >
+                  <div
+                    className="flex flex-wrap items-center gap-2 border-b px-3 py-2 font-mono text-[10px] text-ink-500"
+                    style={{ borderColor: "var(--border)" }}
+                  >
+                    <span>userData/custom-tools/&lt;name&gt;/</span>
+                    <span aria-hidden>·</span>
+                    <span>stdin JSON → stdout JSON</span>
+                  </div>
+                  <p className="px-3 py-3 text-[11px] leading-5 text-ink-600">{labels.customToolsHint}</p>
+                </div>
+              </div>
+            </div>
+          )}
         </section>
       </div>
     </div>
