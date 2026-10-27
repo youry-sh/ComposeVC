@@ -24,10 +24,9 @@ function resolveUserData(context) {
   return value;
 }
 
-const DEFAULT_PROMPT =
-  "Ты senior 3D art director и QA-художник. Посмотри на изображение как человек-художник. " +
-  "Опиши, что видно, затем перечисли конкретные проблемы и как их исправить: силуэт, анатомия, " +
-  "волосы/лицо, материалы и текстуры, свет, композиция, артефакты, масштаб. Будь конкретным и кратким.";
+const GENERAL_PROMPT =
+  "Посмотри на изображение и опиши, что на нём видно. Ответь на вопрос пользователя по содержимому: " +
+  "объекты, люди, текст, интерфейс, детали. Если чего-то не видно — так и скажи, не выдумывай.";
 
 async function imageFromInput(input, userDataPath, prefix = "") {
   const dataUrl = pick(input, `${prefix}data_url`, `${prefix}dataUrl`);
@@ -119,7 +118,7 @@ function attachPayload(images) {
   };
 }
 
-async function run(action, input, context) {
+async function run(action, input, context, options = {}) {
   const userDataPath = resolveUserData(context);
 
   if (action === "models" || action === "status") {
@@ -163,7 +162,7 @@ async function run(action, input, context) {
         ? "Извлеки весь видимый текст с изображения дословно, сохраняя порядок строк. Если текста нет — скажи об этом."
         : action === "compare"
           ? "Сравни эти изображения как арт-директор: что изменилось, что стало лучше/хуже, какие конкретные правки нужны. Будь краток и конкретен."
-          : DEFAULT_PROMPT)
+          : options.defaultPrompt || GENERAL_PROMPT)
   ).trim();
 
   const result = await visionBridge.requestVision({
