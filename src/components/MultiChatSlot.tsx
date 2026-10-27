@@ -2178,13 +2178,11 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
       // lopster — no local pre-processing; LAB-IN/FoRtani pipelines run in the main process.
       if (isViewingRunSession()) {
         setAgentStatusLabel(
-          thinkingMaxRef.current
-            ? "Thinking-max"
-            : modeAtSend === "lab-in"
-              ? "LAB-IN · improving prompt…"
-              : modeAtSend === "fortani"
-                ? "FoRtani · LAB-IN starting…"
-                : null
+          modeAtSend === "lab-in"
+            ? "LAB-IN · improving prompt…"
+            : modeAtSend === "fortani"
+              ? "FoRtani · LAB-IN starting…"
+              : null
         );
       }
       // Rebuild tool calls/results from toolSteps so send/merge never drops tool history
