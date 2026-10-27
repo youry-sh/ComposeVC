@@ -2331,6 +2331,11 @@ def export_scene(spec, out_dir):
             )
         elif fmt == "FBX":
             op = bpy.ops.export_scene.fbx
+            fbx_types = {"MESH", "ARMATURE"}
+            if include_lights:
+                fbx_types.add("LIGHT")
+            if include_cameras:
+                fbx_types.add("CAMERA")
             kwargs = dict(
                 filepath=filepath,
                 use_selection=use_selection,
@@ -2339,6 +2344,7 @@ def export_scene(spec, out_dir):
                 embed_textures=True,
                 mesh_smooth_type="FACE",
                 bake_anim=spec.get("export_animations", True) is not False,
+                object_types=fbx_types,
             )
         elif fmt == "OBJ":
             if hasattr(bpy.ops.wm, "obj_export"):
@@ -2818,7 +2824,12 @@ def execute_plan(plan, out_dir):
             fmt = str(spec.get("format", "GLB")).upper()
             preset = str(spec.get("preset", "")).lower()
             wants_textures = preset in ("unity", "godot", "web", "unreal") or fmt in ("GLB", "GLTF")
-            if wants_textures and spec.get("auto_bake", True) is not False and materials_need_bake():
+            if (
+                wants_textures
+                and not plan.get("bake")
+                and spec.get("auto_bake", True) is not False
+                and materials_need_bake()
+            ):
                 auto_bake = True
                 break
         if auto_bake:
