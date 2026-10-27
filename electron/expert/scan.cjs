@@ -230,7 +230,6 @@ const SYMBOL_RULES = {
     /^\s*(?:export\s+)?(?:default\s+)?(?:abstract\s+)?class\s+([A-Za-z_$][\w$]*)/,
     /^\s*(?:export\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?(?:\(|function|[A-Za-z_$])/,
     /^\s*(?:export\s+)?(?:interface|type|enum)\s+([A-Za-z_$][\w$]*)/,
-    /^\s*(?:module\.)?exports\s*=\s*\{([^}]*)\}/,
   ],
   go: [/^\s*func\s+(?:\([^)]*\)\s*)?([A-Za-z_]\w*)/, /^\s*type\s+([A-Za-z_]\w*)/],
   py: [/^\s*(?:class|def)\s+([A-Za-z_]\w*)/],
