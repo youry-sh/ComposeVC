@@ -1135,8 +1135,10 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
   };
 
   const renderPane = (slot: ExpertSlot, index: number) => {
+    const selectedModel = models.find((model) => model.id === (slot.selectedModelId || defaultModelId));
+    const contextLimit = slot.contextLimit || Number(selectedModel?.contextLimit) || 0;
     const contextPct =
-      slot.contextLimit > 0 ? Math.min(1, (slot.contextTokens || 0) / slot.contextLimit) : 0;
+      contextLimit > 0 ? Math.min(1, (slot.contextTokens || 0) / contextLimit) : 0;
     return (
       <section key={slot.id} className={`expert-pane ${slot.running ? "is-running" : ""}`}>
         <header className="expert-pane-head">
@@ -1247,19 +1249,27 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
                 MD
               </button>
               <span
-                className={`expert-ctx ${contextPct > 0.85 ? "is-danger" : contextPct > 0.6 ? "is-warn" : ""}`}
+                className={`expert-ctx-group ${contextPct > 0.85 ? "is-danger" : contextPct > 0.6 ? "is-warn" : ""}`}
                 title={
-                  slot.contextLimit
-                    ? `${slot.contextTokens.toLocaleString()} / ${slot.contextLimit.toLocaleString()} context tokens`
+                  contextLimit
+                    ? `${slot.contextTokens.toLocaleString()} / ${contextLimit.toLocaleString()} context tokens`
                     : "Context usage appears after the first prompt"
                 }
               >
-                <span className="expert-ctx-bar">
-                  <i style={{ width: `${Math.round(contextPct * 100)}%` }} />
-                </span>
-                <span className="expert-ctx-text">
-                  ctx {formatTokens(slot.contextTokens)}
-                  {slot.contextLimit ? `/${formatTokens(slot.contextLimit)}` : ""}
+                <ContextRing
+                  usedTokens={slot.contextTokens || 0}
+                  limitTokens={contextLimit}
+                  compacting={false}
+                  onCompact={() => undefined}
+                  labels={{
+                    contextUsage: labels.contextUsage,
+                    compacting: labels.compacting,
+                    clickToCompact: "project dossier + task",
+                  }}
+                />
+                <span className="expert-ctx-numbers">
+                  {formatTokens(slot.contextTokens)}
+                  {contextLimit ? ` / ${formatTokens(contextLimit)}` : ""}
                 </span>
               </span>
               {slot.running ? (
