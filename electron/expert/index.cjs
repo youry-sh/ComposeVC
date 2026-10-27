@@ -687,6 +687,12 @@ function createExpertService(deps = {}) {
         signal: controller.signal,
       });
 
+      if (controller.signal.aborted) {
+        const abortError = new Error("Stopped by user.");
+        abortError.name = "AbortError";
+        throw abortError;
+      }
+
       let assistant;
       if (prompts.isSmallTalk(task)) {
         const meta = studyMeta(study);
