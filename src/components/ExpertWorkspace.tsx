@@ -642,22 +642,24 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
         pushToast("Save is unavailable — restart ComposeVC");
         return;
       }
-      const res = await window.lopster.expertSaveSnapshot({
-        slotId,
-        name,
-        title: slot.messages.find((message) => message.role === "user")?.content.slice(0, 60) || "Expert chat",
-        rootPath: slot.rootPath,
-        projectName: slot.projectName,
-        modelId: slot.selectedModelId || defaultModelId,
-        sessionId: slot.sessionId,
-        messages: slot.messages.map((message) => ({
-          id: message.id,
-          role: message.role,
-          content: message.content,
-          createdAt: message.createdAt,
-          meta: message.meta,
-        })),
-      });
+      const res = await window.lopster
+        .expertSaveSnapshot({
+          slotId,
+          name,
+          title: slot.messages.find((message) => message.role === "user")?.content.slice(0, 60) || "Expert chat",
+          rootPath: slot.rootPath,
+          projectName: slot.projectName,
+          modelId: slot.selectedModelId || defaultModelId,
+          sessionId: slot.sessionId,
+          messages: slot.messages.map((message) => ({
+            id: message.id,
+            role: message.role,
+            content: message.content,
+            createdAt: message.createdAt,
+            meta: message.meta,
+          })),
+        })
+        .catch((error) => ({ ok: false, error: error instanceof Error ? error.message : String(error) }));
       if (res?.ok) {
         if (res.sessionId) patchSlot(slotId, { sessionId: res.sessionId });
         setModal(null);
