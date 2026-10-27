@@ -2145,6 +2145,9 @@ def render_views(spec, out_dir):
             bpy.context.preferences.filepaths.save_version = 0
         except Exception:
             pass
+    if spec.get("effects"):
+        if setup_effects(spec.get("effects")):
+            log("render effects enabled")
 
     names = []
 
@@ -2184,6 +2187,25 @@ def render_views(spec, out_dir):
             scene_obj.camera = base_camera
     else:
         do_render(str(spec.get("filename", "preview")).replace(".png", ""))
+
+    turntable = spec.get("turntable")
+    if turntable:
+        config = turntable if isinstance(turntable, dict) else {}
+        frames = as_int(config.get("frames", turntable if isinstance(turntable, (int, float)) else 8), 8)
+        frames = max(2, min(120, frames))
+        camera = scene_obj.camera or place_camera("three_quarter", "RenderCameras")
+        if camera is not None:
+            center, _radius = scene_bounds()
+            offset = camera.location - Vector(center)
+            start = math.radians(as_float(config.get("start_angle", 0.0), 0.0))
+            original = camera.location.copy()
+            for index in range(frames):
+                angle = start + (math.tau * index / frames)
+                camera.location = Vector(center) + (Matrix.Rotation(angle, 4, "Z") @ offset)
+                aim_at(camera, center)
+                do_render("turntable_%02d" % (index + 1))
+            camera.location = original
+            aim_at(camera, center)
 
     RESULT["engine"] = scene_obj.render.engine
     return renders, scene_obj.render.engine
