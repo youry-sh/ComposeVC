@@ -342,18 +342,28 @@ function deleteSession(userDataPath, sessionId) {
 
 // ── saved sessions ──────────────────────────────────────────────────────────
 
+function savedFile(userDataPath, savedId) {
+  const id = cleanId(savedId, "");
+  if (!id) return null;
+  return path.join(savedDir(userDataPath), `${id.replace(/[^a-z0-9._-]+/gi, "-")}.json`);
+}
+
 function saveNamedSession(userDataPath, sessionId, name) {
   const session = readSession(userDataPath, sessionId);
   if (!session) return null;
   const now = Date.now();
-  const snapshot = writeSession(userDataPath, {
+  const entryId = newSavedId();
+  const file = savedFile(userDataPath, entryId);
+  if (!file) return null;
+  const snapshot = normalizeSession({
     ...session,
-    sessionId: `savedcopy-${newSessionId()}`,
+    sessionId: `svs-${entryId}`,
     createdAt: now,
     updatedAt: now,
   });
+  atomicWrite(file, { ...snapshot, savedName: cleanTitle(name) || session.title, savedAt: now });
   const entry = normalizeSaved({
-    id: newSavedId(),
+    id: entryId,
     name: cleanTitle(name) || session.title,
     sessionId: snapshot.sessionId,
     title: session.title,
@@ -364,7 +374,7 @@ function saveNamedSession(userDataPath, sessionId, name) {
     updatedAt: now,
   });
   const state = readState(userDataPath);
-  const saved = [entry, ...state.saved.filter((item) => item.sessionId !== snapshot.sessionId)];
+  const saved = [entry, ...state.saved.filter((item) => item.id !== entryId)];
   savePatch(userDataPath, { saved });
   return entry;
 }
@@ -378,14 +388,25 @@ function deleteSaved(userDataPath, savedId) {
   const entry = state.saved.find((item) => item.id === savedId);
   if (!entry) return { deleted: false };
   savePatch(userDataPath, { saved: state.saved.filter((item) => item.id !== savedId) });
-  if (entry.sessionId) deleteSession(userDataPath, entry.sessionId);
+  const file = savedFile(userDataPath, savedId);
+  if (file) {
+    try {
+      fs.unlinkSync(file);
+    } catch {
+      /* already gone */
+    }
+  }
   return { deleted: true };
 }
 
 function readSavedSession(userDataPath, savedId) {
-  const entry = readState(userDataPath).saved.find((item) => item.id === savedId);
-  if (!entry) return null;
-  return readSession(userDataPath, entry.sessionId);
+  const state = readState(userDataPath);
+  if (!state.saved.some((item) => item.id === savedId)) return null;
+  const file = savedFile(userDataPath, savedId);
+  const raw = file ? readJson(file) : null;
+  if (raw) return normalizeSession(raw, savedId);
+  const entry = state.saved.find((item) => item.id === savedId);
+  return entry ? readSession(userDataPath, entry.sessionId) : null;
 }
 
 // ── project study ───────────────────────────────────────────────────────────
