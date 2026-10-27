@@ -7,11 +7,8 @@ import {
   IcoTools,
   IcoSettings,
   IcoProviders,
-  IcoTerminal,
   IcoKnowledge,
   IcoWebEngine,
-  IcoDocs,
-  IcoUsage,
 } from "./topIcons";
 import UpdateBadge from "./UpdateBadge";
 import {
@@ -149,11 +146,8 @@ const TitleBar: React.FC<TitleBarProps> = ({
     { id: "webengine", title: "Web Engine", icon: <IcoWebEngine className="topbar-tab-ico" /> },
     { id: "proxy", title: labels?.proxy || "Proxy", icon: <IcoProxy className="topbar-tab-ico" /> },
     { id: "runner", title: "Runner", icon: <IcoRunner className="topbar-tab-ico" /> },
-    { id: "terminal", title: "Terminal", icon: <IcoTerminal className="topbar-tab-ico" /> },
     { id: "knowledge", title: "Knowledge", icon: <IcoKnowledge className="topbar-tab-ico" /> },
-    { id: "docs", title: "Docs", icon: <IcoDocs className="topbar-tab-ico" /> },
     { id: "plugins", title: "Plugins", icon: <Box className="topbar-tab-ico" /> },
-    { id: "usage", title: "Usage", icon: <IcoUsage className="topbar-tab-ico" /> },
     { id: "customtools", title: "Tools", icon: <IcoTools className="topbar-tab-ico" /> },
   ];
 
