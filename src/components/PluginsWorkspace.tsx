@@ -710,29 +710,7 @@ const PluginsWorkspace: React.FC = () => {
 
 
 
-                      {selectedJob.addons.length > 0 && (
-                        <div className="border-t border-ink-200 pt-1.5 text-[10px] leading-4 text-ink-600">
-                          <div className="mb-0.5 text-[10px] uppercase tracking-[0.08em] text-ink-500">аддоны</div>
-                          {selectedJob.addons.slice(0, 10).map((addon, index) => (
-                            <div key={`${selectedJob.id}-a-${index}`} className="truncate" title={addon.error || addon.module || addon.path}>
-                              {addon.enabled ? "1" : "0"} {addon.module || addon.path}
-                              {addon.error ? ` · ${addon.error}` : ""}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      {selectedJob.warnings.length > 0 && (
-                        <div className="border-t border-ink-200 pt-1.5 text-[10px] leading-4 text-ink-500">
-                          <div className="mb-0.5 flex items-center gap-1 text-[10px] uppercase tracking-[0.08em]">
-                            <AlertTriangle className="h-3 w-3" /> предупреждения
-                          </div>
-                          {selectedJob.warnings.slice(0, 8).map((warning, index) => (
-                            <div key={`${selectedJob.id}-w-${index}`} className="truncate" title={warning}>
-                              {warning}
-                            </div>
-                          ))}
-                        </div>
-                      )}
+
                       {logs[selectedJob.id] && (
                         <pre
                           className="max-h-[220px] overflow-auto whitespace-pre-wrap break-words border border-ink-200 p-2 font-mono text-[10px] leading-4 text-ink-600 scrollbar-thin"
