@@ -90,6 +90,7 @@ type ExpertSlot = {
   updatedAt: number;
   messages: ExpertMessage[];
   running: boolean;
+  studying: boolean;
   phase: string | null;
   status: string;
   study: ExpertStudyMeta | null;
@@ -148,6 +149,7 @@ function createSlots(): ExpertSlot[] {
     updatedAt: 0,
     messages: [],
     running: false,
+    studying: false,
     phase: null,
     status: "",
     study: null,
@@ -224,6 +226,7 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
   const [slots, setSlots] = useState<ExpertSlot[]>(createSlots);
   const [hydrated, setHydrated] = useState(false);
   const [modal, setModal] = useState<ModalState>(null);
+  const [historyTab, setHistoryTab] = useState<"chats" | "saved">("chats");
   const [history, setHistory] = useState<{ loading: boolean; sessions: ExpertSessionSummary[]; saved: ExpertSavedEntry[] }>({
     loading: false,
     sessions: [],
@@ -363,17 +366,23 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
       setSlots((prev) =>
         prev.map((slot) => {
           if (slot.id !== slotId) return slot;
+          const phase = payload.phase ? String(payload.phase) : slot.phase;
+          const studyFinished = payload.studyDone !== undefined;
+          const isStudyPhase = phase === "scan" || phase === "study";
           const study: ExpertStudyMeta = { ...(slot.study || {}) };
           if (payload.files !== undefined) study.files = Number(payload.files) || 0;
           if (payload.lines !== undefined) study.lines = Number(payload.lines) || 0;
           if (payload.rounds !== undefined) study.rounds = Number(payload.rounds) || 0;
           if (payload.readFiles !== undefined) study.readFiles = Number(payload.readFiles) || 0;
-          if (payload.phase === "study" || payload.phase === "scan") study.status = "studying";
+          if (isStudyPhase && !studyFinished) study.status = "studying";
+          if (studyFinished && payload.studyDone === true) study.status = "ready";
+          if (payload.phase === "error") study.status = "partial";
           return {
             ...slot,
-            phase: payload.phase ? String(payload.phase) : slot.phase,
+            phase,
             status: payload.status ? String(payload.status) : slot.status,
             running: payload.done === true ? false : slot.running,
+            studying: isStudyPhase && !studyFinished ? true : studyFinished ? false : slot.studying,
             contextTokens: Number(payload.contextTokens) || slot.contextTokens,
             study: Object.keys(study).length ? study : slot.study,
           };
