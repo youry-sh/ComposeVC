@@ -520,57 +520,77 @@ const PluginsWorkspace: React.FC = () => {
                   </>
                 }
               >
-                <div className="mb-2 text-[10px] leading-4 text-ink-500">
-                  Агент ставит и включает аддоны сам: <span className="font-mono">addon_search</span> →{" "}
-                  <span className="font-mono">addon_install</span> (или <span className="font-mono">addon_enable</span>
-                  ). Модули ниже включаются перед каждой задачей Blender.
-                </div>
-                {draft?.addons.length ? (
-                  <div className="mb-2 flex flex-wrap gap-1.5">
-                    {draft.addons.map((module) => (
-                      <span
-                        key={module}
-                        className="inline-flex h-6 max-w-full items-center gap-1.5 border border-ink-200 px-2 font-mono text-[10px] text-ink-700"
-                      >
-                        <span className="truncate" title={module}>
-                          {module}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => removeAddonModule(module)}
-                          className="text-ink-500 transition-colors hover:text-ink-900"
-                          title="Убрать из списка"
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))}
+                <div className="grid gap-3 lg:grid-cols-2">
+                  <div className="min-w-0 border border-ink-200 bg-ink-0 p-3">
+                    <div className="mb-2 text-[10px] font-medium uppercase tracking-[0.1em] text-ink-500">
+                      включаются автоматически
+                    </div>
+                    {draft?.addons.length ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {draft.addons.map((module) => (
+                          <span
+                            key={module}
+                            className="inline-flex h-6 max-w-full items-center gap-1.5 border border-ink-200 px-2 font-mono text-[10px] text-ink-700"
+                          >
+                            <span className="truncate" title={module}>
+                              {module}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => removeAddonModule(module)}
+                              className="text-ink-500 transition-colors hover:text-ink-900"
+                              title="Убрать из списка"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-[10px] leading-4 text-ink-500">
+                        Пока пусто — используется только встроенный набор Blender.
+                      </div>
+                    )}
+                    <div className="mt-2 border-t border-ink-200 pt-2 text-[10px] leading-4 text-ink-500">
+                      Агент ставит и включает аддоны сам: <span className="font-mono">addon_search</span> →{" "}
+                      <span className="font-mono">addon_install</span> (или <span className="font-mono">addon_enable</span>).
+                    </div>
                   </div>
-                ) : (
-                  <div className="mb-2 text-[10px] text-ink-500">Пока пусто — используется только встроенный набор Blender.</div>
-                )}
-                <div className="flex items-end gap-2">
-                  <label className="grid min-w-0 flex-1 gap-1">
-                    <span className={labelClass}>Модуль аддона</span>
-                    <input
-                      type="text"
-                      value={addonInput}
-                      onChange={(event) => setAddonInput(event.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") {
-                          event.preventDefault();
-                          addAddonModule();
-                        }
-                      }}
-                      placeholder="bl_ext.user_default.my_addon"
-                      className={fieldClass}
-                      style={fieldStyle}
-                      spellCheck={false}
-                    />
-                  </label>
-                  <button type="button" className={quietBtn} onClick={addAddonModule} disabled={!addonInput.trim()}>
-                    Добавить
-                  </button>
+
+                  <div className="min-w-0 border border-ink-200 bg-ink-0 p-3">
+                    <div className="mb-2 text-[10px] font-medium uppercase tracking-[0.1em] text-ink-500">
+                      добавить модуль вручную
+                    </div>
+                    <label className="grid min-w-0 gap-1">
+                      <span className={labelClass}>Модуль аддона</span>
+                      <input
+                        type="text"
+                        value={addonInput}
+                        onChange={(event) => setAddonInput(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            addAddonModule();
+                          }
+                        }}
+                        placeholder="bl_ext.user_default.my_addon"
+                        className={fieldClass}
+                        style={fieldStyle}
+                        spellCheck={false}
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      className={`${quietBtn} mt-2`}
+                      onClick={addAddonModule}
+                      disabled={!addonInput.trim()}
+                    >
+                      Добавить
+                    </button>
+                    <div className="mt-2 text-[10px] leading-4 text-ink-500">
+                      Модуль попадёт в список после сохранения настроек.
+                    </div>
+                  </div>
                 </div>
               </Section>
 
