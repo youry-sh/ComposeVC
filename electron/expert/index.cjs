@@ -683,14 +683,17 @@ function createExpertService(deps = {}) {
     session.modelId = modelId || session.modelId || null;
     session = store.writeSession(userData(), session);
 
-    emit(slotId, {
-      phase: "start",
-      status: "Preparing Expert…",
-      sessionId: session.sessionId,
-      runId,
-      task,
-      immediate: true,
-    });
+    const studyInFlight = Boolean(rootPath && studyJobs.has(store.projectKey(rootPath)));
+    if (!studyInFlight) {
+      emit(slotId, {
+        phase: "start",
+        status: "Preparing Expert…",
+        sessionId: session.sessionId,
+        runId,
+        task,
+        immediate: true,
+      });
+    }
 
     try {
       const study = await ensureStudy({

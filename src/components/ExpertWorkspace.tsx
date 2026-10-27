@@ -763,8 +763,8 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
         draft: "",
         running: true,
         error: null,
-        phase: "start",
-        status: "Preparing Expert…",
+        phase: slot.studying ? slot.phase : "start",
+        status: slot.studying ? slot.status : "Preparing Expert…",
       });
 
       try {
