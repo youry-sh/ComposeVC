@@ -746,7 +746,7 @@ module.exports = {
     "Use it whenever the user wants a 3D model, prop, weapon, environment, character base, texture work, render, animation, or an export for Unity/Unreal/Godot/web. " +
     "Actions: status, probe, scene (BUILD from a declarative plan), python (arbitrary bpy script — full power, no limits), render, export, import, inspect, bake, " +
     "jobs/job/cancel/delete_job, config, copy_artifacts, open_output, open_gui, " +
-    "addons / addon_search / addon_install / addon_enable / addon_disable (the agent can find and install ANY Blender add-on or extension itself, and it is auto-enabled for later jobs), " +
+    "addons / addon_search / addon_install / addon_enable / addon_disable (the agent can find and install ANY Blender add-on or extension itself, and it is auto-enabled for later jobs; install only trusted sources — add-ons execute Python with Blender's permissions), " +
     "asset_search / asset_download / asset_list / asset_remove (CC0 PBR textures, HDRIs and models from Poly Haven downloaded into the local vault with ready-to-paste material/world specs). " +
     "Scene building is declarative: plan.objects[] + plan.materials[] (presets, procedural or image PBR maps, normal/roughness/metalness) + lighting/camera/render/export. " +
     "QUALITY BAR — this is the difference between a useful asset and junk nobody can import: " +
