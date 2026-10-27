@@ -15137,6 +15137,36 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   font-size: 12px;
 }
 .expert-field input:focus { border-color: var(--border-strong); }
+.expert-save-id-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 10px;
+  padding: 7px 8px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--input-bg);
+  min-width: 0;
+}
+.expert-save-id-label {
+  flex: none;
+  font-family: var(--terminal-font);
+  font-size: 8.5px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--ink-500);
+}
+.expert-save-id {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--terminal-font);
+  font-size: 10px;
+  color: var(--ink-900);
+}
+.expert-save-id-row .expert-btn { flex: none; height: 24px; }
 .expert-modal-actions {
   display: flex;
   justify-content: flex-end;

@@ -1317,6 +1317,22 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
                     placeholder="Session name"
                   />
                 </label>
+                <div className="expert-save-id-row">
+                  <span className="expert-save-id-label">Session ID</span>
+                  <code className="expert-save-id">
+                    {slots.find((slot) => slot.id === modal.slotId)?.sessionId || "not created yet"}
+                  </code>
+                  <button
+                    type="button"
+                    className="expert-btn"
+                    onClick={() =>
+                      void copySessionId(slots.find((slot) => slot.id === modal.slotId)?.sessionId || null)
+                    }
+                    title="Copy this session ID"
+                  >
+                    <Hash /> Copy ID
+                  </button>
+                </div>
                 <div className="expert-modal-actions">
                   <button type="button" className="expert-btn" onClick={() => setModal(null)}>
                     Cancel
