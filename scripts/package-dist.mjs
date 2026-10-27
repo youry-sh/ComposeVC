@@ -50,8 +50,6 @@ Options:
   --dir              electron-builder --dir (unpacked, no NSIS)
   --stage-only       only stage release-assets/anti
   --skip-web         skip tsc+vite build
-  --skip-harden      use existing release-assets/electron-hard (or fail if missing)
-  --light-harden     faster/lighter javascript-obfuscator pass
   --skip-anti-build  do not re-run go build for anti.exe
   --help             this text
 
@@ -590,8 +588,8 @@ if (exists(releaseDir)) {
 
 log(`
 What the user gets:
-  release/ComposeVC-Setup-*.exe  — one hardened installer
-  Installs app.asar (OBFUSCATED main + minified UI, no src/) + resources/anti
+  release/ComposeVC-Setup-*.exe  — one installer
+  Installs app.asar (plain main + minified UI, no src/) + resources/anti
 
 Protection layers:
   1. No TypeScript/React/Go sources in the tree
