@@ -498,7 +498,7 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
   const chooseFolder = useCallback(
     async (slotId: string) => {
       const slot = slotsRef.current.find((item) => item.id === slotId);
-      if (!slot || slot.running) return;
+      if (!slot || slot.running || slot.studying) return;
       try {
         const picked = await window.lopster?.openFolder?.();
         if (!picked?.path) return;
@@ -516,7 +516,6 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
           studying: false,
           study: null,
         });
-        void loadStudyStatus(slotId, picked.path);
         // Study starts immediately: by the time the first task arrives the whole
         // project is already mapped, and the pane shows live progress instead of
         // a stale "pick a directory" screen.
@@ -525,7 +524,8 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
           void startStudy({ slotId, rootPath: picked.path, projectName, modelId, sessionId: null });
         } else {
           void loadStudyStatus(slotId, picked.path);
-        }      } catch (error) {
+        }
+      } catch (error) {
         patchSlot(slotId, { error: error instanceof Error ? error.message : String(error) });
       }
     },
@@ -960,7 +960,12 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
                 <Layers /> {studied ? "Re-study" : "Study now"}
               </button>
             )}
-            <button type="button" className="expert-empty-btn is-quiet" onClick={() => void chooseFolder(slot.id)}>
+            <button
+              type="button"
+              className="expert-empty-btn is-quiet"
+              disabled={slot.studying}
+              onClick={() => void chooseFolder(slot.id)}
+            >
               <FolderOpen /> Change folder
             </button>
           </div>
@@ -1070,7 +1075,7 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
             type="button"
             className="expert-folder"
             onClick={() => void chooseFolder(slot.id)}
-            disabled={slot.running}
+            disabled={slot.running || slot.studying}
             title={slot.rootPath || "Select directory"}
           >
             {slot.rootPath ? <Folder /> : <FolderOpen />}
