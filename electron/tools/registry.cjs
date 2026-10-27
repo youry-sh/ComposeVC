@@ -26,6 +26,8 @@ const runnerTool = require("./runnerTool.cjs");
 const vmTool = require("./vmTool.cjs");
 const knowledgeTool = require("./knowledge.cjs");
 const generateImage = require("./generateImage.cjs");
+const blenderTool = require("./blenderTool.cjs");
+const pluginTool = require("./pluginTool.cjs");
 
 const TOOLS = [
   readFile,
@@ -56,6 +58,8 @@ const TOOLS = [
         vmTool,
 		knowledgeTool,
         generateImage,
+        blenderTool,
+        pluginTool,
 				];/** Common aliases the model may emit */const TOOL_ALIASES = {  timer: "work_timer",  worktimer: "work_timer",
   minimum_work_timer: "work_timer",
   glob: "grep",
@@ -189,6 +193,23 @@ const TOOLS = [
   machines: "vm",
   sandbox: "vm",
   guest_os: "vm",
+  // Blender plugin (3D scenes, materials, renders, game exports)
+  blender_tool: "blender",
+  blender3d: "blender",
+  bpy: "blender",
+  blender_scene: "blender",
+  create_3d: "blender",
+  make_3d: "blender",
+  generate_3d: "blender",
+  three_d: "blender",
+  game_asset: "blender",
+  // plugin manager
+  plugins: "plugin",
+  plugin_tool: "plugin",
+  plugins_tool: "plugin",
+  plugin_manager: "plugin",
+  manage_plugins: "plugin",
+  plugin_manager_tool: "plugin",
   memory: "knowledge",
   knowledge_memory: "knowledge",
   lab_in_memory: "knowledge",
