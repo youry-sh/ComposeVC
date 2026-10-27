@@ -619,7 +619,7 @@ const PluginsWorkspace: React.FC = () => {
                       ? `Blender ${plugin.status.version || "?"} · ${plugin.status.source === "config" ? "путь из настроек" : "автоопределение"}`
                       : plugin.status?.error || "Blender не найден"}
                   </span>
-                  {plugin.stats?.runs > 0 && (
+                  {(plugin.stats?.runs || 0) > 0 && (
                     <span className="ml-auto font-mono text-[10px] text-ink-500">
                       запусков {plugin.stats.runs} · ошибок {plugin.stats.failures}
                     </span>
@@ -825,7 +825,8 @@ const PluginsWorkspace: React.FC = () => {
                       return (
                         <div
                           key={job.id}
-                          className={`flex items-center gap-2 border-b border-ink-200 px-2 py-1.5 last:border-b-0 ${active ? "bg-[color-mix(in_srgb,var(--panel-bg)_70%,var(--bg))]" : "hover:bg-[color-mix(in_srgb,var(--panel-bg)_45%,var(--bg))]"}`}
+                          className="flex items-center gap-2 border-b border-ink-200 px-2 py-1.5 last:border-b-0"
+                          style={{ background: active ? "color-mix(in srgb, var(--panel-bg) 70%, var(--bg))" : undefined }}
                         >
                           <button
                             type="button"
