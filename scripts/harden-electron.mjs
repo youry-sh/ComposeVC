@@ -1,15 +1,13 @@
 /**
- * harden-electron.mjs — obfuscate Electron main-process .cjs before packaging.
+ * stage-electron.mjs (kept as harden-electron.mjs for build compatibility)
+ * Stages Electron main-process sources for packaging — PLAIN, no obfuscation.
  *
- * Strategy (defense-in-depth, not perfect DRM):
  *  1. Copy electron/ → release-assets/electron-hard/
- *  2. javascript-obfuscator on every .cjs (control-flow + string array + dead code)
- *  3. Keep plain preload.cjs readable enough for Electron (still obfuscated lightly)
- *  4. package-dist points electron-builder at the hardened tree
+ *  2. Strip markdown/runtime companion files
+ *  3. package-dist points electron-builder at this tree
  *
  * Usage:
  *   node scripts/harden-electron.mjs
- *   node scripts/harden-electron.mjs --light   # faster / less aggressive
  */
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
