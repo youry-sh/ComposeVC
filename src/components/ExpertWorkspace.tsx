@@ -1408,7 +1408,8 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
                       ))}
                     </ul>
                   )}
-                </div>
+                  </div>
+                </ChatMonoScroll>
               </>
             )}
           </div>
