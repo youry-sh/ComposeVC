@@ -256,12 +256,9 @@ const PluginsWorkspace: React.FC = () => {
       const result = await window.lopster?.pluginsRunDemo?.(plugin.id);
       if (!result?.ok) {
         setError(result?.error || "Демо-задача не выполнилась.");
-        await refreshJobs();
         return;
       }
       setNotice(`Демо готово: ${result.job?.summary || "сцена собрана"}`);
-      setSelectedJobId(result.job?.id || null);
-      await refreshJobs();
       await refreshPlugins();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -270,91 +267,12 @@ const PluginsWorkspace: React.FC = () => {
     }
   };
 
-  const cancelJob = async (job: ComposeVCPluginJob) => {
+  const openFolder = async () => {
     try {
-      await window.lopster?.pluginsCancel?.(job.id);
-      await refreshJobs();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    }
-  };
-
-  const deleteJob = async (job: ComposeVCPluginJob) => {
-    const ok = window.confirm(`Удалить задачу «${job.title || job.id}» вместе с файлами?`);
-    if (!ok) return;
-    try {
-      const result = await window.lopster?.pluginsDeleteJob?.(job.id);
-      if (!result?.ok) setError(result?.error || "Не удалось удалить задачу.");
-      if (selectedJobId === job.id) setSelectedJobId(null);
-      setPreviews((prev) => {
-        const next = { ...prev };
-        delete next[job.id];
-        return next;
-      });
-      await refreshJobs();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    }
-  };
-
-  const openFolder = async (job?: ComposeVCPluginJob | null) => {
-    try {
-      const result = job
-        ? await window.lopster?.pluginsOpenPath?.(job.id)
-        : await window.lopster?.pluginsOpenPath?.("", state?.jobsRoot || "");
+      const result = await window.lopster?.pluginsOpenPath?.("", state?.jobsRoot || "");
       if (!result?.ok) setError(result?.error || "Не удалось открыть папку.");
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
-    }
-  };
-
-  const openInBlender = async (job: ComposeVCPluginJob) => {
-    try {
-      const result = await window.lopster?.pluginsOpenInBlender?.(job.id);
-      if (!result?.ok) setError(result?.error || "Не удалось открыть Blender.");
-      else setNotice(`Blender открыт: ${result.file}`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    }
-  };
-
-  const copyArtifacts = async (job: ComposeVCPluginJob) => {
-    try {
-      const result = await window.lopster?.pluginsCopyArtifacts?.(job.id, draft?.outputDir || "");
-      if (!result?.ok) setError(result?.error || "Не удалось скопировать файлы.");
-      else setNotice(`Скопировано ${result.copied?.length || 0} файл(ов) → ${result.folder}`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    }
-  };
-
-  const showLog = async (job: ComposeVCPluginJob) => {
-    setLogBusy(true);
-    try {
-      const result = await window.lopster?.pluginsLog?.(job.id);
-      if (result?.ok && typeof result.log === "string") {
-        setLogs((prev) => ({ ...prev, [job.id]: result.log as string }));
-      } else {
-        setError(result?.error || "Лог недоступен.");
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLogBusy(false);
-    }
-  };
-
-  const insertPrompt = (text: string) => {
-    dispatchInsertChatInput(text, false);
-    setNotice("Запрос вставлен в чат — отправьте его агенту.");
-  };
-
-  const copyPrompt = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setNotice("Запрос скопирован.");
-    } catch {
-      setError("Не удалось скопировать в буфер обмена.");
     }
   };
 
@@ -370,7 +288,7 @@ const PluginsWorkspace: React.FC = () => {
           <span className="hidden truncate font-mono text-[10px] text-ink-500 md:inline">
             ИИ-инструменты: blender · plugin
           </span>
-          <button type="button" className={quietBtn} onClick={() => void openFolder(null)} title="Папка задач">
+          <button type="button" className={quietBtn} onClick={() => void openFolder()} title="Папка задач">
             <FolderOpen className="h-3.5 w-3.5" />
           </button>
           <button
@@ -378,7 +296,6 @@ const PluginsWorkspace: React.FC = () => {
             className={quietBtn}
             onClick={() => {
               void refreshPlugins();
-              void refreshJobs();
             }}
             title="Обновить"
           >
