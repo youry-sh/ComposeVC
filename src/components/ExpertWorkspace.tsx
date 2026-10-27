@@ -924,6 +924,17 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
         <span className="expert-study-bar" aria-hidden>
           <i style={{ width: `${Math.round(coverage * 100)}%` }} />
         </span>
+        {slot.sessionId ? (
+          <button
+            type="button"
+            className="expert-session-id"
+            onClick={() => void copySessionId(slot.sessionId)}
+            title={`Copy session ID · ${slot.sessionId}`}
+          >
+            <Hash />
+            <span>{slot.sessionId.slice(-8)}</span>
+          </button>
+        ) : null}
         {slot.rootPath ? (
           slot.confirmReset ? (
             <button
@@ -936,16 +947,17 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
               confirm
             </button>
           ) : (
-              <button
-                type="button"
-                className="expert-study-reset"
-                disabled={slot.running || slot.studying}
-                onClick={() => patchSlot(slot.id, { confirmReset: true })}
-                onBlur={() => patchSlot(slot.id, { confirmReset: false })}
-                title="Re-study the whole project on the next message"
-              >
-                <RotateCcw />
-              </button>          )
+            <button
+              type="button"
+              className="expert-study-reset"
+              disabled={slot.running || slot.studying}
+              onClick={() => patchSlot(slot.id, { confirmReset: true })}
+              onBlur={() => patchSlot(slot.id, { confirmReset: false })}
+              title="Re-study the whole project on the next message"
+            >
+              <RotateCcw />
+            </button>
+          )
         ) : null}
       </div>
     );
@@ -1141,7 +1153,7 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
             <button type="button" disabled={!slot.sessionId} onClick={() => void copySession(slot.id)} title="Copy session">
               <Copy />
             </button>
-            <button type="button" disabled={slot.running} onClick={() => void pasteSession(slot.id)} title="Paste session">
+            <button type="button" disabled={slot.running} onClick={() => void pasteSession(slot.id)} title="Paste session or session ID">
               <ClipboardPaste />
             </button>
             <button
@@ -1371,6 +1383,14 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
                                 {session.promptCount} prompts · {session.messageCount} msgs ·{" "}
                                 {formatWhen(session.updatedAt)}
                               </span>
+                            </button>
+                            <button
+                              type="button"
+                              className="expert-session-copy"
+                              title="Copy session ID"
+                              onClick={() => void copySessionId(session.sessionId)}
+                            >
+                              <Hash />
                             </button>
                             <button
                               type="button"
