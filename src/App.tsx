@@ -582,15 +582,6 @@ const App: React.FC = () => {
                 : "hidden"
             }
           >
-            {webEngineMounted && (
-              <WebEngineWorkspace
-                chatKey={webEngineTarget.chatKey}
-                fallbackChatKey={webEngineTarget.fallbackChatKey}
-                rootPath={webEngineTarget.rootPath}
-                projectName={webEngineTarget.projectName}
-              />
-            )}
-          </div>
 
           {activePanel === "proxy" && <ProxyWorkspace labels={t} />}
           {activePanel === "runner" && (
