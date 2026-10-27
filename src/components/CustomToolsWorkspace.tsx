@@ -264,7 +264,7 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
 
   return (
     <div className="ide-tools-shell flex h-full w-full flex-col overflow-hidden" style={{ background: "var(--bg)" }}>
-      <div className="ide-library-header flex h-11 shrink-0 flex-wrap items-center gap-3 border-b border-ink-200 px-4">
+      <div className="ide-library-header flex min-h-11 shrink-0 flex-wrap items-center gap-3 border-b border-ink-200 px-4">
         <div className="flex min-w-0 items-center gap-2.5">
           <Wrench className="h-3.5 w-3.5 shrink-0 text-ink-600" />
           <h2 className="min-w-0 truncate text-[13px] font-medium tracking-[-0.01em] text-ink-950">
@@ -336,6 +336,18 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
         <div className="flex shrink-0 items-center gap-2 border-b border-ink-200 px-4 py-1.5 text-[11px]">
           {statusMsg && <span className="min-w-0 truncate text-ink-600">{statusMsg}</span>}
           {error && <span className="min-w-0 truncate text-status-err">{error}</span>}
+          <button
+            type="button"
+            onClick={() => {
+              setStatusMsg(null);
+              setError(null);
+            }}
+            className="ml-auto flex h-5 w-5 shrink-0 items-center justify-center text-ink-500 outline-none transition-colors hover:text-ink-950"
+            title={labels.customToolImportCancel}
+            aria-label={labels.customToolImportCancel}
+          >
+            <X className="h-3 w-3" />
+          </button>
         </div>
       )}
 
@@ -572,9 +584,9 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
                       <span className={labelClass}>{labels.customToolTags}</span>
                       <div className="flex min-h-[26px] min-w-0 flex-wrap items-center gap-1.5">
                         {(selectedTool.tags || []).length ? (
-                          (selectedTool.tags || []).map((tag) => (
+                          (selectedTool.tags || []).map((tag, index) => (
                             <span
-                              key={tag}
+                              key={`${tag}-${index}`}
                               className="rounded-[2px] border px-1.5 py-[1px] font-mono text-[10px] text-ink-600"
                               style={{ borderColor: "var(--border)", background: "var(--input-bg)" }}
                             >

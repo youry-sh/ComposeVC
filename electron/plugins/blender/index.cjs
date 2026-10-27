@@ -533,7 +533,6 @@ async function execute(userDataPath, job, executable, args, options = {}) {
 }
 
 async function runPlan(userDataPath, config, plan, options = {}) {
-  const blender = requireBlender(config);
   const mergedPlan = { ...(plan || {}) };
   const configuredAddons = Array.isArray(config?.addons)
     ? config.addons.map((entry) => String(entry || "").trim()).filter(Boolean)
@@ -551,6 +550,7 @@ async function runPlan(userDataPath, config, plan, options = {}) {
       mergedPlan.addons = [...existingEntries, ...missing.map((module) => ({ module, enable: true }))];
     }
   }
+  await preparePlanAddons(userDataPath, mergedPlan);
   const job = await store.createJob(userDataPath, {
     pluginId: PLUGIN_ID,
     kind: options.kind || "scene",
