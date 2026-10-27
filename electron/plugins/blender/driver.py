@@ -1588,6 +1588,10 @@ def try_install_extension_module(module):
     package_id = module.split(".")[-1]
     if not package_id:
         return False, "empty package id"
+    try:
+        bpy.ops.extensions.userpref_allow_online()
+    except Exception:
+        pass
     attempts = [
         {"pkg_id": package_id, "enable_on_install": True},
         {"pkg_id": package_id, "repo": "user_default", "enable_on_install": True},

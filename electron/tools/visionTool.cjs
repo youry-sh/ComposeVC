@@ -92,6 +92,24 @@ async function resolveImages(input, userDataPath) {
     if (first) images.push(first);
     const second = await imageFromInput(input, userDataPath, "image2_");
     if (second) images.push(second);
+    if (!second && input.path2) {
+      const loaded = await imageTools.fileToDataUrl(String(input.path2), { maxSize: input.max_size });
+      images.push({
+        url: loaded.dataUrl,
+        mimeType: loaded.mimeType,
+        name: path.basename(String(input.path2)),
+        width: loaded.width,
+        height: loaded.height,
+      });
+    }
+    if (images.length === 1 && input.image2_url) {
+      const value = String(input.image2_url);
+      images.push({
+        url: value,
+        mimeType: /^data:image\//i.test(value) ? value.slice(5).split(";")[0] : undefined,
+        name: "image-2",
+      });
+    }
   }
   return images;
 }
