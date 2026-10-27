@@ -47,6 +47,9 @@ Persisted under Electron `userData` (never localStorage):
 materials / textures / scale / polygon checks) and the agent is instructed to
 fix issues and re-run until the asset is game-ready. `export.preset`
 (`unity|unreal|godot|web|3dprint`) maps to the right format and axis options.
+GLB/GLTF/FBX/OBJ exports **auto-bake** procedural materials (base color,
+roughness, normal) into per-object textures when needed, so the exported asset
+carries its look into the engine instead of arriving as flat grey geometry.
 
 ## Add-ons
 

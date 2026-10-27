@@ -1572,6 +1572,12 @@ def setup_addons(plan):
             entry = {"module": entry}
         if not isinstance(entry, dict):
             continue
+        if entry.get("error"):
+            reports.append({"kind": "addon", "error": str(entry.get("error")), "installed": False})
+            continue
+        if entry.get("url") and not entry.get("path"):
+            reports.append({"kind": "addon", "error": "archive was not downloaded: %s" % entry.get("url"), "installed": False})
+            continue
         if entry.get("path") or entry.get("file"):
             reports.append(install_addon(str(entry.get("path") or entry.get("file")), entry.get("enable", True)))
             continue
