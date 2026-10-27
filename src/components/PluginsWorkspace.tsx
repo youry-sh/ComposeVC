@@ -222,6 +222,7 @@ const PluginsWorkspace: React.FC = () => {
       format: config.format || "GLB",
       autoRender: config.autoRender !== false,
       timeoutSec: config.timeoutSec || 900,
+      addons: Array.isArray(config.addons) ? config.addons.slice() : [],
     });
     setDraftFor(plugin.id);
     setDirty(false);
@@ -266,6 +267,17 @@ const PluginsWorkspace: React.FC = () => {
     setNotice(null);
   };
 
+  const addAddonModule = () => {
+    const value = addonInput.trim();
+    if (!value) return;
+    updateDraft({ addons: Array.from(new Set([...(draft?.addons || []), value])) });
+    setAddonInput("");
+  };
+
+  const removeAddonModule = (module: string) => {
+    updateDraft({ addons: (draft?.addons || []).filter((entry) => entry !== module) });
+  };
+
   const saveConfig = async () => {
     if (!plugin || !draft) return;
     setSaving(true);
@@ -281,6 +293,7 @@ const PluginsWorkspace: React.FC = () => {
         format: draft.format,
         autoRender: draft.autoRender,
         timeoutSec: Number(draft.timeoutSec) || 900,
+        addons: draft.addons,
       };
       const result = await window.lopster?.pluginsUpdate?.(plugin.id, { config });
       if (!result?.ok || !result.plugin) {
