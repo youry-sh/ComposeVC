@@ -3992,12 +3992,35 @@ function pluginsUserData() {
   return app.getPath("userData");
 }
 
-/** Jobs travel over IPC without the heavy per-object scene dump. */
+/** Jobs travel over IPC without heavy internal fields (driverResult, logs, scene dumps). */
 function publicPluginJob(job) {
   if (!job) return null;
   const stats = job.stats || {};
+  const addons = Array.isArray(job.addons) ? job.addons : [];
   return {
-    ...job,
+    id: job.id,
+    pluginId: job.pluginId,
+    kind: job.kind,
+    title: job.title,
+    status: job.status,
+    progress: job.progress,
+    stage: job.stage,
+    createdAt: job.createdAt,
+    startedAt: job.startedAt,
+    finishedAt: job.finishedAt,
+    durationMs: job.durationMs,
+    dir: job.dir,
+    blendPath: job.blendPath,
+    previewPath: job.previewPath,
+    renders: job.renders || [],
+    bakes: job.bakes || [],
+    exports: job.exports || [],
+    logPath: job.logPath,
+    error: job.error,
+    warnings: job.warnings || [],
+    addons,
+    quality: job.quality || null,
+    summary: job.summary,
     stats: {
       objects: stats.objects || 0,
       meshes: stats.meshes || 0,
@@ -4008,6 +4031,7 @@ function publicPluginJob(job) {
       cameras: stats.cameras || 0,
       images: stats.images || 0,
     },
+    blender: job.blender || { path: "", version: "", engine: "" },
   };
 }
 
