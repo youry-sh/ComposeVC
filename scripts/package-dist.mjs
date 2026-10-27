@@ -439,22 +439,11 @@ if (!skipWeb) {
   log("skipping web build (--skip-web)");
 }
 
-// --- 4) Harden electron main (javascript-obfuscator → release-assets/electron-hard) ---
+// --- 4) Stage plain Electron sources (no obfuscation) → release-assets/electron-hard ---
 const hardMain = path.join(hardElectron, "main.cjs");
-if (skipHarden) {
-  if (!exists(hardMain)) {
-    fail(
-      `release-assets/electron-hard/main.cjs missing — run without --skip-harden first`
-    );
-  }
-  log("skipping harden (--skip-harden); using existing electron-hard");
-} else {
-  const hardenArgs = ["scripts/harden-electron.mjs"];
-  if (lightHarden) hardenArgs.push("--light");
-  log(lightHarden ? "hardening electron (light)…" : "hardening electron (heavy obfuscation)…");
-  run(process.execPath, hardenArgs, { shell: false });
-  if (!exists(hardMain)) fail(`harden did not produce ${hardMain}`);
-}
+log("staging electron sources (plain, no obfuscation)…");
+run(process.execPath, ["scripts/harden-electron.mjs"], { shell: false });
+if (!exists(hardMain)) fail(`staging did not produce ${hardMain}`);
 
 // Guard: never ship plain runtime companion even if present in hard tree
 for (const drop of ["runtimeApp.cjs", "runtimeMain.cjs"]) {

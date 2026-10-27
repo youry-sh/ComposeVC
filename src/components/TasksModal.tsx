@@ -347,7 +347,7 @@ const TasksModal: React.FC<TasksModalProps> = ({ onClose }) => {
               <Plus className="w-3.5 h-3.5" aria-hidden />
               Новая
             </button>
-            <button type="button" className="tasks-icon-btn" onClick={onClose} aria-label="Закрыть">
+            <button type="button" className="tasks-icon-btn" onClick={handleClose} aria-label="Закрыть">
               <X className="w-3.5 h-3.5" aria-hidden />
             </button>
           </div>

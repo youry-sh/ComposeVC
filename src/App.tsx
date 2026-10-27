@@ -75,7 +75,15 @@ const App: React.FC = () => {
       return true;
     }
   });
-  const [searchOpen, setSearchOpen] = useState(false);  const [promptCopyOpen, setPromptCopyOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [expertMounted, setExpertMounted] = useState(() => {
+    try {
+      return window.localStorage.getItem("lopster-active-panel") === "expert";
+    } catch {
+      return false;
+    }
+  });
+  const [promptCopyOpen, setPromptCopyOpen] = useState(false);
   const [runnerSendOpen, setRunnerSendOpen] = useState(false);
   const [storageOpen, setStorageOpen] = useState(false);
   const [runnerSendTarget, setRunnerSendTarget] = useState<string | null>(null);
@@ -114,6 +122,7 @@ const App: React.FC = () => {
     } catch {
       /* ignore */
     }
+    if (activePanel === "expert") setExpertMounted(true);
   }, [activePanel]);
 
   useEffect(() => {
@@ -577,11 +586,17 @@ const App: React.FC = () => {
             </div>
           )}
 
-          {activePanel === "expert" && (
-            <div className="flex-1 min-w-0 min-h-0 flex overflow-hidden">
+          <div
+            className={
+              activePanel === "expert"
+                ? "flex-1 min-w-0 min-h-0 flex overflow-hidden"
+                : "hidden"
+            }
+          >
+            {expertMounted && (
               <ExpertWorkspace providerConfig={providerConfig} labels={chatPanelLabels} />
-            </div>
-          )}
+            )}
+          </div>
 
           <div
             className={
