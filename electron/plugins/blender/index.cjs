@@ -482,6 +482,22 @@ async function execute(userDataPath, job, executable, args, options = {}) {
     /* stats are best effort */
   }
 
+  try {
+    if (progressSink) {
+      progressSink({
+        jobId: updated.id,
+        pluginId: PLUGIN_ID,
+        status: updated.status,
+        stage: updated.stage,
+        percent: updated.progress,
+        done: true,
+        error: updated.error || "",
+      });
+    }
+  } catch {
+    /* sink listener failed */
+  }
+
   return {
     ...updated,
     logTail: stdoutTail.slice(-6000),

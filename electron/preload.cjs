@@ -171,6 +171,31 @@ contextBridge.exposeInMainWorld("lopster", {
     ipcRenderer.on("prompts:changed", listener);
     return () => ipcRenderer.removeListener("prompts:changed", listener);
   },
+  pluginsList: () => ipcRenderer.invoke("plugins:list"),
+  pluginsGet: (id) => ipcRenderer.invoke("plugins:get", id),
+  pluginsUpdate: (id, patch) => ipcRenderer.invoke("plugins:update", id, patch || {}),
+  pluginsProbe: (id) => ipcRenderer.invoke("plugins:probe", id),
+  pluginsJobs: (options) => ipcRenderer.invoke("plugins:jobs", options || {}),
+  pluginsJob: (jobId) => ipcRenderer.invoke("plugins:job", jobId),
+  pluginsCancel: (jobId) => ipcRenderer.invoke("plugins:cancel", jobId),
+  pluginsDeleteJob: (jobId) => ipcRenderer.invoke("plugins:deleteJob", jobId),
+  pluginsPreview: (jobId, name) => ipcRenderer.invoke("plugins:preview", jobId, name || ""),
+  pluginsPickExecutable: () => ipcRenderer.invoke("plugins:pickExecutable"),
+  pluginsPickDirectory: () => ipcRenderer.invoke("plugins:pickDirectory"),
+  pluginsCopyArtifacts: (jobId, targetDir) => ipcRenderer.invoke("plugins:copyArtifacts", jobId, targetDir || ""),
+  pluginsOpenPath: (jobId, target) => ipcRenderer.invoke("plugins:openPath", jobId || "", target || ""),
+  pluginsOpenInBlender: (jobId, blendPath) => ipcRenderer.invoke("plugins:openInBlender", jobId || "", blendPath || ""),
+  pluginsRunDemo: (id) => ipcRenderer.invoke("plugins:runDemo", id || "blender"),
+  onPluginsChanged: (callback) => {
+    const listener = (_event, payload) => callback(payload || { type: "changed" });
+    ipcRenderer.on("plugins:changed", listener);
+    return () => ipcRenderer.removeListener("plugins:changed", listener);
+  },
+  onPluginJob: (callback) => {
+    const listener = (_event, payload) => callback(payload || {});
+    ipcRenderer.on("plugins:job", listener);
+    return () => ipcRenderer.removeListener("plugins:job", listener);
+  },
 
 		  estimateContextTokens: (rootPath, projectName) => ipcRenderer.invoke("context:estimateTokens", rootPath, projectName),
 

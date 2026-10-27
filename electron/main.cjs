@@ -3964,6 +3964,325 @@ function broadcastPromptsChanged(payload) {
   }
 }
 
+// ── PLUGINS: built-in capabilities with their own AI tools (Blender first) ──
+
+blenderPlugin.setProgressSink((payload) => broadcastPluginJob(payload));
+
+function broadcastPluginsChanged(payload) {
+  for (const win of BrowserWindow.getAllWindows()) {
+    try {
+      win.webContents.send("plugins:changed", payload || { type: "changed" });
+    } catch {
+      // ignore
+    }
+  }
+}
+
+function broadcastPluginJob(payload) {
+  for (const win of BrowserWindow.getAllWindows()) {
+    try {
+      win.webContents.send("plugins:job", payload || {});
+    } catch {
+      // ignore
+    }
+  }
+}
+
+function pluginsUserData() {
+  return app.getPath("userData");
+}
+
+/** Jobs travel over IPC without the heavy per-object scene dump. */
+function publicPluginJob(job) {
+  if (!job) return null;
+  const stats = job.stats || {};
+  return {
+    ...job,
+    stats: {
+      objects: stats.objects || 0,
+      meshes: stats.meshes || 0,
+      polygons: stats.polygons || 0,
+      vertices: stats.vertices || 0,
+      materials: stats.materials || 0,
+      lights: stats.lights || 0,
+      cameras: stats.cameras || 0,
+      images: stats.images || 0,
+    },
+  };
+}
+
+function buildBlenderDemoPlan(config) {
+  const resolution = config?.resolution || { width: 1400, height: 900 };
+  return {
+    name: "Демо: энергетический кристалл",
+    reset: true,
+    materials: [
+      {
+        name: "CV Stone",
+        base_color: "#23262d",
+        metallic: 0.05,
+        roughness: 0.55,
+        texture: {
+          type: "noise",
+          scale: 9,
+          detail: 10,
+          color_a: "#171a20",
+          color_b: "#3b414c",
+          bump: 0.35,
+          roughness_map: true,
+          roughness_min: 0.35,
+          roughness_max: 0.85,
+        },
+      },
+      { name: "CV Gold", base_color: "#d9a441", metallic: 1, roughness: 0.22, anisotropic: 0.4 },
+      {
+        name: "CV Crystal",
+        base_color: "#2ee6ff",
+        roughness: 0.08,
+        transmission: 0.85,
+        ior: 1.45,
+        coat: 0.4,
+        emission: "#18d7ff",
+        emission_strength: 2.4,
+      },
+    ],
+    objects: [
+      { name: "Floor", type: "cylinder", radius: 3.4, depth: 0.16, location: [0, 0, -0.08], material: "CV Stone", uv: { margin: 0.02 } },
+      {
+        name: "Pedestal",
+        type: "cylinder",
+        radius: 0.9,
+        depth: 0.9,
+        vertices: 64,
+        bevel: { width: 0.035, segments: 3 },
+        location: [0, 0, 0.45],
+        material: "CV Stone",
+        smooth: true,
+        uv: { margin: 0.02 },
+      },
+      {
+        name: "Ring",
+        type: "torus",
+        major_radius: 0.95,
+        minor_radius: 0.05,
+        major_segments: 64,
+        minor_segments: 16,
+        location: [0, 0, 0.92],
+        material: "CV Gold",
+        smooth: true,
+      },
+      {
+        name: "Crystal",
+        type: "ico_sphere",
+        subdivisions: 1,
+        radius: 0.62,
+        location: [0, 0, 1.75],
+        scale: [0.72, 0.72, 1.5],
+        rotation: [0, 0, 18],
+        material: "CV Crystal",
+      },
+    ],
+    lighting: "dramatic",
+    camera: { view: "hero", lens: 58, distance: 2.2, look_at: [0, 0, 0.95] },
+    render: {
+      engine: config?.engine || "EEVEE",
+      resolution: [resolution.width, resolution.height],
+      samples: Math.min(96, config?.samples || 64),
+      views: ["hero", "three_quarter"],
+    },
+    export: { format: config?.format || "GLB", filepath: "crystal.glb" },
+    save: "crystal.blend",
+  };
+}
+
+ipcMain.handle("plugins:list", async () => {
+  try {
+    const state = await pluginsRegistry.listPlugins(pluginsUserData());
+    return {
+      ...state,
+      plugins: state.plugins.map((plugin) => ({ ...plugin, lastJob: publicPluginJob(plugin.lastJob) })),
+    };
+  } catch (error) {
+    return { ok: false, plugins: [], jobsRoot: "", error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+ipcMain.handle("plugins:get", async (_event, id) => {
+  try {
+    return { ok: true, plugin: await pluginsRegistry.getPlugin(pluginsUserData(), String(id || "blender")) };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+ipcMain.handle("plugins:update", async (_event, id, patch) => {
+  try {
+    const plugin = await pluginsRegistry.updatePlugin(pluginsUserData(), String(id || "blender"), patch || {});
+    broadcastPluginsChanged({ type: "updated", pluginId: plugin.id });
+    return { ok: true, plugin };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+ipcMain.handle("plugins:probe", async (_event, id) => {
+  try {
+    const pluginId = String(id || "blender");
+    if (pluginId !== "blender") return { ok: false, error: "Для этого плагина нет опроса возможностей." };
+    const config = await pluginsRegistry.configForBlender(pluginsUserData());
+    const probe = await blenderPlugin.probe(pluginsUserData(), config);
+    return { ok: Boolean(probe.ok), probe };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+ipcMain.handle("plugins:jobs", async (_event, options) => {
+  try {
+    const jobs = await pluginsRegistry.jobs(pluginsUserData(), {
+      limit: Number(options?.limit) || 40,
+      pluginId: options?.pluginId || undefined,
+    });
+    return { ok: true, jobs: jobs.map(publicPluginJob), running: blenderPlugin.listRunning() };
+  } catch (error) {
+    return { ok: false, jobs: [], error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+ipcMain.handle("plugins:job", async (_event, jobId) => {
+  try {
+    const job = await pluginsRegistry.job(pluginsUserData(), String(jobId || ""));
+    if (!job) return { ok: false, error: "Задача не найдена." };
+    return { ok: true, job: publicPluginJob(job) };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+ipcMain.handle("plugins:cancel", async (_event, jobId) => {
+  try {
+    const result = pluginsRegistry.cancel(String(jobId || ""));
+    if (result.canceled) broadcastPluginsChanged({ type: "job-canceled", jobId });
+    return { ok: result.canceled, ...result };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+ipcMain.handle("plugins:deleteJob", async (_event, jobId) => {
+  try {
+    const result = await pluginsRegistry.deleteJob(pluginsUserData(), String(jobId || ""));
+    broadcastPluginsChanged({ type: "job-deleted", jobId });
+    return { ok: true, ...result };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+ipcMain.handle("plugins:preview", async (_event, jobId, name) => {
+  try {
+    const preview = await blenderPlugin.readPreviewDataUrl(pluginsUserData(), String(jobId || ""), name || "");
+    return { ok: true, ...preview };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+ipcMain.handle("plugins:pickExecutable", async (event) => {
+  try {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    const options = {
+      title: "Путь к Blender",
+      properties: ["openFile"],
+      filters:
+        process.platform === "win32"
+          ? [{ name: "Blender", extensions: ["exe"] }]
+          : [{ name: "Все файлы", extensions: ["*"] }],
+    };
+    const result = win ? await dialog.showOpenDialog(win, options) : await dialog.showOpenDialog(options);
+    if (result.canceled || !result.filePaths?.length) return { ok: false, canceled: true };
+    return { ok: true, path: result.filePaths[0] };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+ipcMain.handle("plugins:pickDirectory", async (event) => {
+  try {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    const options = { title: "Папка результатов", properties: ["openDirectory", "createDirectory"] };
+    const result = win ? await dialog.showOpenDialog(win, options) : await dialog.showOpenDialog(options);
+    if (result.canceled || !result.filePaths?.length) return { ok: false, canceled: true };
+    return { ok: true, path: result.filePaths[0] };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+ipcMain.handle("plugins:copyArtifacts", async (_event, jobId, targetDir) => {
+  try {
+    const result = await pluginsRegistry.copyArtifacts(pluginsUserData(), String(jobId || ""), targetDir || "");
+    return { ok: true, ...result };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+ipcMain.handle("plugins:openPath", async (_event, jobId, target) => {
+  try {
+    const root = require("path").join(app.getPath("userData"), "plugins");
+    let dir = String(target || "");
+    if (jobId) {
+      const job = await pluginsRegistry.job(pluginsUserData(), String(jobId));
+      dir = job?.dir || dir;
+    }
+    if (!dir) return { ok: false, error: "Папка не найдена." };
+    const resolved = require("path").resolve(dir);
+    const relative = require("path").relative(root, resolved);
+    if (relative.startsWith("..") || require("path").isAbsolute(relative)) {
+      return { ok: false, error: "Можно открывать только папки плагинов." };
+    }
+    const error = await shell.openPath(resolved);
+    return error ? { ok: false, error } : { ok: true, path: resolved };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+ipcMain.handle("plugins:openInBlender", async (_event, jobId, blendPath) => {
+  try {
+    const config = await pluginsRegistry.configForBlender(pluginsUserData());
+    let file = String(blendPath || "");
+    if (!file && jobId) {
+      const job = await pluginsRegistry.job(pluginsUserData(), String(jobId));
+      file = job?.blendPath || "";
+    }
+    if (!file) return { ok: false, error: "У задачи нет .blend файла." };
+    const opened = await blenderPlugin.openInBlender(config, file);
+    return { ok: true, ...opened };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+ipcMain.handle("plugins:runDemo", async (_event, id) => {
+  try {
+    const pluginId = String(id || "blender");
+    if (pluginId !== "blender") return { ok: false, error: "Демо есть только для Blender." };
+    const plugin = await pluginsRegistry.getPlugin(pluginsUserData(), "blender");
+    if (!plugin.enabled) return { ok: false, error: "Плагин Blender выключен." };
+    const job = await blenderPlugin.runPlan(pluginsUserData(), plugin.config, buildBlenderDemoPlan(plugin.config), {
+      title: "Демо: энергетический кристалл",
+      kind: "demo",
+    });
+    broadcastPluginsChanged({ type: "job-finished", jobId: job.id, status: job.status });
+    return { ok: job.status === "succeeded", job: publicPluginJob(job), error: job.error || "" };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { ok: false, error: message, checked: error?.checked || [] };
+  }
+});
+
 // ── STORAGE: Telegram Saved Messages cloud drive ───────────────────────────
 ipcMain.handle("storage:accounts", async () => {
   try {

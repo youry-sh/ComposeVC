@@ -81,6 +81,106 @@ export type GitBranch = { name: string; current: boolean };
 export type GitChangedFile = { code: string; staged: boolean; path: string };
 export type GitCommit = { hash: string; subject: string; author: string; when: string };
 
+// ── Plugins (Blender first) ────────────────────────────────────────────────
+export type ComposeVCPluginJobStats = {
+  objects?: number;
+  meshes?: number;
+  polygons?: number;
+  vertices?: number;
+  materials?: number;
+  lights?: number;
+  cameras?: number;
+  images?: number;
+};
+
+export type ComposeVCPluginJob = {
+  id: string;
+  pluginId: string;
+  kind: string;
+  title: string;
+  status: "queued" | "running" | "succeeded" | "failed" | "canceled" | string;
+  progress: number;
+  stage: string;
+  createdAt: number;
+  startedAt: number;
+  finishedAt: number;
+  durationMs: number;
+  dir: string;
+  blendPath: string;
+  previewPath: string;
+  renders: Array<{ name: string; path: string }>;
+  exports: Array<{ format: string; path: string; bytes: number }>;
+  logPath: string;
+  error: string;
+  warnings: string[];
+  summary: string;
+  stats: ComposeVCPluginJobStats;
+  blender: { path: string; version: string; engine: string };
+};
+
+export type ComposeVCPluginStatus = {
+  found: boolean;
+  executable: string;
+  version: string;
+  source?: string;
+  error?: string;
+  running?: string[];
+  checked?: Array<{ path: string; ok: boolean; version?: string; error?: string }>;
+  probe?: {
+    ok?: boolean;
+    version?: string;
+    engines?: string[];
+    operators?: Record<string, boolean>;
+    addons?: string[];
+    error?: string;
+  };
+};
+
+export type ComposeVCPluginConfig = {
+  executable: string;
+  outputDir: string;
+  engine: "EEVEE" | "CYCLES" | "WORKBENCH" | string;
+  resolution: { width: number; height: number };
+  samples: number;
+  format: string;
+  autoRender: boolean;
+  timeoutSec: number;
+  factoryStartup: boolean;
+  keepJobFiles?: boolean;
+};
+
+export type ComposeVCPlugin = {
+  id: string;
+  name: string;
+  kind: string;
+  version: string;
+  tagline: string;
+  description: string;
+  icon?: string;
+  homepage?: string;
+  tools: string[];
+  capabilities: string[];
+  examples: string[];
+  accent?: string;
+  enabled: boolean;
+  config: ComposeVCPluginConfig;
+  stats: { runs: number; failures: number; lastRunAt: number; lastError: string };
+  status: ComposeVCPluginStatus;
+  lastJob: ComposeVCPluginJob | null;
+  outputDir: string;
+  jobsCount: number;
+};
+
+export type ComposeVCPluginsState = {
+  ok: boolean;
+  version?: number;
+  plugins: ComposeVCPlugin[];
+  jobsRoot: string;
+  running?: string[];
+  error?: string;
+};
+
+
 declare global {
   type MultiIdeDiskWorkspace = {
     id: string;
@@ -541,6 +641,52 @@ declare global {
       promptsDelete: (id: string) => Promise<{ deleted: boolean; id?: string }>;
       promptsCopy: (id: string) => Promise<{ ok: boolean; title?: string; error?: string }>;
       onPromptsChanged: (callback: (payload: { type?: string }) => void) => () => void;
+      pluginsList: () => Promise<ComposeVCPluginsState>;
+      pluginsGet: (id: string) => Promise<{ ok: boolean; plugin?: ComposeVCPlugin; error?: string }>;
+      pluginsUpdate: (
+        id: string,
+        patch: { enabled?: boolean; config?: Partial<ComposeVCPluginConfig> }
+      ) => Promise<{ ok: boolean; plugin?: ComposeVCPlugin; error?: string }>;
+      pluginsProbe: (
+        id: string
+      ) => Promise<{ ok: boolean; probe?: NonNullable<ComposeVCPluginStatus["probe"]>; error?: string }>;
+      pluginsJobs: (options?: {
+        limit?: number;
+        pluginId?: string;
+      }) => Promise<{ ok: boolean; jobs?: ComposeVCPluginJob[]; running?: string[]; error?: string }>;
+      pluginsJob: (jobId: string) => Promise<{ ok: boolean; job?: ComposeVCPluginJob; error?: string }>;
+      pluginsCancel: (jobId: string) => Promise<{ ok: boolean; canceled?: boolean; error?: string }>;
+      pluginsDeleteJob: (jobId: string) => Promise<{ ok: boolean; error?: string }>;
+      pluginsPreview: (
+        jobId: string,
+        name?: string
+      ) => Promise<{ ok: boolean; dataUrl?: string; path?: string; bytes?: number; error?: string }>;
+      pluginsPickExecutable: () => Promise<{ ok: boolean; canceled?: boolean; path?: string; error?: string }>;
+      pluginsPickDirectory: () => Promise<{ ok: boolean; canceled?: boolean; path?: string; error?: string }>;
+      pluginsCopyArtifacts: (
+        jobId: string,
+        targetDir?: string
+      ) => Promise<{ ok: boolean; folder?: string; copied?: string[]; outputDir?: string; error?: string }>;
+      pluginsOpenPath: (jobId?: string, target?: string) => Promise<{ ok: boolean; path?: string; error?: string }>;
+      pluginsOpenInBlender: (
+        jobId?: string,
+        blendPath?: string
+      ) => Promise<{ ok: boolean; file?: string; executable?: string; error?: string }>;
+      pluginsRunDemo: (id?: string) => Promise<{ ok: boolean; job?: ComposeVCPluginJob; error?: string }>;
+      onPluginsChanged: (
+        callback: (payload: { type?: string; pluginId?: string; jobId?: string; status?: string }) => void
+      ) => () => void;
+      onPluginJob: (
+        callback: (payload: {
+          jobId?: string;
+          pluginId?: string;
+          stage?: string;
+          percent?: number;
+          status?: string;
+          done?: boolean;
+          error?: string;
+        }) => void
+      ) => () => void;
       estimateContextTokens: (rootPath: string | null, projectName?: string) => Promise<number>;
       listMcpServers: () => Promise<import("./types").McpServer[]>;
       addMcpServer: (input: Partial<import("./types").McpServer> & { name: string }) => Promise<import("./types").McpServer>;
