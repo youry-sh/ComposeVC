@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   Box,
@@ -122,6 +122,7 @@ const PluginsWorkspace: React.FC = () => {
   const [previews, setPreviews] = useState<Record<string, string>>({});
   const [logs, setLogs] = useState<Record<string, string>>({});
   const [logBusy, setLogBusy] = useState(false);
+  const pendingListRefresh = useRef<number | null>(null);
 
   const plugin = useMemo(
     () => state?.plugins.find((entry) => entry.id === activeId) || state?.plugins[0] || null,
@@ -179,12 +180,26 @@ const PluginsWorkspace: React.FC = () => {
         };
         return next;
       });
+      if (!payload.done) {
+        // A job started by the AI (or another window) is not in the list yet —
+        // debounce a disk re-read so the row appears without hammering the store.
+        if (pendingListRefresh.current == null) {
+          pendingListRefresh.current = window.setTimeout(() => {
+            pendingListRefresh.current = null;
+            void refreshJobs();
+          }, 900);
+        }
+      }
       if (payload.done) {
         void refreshJobs();
         void refreshPlugins();
       }
     });
     return () => {
+      if (pendingListRefresh.current != null) {
+        window.clearTimeout(pendingListRefresh.current);
+        pendingListRefresh.current = null;
+      }
       offChanged?.();
       offJob?.();
     };
@@ -966,6 +981,18 @@ const PluginsWorkspace: React.FC = () => {
                                 {item.path}
                               </span>
                               <span className="shrink-0 text-ink-500">{fmtBytes(item.bytes)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {selectedJob.bakes.length > 0 && (
+                        <div className="grid gap-0.5 font-mono text-[10px] leading-4 text-ink-600">
+                          {selectedJob.bakes.map((item) => (
+                            <div key={item.path} className="flex items-center gap-2">
+                              <span className="w-11 shrink-0 text-ink-500">TEX</span>
+                              <span className="min-w-0 flex-1 truncate" title={item.path}>
+                                {item.path}
+                              </span>
                             </div>
                           ))}
                         </div>

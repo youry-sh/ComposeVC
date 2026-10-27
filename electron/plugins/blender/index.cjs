@@ -163,7 +163,7 @@ function readVersion(executable) {
     }
   })()}`;
   const cached = detectCache.get(key);
-  if (cached && Date.now() - cached.at < 30000) return cached;
+  if (cached && Date.now() - cached.at < 5 * 60 * 1000) return cached;
   let version = "";
   let error = "";
   try {
@@ -268,6 +268,7 @@ function summarizeResult(result, parsed) {
   if (stats.polygons) parts.push(`${Number(stats.polygons).toLocaleString("ru-RU")} полигонов`);
   if (stats.materials) parts.push(`${stats.materials} материалов`);
   if (Array.isArray(result?.renders) && result.renders.length) parts.push(`${result.renders.length} рендер(ов)`);
+  if (Array.isArray(result?.bakes) && result.bakes.length) parts.push(`${result.bakes.length} текстур`);
   if (Array.isArray(result?.exports) && result.exports.length) {
     parts.push(result.exports.map((item) => item.format).join("/"));
   }
@@ -443,6 +444,14 @@ async function execute(userDataPath, job, executable, args, options = {}) {
         })
         .filter(Boolean)
     : [];
+  const bakes = Array.isArray(driverResult?.bakes)
+    ? driverResult.bakes
+        .map((item) => {
+          const file = existingArtifact(item.path);
+          return file ? { name: item.name || path.basename(item.path), path: file.path } : null;
+        })
+        .filter(Boolean)
+    : [];
   const blendPath = driverResult?.blendPath && existingArtifact(driverResult.blendPath) ? driverResult.blendPath : "";
   const preview = renders[0]?.path || (existingArtifact(path.join(job.dir, "preview.png"))?.path ?? "");
 
@@ -456,6 +465,7 @@ async function execute(userDataPath, job, executable, args, options = {}) {
     blendPath,
     previewPath: preview,
     renders,
+    bakes,
     exports: exportsList,
     warnings,
     error,

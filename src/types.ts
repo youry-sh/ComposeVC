@@ -649,6 +649,7 @@ export interface ComposeVCPluginJob {
   blendPath: string;
   previewPath: string;
   renders: Array<{ name: string; path: string }>;
+  bakes: Array<{ name: string; path: string }>;
   exports: Array<{ format: string; path: string; bytes: number }>;
   logPath: string;
   error: string;

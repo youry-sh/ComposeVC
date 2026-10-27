@@ -267,6 +267,7 @@ function normalizeJob(entry, fallbackId) {
     blendPath: cleanString(entry.blendPath, 4096),
     previewPath: cleanString(entry.previewPath, 4096),
     renders: Array.isArray(entry.renders) ? entry.renders.map(normalizeRender).filter(Boolean) : [],
+    bakes: Array.isArray(entry.bakes) ? entry.bakes.map(normalizeRender).filter(Boolean) : [],
     exports: Array.isArray(entry.exports) ? entry.exports.map(normalizeExport).filter(Boolean) : [],
     logPath: cleanString(entry.logPath, 4096),
     error: cleanString(entry.error, 4000),

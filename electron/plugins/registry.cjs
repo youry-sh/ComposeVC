@@ -152,6 +152,7 @@ async function copyArtifacts(userDataPath, jobId, targetDir) {
   const files = [
     ...record.exports.map((item) => item.path),
     ...record.renders.map((item) => item.path),
+    ...(record.bakes || []).map((item) => item.path),
     ...(record.blendPath ? [record.blendPath] : []),
   ];
   for (const file of files) {
