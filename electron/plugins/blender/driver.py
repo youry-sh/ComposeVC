@@ -2599,6 +2599,20 @@ def execute_plan(plan, out_dir):
         except Exception:
             pass
 
+    progress("addons", 4)
+    addon_reports = setup_addons(plan)
+    animation_spec = plan.get("animation") if isinstance(plan.get("animation"), dict) else {}
+    try:
+        if animation_spec.get("frame_start") is not None:
+            scene().frame_start = max(1, as_int(animation_spec.get("frame_start"), 1))
+        if animation_spec.get("frame_end") is not None:
+            scene().frame_end = max(scene().frame_start, as_int(animation_spec.get("frame_end"), 120))
+        if animation_spec.get("fps") is not None:
+            scene().render.fps = max(1, as_int(animation_spec.get("fps"), 24))
+        scene().frame_set(scene().frame_start)
+    except Exception:
+        pass
+
     progress("materials", 10)
     materials = {}
     for spec in plan.get("materials") or []:
@@ -2630,6 +2644,13 @@ def execute_plan(plan, out_dir):
         coll = collections.get(collection_name) or ensure_collection(collection_name)
         create_object(spec, coll, materials)
         progress("objects", 18 + int(32 * (index + 1) / total), object=spec.get("name"))
+
+    rig_specs = plan.get("armatures") or []
+    if rig_specs:
+        rig_coll = ensure_collection("Rig")
+        for spec in rig_specs:
+            if isinstance(spec, dict):
+                create_armature(spec, rig_coll)
 
     if plan.get("lighting"):
         center, radius = scene_bounds()
@@ -2667,10 +2688,18 @@ def execute_plan(plan, out_dir):
         if isinstance(step, dict) and step.get("python"):
             run_python_snippet(step.get("python"), out_dir)
 
+    optimized = []
+    if plan.get("optimize"):
+        progress("optimize", 58)
+        optimized = optimize_meshes(plan)
+
     bake_results = []
     if plan.get("bake"):
         progress("bake", 62)
         bake_results = bake_plan(plan.get("bake"), out_dir)
+
+    progress("audit", 66)
+    quality = quality_report(plan)
 
     save_spec = plan.get("save", "scene.blend")
     blend_path = ""
@@ -2716,6 +2745,10 @@ def execute_plan(plan, out_dir):
         "exports": exports,
         "bakes": bake_results,
         "stats": stats,
+        "addons": addon_reports,
+        "quality": quality,
+        "optimized": optimized,
+        "frameRange": {"start": scene().frame_start, "end": scene().frame_end, "fps": scene().render.fps},
     }
 
 
