@@ -86,7 +86,14 @@ parentPort.on("message", (msg) => {
         parentPort.postMessage({ result: Array.isArray(payload?.items) ? payload.items.length : 0 });
         break;
       case "formatToolResult": {
-        const value = payload?.value;
+        const raw = payload?.value;
+        let value = raw;
+        if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+          // Reserved multimodal fields are transported separately to the adapter;
+          // never stringify base64 image data into the text transcript.
+          const { __image, __images, ...rest } = raw;
+          value = rest;
+        }
         const text =
           value && typeof value === "object" && typeof value.__toolText === "string"
             ? value.__toolText
