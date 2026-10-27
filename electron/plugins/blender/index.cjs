@@ -772,6 +772,7 @@ module.exports = {
   isBlenderInstalled,
   runPlan,
   runPython,
+  runAddonJob,
   cancelJob,
   listRunning,
   readPreviewDataUrl,
