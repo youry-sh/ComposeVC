@@ -319,22 +319,26 @@ function createExpertService(deps = {}) {
     if (!rootPath) return null;
     const key = store.projectKey(rootPath);
     if (studyJobs.has(key)) {
-      emit(slotId, {
-        phase: "study",
-        status: "Waiting for the project study that is already running…",
-        sessionId,
-        immediate: true,
-      });
-      return studyJobs.get(key);
+      const running = studyJobs.get(key);
+      if (running.slotId !== slotId) {
+        emit(slotId, {
+          phase: "study",
+          status: "Waiting for the project study that is already running…",
+          sessionId,
+          immediate: true,
+        });
+      }
+      return running.promise;
     }
     if (force) {
       store.deleteStudy(userData(), rootPath);
     }
-    const job = runStudy({ slotId, sessionId, rootPath, projectName, modelId, signal }).finally(() => {
+    const entry = { slotId, promise: null };
+    entry.promise = runStudy({ slotId, sessionId, rootPath, projectName, modelId, signal }).finally(() => {
       studyJobs.delete(key);
     });
-    studyJobs.set(key, job);
-    return job;
+    studyJobs.set(key, entry);
+    return entry.promise;
   }
 
   async function runStudy({ slotId, sessionId, rootPath, projectName, modelId, signal }) {
