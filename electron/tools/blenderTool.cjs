@@ -126,6 +126,27 @@ PLAN (declarative scene, action=scene) — everything optional except objects/so
 `;
 
 
+async function withPreview(job, input, payload, { force = false } = {}) {
+  const enabled = force ? input.attach !== false : input.attach === true || input.include_image === true;
+  if (!enabled || !job?.previewPath) return payload;
+  try {
+    const image = await imageTools.fileToDataUrl(job.previewPath, {
+      maxSize: Number(input.image_max) || 1280,
+    });
+    return {
+      ...payload,
+      previewImage: job.previewPath,
+      __image: {
+        url: image.dataUrl,
+        mimeType: image.mimeType,
+        name: path.basename(job.previewPath),
+      },
+    };
+  } catch (error) {
+    return { ...payload, previewError: error instanceof Error ? error.message : String(error) };
+  }
+}
+
 /** Every answer carries one bit: 1 = it happened / it is true, 0 = it did not. */
 function truth(ok, text, payload = {}) {
   return { bit: ok ? 1 : 0, ok: Boolean(ok), text, ...payload };
@@ -362,7 +383,7 @@ async function run(action, input, context) {
         signal,
       });
       const copied = job.status === "succeeded" ? await copyToOutput(userDataPath, job, input.output_dir) : null;
-      return truth(job.status === "succeeded", jobSummary(job), jobPayload(job, copied ? { copied } : {}));
+      return truth(job.status === "succeeded", jobSummary(job), await withPreview(job, input, jobPayload(job, copied ? { copied } : {}), { force: true }));
     }
     case "python": {
       const code = pick(input, "code", "python", "script", "source");
@@ -376,7 +397,7 @@ async function run(action, input, context) {
       const text = job.status === "succeeded"
         ? `Скрипт выполнен за ${job.durationMs} мс.${job.blendPath ? `\nblend: ${job.blendPath}` : ""}${tail ? `\nвывод:\n${tail}` : ""}`
         : `Скрипт не выполнен: ${job.error}\n${tail}`;
-      return truth(job.status === "succeeded", text, jobPayload(job, { stdoutTail: job.logTail, stderrTail: job.stderrTail }));
+      return truth(job.status === "succeeded", text, await withPreview(job, input, jobPayload(job, { stdoutTail: job.logTail, stderrTail: job.stderrTail }), { force: true }));
     }
     case "render": {
       const source = pick(input, "blend", "source", "path");
