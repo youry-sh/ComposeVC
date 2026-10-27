@@ -216,8 +216,14 @@ function toDisplayContent(data, toolName = "") {
       const header = parts.length ? `${parts.join("\n")}\n` : "";
       text = `${header}${data.content}`;
     } else {
-      // Compact JSON — pretty-print wastes space under the char cap
-      text = JSON.stringify(data);
+      // Compact JSON — pretty-print wastes space under the char cap.
+      // Reserved multimodal fields travel separately (never as base64 text).
+      let safe = data;
+      if (data && typeof data === "object" && !Array.isArray(data)) {
+        const { __image, __images, ...rest } = data;
+        safe = rest;
+      }
+      text = JSON.stringify(safe);
     }
   } catch {
     text = String(data);
