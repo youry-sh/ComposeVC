@@ -702,17 +702,35 @@ async function runAddonJob(userDataPath, config, spec = {}, options = {}) {
 
 async function probe(userDataPath, config) {
   const blender = requireBlender(config);
-  const cacheKey = `${blender.executable}::${blender.version}`;
+  const modules = Array.isArray(config?.addons)
+    ? config.addons.map((entry) => String(entry || "").trim()).filter(Boolean)
+    : [];
+  const cacheKey = `${blender.executable}::${blender.version}::${modules.join(",")}`;
   const cached = probeCache.get(cacheKey);
   if (cached && Date.now() - cached.at < 10 * 60 * 1000) return cached.value;
   const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "cv-blender-probe-"));
   try {
-    const args = ["--factory-startup", "-b", "--python-exit-code", "3", "--python", DRIVER, "--", "--probe", "--out", dir];
+    const modulesPath = path.join(dir, "addons.json");
+    await fs.promises.writeFile(modulesPath, JSON.stringify(modules), "utf8");
+    const args = [
+      "--factory-startup",
+      "-b",
+      "--python-exit-code",
+      "3",
+      "--python",
+      DRIVER,
+      "--",
+      "--probe",
+      "--out",
+      dir,
+      "--check-addons",
+      modulesPath,
+    ];
     execFileSync(blender.executable, args, {
-      timeout: 90000,
+      timeout: 120000,
       windowsHide: true,
       encoding: "utf8",
-      maxBuffer: 4 * 1024 * 1024,
+      maxBuffer: 8 * 1024 * 1024,
       stdio: ["ignore", "pipe", "pipe"],
     });
     let parsed = null;
@@ -728,6 +746,9 @@ async function probe(userDataPath, config) {
       engines: Array.isArray(parsed?.engines) ? parsed.engines : [],
       operators: parsed?.operators || {},
       addons: Array.isArray(parsed?.addons) ? parsed.addons.slice(0, 60) : [],
+      addonChecks: Array.isArray(parsed?.addonChecks) ? parsed.addonChecks : [],
+      userAddons: parsed?.userAddons || "",
+      userExtensions: parsed?.userExtensions || "",
     };
     probeCache.set(cacheKey, { at: Date.now(), value });
     return value;
@@ -739,6 +760,15 @@ async function probe(userDataPath, config) {
       engines: [],
       operators: {},
       addons: [],
+      addonChecks: modules.map((module) => ({
+        module,
+        requested: module,
+        enabled: false,
+        installed: false,
+        error: "probe failed",
+      })),
+      userAddons: "",
+      userExtensions: "",
       error: err?.stderr ? String(err.stderr).slice(-2000) : err?.message || String(err),
     };
   } finally {

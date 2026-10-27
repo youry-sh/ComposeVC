@@ -3006,7 +3006,34 @@ def execute_plan(plan, out_dir):
     }
 
 
-def probe(out_dir):
+def check_configured_addons(modules):
+    reports = []
+    for module in modules or []:
+        name = str(module or "").strip()
+        if not name:
+            continue
+        enabled, error = enable_addon_module(name)
+        installed = bool(enabled) or addon_installed(name)
+        if not enabled and name.startswith("bl_ext."):
+            install_ok, install_error = try_install_extension_module(name)
+            if install_ok:
+                enabled, error = enable_addon_module(name)
+                installed = bool(enabled) or addon_installed(name)
+            elif install_error:
+                error = (error + " | install: " + install_error).strip(" |")
+        reports.append(
+            {
+                "module": enabled or name,
+                "requested": name,
+                "enabled": bool(enabled),
+                "installed": bool(installed),
+                "error": error,
+            }
+        )
+    return reports
+
+
+def probe(out_dir, check_addons=None):
     engines = available_engines()
     operators = {}
     for group, name in [
@@ -3021,12 +3048,26 @@ def probe(out_dir):
             operators["%s.%s" % (group, name)] = hasattr(getattr(bpy.ops, group), name)
         except Exception:
             operators["%s.%s" % (group, name)] = False
+    addon_checks = check_configured_addons(check_addons)
+    user_addons = ""
+    user_extensions = ""
+    try:
+        user_addons = bpy.utils.user_resource("SCRIPTS", path="addons", create=True) or ""
+    except Exception:
+        pass
+    try:
+        user_extensions = bpy.utils.user_resource("EXTENSIONS", create=True) or ""
+    except Exception:
+        pass
     result = {
         "ok": True,
         "blenderVersion": bpy.app.version_string,
         "engines": engines,
         "operators": operators,
         "addons": sorted(list(bpy.context.preferences.addons.keys())),
+        "addonChecks": addon_checks,
+        "userAddons": user_addons,
+        "userExtensions": user_extensions,
     }
     RESULT.update(result)
     RESULT["warningsCount"] = len(WARNINGS)
@@ -3039,6 +3080,7 @@ def main():
     args = argv[argv.index("--") + 1 :] if "--" in argv else []
     plan_path = ""
     probe_mode = False
+    check_addons_path = ""
     out_dir = ""
     index = 0
     while index < len(args):
@@ -3051,6 +3093,10 @@ def main():
             out_dir = args[index + 1]
             index += 2
             continue
+        if token == "--check-addons" and index + 1 < len(args):
+            check_addons_path = args[index + 1]
+            index += 2
+            continue
         if token == "--probe":
             probe_mode = True
         index += 1
@@ -3060,7 +3106,15 @@ def main():
     RESULT["startedAt"] = int(STARTED * 1000)
 
     if probe_mode:
-        probe(OUT_DIR)
+        modules = []
+        if check_addons_path and os.path.exists(check_addons_path):
+            try:
+                with open(check_addons_path, "r", encoding="utf-8") as handle:
+                    payload = json.load(handle)
+                modules = payload if isinstance(payload, list) else payload.get("modules") or []
+            except Exception as exc:
+                warn("cannot read add-on check list: %s" % exc)
+        probe(OUT_DIR, [str(module) for module in modules if isinstance(module, str)])
         RESULT["finishedAt"] = int(time.time() * 1000)
         RESULT["durationMs"] = int((time.time() - STARTED) * 1000)
         write_result()
