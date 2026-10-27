@@ -4169,6 +4169,28 @@ ipcMain.handle("plugins:cancel", async (_event, jobId) => {
   }
 });
 
+ipcMain.handle("plugins:log", async (_event, jobId) => {
+  try {
+    const job = await pluginsRegistry.job(pluginsUserData(), String(jobId || ""));
+    if (!job) return { ok: false, error: "Задача не найдена." };
+    const logPath = job.logPath || require("path").join(job.dir, "log.txt");
+    const stat = await fs.promises.stat(logPath).catch(() => null);
+    if (!stat || !stat.isFile()) return { ok: false, error: "Лог пока пуст." };
+    const size = Number(stat.size) || 0;
+    const take = Math.min(size, 64000);
+    const handle = await fs.promises.open(logPath, "r");
+    try {
+      const buffer = Buffer.alloc(take);
+      await handle.read(buffer, 0, take, Math.max(0, size - take));
+      return { ok: true, log: buffer.toString("utf8"), path: logPath, size };
+    } finally {
+      await handle.close();
+    }
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
 ipcMain.handle("plugins:deleteJob", async (_event, jobId) => {
   try {
     const result = await pluginsRegistry.deleteJob(pluginsUserData(), String(jobId || ""));

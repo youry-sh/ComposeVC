@@ -25,7 +25,7 @@ type SizeworkoutUpdate = {
   payload?: unknown;
 };
 
-import { AgentToolProgress, CfMailConfig, ChatExecutionRequest, ChatExecutionResponse, ChatMessage, ChatRequestMessage, ChatSession, ChatSessionPage, ChatSessionSummary, CompactChatRequest, CompactChatResponse, FileNode, KnowledgeChunk, KnowledgeChunkSummary, KnowledgeExportResult, KnowledgeImportCanceled, KnowledgeImportResult, KnowledgeListResponse, ProblemItem, ProjectSearchResult, ProjectTask, ProviderConfig, RunnerJob, RunnerReport, RunnerReportSummary } from "./types";
+import { AgentToolProgress, CfMailConfig, ChatExecutionRequest, ChatExecutionResponse, ChatMessage, ChatRequestMessage, ChatSession, ChatSessionPage, ChatSessionSummary, CompactChatRequest, CompactChatResponse, ComposeVCPlugin, ComposeVCPluginConfig, ComposeVCPluginJob, ComposeVCPluginStatus, ComposeVCPluginsState, FileNode, KnowledgeChunk, KnowledgeChunkSummary, KnowledgeExportResult, KnowledgeImportCanceled, KnowledgeImportResult, KnowledgeListResponse, ProblemItem, ProjectSearchResult, ProjectTask, ProviderConfig, RunnerJob, RunnerReport, RunnerReportSummary } from "./types";
 
 /** Snapshot of a chat folder's repository — see electron/gitService.cjs */
 export type GitStatus =
@@ -80,105 +80,6 @@ export type StorageItem = { id: string; phone: string; name: string; path: strin
 export type GitBranch = { name: string; current: boolean };
 export type GitChangedFile = { code: string; staged: boolean; path: string };
 export type GitCommit = { hash: string; subject: string; author: string; when: string };
-
-// ── Plugins (Blender first) ────────────────────────────────────────────────
-export type ComposeVCPluginJobStats = {
-  objects?: number;
-  meshes?: number;
-  polygons?: number;
-  vertices?: number;
-  materials?: number;
-  lights?: number;
-  cameras?: number;
-  images?: number;
-};
-
-export type ComposeVCPluginJob = {
-  id: string;
-  pluginId: string;
-  kind: string;
-  title: string;
-  status: "queued" | "running" | "succeeded" | "failed" | "canceled" | string;
-  progress: number;
-  stage: string;
-  createdAt: number;
-  startedAt: number;
-  finishedAt: number;
-  durationMs: number;
-  dir: string;
-  blendPath: string;
-  previewPath: string;
-  renders: Array<{ name: string; path: string }>;
-  exports: Array<{ format: string; path: string; bytes: number }>;
-  logPath: string;
-  error: string;
-  warnings: string[];
-  summary: string;
-  stats: ComposeVCPluginJobStats;
-  blender: { path: string; version: string; engine: string };
-};
-
-export type ComposeVCPluginStatus = {
-  found: boolean;
-  executable: string;
-  version: string;
-  source?: string;
-  error?: string;
-  running?: string[];
-  checked?: Array<{ path: string; ok: boolean; version?: string; error?: string }>;
-  probe?: {
-    ok?: boolean;
-    version?: string;
-    engines?: string[];
-    operators?: Record<string, boolean>;
-    addons?: string[];
-    error?: string;
-  };
-};
-
-export type ComposeVCPluginConfig = {
-  executable: string;
-  outputDir: string;
-  engine: "EEVEE" | "CYCLES" | "WORKBENCH" | string;
-  resolution: { width: number; height: number };
-  samples: number;
-  format: string;
-  autoRender: boolean;
-  timeoutSec: number;
-  factoryStartup: boolean;
-  keepJobFiles?: boolean;
-};
-
-export type ComposeVCPlugin = {
-  id: string;
-  name: string;
-  kind: string;
-  version: string;
-  tagline: string;
-  description: string;
-  icon?: string;
-  homepage?: string;
-  tools: string[];
-  capabilities: string[];
-  examples: string[];
-  accent?: string;
-  enabled: boolean;
-  config: ComposeVCPluginConfig;
-  stats: { runs: number; failures: number; lastRunAt: number; lastError: string };
-  status: ComposeVCPluginStatus;
-  lastJob: ComposeVCPluginJob | null;
-  outputDir: string;
-  jobsCount: number;
-};
-
-export type ComposeVCPluginsState = {
-  ok: boolean;
-  version?: number;
-  plugins: ComposeVCPlugin[];
-  jobsRoot: string;
-  running?: string[];
-  error?: string;
-};
 
 
 declare global {
@@ -655,6 +556,7 @@ declare global {
         pluginId?: string;
       }) => Promise<{ ok: boolean; jobs?: ComposeVCPluginJob[]; running?: string[]; error?: string }>;
       pluginsJob: (jobId: string) => Promise<{ ok: boolean; job?: ComposeVCPluginJob; error?: string }>;
+      pluginsLog: (jobId: string) => Promise<{ ok: boolean; log?: string; path?: string; size?: number; error?: string }>;
       pluginsCancel: (jobId: string) => Promise<{ ok: boolean; canceled?: boolean; error?: string }>;
       pluginsDeleteJob: (jobId: string) => Promise<{ ok: boolean; error?: string }>;
       pluginsPreview: (

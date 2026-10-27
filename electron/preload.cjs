@@ -177,6 +177,7 @@ contextBridge.exposeInMainWorld("lopster", {
   pluginsProbe: (id) => ipcRenderer.invoke("plugins:probe", id),
   pluginsJobs: (options) => ipcRenderer.invoke("plugins:jobs", options || {}),
   pluginsJob: (jobId) => ipcRenderer.invoke("plugins:job", jobId),
+  pluginsLog: (jobId) => ipcRenderer.invoke("plugins:log", jobId),
   pluginsCancel: (jobId) => ipcRenderer.invoke("plugins:cancel", jobId),
   pluginsDeleteJob: (jobId) => ipcRenderer.invoke("plugins:deleteJob", jobId),
   pluginsPreview: (jobId, name) => ipcRenderer.invoke("plugins:preview", jobId, name || ""),

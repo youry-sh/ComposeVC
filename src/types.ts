@@ -619,3 +619,104 @@ export interface ProjectTask {
   createdAt: number;
   updatedAt: number;
 }
+
+// ── Plugins (built-in capabilities such as Blender) ────────────────────────
+
+export interface ComposeVCPluginJobStats {
+  objects?: number;
+  meshes?: number;
+  polygons?: number;
+  vertices?: number;
+  materials?: number;
+  lights?: number;
+  cameras?: number;
+  images?: number;
+}
+
+export interface ComposeVCPluginJob {
+  id: string;
+  pluginId: string;
+  kind: string;
+  title: string;
+  status: "queued" | "running" | "succeeded" | "failed" | "canceled" | string;
+  progress: number;
+  stage: string;
+  createdAt: number;
+  startedAt: number;
+  finishedAt: number;
+  durationMs: number;
+  dir: string;
+  blendPath: string;
+  previewPath: string;
+  renders: Array<{ name: string; path: string }>;
+  exports: Array<{ format: string; path: string; bytes: number }>;
+  logPath: string;
+  error: string;
+  warnings: string[];
+  summary: string;
+  stats: ComposeVCPluginJobStats;
+  blender: { path: string; version: string; engine: string };
+}
+
+export interface ComposeVCPluginStatus {
+  found: boolean;
+  executable: string;
+  version: string;
+  source?: string;
+  error?: string;
+  running?: string[];
+  checked?: Array<{ path: string; ok: boolean; version?: string; error?: string }>;
+  probe?: {
+    ok?: boolean;
+    version?: string;
+    engines?: string[];
+    operators?: Record<string, boolean>;
+    addons?: string[];
+    error?: string;
+  };
+}
+
+export interface ComposeVCPluginConfig {
+  executable: string;
+  outputDir: string;
+  engine: "EEVEE" | "CYCLES" | "WORKBENCH" | string;
+  resolution: { width: number; height: number };
+  samples: number;
+  format: string;
+  autoRender: boolean;
+  timeoutSec: number;
+  factoryStartup: boolean;
+  keepJobFiles?: boolean;
+}
+
+export interface ComposeVCPlugin {
+  id: string;
+  name: string;
+  kind: string;
+  version: string;
+  tagline: string;
+  description: string;
+  icon?: string;
+  homepage?: string;
+  tools: string[];
+  capabilities: string[];
+  examples: string[];
+  accent?: string;
+  enabled: boolean;
+  config: ComposeVCPluginConfig;
+  stats: { runs: number; failures: number; lastRunAt: number; lastError: string };
+  status: ComposeVCPluginStatus;
+  lastJob: ComposeVCPluginJob | null;
+  outputDir: string;
+  jobsCount: number;
+}
+
+export interface ComposeVCPluginsState {
+  ok: boolean;
+  version?: number;
+  plugins: ComposeVCPlugin[];
+  jobsRoot: string;
+  running?: string[];
+  error?: string;
+}
+
