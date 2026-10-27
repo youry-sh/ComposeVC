@@ -124,6 +124,12 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  const enabledCount = useMemo(
+    () => tools.filter((tool) => tool.enabled !== false).length,
+    [tools]
+  );
 
   const filteredTools = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -139,26 +145,35 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
   }, [tools, search]);
 
   useEffect(() => {
-    if (selectedId && !tools.some((t) => t.id === selectedId)) {
+    if (selectedId && tools.some((t) => t.id === selectedId)) return;
+    const next = tools[0];
+    if (!next) {
       setSelectedId(null);
       setDescription("");
+      setConfirmDeleteId(null);
       setError(null);
+      return;
     }
+    setSelectedId(next.id);
+    setDescription(next.description || "");
   }, [tools, selectedId]);
 
   const closeSelection = () => {
     setSelectedId(null);
     setDescription("");
+    setConfirmDeleteId(null);
     setError(null);
   };
 
   const openTool = (tool: CustomTool) => {
     setSelectedId(tool.id);
     setDescription(tool.description || "");
+    setConfirmDeleteId(null);
     setError(null);
   };
 
   const selectedTool = selectedId ? tools.find((t) => t.id === selectedId) : undefined;
+  const dirty = !!selectedTool && description !== (selectedTool.description || "");
 
   const handleSave = async () => {
     if (!selectedTool) return;
