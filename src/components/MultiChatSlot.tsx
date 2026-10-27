@@ -934,23 +934,6 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
   const [runningBySession, setRunningBySession] = useState<Record<string, boolean>>({});
   const runningBySessionRef = useRef<Record<string, boolean>>({});
   const [thinking, setThinking] = useState(false);
-  const thinkingMaxStorageKey = `composevc:thinking-max:${slotId}`;
-  const [thinkingMaxEnabled, setThinkingMaxEnabled] = useState(() => {
-    try {
-      return window.localStorage.getItem(thinkingMaxStorageKey) === "1";
-    } catch {
-      return false;
-    }
-  });
-  const thinkingMaxRef = useRef(thinkingMaxEnabled);
-  const toggleThinkingMax = useCallback(() => {
-    setThinkingMaxEnabled((current) => {
-      const next = !current;
-      thinkingMaxRef.current = next;
-      try { window.localStorage.setItem(thinkingMaxStorageKey, next ? "1" : "0"); } catch { /* optional */ }
-      return next;
-    });
-  }, [thinkingMaxStorageKey]);
   const [toolActivity, setToolActivity] = useState<AgentToolProgress[]>([]);
   const toolActivityRef = useRef<AgentToolProgress[]>([]);
   const [assistantDrafts, setAssistantDrafts] = useState<string[]>([]);
