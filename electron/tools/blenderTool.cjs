@@ -220,6 +220,16 @@ function jobSummary(job) {
   if (job.blendPath) lines.push(`blend: ${job.blendPath}`);
   if (job.renders?.length) lines.push(`рендеры: ${job.renders.map((item) => item.path).join(", ")}`);
   if (job.exports?.length) lines.push(`экспорт: ${job.exports.map((item) => `${item.format} ${item.path}`).join(", ")}`);
+  if (job.quality) {
+    lines.push(
+      `качество: ${job.quality.score}/100${job.quality.game_ready ? " · game-ready" : " · есть замечания"}` +
+        (job.quality.issues?.length ? ` · ${job.quality.issues.slice(0, 8).join(", ")}` : "")
+    );
+  }
+  if (job.addons?.length) {
+    const modules = job.addons.map((entry) => entry.module).filter(Boolean);
+    if (modules.length) lines.push(`аддоны: ${modules.join(", ")}`);
+  }
   if (stats.objects) lines.push(`сцена: ${stats.objects} объектов · ${stats.polygons || 0} полигонов · ${stats.materials || 0} материалов`);
   if (job.warnings?.length) lines.push(`предупреждения (${job.warnings.length}): ${job.warnings.slice(0, 5).join(" | ")}`);
   return lines.join("\n");
@@ -250,6 +260,8 @@ function jobPayload(job, extra = {}) {
     exports: job.exports || [],
     warnings: (job.warnings || []).slice(0, 20),
     warningsCount: (job.warnings || []).length,
+    quality: job.quality || null,
+    addons: job.addons || [],
     stats: {
       objects: stats.objects || 0,
       meshes: stats.meshes || 0,
