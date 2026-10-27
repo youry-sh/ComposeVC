@@ -367,7 +367,7 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
       setSlots((prev) =>
         prev.map((slot) => {
           if (slot.id !== slotId) return slot;
-          const study = slot.study ? { ...slot.study } : {};
+          const study: ExpertStudyMeta = { ...(slot.study || {}) };
           if (payload.files !== undefined) study.files = Number(payload.files) || 0;
           if (payload.lines !== undefined) study.lines = Number(payload.lines) || 0;
           if (payload.rounds !== undefined) study.rounds = Number(payload.rounds) || 0;
@@ -395,7 +395,7 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
     }
     try {
       const status = await window.lopster?.expertStudyStatus?.(rootPath);
-      patchSlot(slotId, { study: (status?.meta as ExpertStudyMeta) || null });
+      patchSlot(slotId, { study: (status?.meta as unknown as ExpertStudyMeta) || null });
     } catch {
       patchSlot(slotId, { study: null });
     }
@@ -809,7 +809,7 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
           }
           const isPrompt = message.meta?.kind === "prompt";
           const isError = message.meta?.kind === "error";
-          const meta = message.meta || {};
+          const meta = readMeta(message);
           return (
             <article
               key={message.id}
