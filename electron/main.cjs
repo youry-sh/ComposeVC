@@ -379,6 +379,7 @@ visionBridge.setVisionExecutor(async (request = {}) => {
     model,
     messages: Array.isArray(request.messages) ? request.messages : [],
     tools: [],
+    onRetry: () => {},
   });
   return {
     text: result?.text || "",
