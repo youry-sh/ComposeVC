@@ -633,6 +633,24 @@ export interface ComposeVCPluginJobStats {
   images?: number;
 }
 
+export interface ComposeVCPluginQuality {
+  score: number;
+  game_ready: boolean;
+  issues: string[];
+  checks: Array<{ id: string; ok: boolean }>;
+  materials: { total: number; textured: number; flat: number };
+  meshes: Array<{
+    name: string;
+    polygons: number;
+    triangles: number;
+    uv: boolean;
+    textured: boolean;
+    scale_applied: boolean;
+    issues: string[];
+    materials: string[];
+  }>;
+}
+
 export interface ComposeVCPluginJob {
   id: string;
   pluginId: string;
@@ -654,6 +672,8 @@ export interface ComposeVCPluginJob {
   logPath: string;
   error: string;
   warnings: string[];
+  addons: Array<{ module: string; path: string; kind: string; enabled: boolean; installed: boolean; error: string }>;
+  quality: ComposeVCPluginQuality | null;
   summary: string;
   stats: ComposeVCPluginJobStats;
   blender: { path: string; version: string; engine: string };
@@ -688,6 +708,7 @@ export interface ComposeVCPluginConfig {
   timeoutSec: number;
   factoryStartup: boolean;
   keepJobFiles?: boolean;
+  addons: string[];
 }
 
 export interface ComposeVCPlugin {
