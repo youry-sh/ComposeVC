@@ -507,12 +507,12 @@ def build_material(spec):
             if tex.get("roughness_map"):
                 map_range = nodes.new("ShaderNodeMapRange")
                 map_range.location = (-180, -120)
-                lo = as_float(tex.get("roughness_min", max(0.0, as_float(spec.get("roughness", 0.45)) * 0.35)), 0.1)
+                lo = as_float(tex.get("roughness_min", max(0.02, as_float(spec.get("roughness", 0.45)) * 0.35)), 0.1)
                 hi = as_float(tex.get("roughness_max", min(1.0, as_float(spec.get("roughness", 0.45)) * 1.9 + 0.05)), 0.8)
-                set_input(map_range, lo, "From Min")
-                set_input(map_range, hi, "To Min")
+                set_input(map_range, 0.0, "From Min")
+                set_input(map_range, 1.0, "From Max")
+                set_input(map_range, lo, "To Min")
                 set_input(map_range, hi, "To Max")
-                set_input(map_range, lo, "From Max")
                 if factor is not None:
                     links.new(factor, map_range.inputs["Value"])
                     links.new(map_range.outputs["Result"], bsdf.inputs["Roughness"])
@@ -744,6 +744,15 @@ def _create_camera_object(spec, coll):
     return obj
 
 
+def _filter_op_kwargs(op, kwargs):
+    """Silently drop keys the operator does not accept (keeps plans forgiving)."""
+    try:
+        allowed = set(op.get_rna_type().properties.keys())
+    except Exception:
+        return kwargs
+    return {key: value for key, value in kwargs.items() if key in allowed}
+
+
 def create_object(spec, coll, materials):
     if not isinstance(spec, dict):
         return None
@@ -752,11 +761,14 @@ def create_object(spec, coll, materials):
     if kind in PRIMITIVES:
         op_name, defaults = PRIMITIVES[kind]
         kwargs = dict(defaults)
-        for key in ("segments", "ring_count", "subdivisions", "vertices", "radius", "radius1", "radius2", "depth", "major_radius", "minor_radius", "major_segments", "minor_segments", "x_subdivisions", "y_subdivisions", "size"):
-            if spec.get(key) is not None:
-                kwargs[key] = int(spec[key]) if key in ("segments", "ring_count", "subdivisions", "vertices", "major_segments", "minor_segments", "x_subdivisions", "y_subdivisions") else as_float(spec[key], defaults.get(key, 0))
+        int_keys = {"segments", "ring_count", "subdivisions", "vertices", "major_segments", "minor_segments", "x_subdivisions", "y_subdivisions"}
+        for key in int_keys.union({"radius", "radius1", "radius2", "depth", "major_radius", "minor_radius", "size"}):
+            if spec.get(key) is None:
+                continue
+            kwargs[key] = int(spec[key]) if key in int_keys else as_float(spec[key], defaults.get(key, 0))
         try:
-            getattr(bpy.ops.mesh, op_name)(**kwargs)
+            op = getattr(bpy.ops.mesh, op_name)
+            op(**_filter_op_kwargs(op, kwargs))
             obj = bpy.context.active_object
         except Exception as exc:
             warn("primitive %s failed: %s" % (kind, exc))
@@ -990,6 +1002,10 @@ def setup_world(spec):
 
 
 def scene_bounds():
+    try:
+        bpy.context.view_layer.update()
+    except Exception:
+        pass
     meshes = [obj for obj in scene().objects if obj.type == "MESH"]
     if not meshes:
         return Vector((0, 0, 0)), 1.0
@@ -1093,18 +1109,31 @@ def place_camera(spec, coll=r"DEFAULT"):
     view = str(spec.get("view", "three_quarter")).lower()
     direction = CAMERA_VIEWS.get(view, CAMERA_VIEWS["three_quarter"])
     lens = as_float(spec.get("lens", 50.0), 50.0)
-    distance_factor = as_float(spec.get("distance", 2.15), 2.15)
-    distance = radius * distance_factor * (50.0 / max(lens, 12.0))
+    sensor = as_float(spec.get("sensor_width", 36.0), 36.0)
+    fov = 2.0 * math.atan((sensor * 0.5) / max(lens, 12.0))
+    base_distance = radius / max(0.12, math.tan(fov * 0.5)) * as_float(spec.get("margin", 1.12), 1.12)
+    distance = base_distance * max(0.15, as_float(spec.get("distance", 1.0), 1.0))
     target = as_vec3(spec.get("look_at")) if spec.get("look_at") is not None else center
-    location = as_vec3(spec.get("location")) if spec.get("location") is not None else Vector(target) + Vector(direction) * distance
+    if spec.get("location") is not None:
+        location = as_vec3(spec.get("location"))
+    else:
+        unit = Vector(direction)
+        try:
+            unit.normalize()
+        except Exception:
+            unit = Vector((1.0, -1.0, 0.6)).normalized()
+        location = Vector(target) + unit * distance
     cam_spec = {
         "name": spec.get("name") or "Camera",
         "type": "camera",
         "location": tuple(location),
         "lens": lens,
+        "sensor_width": sensor,
         "look_at": tuple(target),
         "dof": spec.get("dof"),
         "focus_distance": spec.get("focus_distance", distance),
+        "orthographic": spec.get("orthographic"),
+        "ortho_scale": spec.get("ortho_scale", radius * 2.4),
     }
     coll_obj = None if coll == "DEFAULT" else ensure_collection(coll)
     obj = create_object(cam_spec, coll_obj or coll_root(), {})
