@@ -195,6 +195,7 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
   };
 
   const handleDelete = async (toolId: string) => {
+    setConfirmDeleteId(null);
     try {
       await onRemove(toolId);
       if (selectedId === toolId) closeSelection();
