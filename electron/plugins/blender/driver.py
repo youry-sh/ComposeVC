@@ -1268,6 +1268,7 @@ def create_object(spec, coll, materials):
                 obj.matrix_parent_inverse = parent.matrix_world.inverted()
             except Exception:
                 pass
+    animate_object(obj, spec)
     return obj
 
 
