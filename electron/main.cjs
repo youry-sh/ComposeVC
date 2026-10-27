@@ -53,6 +53,9 @@ const blenderPlugin = require("./plugins/blender/index.cjs");
 const cfMailConfig = require("./cfMailConfig.cjs");
 
 const { TOOLS, getToolSchemas, getToolSchemasAsync } = require("./tools/registry.cjs");
+const visionBridge = require("./vision/index.cjs");
+const { getAdapter: getProviderAdapter } = require("./adapters/index.cjs");
+const { modelSupportsImages } = require("./adapters/contentParts.cjs");
 const { createTelegramBot, normalizeTelegramConfig } = require("./telegramBot.cjs");
 const telegramSlots = require("./telegramSlots.cjs");
 const { resolveUserAnswer, rejectAllPending } = require("./askUserBridge.cjs");

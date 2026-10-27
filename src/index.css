@@ -9255,7 +9255,8 @@
   letter-spacing: .06em;
   color: var(--ink-500);
 }
-/* Rail footer quick buttons — three per row, extra rows wrap downward. */
+/* Rail footer quick buttons — exactly three per row; extra rows wrap downward.
+   Icon sits above the label so long names (Terminal) stay readable in a 196px rail. */
 .chat-rail-quick {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -9263,27 +9264,32 @@
 }
 .chat-rail-quick-btn {
   min-width: 0;
-  height: 24px;
+  height: 30px;
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 0 4px;
+  gap: 2px;
+  padding: 0 2px;
   border: 1px solid var(--border);
   border-radius: 2px;
   background: transparent;
   color: var(--ink-700);
   font: inherit;
-  letter-spacing: .06em;
+  letter-spacing: .04em;
+  line-height: 1;
   cursor: pointer;
   transition: color .12s ease, background .12s ease, border-color .12s ease;
 }
 .chat-rail-quick-btn svg { width: 12px; height: 12px; flex: none; display: block; }
 .chat-rail-quick-btn span {
   min-width: 0;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 9px;
+  letter-spacing: .02em;
 }
 .chat-rail-quick-btn:hover {
   color: var(--ink-950);
