@@ -110,7 +110,21 @@ async function getPlugin(userDataPath, id) {
   const record = await store.getPlugin(userDataPath, meta.id);
   if (!record) throw new Error(`Плагин '${id}' не найден.`);
   const status = await statusFor(userDataPath, record, { deep: false });
-  return { ...meta, enabled: record.enabled, config: record.config, stats: record.stats, status };
+  return decorate(userDataPath, meta, record, status, await store.listJobs(userDataPath, { limit: 60 }));
+}
+
+function decorate(userDataPath, meta, record, status, jobs) {
+  const own = (jobs || []).filter((job) => job.pluginId === meta.id);
+  return {
+    ...meta,
+    enabled: record.enabled,
+    config: record.config,
+    stats: record.stats,
+    status,
+    lastJob: own[0] || null,
+    outputDir: store.resolveOutputDir(userDataPath, record.config),
+    jobsCount: own.length,
+  };
 }
 
 async function updatePlugin(userDataPath, id, patch = {}) {
@@ -118,7 +132,7 @@ async function updatePlugin(userDataPath, id, patch = {}) {
   if (!meta) throw new Error(`Плагин '${id}' не найден.`);
   const record = await store.updatePlugin(userDataPath, meta.id, patch);
   const status = await statusFor(userDataPath, record, { deep: false });
-  return { ...meta, enabled: record.enabled, config: record.config, stats: record.stats, status };
+  return decorate(userDataPath, meta, record, status, await store.listJobs(userDataPath, { limit: 60 }));
 }
 
 async function configForBlender(userDataPath) {
