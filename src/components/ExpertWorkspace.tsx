@@ -173,6 +173,8 @@ function persistedSlots(slots: ExpertSlot[]) {
     selectedModelId: slot.selectedModelId,
     sessionId: slot.sessionId,
     draft: slot.draft,
+    contextTokens: slot.contextTokens,
+    contextLimit: slot.contextLimit,
     updatedAt: slot.updatedAt,
   }));
 }

@@ -129,6 +129,8 @@ function normalizeSlot(raw, index) {
     selectedModelId: cleanString(item.selectedModelId, 256),
     sessionId: cleanString(item.sessionId, 120),
     draft: typeof item.draft === "string" ? item.draft.slice(0, 20000) : "",
+    contextTokens: Math.max(0, Number(item.contextTokens) || 0),
+    contextLimit: Math.max(0, Number(item.contextLimit) || 0),
     updatedAt: Number(item.updatedAt) || 0,
   };
 }

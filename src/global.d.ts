@@ -267,6 +267,8 @@ declare global {
           selectedModelId: string | null;
           sessionId: string | null;
           draft: string;
+          contextTokens?: number;
+          contextLimit?: number;
           updatedAt: number;
         }>;
         saved: Array<{
@@ -296,6 +298,8 @@ declare global {
           selectedModelId: string | null;
           sessionId: string | null;
           draft: string;
+          contextTokens?: number;
+          contextLimit?: number;
           updatedAt: number;
         }>;
         saved: Array<Record<string, unknown>>;
