@@ -7,7 +7,7 @@ import ThinkingIndicator from "./ThinkingIndicator";
 import { CustomTool, MainAgentMode, ProviderConfig } from "../types";
 import { HotkeyDefinition, matchesHotkey } from "../utils/hotkeys";
 import { Cable, ChevronLeft, ChevronRight, ChevronsLeft, LayoutGrid, Pencil, X } from "lucide-react";
-import { IcoDocs, IcoPrompts, IcoTerminal, IcoUsage } from "./topIcons";
+import { IcoDocs, IcoPrompts, IcoTasks, IcoTerminal, IcoUsage } from "./topIcons";
 
 /** Ctrl+H (Cmd+H on macOS) — the chat switcher, matched by physical key. */
 const SWITCHER_HOTKEY: HotkeyDefinition = { code: "KeyH", modifiers: ["mod"] };
@@ -100,6 +100,8 @@ interface MultiIdeWorkspaceProps {
   onOpenPrompts?: () => void;
   /** Open the MCP connector modal from the rail footer quick buttons. */
   onOpenMcp?: () => void;
+  /** Open the global tasks modal from the rail footer quick buttons. */
+  onOpenTasks?: () => void;
   /** Open a workspace panel from the rail footer quick buttons (Terminal / Docs / Usage). */
   onOpenPanel?: (panel: "terminal" | "docs" | "usage") => void;
   /** Bring the MultiIDE panel to the front (used by the Alt+1…4 workspace hotkeys). */

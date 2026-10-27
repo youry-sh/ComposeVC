@@ -132,3 +132,13 @@ export const IcoPrompts: React.FC<IconProps> = ({ className }) => (
     <path d="M9.5 5.2 h3 M9.5 8 h3 M9.5 10.8 h1.6" />
   </svg>
 );
+
+/** Tasks — checklist rows with a check mark */
+export const IcoTasks: React.FC<IconProps> = ({ className }) => (
+  <svg {...base} className={className}>
+    <rect x="1.8" y="2.6" width="3.2" height="3.2" rx="0.6" />
+    <path d="M2.7 4.2 l0.8 0.8 L4.3 3.5" />
+    <path d="M7.4 4.2 h6.8 M7.4 8 h6.8 M7.4 11.8 h4" />
+    <rect x="1.8" y="10.2" width="3.2" height="3.2" rx="0.6" />
+  </svg>
+);
