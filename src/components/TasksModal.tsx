@@ -84,14 +84,32 @@ const TasksModal: React.FC<TasksModalProps> = ({ onClose }) => {
     [applyTasks]
   );
 
-  const selectTask = useCallback((id: string) => {
-    setCreating(false);
-    setSelectedId(id);
-    setPendingDeleteId(null);
-    setDraft(tasksRef.current.find((task) => task.id === id)?.text || "");
-  }, []);
+  const flushDraft = useCallback(() => {
+    if (creating) return;
+    const current = tasksRef.current.find((task) => task.id === selectedId);
+    const text = draft.trim();
+    if (!current || !text || text === current.text) return;
+    persist(
+      tasksRef.current.map((task) =>
+        task.id === current.id ? { ...task, text, updatedAt: Date.now() } : task
+      )
+    );
+  }, [creating, draft, persist, selectedId]);
+
+  const selectTask = useCallback(
+    (id: string) => {
+      flushDraft();
+      setCreating(false);
+      setSelectedId(id);
+      setPendingDeleteId(null);
+      const next = tasksRef.current.find((task) => task.id === id);
+      setDraft(next?.text || "");
+    },
+    [flushDraft]
+  );
 
   const startCreate = useCallback(() => {
+    flushDraft();
     setCreating(true);
     setSelectedId(null);
     setPendingDeleteId(null);
@@ -99,8 +117,7 @@ const TasksModal: React.FC<TasksModalProps> = ({ onClose }) => {
     setError(null);
     setQuery("");
     setFilter("all");
-    window.setTimeout(() => searchRef.current?.blur(), 0);
-  }, []);
+  }, [flushDraft]);
 
   const cancelCreate = useCallback(() => {
     setCreating(false);
@@ -112,6 +129,11 @@ const TasksModal: React.FC<TasksModalProps> = ({ onClose }) => {
       setDraft(first.text);
     }
   }, []);
+
+  const handleClose = useCallback(() => {
+    flushDraft();
+    onClose();
+  }, [flushDraft, onClose]);
 
   const createTask = useCallback(() => {
     const text = draft.trim();

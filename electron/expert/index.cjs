@@ -17,6 +17,7 @@
 const fs = require("fs");
 const path = require("path");
 const { BrowserWindow, clipboard, ipcMain } = require("electron");
+const { Worker } = require("worker_threads");
 
 const store = require("./store.cjs");
 const scanLib = require("./scan.cjs");
@@ -145,6 +146,61 @@ function createExpertService(deps = {}) {
       context,
       compact: Math.max(4_000, Math.floor(context * 0.8)),
     };
+  }
+
+  async function scanInWorker(rootPath, signal) {
+    return new Promise((resolve, reject) => {
+      let worker;
+      try {
+        worker = new Worker(path.join(__dirname, "scanWorker.cjs"), {
+          workerData: { rootPath },
+        });
+      } catch (error) {
+        reject(error);
+        return;
+      }
+      let settled = false;
+      const finish = (fn, value) => {
+        if (settled) return;
+        settled = true;
+        signal?.removeEventListener?.("abort", onAbort);
+        try {
+          worker.terminate();
+        } catch {
+          /* ignore */
+        }
+        fn(value);
+      };
+      const onAbort = () => {
+        const error = new Error("Aborted");
+        error.name = "AbortError";
+        finish(reject, error);
+      };
+      if (signal?.aborted) {
+        onAbort();
+        return;
+      }
+      signal?.addEventListener?.("abort", onAbort, { once: true });
+      worker.once("message", (message) => {
+        if (message?.ok) finish(resolve, message);
+        else finish(reject, new Error(message?.error || "Project scan failed"));
+      });
+      worker.once("error", (error) => finish(reject, error));
+      worker.once("exit", (code) => {
+        if (!settled && code !== 0) finish(reject, new Error(`Project scan worker exited (${code})`));
+      });
+    });
+  }
+
+  async function scanProjectSafely(rootPath, signal) {
+    try {
+      return await scanInWorker(rootPath, signal);
+    } catch (error) {
+      if (error?.name === "AbortError" || signal?.aborted) throw error;
+      // Worker unavailable (packaging/permissions) — degrade to the main thread.
+      const result = scanLib.scanProject(rootPath);
+      return { ok: true, scan: result.scan, digest: result.digest };
+    }
   }
 
   function toolContextFor(rootPath, projectName) {
