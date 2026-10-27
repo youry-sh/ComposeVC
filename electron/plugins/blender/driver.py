@@ -168,21 +168,17 @@ def coll_root():
 
 def ensure_collection(name, parent_name=None):
     name = str(name or "Collection")
-    existing = bpy.data.collections.get(name)
-    coll = existing
+    root = coll_root()
+    if name == root.name:
+        return root
+    coll = bpy.data.collections.get(name)
     if coll is None:
         coll = bpy.data.collections.new(name)
     parent = bpy.data.collections.get(parent_name) if parent_name else None
-    target = parent or coll_root()
-    if coll.name not in [c.name for c in target.children] and coll.name != target.name:
+    target = parent if parent is not None else root
+    if not any(child.name == coll.name for child in target.children):
         try:
             target.children.link(coll)
-        except Exception:
-            pass
-    if not any(c.name == coll.name for c in scene().collections):
-        try:
-            if coll.name != coll_root().name:
-                coll_root().children.link(coll)
         except Exception:
             pass
     return coll
