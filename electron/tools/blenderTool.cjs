@@ -216,6 +216,16 @@ async function run(action, input, context) {
   const config = await registry.configForBlender(userDataPath);
   const onProgress = typeof context?.onProgress === "function" ? context.onProgress : undefined;
   const signal = context?.signal;
+  const EXECUTION_ACTIONS = new Set(["scene", "import", "python", "render", "export", "bake"]);
+  if (EXECUTION_ACTIONS.has(action)) {
+    const record = await store.getPlugin(userDataPath, "blender");
+    if (record && record.enabled === false) {
+      return truth(
+        false,
+        "Плагин Blender выключен. Включите его во вкладке Plugins (или action=config enabled=true), затем повторите."
+      );
+    }
+  }
 
   switch (action) {
     case "status": {

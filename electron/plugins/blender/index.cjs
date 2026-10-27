@@ -219,8 +219,8 @@ function detect(config) {
     source: "none",
     checked,
     error: candidates.length
-      ? "Blender не найден ни по одному известному пути. Укажите путь к blender.exe в настройках плагина."
-      : "Blender не найден. Установите Blender (blender.org/download) или укажите путь вручную.",
+      ? "Blender не найден ни по одному известному пути. Укажите путь к blender.exe в настройках плагина (вкладка Plugins) или установите Blender: https://www.blender.org/download/"
+      : "Blender не найден. Установите Blender (https://www.blender.org/download/) или укажите путь вручную.",
   };
 }
 
@@ -346,8 +346,10 @@ async function execute(userDataPath, job, executable, args, options = {}) {
         const payload = JSON.parse(line.slice(6));
         emitProgress(payload.stage || "working", payload.percent);
         if (payload.stage) {
-          store
-            .updateJob(userDataPath, job.id, { stage: payload.stage, progress: payload.percent })
+          // Serialise disk writes so a late progress marker can never overwrite
+          // the final status written after the process exits.
+          writeChain = writeChain
+            .then(() => store.updateJob(userDataPath, job.id, { stage: payload.stage, progress: payload.percent }))
             .catch(() => {});
         }
       } catch {
