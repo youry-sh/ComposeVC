@@ -385,8 +385,9 @@ function createExpertService(deps = {}) {
     let stopped = false;
     for (let index = 0; index < rounds.length; index += 1) {
       const round = rounds[index];
-      const already = (study.rounds || []).find((item) => item.id === round.id && item.status === "done");
-      if (already) {
+      const existing = (study.rounds || []).find((item) => item.id === round.id);
+      const retryable = existing && existing.status === "done" && existing.parsed === false && (existing.attempts || 1) < 2;
+      if (existing && existing.status === "done" && !retryable) {
         finished += 1;
         continue;
       }
@@ -485,6 +486,8 @@ function createExpertService(deps = {}) {
         id: round.id,
         title: round.title,
         status: roundError ? "error" : stopped ? "stopped" : "done",
+        parsed: Boolean(parsed),
+        attempts: (existing?.attempts || 0) + 1,
         startedAt: Date.now(),
         text: roundText.slice(0, 20000),
         tokens: roundTokens,
@@ -507,9 +510,10 @@ function createExpertService(deps = {}) {
     }
 
     const failed = (study.rounds || []).some((round) => round.status === "error");
+    const enriched = (study.rounds || []).some((round) => round.parsed === true);
     study = store.writeStudy(userData(), rootPath, {
       ...study,
-      status: stopped ? "partial" : failed ? "partial" : "ready",
+      status: stopped ? "partial" : failed || !enriched ? "partial" : "ready",
       projectName: study.projectName || projectName || null,
     });
     emit(slotId, {
@@ -517,7 +521,7 @@ function createExpertService(deps = {}) {
       status: stopped
         ? "Study paused — send any message to continue"
         : `Project studied · ${study.scan?.stats?.files || 0} files · ${finished} rounds`,
-      done: !stopped,
+      studyDone: !stopped,
       files: study.scan?.stats?.files || 0,
       lines: study.scan?.stats?.lines || 0,
       rounds: finished,

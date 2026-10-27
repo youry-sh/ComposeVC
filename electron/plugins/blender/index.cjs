@@ -19,7 +19,11 @@ const store = require("../store.cjs");
  */
 
 const PLUGIN_ID = "blender";
-const DRIVER = path.join(__dirname, "driver.py");
+// In a packaged app __dirname points inside app.asar; Blender (an external
+// process) cannot read that virtual path. electron-builder unpacks .py files to
+// app.asar.unpacked, so resolve the driver there when packaged.
+const DRIVER_DIR = __dirname.replace(/([\\/])app\.asar([\\/])/, "$1app.asar.unpacked$2");
+const DRIVER = path.join(DRIVER_DIR, "driver.py");
 const active = new Map();
 const detectCache = new Map();
 const probeCache = new Map();
