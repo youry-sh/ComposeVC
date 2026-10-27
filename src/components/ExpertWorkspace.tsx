@@ -523,6 +523,8 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
         const modelId = slot.selectedModelId || defaultModelId;
         if (modelId) {
           void startStudy({ slotId, rootPath: picked.path, projectName, modelId, sessionId: null });
+        } else {
+          void loadStudyStatus(slotId, picked.path);
         }      } catch (error) {
         patchSlot(slotId, { error: error instanceof Error ? error.message : String(error) });
       }
