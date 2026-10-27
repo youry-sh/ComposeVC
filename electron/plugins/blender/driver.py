@@ -624,6 +624,17 @@ MATERIAL_PRESETS = {
         "transmission": 0.92,
         "ior": 1.45,
         "coat": 0.35,
+        "texture": {
+            "type": "noise",
+            "scale": 42,
+            "detail": 2,
+            "color_a": "#a8c9d6",
+            "color_b": "#e6f7ff",
+            "bump": 0.008,
+            "roughness_map": True,
+            "roughness_min": 0.03,
+            "roughness_max": 0.12,
+        },
     },
     "emissive": {
         "base_color": "#3a0f12",
