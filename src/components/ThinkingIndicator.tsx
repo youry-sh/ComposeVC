@@ -40,19 +40,19 @@ export function ThinkingIndicator({ label }: ThinkingIndicatorProps) {
     return () => window.clearInterval(id);
   }, [label]);
 
-  const isThinkingMax = label?.startsWith("Thinking-max") === true;
+  const isTimedThinking = label?.startsWith("Thinking") === true;
   useEffect(() => {
-    if (!isThinkingMax) {
+    if (!isTimedThinking) {
       setElapsed(0);
       return;
     }
     const started = Date.now();
     const id = window.setInterval(() => setElapsed(Math.floor((Date.now() - started) / 1000)), 1000);
     return () => window.clearInterval(id);
-  }, [isThinkingMax]);
+  }, [isTimedThinking]);
 
   const elapsedText = elapsed < 60 ? `${elapsed}s` : `${Math.floor(elapsed / 60)}m ${elapsed % 60}s`;
-  const displayText = isThinkingMax
+  const displayText = isTimedThinking
     ? `${label}${elapsed ? ` · ${elapsedText}` : ""} · analyzing`
     : label || WORDS[index];
 
@@ -60,7 +60,7 @@ export function ThinkingIndicator({ label }: ThinkingIndicatorProps) {
     <div className="thinking-indicator" role="status" aria-live="polite" aria-label={displayText}>
       <ThinkingMorphGlyph />
 
-      <span className={`thinking-label${isThinkingMax ? " thinking-label-max" : ""}`} key={isThinkingMax ? "thinking-max" : label ? `l-${label}` : `w-${index}`}>
+      <span className={`thinking-label${isTimedThinking ? " thinking-label-max" : ""}`} key={isTimedThinking ? "thinking-process" : label ? `l-${label}` : `w-${index}`}>
         <span className="thinking-label-base">
           {displayText}
           {!label && <span className="thinking-ellipsis">…</span>}

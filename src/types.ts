@@ -280,8 +280,6 @@ export interface ChatExecutionRequest {
   projectName?: string | null;
   sessionId?: string | null;
   agentMode?: MainAgentMode;
-  /** Force at least one custom Thinking-max cycle before the final answer. */
-  thinkingMax?: boolean;
   /**
    * Unfinished agent todos from a previous turn (e.g. after a failed generation).
    * Rehydrated into the agent todo tool so tasks survive crash/abort/retry.
@@ -448,7 +446,7 @@ export interface AgentToolProgress {
   phase?: string;
   /** LAB-IN package handoff (knowledge package + refined prompt) for the live "view" button. */
   labInPackage?: LabInPackage;
-  /** Thinking-max metadata. Raw private reasoning is never sent to the UI. */
+  /** Visible think-process metadata. Raw private reasoning is never sent to the UI. */
   processId?: string;
   tokenDelta?: number;
   thinkCycle?: number;
