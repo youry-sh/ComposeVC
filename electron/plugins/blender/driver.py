@@ -641,6 +641,17 @@ MATERIAL_PRESETS = {
         "emission": "#ff5a2b",
         "emission_strength": 8.0,
         "roughness": 0.35,
+        "texture": {
+            "type": "noise",
+            "scale": 18,
+            "detail": 4,
+            "color_a": "#24070a",
+            "color_b": "#7a1f12",
+            "bump": 0.05,
+            "roughness_map": True,
+            "roughness_min": 0.25,
+            "roughness_max": 0.5,
+        },
     },
     "hologram": {
         "base_color": "#1fd0ff",
@@ -1358,6 +1369,21 @@ def ensure_uv(obj):
 
 
 # ── animation / rigging ────────────────────────────────────────────────────
+
+
+def action_fcurves(action):
+    """Blender 4.4+ actions are layered; older versions expose .fcurves directly."""
+    curves = []
+    try:
+        for layer in getattr(action, "layers", []) or []:
+            for strip in getattr(layer, "strips", []) or []:
+                for bag in getattr(strip, "channelbags", []) or []:
+                    curves.extend(list(getattr(bag, "fcurves", []) or []))
+    except Exception:
+        curves = []
+    if not curves:
+        curves = list(getattr(action, "fcurves", []) or [])
+    return curves
 
 
 def animate_object(obj, spec):
