@@ -245,10 +245,10 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
   const models: AIModel[] = providerConfig.models || [];
   const providers: AIProvider[] = providerConfig.providers || [];
   const defaultModelId = useMemo(() => {
-    const configured = (providerConfig as { selectedModelId?: string }).selectedModelId;
+    const configured = providerConfig.selectedModelId;
     if (configured && models.some((model) => model.id === configured)) return configured;
     return models[0]?.id || null;
-  }, [models, providerConfig]);
+  }, [models, providerConfig.selectedModelId]);
 
   const pushToast = useCallback((text: string) => {
     setToast(text);

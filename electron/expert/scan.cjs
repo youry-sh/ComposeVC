@@ -640,7 +640,7 @@ function scanProject(rootPath) {
     entrypoints: [...new Set(entrypoints)].slice(0, 40),
     hotspots: files_compact.slice(0, 80).map((file) => file.p),
     contracts,
-    keyFiles,
+    keyFiles: keyFilesTop,
     files: files_compact,
   };
 
