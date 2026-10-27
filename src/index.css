@@ -13898,9 +13898,9 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
 .tasks-row-delete.is-armed { opacity: 1; }
 .tasks-row-delete:hover,
 .tasks-row-delete.is-armed {
-  color: var(--status-err);
+  color: var(--danger);
   background: var(--danger-bg);
-  border-color: var(--status-err-border);
+  border-color: var(--danger-border);
 }
 
 .tasks-empty {
@@ -14075,17 +14075,17 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   background: var(--hover-bg);
 }
 .tasks-ghost-danger:hover {
-  color: var(--status-err);
-  border-color: var(--status-err-border);
+  color: var(--danger);
+  border-color: var(--danger-border);
   background: var(--danger-bg);
 }
 .tasks-danger {
   height: 27px;
   padding: 0 10px;
-  border: 1px solid var(--status-err-border);
+  border: 1px solid var(--danger-border);
   border-radius: 2px;
   background: var(--danger-bg);
-  color: var(--status-err);
+  color: var(--danger);
   font-size: 11px;
   font-weight: 600;
   outline: none;
@@ -14134,9 +14134,9 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
 .tasks-error {
   flex-shrink: 0;
   padding: 6px 14px;
-  border-top: 1px solid var(--status-err-border);
+  border-top: 1px solid var(--danger-border);
   background: var(--danger-bg);
-  color: var(--status-err);
+  color: var(--danger);
   font-size: 10.5px;
 }
 
