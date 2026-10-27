@@ -167,7 +167,17 @@ function createExpertService(deps = {}) {
     };
     if (parent?.aborted) onAbort();
     else parent?.addEventListener?.("abort", onAbort, { once: true });
-    return { signal: local.signal, dispose: () => parent?.removeEventListener?.("abort", onAbort) };
+    return {
+      signal: local.signal,
+      abort: () => {
+        try {
+          local.abort();
+        } catch {
+          /* ignore */
+        }
+      },
+      dispose: () => parent?.removeEventListener?.("abort", onAbort),
+    };
   }
 
   function normalizeRel(input, rootPath) {
@@ -248,21 +258,21 @@ function createExpertService(deps = {}) {
     };
   }
 
-  async function ensureStudy({ slotId, sessionId, rootPath, projectName, signal, force }) {
+  async function ensureStudy({ slotId, sessionId, rootPath, projectName, modelId, signal, force }) {
     if (!rootPath) return null;
     const key = store.projectKey(rootPath);
     if (force) {
       store.deleteStudy(userData(), rootPath);
     }
     if (studyJobs.has(key)) return studyJobs.get(key);
-    const job = runStudy({ slotId, sessionId, rootPath, projectName, signal }).finally(() => {
+    const job = runStudy({ slotId, sessionId, rootPath, projectName, modelId, signal }).finally(() => {
       studyJobs.delete(key);
     });
     studyJobs.set(key, job);
     return job;
   }
 
-  async function runStudy({ slotId, sessionId, rootPath, projectName, signal }) {
+  async function runStudy({ slotId, sessionId, rootPath, projectName, modelId, signal }) {
     let study = store.readStudy(userData(), rootPath);
     if (study.status === "ready" && study.scan && study.dossier) return study;
 
@@ -294,7 +304,7 @@ function createExpertService(deps = {}) {
       });
     }
 
-    const { provider, model, context, compact } = await resolveModel(null);
+    const { provider, model, context, compact } = await resolveModel(modelId);
     const rounds = [];
     for (const round of prompts.ROUNDS) rounds.push(round);
 
@@ -341,18 +351,7 @@ function createExpertService(deps = {}) {
       });
 
       const local = makeLocalSignal(signal);
-      const timer = setTimeout(() => {
-        try {
-          local.signal.dispatchEvent?.(new Event("abort"));
-        } catch {
-          /* ignore */
-        }
-        try {
-          local.abortRef?.abort?.();
-        } catch {
-          /* ignore */
-        }
-      }, STUDY_ROUND_TIMEOUT_MS);
+      const timer = setTimeout(() => local.abort(), STUDY_ROUND_TIMEOUT_MS);
       let roundText = "";
       let roundError = null;
       let roundTokens = 0;
@@ -622,6 +621,7 @@ function createExpertService(deps = {}) {
         sessionId: session.sessionId,
         rootPath,
         projectName,
+        modelId: session.modelId,
         signal: controller.signal,
       });
 

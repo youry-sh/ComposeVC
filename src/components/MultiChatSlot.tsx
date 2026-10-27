@@ -97,10 +97,8 @@ type SessionLiveState = {
   liveTimeline: LiveTimelineItem[];
   /** Ephemeral model think/reasoning — never persisted into ChatMessage[]. */
   thinkingDraft: string | null;
-  /** Running local token count for the current Thinking-max process. */
+  /** Running local token count for the current visible think process. */
   thinkingTokens: number;
-  /** User locked Thinking-max on for this whole live turn. */
-  thinkingMaxLocked: boolean;
   agentTodos: TodoItem[];
   contextTokens: number | null;
   compactionBanner: CompactionInfo | null;
@@ -169,7 +167,6 @@ function emptyLiveState(): SessionLiveState {
     liveTimeline: [],
     thinkingDraft: null,
     thinkingTokens: 0,
-    thinkingMaxLocked: false,
     agentTodos: [],
     contextTokens: null,
     compactionBanner: null,
