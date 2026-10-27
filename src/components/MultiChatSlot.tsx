@@ -255,7 +255,6 @@ function applyProgressToLiveState(state: SessionLiveState, progress: AgentToolPr
   let next: SessionLiveState = { ...state };
 
   if (progress.type === "status") {
-    if (next.thinkingMaxLocked) return next;
     const label =
       (typeof progress.label === "string" && progress.label) ||
       (typeof progress.text === "string" ? progress.text : null);
