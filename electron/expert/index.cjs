@@ -318,9 +318,6 @@ function createExpertService(deps = {}) {
   async function ensureStudy({ slotId, sessionId, rootPath, projectName, modelId, signal, force }) {
     if (!rootPath) return null;
     const key = store.projectKey(rootPath);
-    if (force) {
-      store.deleteStudy(userData(), rootPath);
-    }
     if (studyJobs.has(key)) {
       emit(slotId, {
         phase: "study",
@@ -329,6 +326,9 @@ function createExpertService(deps = {}) {
         immediate: true,
       });
       return studyJobs.get(key);
+    }
+    if (force) {
+      store.deleteStudy(userData(), rootPath);
     }
     const job = runStudy({ slotId, sessionId, rootPath, projectName, modelId, signal }).finally(() => {
       studyJobs.delete(key);
@@ -532,6 +532,7 @@ function createExpertService(deps = {}) {
         ? "Study paused — send any message to continue"
         : `Project studied · ${study.scan?.stats?.files || 0} files · ${finished} rounds`,
       studyDone: !stopped,
+      studyStatus: study.status,
       files: study.scan?.stats?.files || 0,
       lines: study.scan?.stats?.lines || 0,
       rounds: finished,

@@ -375,7 +375,14 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
           if (payload.rounds !== undefined) study.rounds = Number(payload.rounds) || 0;
           if (payload.readFiles !== undefined) study.readFiles = Number(payload.readFiles) || 0;
           if (isStudyPhase && !studyFinished) study.status = "studying";
-          if (studyFinished && payload.studyDone === true) study.status = "ready";
+          if (studyFinished) {
+            study.status =
+              typeof payload.studyStatus === "string"
+                ? String(payload.studyStatus)
+                : payload.studyDone === true
+                  ? "ready"
+                  : "partial";
+          }
           if (payload.phase === "error") study.status = "partial";
           return {
             ...slot,
