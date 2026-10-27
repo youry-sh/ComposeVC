@@ -2388,6 +2388,14 @@ def export_scene(spec, out_dir):
     return exports
 
 
+def _strip_baked_nodes(mat):
+    if mat is None or not mat.use_nodes:
+        return
+    for node in list(mat.node_tree.nodes):
+        if node.type == "TEX_IMAGE" and node.image is not None and node.image.name.lower().startswith("cvbake_"):
+            mat.node_tree.nodes.remove(node)
+
+
 def bake_plan(spec, out_dir):
     if not spec or spec.get("enabled") is False:
         return []
@@ -2420,6 +2428,7 @@ def bake_plan(spec, out_dir):
     os.makedirs(texture_dir, exist_ok=True)
     bake_type_map = {"BASE_COLOR": ("DIFFUSE", {"COLOR"}), "DIFFUSE": ("DIFFUSE", {"COLOR"}), "ROUGHNESS": ("ROUGHNESS", None), "NORMAL": ("NORMAL", None)}
     results = []
+    baked_materials = set()
     for obj in objects:
         ensure_uv(obj)
         if not obj.data.materials:
@@ -2427,13 +2436,21 @@ def bake_plan(spec, out_dir):
         for slot_index, mat in enumerate(list(obj.data.materials)):
             if mat is None or not mat.use_nodes:
                 continue
+            if mat.name in baked_materials:
+                # Shared material used by another object: its UV layout differs,
+                # so bake into a per-object copy instead of overwriting the map.
+                clone = mat.copy()
+                clone.name = "%s_%s" % (mat.name, obj.name)
+                obj.data.materials[slot_index] = clone
+                _strip_baked_nodes(clone)
+                mat = clone
             for pass_name in passes:
                 mapping = bake_type_map.get(pass_name)
                 if mapping is None:
                     warn("bake: unsupported pass '%s'" % pass_name)
                     continue
                 bake_type, pass_filter = mapping
-                image_name = "%s_%s_%s" % (obj.name, mat.name, pass_name.lower())
+                image_name = "CVBAKE_%s_%s_%s" % (obj.name, mat.name, pass_name.lower())
                 try:
                     image = bpy.data.images.new(image_name, width=width, height=height, alpha=True)
                     image.colorspace_settings.name = "Non-Color" if pass_name in ("ROUGHNESS", "NORMAL") else "sRGB"
@@ -2453,6 +2470,7 @@ def bake_plan(spec, out_dir):
                     results.append({"name": image_name, "path": file_path, "pass": pass_name})
                 except Exception as exc:
                     warn("bake %s / %s failed: %s" % (obj.name, pass_name, exc))
+            baked_materials.add(mat.name)
     if spec.get("apply") and results:
         apply_baked_textures(results, objects)
     return results
