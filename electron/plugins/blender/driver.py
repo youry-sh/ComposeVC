@@ -1346,6 +1346,487 @@ def ensure_uv(obj):
     smart_uv(obj, {"margin": 0.02})
 
 
+# ── animation / rigging ────────────────────────────────────────────────────
+
+
+def animate_object(obj, spec):
+    anim = spec.get("animation")
+    if not isinstance(anim, dict) or not anim:
+        return
+    interpolation = str(anim.get("interpolation", "BEZIER")).upper()
+    channels = (("location", "location"), ("rotation", "rotation_euler"), ("scale", "scale"))
+    for channel, data_path in channels:
+        keys = anim.get(channel)
+        if not isinstance(keys, list) or not keys:
+            continue
+        for entry in keys:
+            if not isinstance(entry, dict):
+                continue
+            frame = as_int(entry.get("frame", 1), 1)
+            value = entry.get("value", entry.get("to"))
+            try:
+                if channel == "rotation":
+                    obj.rotation_euler = tuple(math.radians(v) for v in as_vec3(value))
+                elif channel == "scale":
+                    scale = as_vec3(value, (1, 1, 1))
+                    obj.scale = scale if scale != (0.0, 0.0, 0.0) else (1.0, 1.0, 1.0)
+                else:
+                    obj.location = as_vec3(value)
+                obj.keyframe_insert(data_path=data_path, frame=frame)
+            except Exception as exc:
+                warn("animation %s on %s failed: %s" % (channel, obj.name, exc))
+                break
+    try:
+        action = obj.animation_data.action if obj.animation_data else None
+        if action is not None:
+            for curve in getattr(action, "fcurves", []):
+                for point in curve.keyframe_points:
+                    point.interpolation = interpolation
+    except Exception:
+        pass
+
+
+def create_armature(spec, coll):
+    if not isinstance(spec, dict):
+        return None
+    name = str(spec.get("name") or "Armature")
+    data = bpy.data.armatures.new(name)
+    obj = bpy.data.objects.new(name, data)
+    coll.objects.link(obj)
+    select_only(obj)
+    try:
+        bpy.ops.object.mode_set(mode="EDIT")
+        created = {}
+        for bone_spec in spec.get("bones") or []:
+            if not isinstance(bone_spec, dict):
+                continue
+            bone_name = str(bone_spec.get("name") or ("Bone%d" % (len(created) + 1)))
+            edit_bone = data.edit_bones.new(bone_name)
+            edit_bone.head = as_vec3(bone_spec.get("head", (0, 0, 0)))
+            edit_bone.tail = as_vec3(bone_spec.get("tail", (0, 0, 0.4)))
+            parent_name = bone_spec.get("parent")
+            if parent_name and parent_name in data.edit_bones:
+                edit_bone.parent = data.edit_bones[parent_name]
+                edit_bone.use_connect = bool(bone_spec.get("connect", False))
+            created[bone_name] = edit_bone
+        bpy.ops.object.mode_set(mode="OBJECT")
+    except Exception as exc:
+        warn("armature '%s' failed: %s" % (name, exc))
+        try:
+            bpy.ops.object.mode_set(mode="OBJECT")
+        except Exception:
+            pass
+    _apply_common_transform(obj, spec)
+    mesh_name = spec.get("mesh") or spec.get("parent_mesh") or spec.get("bind")
+    if mesh_name and spec.get("bind") is not False:
+        mesh_obj = bpy.data.objects.get(str(mesh_name))
+        if mesh_obj is None:
+            warn("armature bind: mesh '%s' not found" % mesh_name)
+        else:
+            select_only(mesh_obj)
+            try:
+                mesh_obj.select_set(True)
+                obj.select_set(True)
+                view_layer().objects.active = obj
+                bpy.ops.object.parent_set(type="ARMATURE_AUTO")
+            except Exception as exc:
+                warn("armature auto weights failed: %s" % exc)
+    animate_object(obj, spec)
+    return obj
+
+
+# ── Blender add-ons / extensions ────────────────────────────────────────────
+
+
+def _zip_addon_info(path):
+    """Returns (legacy_module_candidates, extension_id) for an add-on zip."""
+    import re
+    import zipfile
+
+    modules = []
+    extension_id = ""
+    try:
+        with zipfile.ZipFile(path) as archive:
+            names = archive.namelist()
+            if "blender_manifest.toml" in names:
+                text = archive.read("blender_manifest.toml").decode("utf-8", "replace")
+                match = re.search(r'^\s*id\s*=\s*"([^"]+)"', text, re.MULTILINE)
+                if match:
+                    extension_id = match.group(1)
+            for name in names:
+                if name.endswith("/__init__.py"):
+                    modules.append(name.split("/")[0])
+                elif name.endswith(".py") and "/" not in name:
+                    modules.append(name[:-3])
+    except Exception as exc:
+        warn("cannot read add-on zip %s: %s" % (path, exc))
+    unique = []
+    for module in modules:
+        if module and module not in unique:
+            unique.append(module)
+    return unique, extension_id
+
+
+def enable_addon_module(module):
+    candidates = [module]
+    if not module.startswith("bl_ext."):
+        candidates.append("bl_ext.user_default." + module)
+        candidates.append("bl_ext.blender_org." + module)
+    last_error = ""
+    for candidate in candidates:
+        try:
+            bpy.ops.preferences.addon_enable(module=candidate)
+            return candidate, ""
+        except Exception as exc:
+            last_error = str(exc)
+    return "", last_error
+
+
+def disable_addon_module(module):
+    try:
+        bpy.ops.preferences.addon_disable(module=module)
+        return True, ""
+    except Exception as exc:
+        return False, str(exc)
+
+
+def install_addon(path, enable=True):
+    report = {"path": path, "kind": "addon", "installed": False, "modules": [], "errors": []}
+    if not path or not os.path.exists(path):
+        report["errors"].append("file not found")
+        return report
+    modules, extension_id = _zip_addon_info(path)
+    if extension_id:
+        report["kind"] = "extension"
+        installed = False
+        for repo in ("user_default", "DEFAULT", None):
+            try:
+                kwargs = {"filepath": path, "enable_on_install": bool(enable), "overwrite": True}
+                if repo is not None:
+                    kwargs["repo"] = repo
+                bpy.ops.extensions.package_install_files(**kwargs)
+                installed = True
+                break
+            except Exception as exc:
+                report["errors"].append("%s: %s" % (repo or "auto", exc))
+        if installed and enable:
+            module, error = enable_addon_module("bl_ext.user_default." + extension_id)
+            if module:
+                report["modules"].append(module)
+            elif error:
+                report["errors"].append(error)
+        report["installed"] = installed
+        return report
+    try:
+        bpy.ops.preferences.addon_install(filepath=path, overwrite=True)
+        report["installed"] = True
+    except Exception as exc:
+        report["errors"].append(str(exc))
+    if enable:
+        for module in modules:
+            enabled, error = enable_addon_module(module)
+            if enabled:
+                report["modules"].append(enabled)
+            elif error:
+                report["errors"].append("%s: %s" % (module, error))
+    return report
+
+
+def setup_addons(plan):
+    reports = []
+    for module in plan.get("disable_addons") or []:
+        ok, error = disable_addon_module(str(module))
+        reports.append({"module": str(module), "disabled": ok, "error": error})
+    entries = list(plan.get("install_addons") or [])
+    entries.extend(plan.get("addons") or [])
+    for entry in entries:
+        if isinstance(entry, str):
+            entry = {"module": entry}
+        if not isinstance(entry, dict):
+            continue
+        if entry.get("path") or entry.get("file"):
+            reports.append(install_addon(str(entry.get("path") or entry.get("file")), entry.get("enable", True)))
+            continue
+        module = str(entry.get("module") or entry.get("name") or "")
+        if not module:
+            continue
+        if entry.get("enable") is False:
+            ok, error = disable_addon_module(module)
+            reports.append({"module": module, "disabled": ok, "error": error})
+            continue
+        enabled, error = enable_addon_module(module)
+        reports.append({"module": enabled or module, "enabled": bool(enabled), "error": error})
+    return reports
+
+
+# ── optimization / quality audit ────────────────────────────────────────────
+
+
+def optimize_meshes(plan):
+    config = plan.get("optimize")
+    if not config:
+        return []
+    if not isinstance(config, dict):
+        config = {}
+    merged = {"apply_scale": True, "merge_distance": 0.0, "triangulate": False, "origin": ""}
+    merged.update(config)
+    touched = []
+    for obj in [item for item in scene().objects if item.type == "MESH"]:
+        if merged.get("apply_scale") and obj.animation_data is None:
+            try:
+                select_only(obj)
+                bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+            except Exception as exc:
+                warn("apply scale on %s failed: %s" % (obj.name, exc))
+        if merged.get("merge_distance"):
+            try:
+                mod = obj.modifiers.new(name="CV_Weld", type="WELD")
+                mod.merge_threshold = as_float(merged.get("merge_distance"), 0.0001)
+                select_only(obj)
+                bpy.ops.object.modifier_apply(modifier=mod.name)
+            except Exception as exc:
+                warn("weld on %s failed: %s" % (obj.name, exc))
+        if merged.get("triangulate"):
+            try:
+                mod = obj.modifiers.new(name="CV_Triangulate", type="TRIANGULATE")
+                select_only(obj)
+                bpy.ops.object.modifier_apply(modifier=mod.name)
+            except Exception as exc:
+                warn("triangulate on %s failed: %s" % (obj.name, exc))
+        origin = str(merged.get("origin") or "").lower()
+        if origin in ("center_floor", "floor", "base", "bottom"):
+            try:
+                bpy.context.view_layer.update()
+                corners = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
+                xs = [corner.x for corner in corners]
+                ys = [corner.y for corner in corners]
+                zs = [corner.z for corner in corners]
+                scene().cursor.location = ((min(xs) + max(xs)) * 0.5, (min(ys) + max(ys)) * 0.5, min(zs))
+                select_only(obj)
+                bpy.ops.object.origin_set(type="ORIGIN_CURSOR")
+            except Exception as exc:
+                warn("origin on %s failed: %s" % (obj.name, exc))
+        touched.append(obj.name)
+    return touched
+
+
+PROCEDURAL_NODE_TYPES = {
+    "TEX_NOISE",
+    "TEX_VORONOI",
+    "TEX_WAVE",
+    "TEX_CHECKER",
+    "TEX_BRICK",
+    "TEX_GRADIENT",
+    "TEX_MAGIC",
+    "TEX_MUSGRAVE",
+    "TEX_SKY",
+}
+
+
+def _material_has_texture(mat):
+    if mat is None or not mat.use_nodes:
+        return False
+    for node in mat.node_tree.nodes:
+        if node.type == "TEX_IMAGE" and getattr(node, "image", None) is not None:
+            return True
+        if node.type in PROCEDURAL_NODE_TYPES:
+            return True
+    return False
+
+
+def _mesh_non_manifold(mesh):
+    try:
+        import bmesh
+
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+        count = sum(1 for edge in bm.edges if not edge.is_manifold)
+        bm.free()
+        return count
+    except Exception:
+        return -1
+
+
+def _mesh_triangles(mesh):
+    try:
+        mesh.calc_loop_triangles()
+        return len(mesh.loop_triangles)
+    except Exception:
+        return sum(max(0, len(poly.vertices) - 2) for poly in mesh.polygons)
+
+
+def quality_report(plan):
+    config = plan.get("quality") if isinstance(plan.get("quality"), dict) else {}
+    require_textures = bool(config.get("require_textures", False))
+    require_uv = config.get("require_uv", True) is not False
+    require_scale = config.get("require_applied_scale", True) is not False
+    max_polygons = as_int(config.get("max_polygons", 0), 0)
+    report = {
+        "score": 100,
+        "game_ready": True,
+        "issues": [],
+        "checks": [],
+        "meshes": [],
+        "materials": {"total": 0, "textured": 0, "flat": 0},
+        "textures": len([image for image in bpy.data.images if image.source == "FILE"]),
+    }
+    penalty = 0
+    critical = 0
+    materials_seen = set()
+    for obj in [item for item in scene().objects if item.type == "MESH"]:
+        mesh = obj.data
+        tris = _mesh_triangles(mesh)
+        mats = [slot for slot in mesh.materials if slot is not None]
+        textured = any(_material_has_texture(mat) for mat in mats)
+        for mat in mats:
+            if mat.name not in materials_seen:
+                materials_seen.add(mat.name)
+                report["materials"]["total"] += 1
+                if _material_has_texture(mat):
+                    report["materials"]["textured"] += 1
+                else:
+                    report["materials"]["flat"] += 1
+        non_manifold = _mesh_non_manifold(mesh)
+        scale_applied = all(abs(as_float(value, 1.0) - 1.0) < 1e-3 for value in obj.scale)
+        record = {
+            "name": obj.name,
+            "polygons": len(mesh.polygons),
+            "triangles": tris,
+            "uv": bool(mesh.uv_layers),
+            "materials": [mat.name for mat in mats],
+            "textured": textured,
+            "scale_applied": scale_applied,
+            "non_manifold_edges": non_manifold,
+            "issues": [],
+        }
+        if not mats:
+            record["issues"].append("no_material")
+            penalty += 20
+            critical += 1
+        elif require_textures and not textured:
+            record["issues"].append("flat_material")
+            penalty += 15
+            critical += 1
+        if require_uv and not mesh.uv_layers:
+            record["issues"].append("no_uv")
+            penalty += 12
+            critical += 1
+        if require_scale and not scale_applied:
+            record["issues"].append("scale_not_applied")
+            penalty += 8
+            critical += 1
+        if max_polygons and tris > max_polygons:
+            record["issues"].append("high_polygons")
+            penalty += 10
+            critical += 1
+        if non_manifold > 0:
+            record["issues"].append("open_geometry")
+            penalty += 3
+        if tris == 0:
+            record["issues"].append("empty_mesh")
+            penalty += 15
+            critical += 1
+        report["meshes"].append(record)
+    if report["materials"]["total"] and report["materials"]["textured"] == 0:
+        report["issues"].append("no_textures_in_scene")
+        penalty += 10
+        if require_textures:
+            critical += 1
+    report["score"] = max(0, min(100, 100 - penalty))
+    report["game_ready"] = critical == 0
+    report["issues"].extend(sorted({issue for mesh in report["meshes"] for issue in mesh["issues"]}))
+    report["checks"] = [
+        {"id": "uv", "ok": all(mesh["uv"] for mesh in report["meshes"]) if report["meshes"] else False},
+        {"id": "materials", "ok": all(mesh["materials"] for mesh in report["meshes"]) if report["meshes"] else False},
+        {"id": "textures", "ok": report["materials"]["textured"] > 0},
+        {"id": "applied_scale", "ok": all(mesh["scale_applied"] for mesh in report["meshes"]) if report["meshes"] else False},
+    ]
+    return report
+
+
+# ── render effects (compositor) ─────────────────────────────────────────────
+
+
+def _configure_glare(node, config):
+    glare_type = str(config.get("type", "Fog Glow"))
+    quality = str(config.get("quality", "High"))
+    threshold = as_float(config.get("threshold", 0.85), 0.85)
+    strength = as_float(config.get("strength", 0.6), 0.6)
+    size = as_float(config.get("size", 0.6), 0.6)
+    if hasattr(node, "glare_type"):
+        try:
+            node.glare_type = glare_type.upper().replace(" ", "_")
+        except Exception:
+            node.glare_type = "FOG_GLOW"
+        try:
+            node.quality = quality.upper()
+        except Exception:
+            pass
+        try:
+            node.threshold = threshold
+            node.size = max(1, int(round(size * 9)))
+        except Exception:
+            pass
+        return
+    set_input(node, glare_type, "Type")
+    set_input(node, quality, "Quality")
+    set_input(node, threshold, "Threshold")
+    set_input(node, strength, "Strength")
+    set_input(node, size, "Size")
+    set_input(node, as_float(config.get("smoothness", 0.1), 0.1), "Smoothness")
+
+
+def _configure_lens(node, config):
+    distortion = as_float(config.get("distortion", config.get("chromatic", 0.02)), 0.02)
+    dispersion = as_float(config.get("dispersion", config.get("chromatic", 0.02)), 0.02)
+    if hasattr(node, "distort"):
+        try:
+            node.distort = distortion
+            node.dispersion = dispersion
+        except Exception:
+            pass
+        return
+    set_input(node, distortion, "Distortion")
+    set_input(node, dispersion, "Dispersion")
+
+
+def setup_effects(effects):
+    if not isinstance(effects, dict) or effects.get("enabled") is False:
+        return False
+    try:
+        if hasattr(scene(), "compositing_node_group"):
+            tree = bpy.data.node_groups.new("ComposeVC Compositor", "CompositorNodeTree")
+            scene().compositing_node_group = tree
+            tree.interface.new_socket("Image", in_out="OUTPUT", socket_type="NodeSocketColor")
+            output = tree.nodes.new("NodeGroupOutput")
+            output_socket = output.inputs[0]
+        else:
+            scene().use_nodes = True
+            tree = scene().node_tree
+            tree.nodes.clear()
+            output = tree.nodes.new("CompositorNodeComposite")
+            output_socket = output.inputs["Image"]
+        render_layers = tree.nodes.new("CompositorNodeRLayers")
+        last = render_layers.outputs["Image"]
+        bloom = effects.get("bloom", True)
+        if bloom is not False:
+            config = bloom if isinstance(bloom, dict) else {}
+            glare = tree.nodes.new("CompositorNodeGlare")
+            _configure_glare(glare, config)
+            tree.links.new(last, glare.inputs["Image"])
+            last = glare.outputs["Image"]
+        if effects.get("chromatic") or effects.get("dispersion") or effects.get("distortion"):
+            lens = tree.nodes.new("CompositorNodeLensdist")
+            _configure_lens(lens, effects)
+            tree.links.new(last, lens.inputs["Image"])
+            last = lens.outputs["Image"]
+        tree.links.new(last, output_socket)
+        return True
+    except Exception as exc:
+        warn("render effects unavailable: %s" % exc)
+        return False
+
+
 # ── world / lights / camera ─────────────────────────────────────────────────
 
 
