@@ -394,8 +394,15 @@ async function run(action, input, context) {
         signal,
       });
       const tail = (job.logTail || "").split(/\r?\n/).filter(Boolean).slice(-30).join("\n");
+      const artifactLines = [
+        job.blendPath ? `blend: ${job.blendPath}` : "",
+        job.renders?.length ? `рендеры: ${job.renders.map((item) => item.path).join(", ")}` : "",
+        job.exports?.length ? `экспорт: ${job.exports.map((item) => `${item.format} ${item.path}`).join(", ")}` : "",
+      ].filter(Boolean);
       const text = job.status === "succeeded"
-        ? `Скрипт выполнен за ${job.durationMs} мс.${job.blendPath ? `\nblend: ${job.blendPath}` : ""}${tail ? `\nвывод:\n${tail}` : ""}`
+        ? `Скрипт выполнен за ${job.durationMs} мс.${job.summary ? `\n${job.summary}` : ""}${
+            artifactLines.length ? `\n${artifactLines.join("\n")}` : ""
+          }${tail ? `\nвывод:\n${tail}` : ""}`
         : `Скрипт не выполнен: ${job.error}\n${tail}`;
       return truth(job.status === "succeeded", text, await withPreview(job, input, jobPayload(job, { stdoutTail: job.logTail, stderrTail: job.stderrTail }), { force: true }));
     }
