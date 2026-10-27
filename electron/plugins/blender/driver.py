@@ -1685,6 +1685,18 @@ def _mesh_triangles(mesh):
 
 def quality_report(plan):
     config = plan.get("quality") if isinstance(plan.get("quality"), dict) else {}
+    config = dict(config)
+    if "require_textures" not in config:
+        exports = plan.get("export")
+        if isinstance(exports, (str, dict)):
+            exports = [exports]
+        presets = [
+            str(spec.get("preset", "")).lower()
+            for spec in (exports or [])
+            if isinstance(spec, dict)
+        ]
+        if any(preset in ("unity", "unreal", "godot", "web") for preset in presets):
+            config["require_textures"] = True
     require_textures = bool(config.get("require_textures", False))
     require_uv = config.get("require_uv", True) is not False
     require_scale = config.get("require_applied_scale", False) is not False
@@ -2775,8 +2787,6 @@ def execute_plan(plan, out_dir):
         progress("bake", 62)
         bake_results = bake_plan(plan.get("bake"), out_dir)
 
-    progress("audit", 66)
-    quality = quality_report(plan)
 
     save_spec = plan.get("save", "scene.blend")
     blend_path = ""
@@ -2836,6 +2846,9 @@ def execute_plan(plan, out_dir):
             bpy.ops.wm.save_as_mainfile(filepath=blend_path)
         except Exception as exc:
             warn("final blend save failed: %s" % exc)
+
+    progress("audit", 96)
+    quality = quality_report(plan)
 
     stats = describe_scene()
     progress("done", 100)
