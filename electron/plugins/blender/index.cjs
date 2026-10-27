@@ -657,7 +657,7 @@ async function runPython(userDataPath, config, code, options = {}) {
 async function runAddonJob(userDataPath, config, spec = {}, options = {}) {
   const plan = {
     name: String(spec.title || "Blender add-on"),
-    reset: false,
+    reset: true,
     render: false,
     export: false,
     save: false,
