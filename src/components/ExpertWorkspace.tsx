@@ -661,7 +661,12 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
             meta: message.meta,
           })),
         })
-        .catch((error) => ({ ok: false, error: error instanceof Error ? error.message : String(error) }));
+        .catch(
+          (error): { ok: boolean; error: string; sessionId?: string } => ({
+            ok: false,
+            error: error instanceof Error ? error.message : String(error),
+          })
+        );
       if (res?.ok) {
         if (res.sessionId) patchSlot(slotId, { sessionId: res.sessionId });
         setModal(null);
@@ -1096,12 +1101,15 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
             </button>
             <button
               type="button"
-              disabled={!slot.messages.length}
               onClick={() => {
+                if (!slot.messages.length) {
+                  pushToast("Send a task first — there is nothing to save yet");
+                  return;
+                }
                 setSaveName(slot.messages.find((message) => message.role === "user")?.content.slice(0, 60) || "Expert chat");
                 setModal({ kind: "save", slotId: slot.id });
               }}
-              title={slot.messages.length ? "Save session" : "Save session — send a task first"}
+              title="Save session"
             >
               <BookmarkPlus />
             </button>
