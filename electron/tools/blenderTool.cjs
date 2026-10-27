@@ -826,6 +826,8 @@ module.exports = {
     "ANIMATION: objects[].animation keyframes (location/rotation/scale), material emission animation, armatures[] with auto-weights, scene frame range — glTF/FBX export carries animations. " +
     "EFFECTS: render.effects bloom/glare + chromatic dispersion (compositor), emissive materials, hologram/transparent blends, world HDRI/sky, turntable renders. " +
     "Scene outputs are real files: .blend, PNG renders, GLB/GLTF/FBX/OBJ/USD/STL/PLY, baked textures — all inside the job folder and copyable to the project. " +
+    "Every scene/render/bake/python result attaches a downscaled preview image to the tool result (attach=false disables it), so you can see the render; " +
+    "use action=preview job=<id> to re-attach any render, or the `vision_blender` tool for a senior 3D art-director critique. " +
     PLAN_REFERENCE +
     "\nTips: 'studio' + camera 'three_quarter' + EEVEE 1600×1000 is a good default preview; run action=job after a build to read warnings/quality; " +
     "use action=addon_search when a task needs a specialized add-on (auto-rigging, retopology, scattering, etc.) and install it yourself instead of telling the user to do it. " +
@@ -879,7 +881,10 @@ module.exports = {
       auto_render: { type: "boolean", description: "config: render automatically on scene builds" },
       timeout_sec: { type: "number", description: "config: job timeout in seconds" },
       enabled: { type: "boolean", description: "config: enable/disable the Blender plugin; addon_install: enable after install" },
-      job: { type: "string", description: "job id for job/cancel/delete_job/copy_artifacts/open_output" },
+      attach: { type: "boolean", description: "scene/render/bake/python/preview: return the rendered image to the model (default true for scene/render/bake/python)" },
+      include_image: { type: "boolean", description: "action=job: attach the job preview image" },
+      image_max: { type: "number", description: "Max attached image side in px (default 1280)" },
+      job: { type: "string", description: "job id for job/cancel/delete_job/copy_artifacts/open_output/preview" },
       id: { type: "string", description: "addon_pkg_id / asset id (asset_search results) / extension id" },
       pkg_id: { type: "string", description: "addon_install: extension package id from addon_search" },
       module: { type: "string", description: "addon_enable/addon_disable: Blender module name" },
