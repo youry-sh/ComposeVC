@@ -603,9 +603,9 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
                       <span className={labelClass}>{labels.customToolDependencies}</span>
                       <div className="flex min-h-[26px] min-w-0 flex-wrap items-center gap-1.5">
                         {(selectedTool.dependencies || []).length ? (
-                          (selectedTool.dependencies || []).map((dependency) => (
+                          (selectedTool.dependencies || []).map((dependency, index) => (
                             <span
-                              key={dependency}
+                              key={`${dependency}-${index}`}
                               className="inline-flex items-center gap-1 rounded-[2px] border px-1.5 py-[1px] font-mono text-[10px] text-ink-600"
                               style={{ borderColor: "var(--border)", background: "var(--input-bg)" }}
                             >

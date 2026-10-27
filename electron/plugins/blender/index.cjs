@@ -532,7 +532,46 @@ async function execute(userDataPath, job, executable, args, options = {}) {
   };
 }
 
+function safeAddonName(value) {
+  let base = "addon";
+  try {
+    base = path.basename(new URL(String(value)).pathname).replace(/\.zip$/i, "");
+  } catch {
+    base = path.basename(String(value || "addon")).replace(/\.zip$/i, "");
+  }
+  return base.replace(/[^a-z0-9._-]/gi, "_").slice(0, 60) || "addon";
+}
+
+/**
+ * Scene plans may reference add-on archives by URL or extensions.blender.org id;
+ * download them into the add-ons folder before the driver needs a local path.
+ */
+async function preparePlanAddons(userDataPath, plan) {
+  const entries = Array.isArray(plan?.install_addons) ? plan.install_addons : [];
+  if (!entries.length) return;
+  const addonsLib = require("./addons.cjs");
+  for (const entry of entries) {
+    if (!entry || typeof entry !== "object" || entry.path) continue;
+    const url = entry.url || entry.archive_url || "";
+    const pkg = entry.pkg_id || entry.id || entry.package || "";
+    try {
+      let archive = null;
+      if (url) {
+        const target = path.join(addonsLib.addonsDir(userDataPath), `${safeAddonName(url)}.zip`);
+        archive = await addonsLib.downloadFile(String(url), target);
+      } else if (pkg) {
+        const resolved = await addonsLib.resolveExtension(String(pkg));
+        archive = await addonsLib.downloadAddonArchive(userDataPath, resolved);
+      }
+      if (archive?.path) entry.path = archive.path;
+    } catch (error) {
+      entry.error = error instanceof Error ? error.message : String(error);
+    }
+  }
+}
+
 async function runPlan(userDataPath, config, plan, options = {}) {
+  const blender = requireBlender(config);
   const mergedPlan = { ...(plan || {}) };
   const configuredAddons = Array.isArray(config?.addons)
     ? config.addons.map((entry) => String(entry || "").trim()).filter(Boolean)
