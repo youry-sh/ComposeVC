@@ -189,12 +189,14 @@ async function run(action, input, context, options = {}) {
   return truth(Boolean(answer), text, payload);
 }
 
-module.exports = {
-  name: "vision",
+function createVisionTool(config = {}) {
+  return {
+  name: config.name || "vision",
   description:
+    config.description ||
     "Look at real images and answer questions about them using a dedicated vision model (configurable in Settings → Vision). " +
-    "Use it to inspect Blender renders/job previews, user screenshots, reference photos, UI states and charts — the agent otherwise only sees text. " +
-    "Actions: see (art-director review of a render), ask (custom prompt/question), ocr (extract visible text), compare (two or more images), " +
+    "Use it for user screenshots, photos, charts, UI states and any picture the agent must actually see — the agent otherwise only sees text. " +
+    "Actions: see (describe the image and answer), ask (custom prompt/question), ocr (extract visible text), compare (two or more images), " +
     "attach (return the image to the current model without calling a vision model), models/status (list configured models and the selected vision model). " +
     "Image sources: path=/abs/file.png|jpg|webp, job=<blender job id> (uses the job preview; optional image=<file name>), url=https://…, " +
     "data_url=data:image/..., or images=[{path|url|data_url}, …]. Images are downscaled before sending; attach=false skips returning them to the chat model. " +
@@ -241,6 +243,12 @@ module.exports = {
     };
     if (aliases[action]) action = aliases[action];
     if (!ACTIONS.includes(action)) throw new Error(`unknown action "${action}". Valid: ${ACTIONS.join(", ")}`);
-    return run(action, input, context);
+    return run(action, input, context, { defaultPrompt: config.defaultPrompt });
   },
-};
+  };
+}
+
+const visionTool = createVisionTool({ name: "vision" });
+module.exports = visionTool;
+module.exports.createVisionTool = createVisionTool;
+module.exports.GENERAL_PROMPT = GENERAL_PROMPT;
