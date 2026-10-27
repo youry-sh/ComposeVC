@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import ChatMonoScroll, { ChatMonoScrollHandle } from "./ChatMonoScroll";
 import ModelPicker, { ModelPickerLabels } from "./ModelPicker";
+import MarkdownContent from "./markdown/MarkdownContent";
 import { AIModel, AIProvider, ProviderConfig } from "../types";
 
 export const EXPERT_SLOT_IDS = ["expert-1", "expert-2", "expert-3"] as const;
@@ -98,6 +99,7 @@ type ExpertSlot = {
   contextLimit: number;
   error: string | null;
   modelOpen: boolean;
+  preview: boolean;
   confirmReset: boolean;
 };
 
@@ -157,6 +159,7 @@ function createSlots(): ExpertSlot[] {
     contextLimit: 0,
     error: null,
     modelOpen: false,
+    preview: false,
     confirmReset: false,
   }));
 }
