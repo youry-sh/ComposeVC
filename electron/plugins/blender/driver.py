@@ -1714,7 +1714,7 @@ def quality_report(plan):
         "checks": [],
         "meshes": [],
         "materials": {"total": 0, "textured": 0, "flat": 0},
-        "textures": len([image for image in bpy.data.images if image.source == "FILE"]),
+        "textures": len([image for image in bpy.data.images if image.source == "FILE" or image.filepath]),
     }
     penalty = 0
     critical = 0
