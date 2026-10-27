@@ -483,7 +483,7 @@ async function execute(userDataPath, job, executable, args, options = {}) {
           error: entry?.error || (Array.isArray(entry?.errors) ? entry.errors[0] || "" : ""),
         }))
       : [],
-    quality: driverResult?.quality || null,
+    quality: driverResult?.stats?.meshes ? driverResult.quality || null : null,
     summary: summarizeResult(driverResult, resultPayload),
     stats: driverResult?.stats?.objectsDetail ? driverResult.stats : driverResult?.stats || {},
     blender: {

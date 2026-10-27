@@ -117,8 +117,7 @@ PLAN (declarative scene, action=scene) — everything optional except objects/so
   "append": [{"blend": "C:/lib/assets.blend", "objects": ["Crate", "Barrel"]}],
   "addons": [{"module": "bl_ext.user_default.my_addon"}, "another_module"],
   "install_addons": [{"path": "C:/addons/auto_rig.zip", "enable": true}],
-  "disable_addons": ["some_module"],
-  "python": "import bpy\\n# arbitrary bpy code executed after the declarative build",
+  "disable_addons": ["some_module"],  "python": "import bpy\\n# arbitrary bpy code executed after the declarative build",
   "save": "scene.blend"
 }
 `;
