@@ -295,6 +295,7 @@ async function execute(userDataPath, job, executable, args, options = {}) {
   let resultPayload = null;
   let lastProgress = 0;
   let spawnError = null;
+  let writeChain = Promise.resolve();
 
   const child = spawn(executable, args, {
     cwd: job.dir,
@@ -458,6 +459,7 @@ async function execute(userDataPath, job, executable, args, options = {}) {
   const preview = renders[0]?.path || (existingArtifact(path.join(job.dir, "preview.png"))?.path ?? "");
 
   const finishedAt = Date.now();
+  await writeChain.catch(() => {});
   const updated = await store.updateJob(userDataPath, job.id, {
     status: ok ? "succeeded" : canceled ? "canceled" : "failed",
     progress: ok ? 100 : lastProgress,

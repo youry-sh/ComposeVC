@@ -4013,6 +4013,8 @@ function publicPluginJob(job) {
 
 function buildBlenderDemoPlan(config) {
   const resolution = config?.resolution || { width: 1400, height: 900 };
+  const width = Math.max(640, Math.min(1400, Number(resolution.width) || 1400));
+  const height = Math.max(480, Math.min(900, Number(resolution.height) || 900));
   return {
     name: "Демо: энергетический кристалл",
     reset: true,
