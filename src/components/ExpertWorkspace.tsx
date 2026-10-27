@@ -9,6 +9,7 @@ import {
   FileText,
   Folder,
   FolderOpen,
+  Hash,
   History,
   Layers,
   Loader2,
@@ -690,6 +691,22 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
       }
       const res = await window.lopster?.expertCopySession?.({ sessionId: slot.sessionId });
       pushToast(res?.ok ? "Session copied" : res?.error || "Could not copy the session");
+    },
+    [pushToast]
+  );
+
+  const copySessionId = useCallback(
+    async (sessionId: string | null) => {
+      if (!sessionId) {
+        pushToast("No session ID yet — send a task first");
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(sessionId);
+        pushToast(`Session ID copied · ${sessionId}`);
+      } catch {
+        pushToast("Clipboard is not available");
+      }
     },
     [pushToast]
   );

@@ -1024,15 +1024,45 @@ function createExpertService(deps = {}) {
       } catch {
         raw = "";
       }
-      if (!raw || raw.length < 20) return { ok: false, error: "Clipboard has no Expert session" };
+      const text = String(raw || "").trim();
+      if (!text) return { ok: false, error: "Clipboard is empty" };
+
+      const cloneSession = (session) =>
+        store.createSession(userData(), {
+          rootPath: input?.rootPath || session.rootPath || null,
+          projectName: input?.projectName || session.projectName || null,
+          modelId: input?.modelId || session.modelId || null,
+          title: session.title,
+          messages: session.messages,
+          slotId: input?.slotId || null,
+        });
+
+      // 1) A plain session id (copied by the id chip / "#abc" label).
+      const maybeId = text.replace(/^#/, "").trim();
+      if (maybeId && maybeId.length <= 160 && /^[A-Za-z0-9._:-]+$/.test(maybeId) && !maybeId.startsWith("{")) {
+        let existing = store.readSession(userData(), maybeId);
+        if (!existing) {
+          for (const entry of store.listSaved(userData())) {
+            const snapshot = store.readSavedSession(userData(), entry.id);
+            if (snapshot && snapshot.sessionId === maybeId) {
+              existing = snapshot;
+              break;
+            }
+          }
+        }
+        if (!existing) return { ok: false, error: "No Expert session with this ID" };
+        return { ok: true, session: cloneSession(existing), fromSessionId: maybeId };
+      }
+
+      // 2) A full session snapshot (Copy session).
       let pack;
       try {
-        pack = JSON.parse(raw);
+        pack = JSON.parse(text);
       } catch {
-        return { ok: false, error: "Clipboard does not contain an Expert session" };
+        return { ok: false, error: "Clipboard has no Expert session or session ID" };
       }
       if (!pack || pack.type !== "composevc-expert-session" || !Array.isArray(pack.messages)) {
-        return { ok: false, error: "Clipboard does not contain an Expert session" };
+        return { ok: false, error: "Clipboard has no Expert session or session ID" };
       }
       const session = store.createSession(userData(), {
         rootPath: input?.rootPath || pack.rootPath || null,
