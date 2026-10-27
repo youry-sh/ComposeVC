@@ -504,7 +504,7 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
   const openSaved = useCallback(
     async (slotId: string, savedId: string) => {
       const res = await window.lopster?.expertOpenSaved?.({ savedId, slotId });
-      const session = res?.session as
+      const session = res?.session as unknown as
         | { sessionId: string; messages: ExpertMessage[]; rootPath?: string | null; projectName?: string | null }
         | undefined;
       if (!res?.ok || !session) {
@@ -567,7 +567,7 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
         rootPath: slot.rootPath,
         projectName: slot.projectName,
       });
-      const session = res?.session as
+      const session = res?.session as unknown as
         | { sessionId: string; messages: ExpertMessage[]; rootPath?: string | null; projectName?: string | null }
         | undefined;
       if (!res?.ok || !session) {

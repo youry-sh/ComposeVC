@@ -1,5 +1,6 @@
-# ComposeVC — hardened Windows NSIS installer
-# - App code: obfuscated electron/*.cjs inside app.asar (no src/, no runtime-app)
+# ComposeVC — Windows NSIS installer
+# - App code: plain electron/*.cjs inside app.asar (no obfuscation)
+# - Blender driver.py is asar-unpacked so the external Blender process can read it
 # - ANTI: resources/anti (stripped binary + chromium; NO Go source, NO profiles)
 # - Fuses: afterPack flips RunAsNode/inspect/OnlyLoadAppFromAsar
 
@@ -11,7 +12,7 @@ directories:
   output: release
   buildResources: build-assets
 
-# Pack HARDENED main process (release-assets/electron-hard from scripts/harden-electron.mjs)
+# Pack plain Electron main-process sources
 files:
   - package.json
   - from: release-assets/electron-hard
