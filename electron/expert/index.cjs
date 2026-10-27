@@ -71,6 +71,7 @@ function createExpertService(deps = {}) {
   }
 
   const runs = new Map(); // slotId -> { controller, sessionId, runId }
+  const studyRuns = new Map(); // slotId -> AbortController (background study only)
   const studyJobs = new Map(); // projectKey -> Promise<study>
   const progressState = new Map(); // slotId -> { timer, pending }
 
@@ -801,15 +802,67 @@ function createExpertService(deps = {}) {
     }
   }
 
-  function stop(slotId) {
-    const entry = runs.get(store.SLOT_IDS.includes(slotId) ? slotId : store.SLOT_IDS[0]);
-    if (!entry) return { ok: false, error: "Nothing is running" };
+  async function startStudy(payload = {}) {
+    const slotId = store.SLOT_IDS.includes(payload.slotId) ? payload.slotId : store.SLOT_IDS[0];
+    const rootPath = typeof payload.rootPath === "string" && payload.rootPath ? payload.rootPath : null;
+    if (!rootPath) return { ok: false, error: "Choose a project folder first" };
+    if (studyRuns.has(slotId)) return { ok: false, error: "The project is already being studied" };
+    const controller = new AbortController();
+    studyRuns.set(slotId, controller);
+    const projectName = payload.projectName || path.basename(rootPath);
     try {
-      entry.controller.abort();
-    } catch {
-      /* ignore */
+      const study = await ensureStudy({
+        slotId,
+        sessionId: payload.sessionId || null,
+        rootPath,
+        projectName,
+        modelId: payload.modelId || null,
+        signal: controller.signal,
+      });
+      return {
+        ok: Boolean(study),
+        meta: studyMeta(study),
+        study: study ? { status: study.status, updatedAt: study.updatedAt } : null,
+        stopped: controller.signal.aborted,
+      };
+    } catch (error) {
+      const aborted = controller.signal.aborted || error?.name === "AbortError";
+      const text = aborted ? "Study stopped" : error instanceof Error ? error.message : String(error);
+      emit(slotId, {
+        phase: aborted ? "stopped" : "error",
+        status: text,
+        studyDone: true,
+        immediate: true,
+      });
+      return { ok: false, error: text, stopped: aborted };
+    } finally {
+      studyRuns.delete(slotId);
     }
-    emit(slotId, { phase: "stopping", status: "Stopping…", immediate: true });
+  }
+
+  function stop(slotId) {
+    const key = store.SLOT_IDS.includes(slotId) ? slotId : store.SLOT_IDS[0];
+    let stoppedSomething = false;
+    const study = studyRuns.get(key);
+    if (study) {
+      try {
+        study.abort();
+        stoppedSomething = true;
+      } catch {
+        /* ignore */
+      }
+    }
+    const entry = runs.get(key);
+    if (entry) {
+      try {
+        entry.controller.abort();
+        stoppedSomething = true;
+      } catch {
+        /* ignore */
+      }
+    }
+    if (!stoppedSomething) return { ok: false, error: "Nothing is running" };
+    emit(key, { phase: "stopping", status: "Stopping…", immediate: true });
     return { ok: true };
   }
 
@@ -850,6 +903,39 @@ function createExpertService(deps = {}) {
 
     ipcMain.handle("expert:send", async (_event, payload) => send(payload || {}));
     ipcMain.handle("expert:stop", (_event, slotId) => stop(slotId));
+    ipcMain.handle("expert:study", async (_event, payload) => startStudy(payload || {}));
+
+    ipcMain.handle("expert:saveSnapshot", (_event, payload) => {
+      try {
+        const input = payload && typeof payload === "object" ? payload : {};
+        const name = String(input.name || "").trim();
+        let session = input.sessionId ? store.readSession(userData(), input.sessionId) : null;
+        if (!session) {
+          const messages = Array.isArray(input.messages) ? input.messages : [];
+          if (!messages.length) {
+            return { ok: false, error: "Nothing to save yet — send a task first" };
+          }
+          const firstUser = messages.find((message) => message?.role === "user" && message?.content);
+          session = store.createSession(userData(), {
+            rootPath: input.rootPath || null,
+            projectName: input.projectName || null,
+            modelId: input.modelId || null,
+            slotId: input.slotId || null,
+            title: input.title || firstUser?.content || "",
+            messages,
+          });
+        }
+        if (!session.messages.length) {
+          return { ok: false, error: "Nothing to save yet — send a task first" };
+        }
+        const entry = store.saveNamedSession(userData(), session.sessionId, name || session.title);
+        return entry
+          ? { ok: true, entry, sessionId: session.sessionId }
+          : { ok: false, error: "Could not save the session" };
+      } catch (error) {
+        return { ok: false, error: error instanceof Error ? error.message : String(error) };
+      }
+    });
 
     ipcMain.handle("expert:loadSession", (_event, sessionId) => store.readSession(userData(), sessionId));
 
@@ -982,14 +1068,22 @@ function createExpertService(deps = {}) {
         /* ignore */
       }
     }
+    for (const controller of studyRuns.values()) {
+      try {
+        controller.abort();
+      } catch {
+        /* ignore */
+      }
+    }
     runs.clear();
+    studyRuns.clear();
     for (const state of progressState.values()) {
       if (state.timer) clearTimeout(state.timer);
     }
     progressState.clear();
   }
 
-  return { register, send, stop, dispose, studyMeta };
+  return { register, send, stop, startStudy, dispose, studyMeta };
 }
 
 module.exports = { createExpertService, PROGRESS_CHANNEL };

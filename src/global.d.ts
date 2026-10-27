@@ -331,6 +331,40 @@ declare global {
         };
       }>;
       expertStop: (slotId: string) => Promise<{ ok: boolean; error?: string }>;
+      expertStudy: (payload: {
+        slotId: string;
+        rootPath: string;
+        projectName?: string | null;
+        modelId?: string | null;
+        sessionId?: string | null;
+      }) => Promise<{
+        ok: boolean;
+        error?: string;
+        stopped?: boolean;
+        meta?: Record<string, number | string>;
+        study?: Record<string, unknown> | null;
+      }>;
+      expertSaveSnapshot: (payload: {
+        slotId: string;
+        name?: string;
+        title?: string;
+        rootPath?: string | null;
+        projectName?: string | null;
+        modelId?: string | null;
+        sessionId?: string | null;
+        messages?: Array<{
+          id?: string;
+          role: "user" | "assistant";
+          content: string;
+          createdAt?: number;
+          meta?: Record<string, unknown>;
+        }>;
+      }) => Promise<{
+        ok: boolean;
+        error?: string;
+        sessionId?: string;
+        entry?: Record<string, unknown>;
+      }>;
       expertLoadSession: (sessionId: string) => Promise<{
         sessionId: string;
         title: string;

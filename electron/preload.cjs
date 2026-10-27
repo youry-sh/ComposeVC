@@ -47,6 +47,8 @@ contextBridge.exposeInMainWorld("lopster", {
   expertSaveStateSync: (patch) => ipcRenderer.sendSync("expert:saveStateSync", patch || {}),
   expertSend: (payload) => ipcRenderer.invoke("expert:send", payload || {}),
   expertStop: (slotId) => ipcRenderer.invoke("expert:stop", slotId),
+  expertStudy: (payload) => ipcRenderer.invoke("expert:study", payload || {}),
+  expertSaveSnapshot: (payload) => ipcRenderer.invoke("expert:saveSnapshot", payload || {}),
   expertLoadSession: (sessionId) => ipcRenderer.invoke("expert:loadSession", sessionId),
   expertListSessions: (rootPath) => ipcRenderer.invoke("expert:listSessions", rootPath || null),
   expertNewSession: (input) => ipcRenderer.invoke("expert:newSession", input || {}),
