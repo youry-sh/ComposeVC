@@ -831,7 +831,7 @@ module.exports = {
     "Use it whenever the user wants a 3D model, prop, weapon, environment, character base, texture work, render, animation, or an export for Unity/Unreal/Godot/web. " +
     "Actions: status, probe, scene (BUILD from a declarative plan), python (arbitrary bpy script — full power, no limits), render, export, import, inspect, bake, " +
     "jobs/job/cancel/delete_job, config, copy_artifacts, open_output, open_gui, " +
-    "addons / addon_search / addon_install / addon_enable / addon_disable (the agent can find and install ANY Blender add-on or extension itself, and it is auto-enabled for later jobs; install only trusted sources — add-ons execute Python with Blender's permissions), " +
+    "addons / addon_search / addon_install / addon_enable / addon_disable (the agent can find and install ANY Blender add-on or extension itself, and it is auto-enabled for later jobs; install only trusted sources — add-ons execute Python with Blender's permissions; action=addons also prints the real user addons/extensions paths for asset packs such as MPFB skins/hair: put downloaded pack files under user_extensions/user_default/<pkg>/data), " +
     "asset_search / asset_download / asset_list / asset_remove (CC0 PBR textures, HDRIs and models from Poly Haven downloaded into the local vault with ready-to-paste material/world specs). " +
     "Scene building is declarative: plan.objects[] + plan.materials[] (presets, procedural or image PBR maps, normal/roughness/metalness) + lighting/camera/render/export. " +
     "QUALITY BAR — this is the difference between a useful asset and junk nobody can import: " +
@@ -958,6 +958,9 @@ module.exports = {
       open_blender: "open_gui",
       folder: "open_output",
       copy: "copy_artifacts",
+      see_render: "preview",
+      show_render: "preview",
+      look_at_render: "preview",
       list_addons: "addons",
       addon_list: "addons",
       search_addons: "addon_search",
