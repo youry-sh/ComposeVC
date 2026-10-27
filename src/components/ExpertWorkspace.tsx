@@ -768,15 +768,32 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
       });
 
       try {
+        // Create the persisted session up front so Copy / Save work while the
+        // study and compose are still running (before the reply resolves).
+        let sessionId = slot.sessionId;
+        if (!sessionId && window.lopster?.expertNewSession) {
+          const created = await window.lopster
+            .expertNewSession({
+              rootPath: slot.rootPath,
+              projectName: slot.projectName,
+              slotId,
+            })
+            .catch(() => null);
+          const createdSession = created?.session as unknown as { sessionId?: string } | undefined;
+          if (created?.ok && createdSession?.sessionId) {
+            sessionId = createdSession.sessionId;
+            patchSlot(slotId, { sessionId });
+          }
+        }
         const res = await window.lopster?.expertSend?.({
           slotId,
           task,
           modelId,
           rootPath: slot.rootPath,
           projectName: slot.projectName,
-          sessionId: slot.sessionId,
+          sessionId,
         });
-        const sessionId = res?.sessionId || slot.sessionId;
+        const resolvedSessionId = res?.sessionId || sessionId;
         if (sessionId) {
           const session = await window.lopster?.expertLoadSession?.(sessionId);
           if (session) {
