@@ -492,14 +492,26 @@ async function run(action, input, context) {
         probe = { ok: false, error: error instanceof Error ? error.message : String(error) };
       }
       const configured = Array.isArray(config.addons) ? config.addons : [];
+      const checks = Array.isArray(probe?.addonChecks) ? probe.addonChecks : [];
       const installed = Array.isArray(probe?.addons) ? probe.addons : [];
-      const lines = [
-        `включаются плагином автоматически: ${configured.length ? configured.join(", ") : "—"}`,
-        `загружено в Blender: ${installed.length}`,
-      ];
+      const lines = [`настроено в плагине: ${configured.length ? configured.join(", ") : "—"}`];
+      if (checks.length) {
+        lines.push("проверка модулей:");
+        for (const check of checks) {
+          const state = check.enabled
+            ? "включён"
+            : check.installed
+              ? "установлен, но выключен"
+              : "НЕ НАЙДЕН";
+          lines.push(`${check.enabled ? "1" : "0"} ${check.requested || check.module} — ${state}${check.error ? ` · ${check.error}` : ""}`);
+        }
+      }
+      lines.push(`загружено в этом процессе Blender: ${installed.length}`);
       if (installed.length) lines.push(installed.slice(0, 60).join(", "));
+      if (probe?.userAddons) lines.push(`addons: ${probe.userAddons}`);
+      if (probe?.userExtensions) lines.push(`extensions: ${probe.userExtensions}`);
       if (probe && probe.error) lines.push(`probe: ${probe.error}`);
-      return truth(Boolean(probe?.ok), lines.join("\n"), { configured, installed, probe });
+      return truth(Boolean(probe?.ok), lines.join("\n"), { configured, installed, checks, probe });
     }
     case "addon_search": {
       const query = String(pick(input, "query", "q", "search") || "").trim();
