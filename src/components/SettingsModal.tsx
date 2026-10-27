@@ -619,6 +619,12 @@ const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, 
     : null;
   const inlineHintSelectValue = inlineHintModelMatch ? inlineHintModelMatch.id : "";
   const inlineHintEnabled = aiRuntime.inlineHintEnabled === true;
+  const visionModelId =
+    typeof aiRuntime.visionModelId === "string" ? aiRuntime.visionModelId.trim() : "";
+  const visionModelMatch = visionModelId
+    ? draft.models.find((m) => m.id === visionModelId || m.name === visionModelId)
+    : null;
+  const visionSelectValue = visionModelMatch ? visionModelMatch.id : "";
   const modelOptions = [
     { value: "", label: "Same as main model (default)" },
     ...draft.models.map((model) => {
@@ -949,6 +955,31 @@ const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, 
                         </p>
                       ) : null}
                     </div>
+                  </div>
+                </div>
+
+                <div className="settings-card">
+                  <div className="settings-card-title">Vision</div>
+                  <p className="mb-3 text-[11px] leading-snug text-ink-500">
+                    Model used by the <span style={{ fontFamily: "var(--terminal-font)" }}>vision</span> tool to read screenshots,
+                    reference photos and Blender renders. DeepSeek flash/v4 accept images (PNG/JPEG/WebP/GIF); leave empty to use
+                    the active chat model.
+                  </p>
+                  <div className="grid gap-1.5">
+                    <span className="text-[10px] font-medium uppercase tracking-[0.1em] text-ink-500">
+                      Vision model
+                    </span>
+                    <UiSelect
+                      ariaLabel="Vision model"
+                      value={visionSelectValue}
+                      options={modelOptions}
+                      onChange={(next) => updateAiRuntime({ visionModelId: next || "" })}
+                    />
+                    {visionModelId && !visionModelMatch ? (
+                      <p className="text-[11px] leading-snug" style={{ color: "var(--danger)" }}>
+                        Saved vision model &quot;{visionModelId}&quot; is missing — falls back to the active chat model.
+                      </p>
+                    ) : null}
                   </div>
                 </div>
 

@@ -28,6 +28,7 @@ const knowledgeTool = require("./knowledge.cjs");
 const generateImage = require("./generateImage.cjs");
 const blenderTool = require("./blenderTool.cjs");
 const pluginTool = require("./pluginTool.cjs");
+const visionTool = require("./visionTool.cjs");
 
 const TOOLS = [
   readFile,
@@ -60,6 +61,7 @@ const TOOLS = [
         generateImage,
         blenderTool,
         pluginTool,
+        visionTool,
 				];/** Common aliases the model may emit */const TOOL_ALIASES = {  timer: "work_timer",  worktimer: "work_timer",
   minimum_work_timer: "work_timer",
   glob: "grep",
@@ -210,6 +212,16 @@ const TOOLS = [
   plugin_manager: "plugin",
   manage_plugins: "plugin",
   plugin_manager_tool: "plugin",
+  // Vision (dedicated vision model / image attachments)
+  vision_tool: "vision",
+  see_image: "vision",
+  look_at_image: "vision",
+  describe_image: "vision",
+  image_read: "vision",
+  read_image: "vision",
+  ocr: "vision",
+  screenshot_read: "vision",
+  photo: "vision",
   memory: "knowledge",
   knowledge_memory: "knowledge",
   lab_in_memory: "knowledge",
