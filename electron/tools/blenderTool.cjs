@@ -1,6 +1,8 @@
 const fs = require("fs");
 
 const blender = require("../plugins/blender/index.cjs");
+const blenderAddons = require("../plugins/blender/addons.cjs");
+const blenderAssets = require("../plugins/blender/assets.cjs");
 const registry = require("../plugins/registry.cjs");
 const store = require("../plugins/store.cjs");
 
@@ -22,6 +24,15 @@ const ACTIONS = [
   "copy_artifacts",
   "open_output",
   "open_gui",
+  "addons",
+  "addon_search",
+  "addon_install",
+  "addon_enable",
+  "addon_disable",
+  "asset_search",
+  "asset_download",
+  "asset_list",
+  "asset_remove",
 ];
 
 const PLAN_REFERENCE = `
