@@ -34,6 +34,7 @@ type DraftConfig = {
   format: string;
   autoRender: boolean;
   timeoutSec: number;
+  addons: string[];
 };
 
 const quietBtn =
@@ -123,6 +124,7 @@ const PluginsWorkspace: React.FC = () => {
   const [previewFailures, setPreviewFailures] = useState<Record<string, boolean>>({});
   const [logs, setLogs] = useState<Record<string, string>>({});
   const [logBusy, setLogBusy] = useState(false);
+  const [addonInput, setAddonInput] = useState("");
   const pendingListRefresh = useRef<number | null>(null);
 
   const plugin = useMemo(
