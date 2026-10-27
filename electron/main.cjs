@@ -48,6 +48,8 @@ const knowledgeStore = require("./labIn/knowledgeStore.cjs");
 const knowledgeArchive = require("./labIn/knowledgeArchive.cjs");
 const docsStore = require("./docs/docsStore.cjs");
 const promptsStore = require("./promptsStore.cjs");
+const pluginsRegistry = require("./plugins/registry.cjs");
+const blenderPlugin = require("./plugins/blender/index.cjs");
 const cfMailConfig = require("./cfMailConfig.cjs");
 
 const { TOOLS, getToolSchemas, getToolSchemasAsync } = require("./tools/registry.cjs");
@@ -1020,6 +1022,7 @@ function installPackagedWindowHardening(win) {
     Digit7: "knowledge",
     Digit8: "docs",
     Digit9: "usage",
+    Digit0: "plugins",
   };
 
   // In-app guests are allowed for the aside media dock only, and only on plain
