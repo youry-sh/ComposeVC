@@ -428,7 +428,7 @@ declare global {
       }) => Promise<{ ok: boolean; session?: Record<string, unknown>; error?: string }>;
       expertCopySession: (payload: {
         sessionId: string;
-      }) => Promise<{ ok: boolean; messageCount?: number; error?: string }>;
+      }) => Promise<{ ok: boolean; sessionId?: string; messageCount?: number; error?: string }>;
       expertPasteSession: (input: {
         rootPath?: string | null;
         projectName?: string | null;

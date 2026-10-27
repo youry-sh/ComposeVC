@@ -15074,6 +15074,50 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
 }
 .expert-session-del svg { width: 11px; height: 11px; }
 .expert-session-del:hover { background: var(--hover-bg); color: var(--danger); }
+.expert-session-copy {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ink-500);
+  cursor: pointer;
+}
+.expert-session-copy svg { width: 11px; height: 11px; }
+.expert-session-copy:hover { background: var(--hover-bg); color: var(--ink-950); }
+.expert-session-id {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  max-width: 96px;
+  height: 17px;
+  padding: 0 4px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--ink-500);
+  font-family: var(--terminal-font);
+  font-size: 8.5px;
+  letter-spacing: .03em;
+  cursor: pointer;
+}
+.expert-session-id > svg { width: 8px; height: 8px; flex: none; }
+.expert-session-id > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.expert-session-id:hover {
+  border-color: var(--border-strong);
+  background: var(--hover-bg);
+  color: var(--ink-900);
+}
 .expert-field { display: flex; flex-direction: column; gap: 5px; }
 .expert-field > span {
   font-family: var(--terminal-font);
