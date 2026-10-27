@@ -1047,9 +1047,13 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
                 </span>
               </div>
               {isPrompt ? (
-                <div className="expert-prompt-body">{message.content}</div>
+                <div className="expert-prompt-body">
+                  <MarkdownContent content={message.content} />
+                </div>
               ) : (
-                <div className="expert-note-body">{message.content}</div>
+                <div className="expert-note-body">
+                  <MarkdownContent content={message.content} />
+                </div>
               )}
             </article>
           );
@@ -1162,6 +1166,19 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
             </div>
           ) : null}
           <div className="expert-composer">
+            {slot.preview ? (
+              <ChatMonoScroll className="expert-composer-preview">
+                <div className="expert-composer-preview-inner">
+                  {slot.draft.trim() ? (
+                    <MarkdownContent content={slot.draft} />
+                  ) : (
+                    <p className="expert-composer-preview-empty">
+                      Markdown preview — start typing and the task renders here.
+                    </p>
+                  )}
+                </div>
+              </ChatMonoScroll>
+            ) : null}
             <AutoTextarea
               value={slot.draft}
               disabled={slot.running}
@@ -1179,6 +1196,15 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
                 onSelectModel={(modelId) => patchSlot(slot.id, { selectedModelId: modelId })}
                 labels={modelPickerLabels}
               />
+              <button
+                type="button"
+                className={`expert-md-toggle ${slot.preview ? "is-active" : ""}`}
+                onClick={() => patchSlot(slot.id, { preview: !slot.preview })}
+                title={slot.preview ? "Hide Markdown preview" : "Markdown preview of the task"}
+                aria-pressed={slot.preview}
+              >
+                MD
+              </button>
               <span
                 className={`expert-ctx ${contextPct > 0.85 ? "is-danger" : contextPct > 0.6 ? "is-warn" : ""}`}
                 title={
@@ -1300,7 +1326,8 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
                     {slots.find((slot) => slot.id === modal.slotId)?.projectName || "all folders"}
                   </span>
                 </div>
-                <div className="expert-modal-body is-scroll">
+                <ChatMonoScroll className="expert-modal-scroll">
+                  <div className="expert-modal-body">
                   {history.loading ? (
                     <div className="expert-modal-loading">
                       <Loader2 className="expert-live-spin" /> Loading…
