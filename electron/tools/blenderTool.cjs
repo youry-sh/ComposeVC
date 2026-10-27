@@ -116,7 +116,8 @@ PLAN (declarative scene, action=scene) — everything optional except objects/so
   "import": [{"path": "C:/models/character.glb", "location": [0,0,0], "scale": [1,1,1]}],
   "append": [{"blend": "C:/lib/assets.blend", "objects": ["Crate", "Barrel"]}],
   "addons": [{"module": "bl_ext.user_default.my_addon"}, "another_module"],
-  "install_addons": [{"path": "C:/addons/auto_rig.zip", "enable": true}],
+  "install_addons": [{"path": "C:/addons/auto_rig.zip", "enable": true},
+                     {"pkg_id": "viewport_rulers"}, {"url": "https://extensions.blender.org/download/.../addon.zip"}],
   "disable_addons": ["some_module"],  "python": "import bpy\\n# arbitrary bpy code executed after the declarative build",
   "save": "scene.blend"
 }
