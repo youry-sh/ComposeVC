@@ -14665,6 +14665,8 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
 }
 .expert-empty-btn svg { width: 12px; height: 12px; }
 .expert-empty-btn:hover { background: var(--hover-bg); color: var(--ink-950); }
+.expert-empty-btn:disabled { opacity: .4; cursor: default; }
+.expert-empty-btn:disabled:hover { background: transparent; color: var(--ink-900); }
 .expert-empty-btn.is-quiet {
   border-color: var(--border);
   color: var(--ink-600);
