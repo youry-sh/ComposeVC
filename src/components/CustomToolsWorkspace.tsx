@@ -373,9 +373,9 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
             {filteredTools.length === 0 ? (
               <div className="flex flex-col items-center justify-center px-4 py-10 text-center">
                 <FolderOpen className="h-4 w-4 text-ink-400" />
-                <div className="mt-2 text-[11px] text-ink-600">
-                  {tools.length === 0 ? labels.customToolsEmpty : labels.noResults}
-                </div>
+                {search ? (
+                  <div className="mt-2 text-[11px] text-ink-600">{labels.noResults}</div>
+                ) : null}
               </div>
             ) : (
               filteredTools.map((tool) => {
@@ -566,7 +566,7 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
               </div>
 
               <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 lg:px-7 scrollbar-thin">
-                <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_288px]">
+                <div className="mx-auto grid w-full max-w-[1120px] gap-6 xl:grid-cols-[minmax(0,1fr)_288px]">
                   <div className="flex min-w-0 flex-col gap-5">
                     <label className="grid min-w-0 gap-1.5">
                       <span className={labelClass}>{labels.customToolDescription}</span>
