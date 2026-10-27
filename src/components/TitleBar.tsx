@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Box, Minus, Square, X } from "lucide-react";
+import { Box, Minus, Sparkles, Square, X } from "lucide-react";
 import {
   IcoMulti,
   IcoProxy,
@@ -18,7 +18,7 @@ import {
   formatTokenCount,
 } from "./StatusBar";
 
-type Panel = "multiide" | "webengine" | "proxy" | "settings" | "customtools" | "plugins" | "runner" | "terminal" | "knowledge" | "docs" | "usage";
+type Panel = "multiide" | "expert" | "webengine" | "proxy" | "settings" | "customtools" | "plugins" | "runner" | "terminal" | "knowledge" | "docs" | "usage";
 
 interface TitleBarProps {
   subtitle?: string;
@@ -143,6 +143,7 @@ const TitleBar: React.FC<TitleBarProps> = ({
 
   const tabs: Array<{ id: Panel; title: string; icon: React.ReactNode }> = [
     { id: "multiide", title: labels?.multiIde || "MultiIDE", icon: <IcoMulti className="topbar-tab-ico" /> },
+    { id: "expert", title: "Expert", icon: <Sparkles className="topbar-tab-ico" /> },
     { id: "webengine", title: "Web Engine", icon: <IcoWebEngine className="topbar-tab-ico" /> },
     { id: "proxy", title: labels?.proxy || "Proxy", icon: <IcoProxy className="topbar-tab-ico" /> },
     { id: "runner", title: "Runner", icon: <IcoRunner className="topbar-tab-ico" /> },

@@ -13899,7 +13899,7 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
 .tasks-row-delete:hover,
 .tasks-row-delete.is-armed {
   color: var(--status-err);
-  background: var(--status-err-bg);
+  background: var(--danger-bg);
   border-color: var(--status-err-border);
 }
 
@@ -14077,14 +14077,14 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
 .tasks-ghost-danger:hover {
   color: var(--status-err);
   border-color: var(--status-err-border);
-  background: var(--status-err-bg);
+  background: var(--danger-bg);
 }
 .tasks-danger {
   height: 27px;
   padding: 0 10px;
   border: 1px solid var(--status-err-border);
   border-radius: 2px;
-  background: var(--status-err-bg);
+  background: var(--danger-bg);
   color: var(--status-err);
   font-size: 11px;
   font-weight: 600;
@@ -14135,7 +14135,7 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   flex-shrink: 0;
   padding: 6px 14px;
   border-top: 1px solid var(--status-err-border);
-  background: var(--status-err-bg);
+  background: var(--danger-bg);
   color: var(--status-err);
   font-size: 10.5px;
 }

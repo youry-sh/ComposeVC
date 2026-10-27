@@ -575,6 +575,12 @@ const App: React.FC = () => {
             </div>
           )}
 
+          {activePanel === "expert" && (
+            <div className="flex-1 min-w-0 min-h-0 flex overflow-hidden">
+              <ExpertWorkspace providerConfig={providerConfig} labels={chatPanelLabels} />
+            </div>
+          )}
+
           <div
             className={
               activePanel === "webengine"
@@ -582,6 +588,15 @@ const App: React.FC = () => {
                 : "hidden"
             }
           >
+            {webEngineMounted && (
+              <WebEngineWorkspace
+                chatKey={webEngineTarget.chatKey}
+                fallbackChatKey={webEngineTarget.fallbackChatKey}
+                rootPath={webEngineTarget.rootPath}
+                projectName={webEngineTarget.projectName}
+              />
+            )}
+          </div>
 
           {activePanel === "proxy" && <ProxyWorkspace labels={t} />}
           {activePanel === "runner" && (
