@@ -59,6 +59,10 @@ asarUnpack:
   - "**/node-pty/**"
   - "**/@vscode/ripgrep/**"
   - "**/@ngrok/ngrok/**"
+  # Blender driver is executed by an external process (installed Blender) and
+  # cannot be read from inside app.asar.
+  - "**/*.py"
+  - "electron/plugins/blender/**"
 
 npmRebuild: false
 nodeGypRebuild: false
