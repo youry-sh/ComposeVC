@@ -11,6 +11,7 @@ import CustomToolsWorkspace from "./components/CustomToolsWorkspace";
 import PluginsWorkspace from "./components/PluginsWorkspace";
 import PromptsModal from "./components/PromptsModal";
 import McpModal from "./components/McpModal";
+import TasksModal from "./components/TasksModal";
 import TerminalWorkspace from "./components/TerminalWorkspace";
 import StorageModal from "./components/StorageModal";
 import KnowledgeWorkspace from "./components/KnowledgeWorkspace";
@@ -44,6 +45,7 @@ const App: React.FC = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [providersOpen, setProvidersOpen] = useState(false);
   const [mcpOpen, setMcpOpen] = useState(false);
+  const [tasksOpen, setTasksOpen] = useState(false);
   const [promptsOpen, setPromptsOpen] = useState(false);
   const [activePanel, setActivePanel] = useState<Panel>(() => {
     try {
@@ -569,6 +571,7 @@ const App: React.FC = () => {
                 onOpenRunners={() => setActivePanel("runner")}
                 onOpenPrompts={() => setPromptsOpen(true)}
                 onOpenMcp={() => setMcpOpen(true)}
+                onOpenTasks={() => setTasksOpen(true)}
                 onOpenPanel={handlePanelSelect}
                 onRequestFocus={() => setActivePanel("multiide")}
               />
@@ -680,6 +683,8 @@ const App: React.FC = () => {
       <StorageModal open={storageOpen} onClose={() => setStorageOpen(false)} />
 
       <McpModal open={mcpOpen} onClose={() => setMcpOpen(false)} />
+
+      {tasksOpen && <TasksModal onClose={() => setTasksOpen(false)} />}
 
       <PromptsModal open={promptsOpen} onClose={() => setPromptsOpen(false)} />
 

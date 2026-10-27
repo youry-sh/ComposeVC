@@ -483,6 +483,7 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
   onOpenRunners,
   onOpenPrompts,
   onOpenMcp,
+  onOpenTasks,
   onOpenPanel,
   onRequestFocus,
 }) => {
@@ -1143,6 +1144,15 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
             >
               <Cable aria-hidden />
               <span>MCP</span>
+            </button>
+            <button
+              type="button"
+              className="chat-rail-quick-btn"
+              onClick={onOpenTasks}
+              title="Tasks"
+            >
+              <IcoTasks aria-hidden />
+              <span>Tasks</span>
             </button>
             <button
               type="button"
