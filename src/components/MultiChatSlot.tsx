@@ -2215,7 +2215,6 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
         projectName,
         sessionId: runSessionId.startsWith("pending-") ? null : runSessionId,
         agentMode: requestAgentMode,
-        thinkingMax: thinkingMaxRef.current,
         // Rehydrate unfinished agent tasks into the tool so fail/abort does not lose them.
         seedTodos: keptTodos,
       });

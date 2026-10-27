@@ -51,6 +51,7 @@ const promptsStore = require("./promptsStore.cjs");
 const pluginsRegistry = require("./plugins/registry.cjs");
 const blenderPlugin = require("./plugins/blender/index.cjs");
 const cfMailConfig = require("./cfMailConfig.cjs");
+const { createExpertService } = require("./expert/index.cjs");
 
 const { TOOLS, getToolSchemas, getToolSchemasAsync } = require("./tools/registry.cjs");
 const visionBridge = require("./vision/index.cjs");
@@ -1916,6 +1917,19 @@ ipcMain.on("multiide:saveStateSync", (event, patch) => {
     event.returnValue = { ok: false, error: error instanceof Error ? error.message : String(error) };
   }
 });
+
+// ── Expert workspace ────────────────────────────────────────────────────────
+// Studies a whole repository once per folder (disk-backed), then composes one
+// implementation prompt per task. Shares the chat provider config + agent loop.
+const expertService = createExpertService({
+  app,
+  runAgentLoop,
+  readProviderConfig,
+  resolveModelLimits: resolveAutomaticModelLimits,
+  clampTokenSetting,
+  countTokens,
+});
+expertService.register();
 
 // Probe common dev-server ports on localhost and return the first one that is
 // actually listening. Bounded parallel connect attempts — never blocks the UI.
