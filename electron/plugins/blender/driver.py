@@ -1687,7 +1687,24 @@ def setup_addons(plan):
             reports.append({"module": module, "disabled": ok, "error": error})
             continue
         enabled, error = enable_addon_module(module)
-        reports.append({"module": enabled or module, "enabled": bool(enabled), "error": error})
+        installed = bool(enabled) or addon_installed(module)
+        if not enabled and module.startswith("bl_ext."):
+            # Configured extension is missing/disabled — try to install it from
+            # the configured extensions repository, then enable again.
+            install_ok, install_error = try_install_extension_module(module)
+            if install_ok:
+                enabled, error = enable_addon_module(module)
+                installed = bool(enabled) or addon_installed(module)
+            elif install_error:
+                error = (error + " | install: " + install_error).strip(" |")
+        reports.append(
+            {
+                "module": enabled or module,
+                "enabled": bool(enabled),
+                "installed": bool(installed),
+                "error": error,
+            }
+        )
     return reports
 
 
