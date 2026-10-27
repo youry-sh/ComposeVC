@@ -1081,7 +1081,11 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
             className="expert-folder"
             onClick={() => void chooseFolder(slot.id)}
             disabled={slot.running || slot.studying}
-            title={slot.rootPath || "Select directory"}
+            title={
+              slot.studying
+                ? "Stop the study before changing the folder"
+                : slot.rootPath || "Select directory"
+            }
           >
             {slot.rootPath ? <Folder /> : <FolderOpen />}
             <span>{slot.projectName || "Select directory"}</span>
