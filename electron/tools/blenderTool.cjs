@@ -72,7 +72,7 @@ PLAN (declarative scene, action=scene) — everything optional except objects/so
   "lighting": "studio|three_point|product|sunset|dramatic|outdoor|none",
   "world": {"color": "#15171c", "strength": 0.3, "hdri": "C:/hdri/studio.hdr", "hdri_rotation": [0,0,0],
             "sky": {"type": "NISHITA", "sun_elevation": 12, "sun_rotation": 40, "dust": 2}},
-  "camera": "three_quarter|front|back|side|top|hero|closeup" | {"view": "hero", "lens": 50, "distance": 2.2, "look_at": [0,0,0.5]},
+  "camera": "three_quarter|front|back|side|top|hero|closeup" | {"view": "hero", "lens": 50, "distance": 1.0, "margin": 1.12, "look_at": [0,0,0.5]},
   "render": {"engine": "EEVEE|CYCLES|WORKBENCH", "resolution": [1600,1000], "samples": 64,
              "transparent": false, "denoise": true, "exposure": 0,
              "filename": "preview",

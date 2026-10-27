@@ -4083,7 +4083,7 @@ function buildBlenderDemoPlan(config) {
       },
     ],
     lighting: "dramatic",
-    camera: { view: "hero", lens: 58, distance: 2.2, look_at: [0, 0, 0.95] },
+    camera: { view: "hero", lens: 58, look_at: [0, 0, 0.95] },
     render: {
       engine: config?.engine || "EEVEE",
       resolution: [resolution.width, resolution.height],
