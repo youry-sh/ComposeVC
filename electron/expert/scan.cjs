@@ -53,7 +53,6 @@ const SKIP_DIRS = new Set([
   ".terraform",
   ".backup",
   ".nyc_output",
-  "engine",
 ]);
 
 const TEXT_EXT = new Set([
@@ -565,7 +564,12 @@ function scanProject(rootPath) {
     file.score = gradeFile(file.p, file.ext, file.lines) + (file.usedBy?.length || 0) * 3;
   }
 
-  keyFiles.sort((a, b) => a.p.localeCompare(b.p));
+  keyFiles.sort((a, b) => {
+    const depth = a.p.split("/").length - b.p.split("/").length;
+    if (depth !== 0) return depth;
+    return a.p.localeCompare(b.p);
+  });
+  const keyFilesTop = keyFiles.slice(0, 26);
 
   const entrypoints = [];
   for (const file of files) {
