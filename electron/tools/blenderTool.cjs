@@ -421,7 +421,7 @@ async function run(action, input, context) {
         onProgress,
         signal,
       });
-      return truth(job.status === "succeeded", jobSummary(job), jobPayload(job));
+      return truth(job.status === "succeeded", jobSummary(job), await withPreview(job, input, jobPayload(job), { force: true }));
     }
     case "export": {
       const source = pick(input, "blend", "source", "path");
