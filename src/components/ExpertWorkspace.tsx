@@ -22,6 +22,7 @@ import {
   X,
 } from "lucide-react";
 import ChatMonoScroll, { ChatMonoScrollHandle } from "./ChatMonoScroll";
+import ContextRing from "./ContextRing";
 import ModelPicker, { ModelPickerLabels } from "./ModelPicker";
 import MarkdownContent from "./markdown/MarkdownContent";
 import { AIModel, AIProvider, ProviderConfig } from "../types";
@@ -107,6 +108,9 @@ type ExpertSlot = {
 type ExpertLabels = ModelPickerLabels & {
   send: string;
   stop: string;
+  contextUsage: string;
+  compacting: string;
+  clickToCompact: string;
 };
 
 type ExpertWorkspaceProps = {
