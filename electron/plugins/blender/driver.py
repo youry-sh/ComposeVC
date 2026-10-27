@@ -1659,7 +1659,7 @@ def quality_report(plan):
     config = plan.get("quality") if isinstance(plan.get("quality"), dict) else {}
     require_textures = bool(config.get("require_textures", False))
     require_uv = config.get("require_uv", True) is not False
-    require_scale = config.get("require_applied_scale", True) is not False
+    require_scale = config.get("require_applied_scale", False) is not False
     max_polygons = as_int(config.get("max_polygons", 0), 0)
     report = {
         "score": 100,

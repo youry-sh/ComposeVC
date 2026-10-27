@@ -2,11 +2,15 @@ import React, { useState, useEffect, useMemo } from "react";
 import {
   Copy,
   Download,
-  Plug,
-  Puzzle,
-  Search,
-  Wrench,
+  FolderOpen,
+  Link2,
+  Power,
   Save,
+  Search,
+  Terminal,
+  Trash2,
+  Wrench,
+  X,
 } from "lucide-react";
 import { CustomTool } from "../types";
 
@@ -34,6 +38,8 @@ interface CustomToolsWorkspaceProps {
     pluginsIdeEmpty: string;
     pluginsIdeHint: string;
     customTools: string;
+    customToolsHint: string;
+    customToolsEmpty: string;
     customToolDescription: string;
     customToolDescriptionPlaceholder: string;
     customToolSaving: string;
@@ -43,10 +49,16 @@ interface CustomToolsWorkspaceProps {
     customToolDisabled: string;
     customToolsSearch: string;
     customToolExport: string;
+    customToolExportAll: string;
     customToolExportOne: string;
     customToolCopyOne: string;
+    customToolCopyPack: string;
     customToolCopied: string;
     customToolExportSaved: string;
+    customToolRuntime: string;
+    customToolTags: string;
+    customToolDependencies: string;
+    customToolDependenciesEmpty: string;
     noResults: string;
   };
 }
@@ -59,6 +71,45 @@ const fieldStyle: React.CSSProperties = {
   caretColor: "var(--accent)",
 };
 const labelClass = "ide-field-label text-[10px] font-medium uppercase tracking-[0.1em] text-ink-500";
+
+const DEFAULT_ENTRY: Record<string, string> = {
+  node: "main.js",
+  python: "main.py",
+  powershell: "main.ps1",
+  bash: "main.sh",
+};
+
+const bodyText = (value: unknown): string => (typeof value === "string" ? value.trim() : "");
+
+const runtimeOf = (tool: CustomTool): string => {
+  const body = tool.body || {};
+  const explicit = bodyText(body.runtime).toLowerCase();
+  if (explicit) return explicit;
+  const entry = bodyText(body.entry).toLowerCase();
+  if (entry.endsWith(".py")) return "python";
+  if (entry.endsWith(".ps1")) return "powershell";
+  if (entry.endsWith(".sh")) return "bash";
+  return "node";
+};
+
+const entryOf = (tool: CustomTool): string => {
+  const entry = bodyText((tool.body || {}).entry);
+  return entry || DEFAULT_ENTRY[runtimeOf(tool)] || "main.js";
+};
+
+const timeoutOf = (tool: CustomTool): number | null => {
+  const value = Number((tool.body || {}).timeout_ms);
+  return Number.isFinite(value) && value > 0 ? Math.round(value) : null;
+};
+
+const toolDirOf = (tool: CustomTool): string => bodyText((tool.body || {}).toolDir);
+
+const formatStamp = (value?: number): string => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "2-digit" });
+};
 
 const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
   tools,
