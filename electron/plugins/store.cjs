@@ -35,6 +35,7 @@ const DEFAULT_BLENDER_CONFIG = {
   timeoutSec: 900,
   factoryStartup: true,
   keepJobFiles: true,
+  addons: [],
 };
 
 function requireUserDataPath(userDataPath) {
@@ -90,6 +91,15 @@ function normalizeBlenderConfig(input) {
     timeoutSec: clampNumber(src.timeoutSec, DEFAULT_BLENDER_CONFIG.timeoutSec, 10, 7200),
     factoryStartup: src.factoryStartup !== false,
     keepJobFiles: src.keepJobFiles !== false,
+    addons: Array.isArray(src.addons)
+      ? Array.from(
+          new Set(
+            src.addons
+              .map((entry) => String(entry || "").trim())
+              .filter((entry) => entry.length > 0 && entry.length < 200)
+          )
+        ).slice(0, 60)
+      : [],
   };
   return config;
 }
@@ -244,6 +254,51 @@ function normalizeRender(entry) {
   return { name: cleanString(entry.name, 80) || path.basename(filePath), path: filePath };
 }
 
+function normalizeAddon(entry) {
+  if (!entry || typeof entry !== "object") return null;
+  const module = cleanString(entry.module, 200);
+  const addonPath = cleanString(entry.path, 4096);
+  if (!module && !addonPath) return null;
+  return {
+    module,
+    path: addonPath,
+    kind: cleanString(entry.kind, 32) || "addon",
+    enabled: Boolean(entry.enabled || (Array.isArray(entry.modules) && entry.modules.length)),
+    installed: Boolean(entry.installed),
+    error: cleanString(entry.error, 600),
+  };
+}
+
+function normalizeQuality(entry) {
+  if (!entry || typeof entry !== "object") return null;
+  const materials = entry.materials && typeof entry.materials === "object" ? entry.materials : {};
+  return {
+    score: clampNumber(entry.score, 0, 0, 100),
+    game_ready: entry.game_ready === true,
+    issues: Array.isArray(entry.issues) ? entry.issues.slice(0, 40).map((line) => cleanString(line, 200)) : [],
+    checks: Array.isArray(entry.checks)
+      ? entry.checks.slice(0, 20).map((check) => ({ id: cleanString(check?.id, 40), ok: check?.ok === true }))
+      : [],
+    materials: {
+      total: clampNumber(materials.total, 0, 0, 100000),
+      textured: clampNumber(materials.textured, 0, 0, 100000),
+      flat: clampNumber(materials.flat, 0, 0, 100000),
+    },
+    meshes: Array.isArray(entry.meshes)
+      ? entry.meshes.slice(0, 80).map((mesh) => ({
+          name: cleanString(mesh?.name, 120),
+          polygons: clampNumber(mesh?.polygons, 0, 0, 100000000),
+          triangles: clampNumber(mesh?.triangles, 0, 0, 100000000),
+          uv: mesh?.uv === true,
+          textured: mesh?.textured === true,
+          scale_applied: mesh?.scale_applied === true,
+          issues: Array.isArray(mesh?.issues) ? mesh.issues.slice(0, 12).map((line) => cleanString(line, 80)) : [],
+          materials: Array.isArray(mesh?.materials) ? mesh.materials.slice(0, 12).map((line) => cleanString(line, 120)) : [],
+        }))
+      : [],
+  };
+}
+
 function normalizeJob(entry, fallbackId) {
   if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
   const id = cleanString(entry.id || fallbackId, 96);
@@ -274,6 +329,8 @@ function normalizeJob(entry, fallbackId) {
     warnings: Array.isArray(entry.warnings)
       ? entry.warnings.slice(0, 60).map((line) => cleanString(line, 600))
       : [],
+    addons: Array.isArray(entry.addons) ? entry.addons.map(normalizeAddon).filter(Boolean).slice(0, 40) : [],
+    quality: normalizeQuality(entry.quality),
     summary: cleanString(entry.summary, 4000),
     stats: entry.stats && typeof entry.stats === "object" ? entry.stats : {},
     blender: {

@@ -473,6 +473,17 @@ async function execute(userDataPath, job, executable, args, options = {}) {
     exports: exportsList,
     warnings,
     error,
+    addons: Array.isArray(driverResult?.addons)
+      ? driverResult.addons.map((entry) => ({
+          path: entry?.path || "",
+          kind: entry?.kind || "addon",
+          module: entry?.module || (Array.isArray(entry?.modules) ? entry.modules[0] || "" : ""),
+          enabled: Boolean(entry?.enabled || (Array.isArray(entry?.modules) && entry.modules.length)),
+          installed: Boolean(entry?.installed),
+          error: entry?.error || (Array.isArray(entry?.errors) ? entry.errors[0] || "" : ""),
+        }))
+      : [],
+    quality: driverResult?.quality || null,
     summary: summarizeResult(driverResult, resultPayload),
     stats: driverResult?.stats?.objectsDetail ? driverResult.stats : driverResult?.stats || {},
     blender: {
@@ -516,6 +527,7 @@ async function execute(userDataPath, job, executable, args, options = {}) {
     ...updated,
     logTail: stdoutTail.slice(-6000),
     stderrTail: stderrTail.slice(-6000),
+    driverResult,
     checked: false,
   };
 }
