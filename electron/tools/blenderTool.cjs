@@ -43,7 +43,8 @@ PLAN (declarative scene, action=scene) — everything optional except objects/so
   "source": "C:/path/existing.blend", // open an existing file instead of resetting
   "unit": "METRIC", "unit_scale": 1.0,
   "materials": [{
-    "name": "Steel", "base_color": "#b8bcc4" | [r,g,b(,a)], "metallic": 1, "roughness": 0.28,
+    "name": "Steel", "preset": "steel|brushed_metal|gold|copper|wood|oak|stone|concrete|brick|fabric|leather|rubber|plastic|ceramic|glass|emissive|hologram|skin|sci_fi_panel|rust|marble|dirt",
+    "base_color": "#b8bcc4" | [r,g,b(,a)], "metallic": 1, "roughness": 0.28,
     "ior": 1.45, "alpha": 1, "transmission": 0, "emission": "#ff6a00", "emission_strength": 4,
     "coat": 0.2, "sheen": 0, "subsurface": 0, "anisotropic": 0, "backface_culling": false,
     "texture": {
@@ -56,7 +57,10 @@ PLAN (declarative scene, action=scene) — everything optional except objects/so
       "projection": "uv|box", "uv_scale": 3, "rotation": [0,0,0], "offset": [0,0,0],
       "color_a/color_b drive a ColorRamp; use_raw_color:true keeps texture colour without ramp"
     },
-    "normal_map": {"path": "C:/tex/normal.png", "strength": 1.0}
+    "normal_map": {"path": "C:/tex/normal.png", "strength": 1.0},
+    "roughness_texture": {"path": "C:/tex/rough.jpg", "roughness_min": 0.2, "roughness_max": 0.9},
+    "metallic_texture": {"path": "C:/tex/metal.jpg"},
+    "animation": {"emission_strength": [{"frame": 1, "value": 0.5}, {"frame": 40, "value": 8}]}
   }],
   "collections": ["Props", {"name": "Env", "parent": "Props"}],
   "objects": [{
@@ -77,9 +81,18 @@ PLAN (declarative scene, action=scene) — everything optional except objects/so
     "apply_modifiers": false,
     "uv": {"angle": 66, "margin": 0.02},
     "parent": "Root",
+    "animation": {"location": [{"frame": 1, "value": [0,0,0]}, {"frame": 60, "value": [0,0,1]}],
+                  "rotation": [{"frame": 1, "value": [0,0,0]}, {"frame": 60, "value": [0,0,360]}],
+                  "scale": [{"frame": 1, "value": [1,1,1]}], "interpolation": "BEZIER|LINEAR"},
     "energy": 500, "color": "#ffffff", "size": 2, "shape": "DISK",   // lights
     "lens": 50, "dof": {"fstop": 2.8, "distance": 6}                 // cameras
   }],
+  "armatures": [{
+    "name": "Rig", "mesh": "Character", "bind": true,
+    "bones": [{"name": "Root", "head": [0,0,0], "tail": [0,0,0.3]},
+              {"name": "Spine", "head": [0,0,0.3], "tail": [0,0,1.1], "parent": "Root"}]
+  }],
+  "animation": {"frame_start": 1, "frame_end": 120, "fps": 30},
   "lighting": "studio|three_point|product|sunset|dramatic|outdoor|none",
   "world": {"color": "#15171c", "strength": 0.3, "hdri": "C:/hdri/studio.hdr", "hdri_rotation": [0,0,0],
             "sky": {"type": "NISHITA", "sun_elevation": 12, "sun_rotation": 40, "dust": 2}},
@@ -87,17 +100,28 @@ PLAN (declarative scene, action=scene) — everything optional except objects/so
   "render": {"engine": "EEVEE|CYCLES|WORKBENCH", "resolution": [1600,1000], "samples": 64,
              "transparent": false, "denoise": true, "exposure": 0,
              "filename": "preview",
-             "views": ["hero", "front", {"view": "top", "name": "top"}]},
+             "views": ["hero", "front", {"view": "top", "name": "top"}],
+             "turntable": {"frames": 8, "start_angle": 0},
+             "effects": {"bloom": {"type": "Fog Glow|Bloom|Streaks", "threshold": 0.85, "strength": 0.6, "size": 0.6},
+                         "chromatic": 0.02}},
   "bake": {"objects": ["Sword"], "passes": ["BASE_COLOR","ROUGHNESS","NORMAL"], "width": 2048, "height": 2048,
            "margin": 8, "apply": true, "dir": "textures"},
-  "export": {"format": "GLB|GLTF|FBX|OBJ|USD|STL|PLY|BLEND", "filepath": "sword.glb",
-             "selected": false, "objects": ["Sword"], "apply_modifiers": true},
+  "optimize": {"apply_scale": true, "merge_distance": 0.0001, "triangulate": false, "origin": "center_floor"},
+  "quality": {"require_textures": true, "require_uv": true, "require_applied_scale": true, "max_polygons": 40000},
+  "export": {"format": "GLB|GLTF|FBX|OBJ|USD|STL|PLY|BLEND",
+             "preset": "unity|unreal|godot|web|3dprint",
+             "filepath": "sword.glb", "selected": false, "objects": ["Sword"],
+             "apply_modifiers": true, "include_lights": false, "include_cameras": false},
   "import": [{"path": "C:/models/character.glb", "location": [0,0,0], "scale": [1,1,1]}],
   "append": [{"blend": "C:/lib/assets.blend", "objects": ["Crate", "Barrel"]}],
+  "addons": [{"module": "bl_ext.user_default.my_addon"}, "another_module"],
+  "install_addons": [{"path": "C:/addons/auto_rig.zip", "enable": true}],
+  "disable_addons": ["some_module"],
   "python": "import bpy\\n# arbitrary bpy code executed after the declarative build",
   "save": "scene.blend"
 }
 `;
+
 
 /** Every answer carries one bit: 1 = it happened / it is true, 0 = it did not. */
 function truth(ok, text, payload = {}) {
@@ -150,6 +174,13 @@ function parsePlan(input, config) {
     import: "import",
     append: "append",
     reset: "reset",
+    armatures: "armatures",
+    animation: "animation",
+    quality: "quality",
+    optimize: "optimize",
+    addons: "addons",
+    install_addons: "install_addons",
+    disable_addons: "disable_addons",
   };
   for (const [inputKey, planKey] of Object.entries(shorthand)) {
     if (input[inputKey] !== undefined && input[inputKey] !== null) plan[planKey] = input[inputKey];
@@ -171,6 +202,8 @@ function parsePlan(input, config) {
     if (!plan.render.engine) plan.render.engine = config.engine;
     if (!plan.render.resolution) plan.render.resolution = config.resolution;
     if (!plan.render.samples) plan.render.samples = config.samples;
+    if (input.effects && !plan.render.effects) plan.render.effects = input.effects;
+    if (plan.effects && !plan.render.effects) plan.render.effects = plan.effects;
   }
   if (plan.export === undefined) plan.export = { format: config.format };
   if (plan.save === undefined) plan.save = "scene.blend";
