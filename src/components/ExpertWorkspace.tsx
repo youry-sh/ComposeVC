@@ -93,6 +93,7 @@ type ExpertSlot = {
   error: string | null;
   historyOpen: boolean;
   saveOpen: boolean;
+  modelOpen: boolean;
   confirmReset: boolean;
 };
 
@@ -152,6 +153,7 @@ function createSlots(): ExpertSlot[] {
     error: null,
     historyOpen: false,
     saveOpen: false,
+    modelOpen: false,
     confirmReset: false,
   }));
 }
@@ -955,8 +957,8 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
             />
             <div className="expert-composer-row">
               <ModelPicker
-                open={slot.selectedModelId !== "__closed__" && Boolean(slot.historyOpen) === false && false}
-                onOpenChange={() => undefined}
+                open={slot.modelOpen}
+                onOpenChange={(open) => patchSlot(slot.id, { modelOpen: open })}
                 providers={providers}
                 models={models}
                 selectedModelId={slot.selectedModelId || defaultModelId || undefined}
