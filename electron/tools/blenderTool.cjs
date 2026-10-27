@@ -329,10 +329,26 @@ async function run(action, input, context) {
       const info = blender.detect(config);
       const plugin = await store.getPlugin(userDataPath, "blender");
       const running = blender.listRunning();
+      let addonProbe = null;
+      if (info.found && Array.isArray(config.addons) && config.addons.length) {
+        try {
+          addonProbe = await blender.probe(userDataPath, config);
+        } catch {
+          addonProbe = null;
+        }
+      }
+      const addonChecks = Array.isArray(addonProbe?.addonChecks) ? addonProbe.addonChecks : [];
+      const addonLines = addonChecks.map(
+        (check) =>
+          `${check.enabled ? "1" : "0"} ${check.requested || check.module} — ${
+            check.enabled ? "включён" : check.installed ? "установлен, выключен" : "НЕ НАЙДЕН"
+          }${check.error ? ` · ${check.error}` : ""}`
+      );
       const text = info.found
         ? `Blender ${info.version || "?"} найден (${info.source === "config" ? "из настроек" : "автоопределение"}): ${info.executable}` +
           `\nплагин: ${plugin?.enabled ? "включён" : "выключен"} · движок по умолчанию: ${config.engine} · экспорт: ${config.format}` +
-          (running.length ? `\nвыполняется задач: ${running.length}` : "")
+          (running.length ? `\nвыполняется задач: ${running.length}` : "") +
+          (addonLines.length ? `\nаддоны:\n${addonLines.join("\n")}` : "")
         : `Blender не найден. ${info.error}\nУстановите Blender (https://www.blender.org/download/) или укажите путь: action=config executable="C:/Program Files/Blender Foundation/Blender 5.2/blender.exe".`;
       return truth(info.found, text, {
         found: info.found,
@@ -343,6 +359,7 @@ async function run(action, input, context) {
         config,
         enabled: plugin?.enabled !== false,
         running,
+        addonChecks,
       });
     }
     case "probe": {
