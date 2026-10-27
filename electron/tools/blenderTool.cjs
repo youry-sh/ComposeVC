@@ -482,7 +482,7 @@ async function run(action, input, context) {
         onProgress,
         signal,
       });
-      return truth(job.status === "succeeded", jobSummary(job), jobPayload(job));
+      return truth(job.status === "succeeded", jobSummary(job), await withPreview(job, input, jobPayload(job), { force: true }));
     }
     case "addons": {
       let probe = null;
@@ -692,7 +692,26 @@ async function run(action, input, context) {
           logTail = "";
         }
       }
-      return truth(job.status === "succeeded", jobSummary(job), jobPayload(job, { logTail }));
+      return truth(job.status === "succeeded", jobSummary(job), await withPreview(job, input, jobPayload(job, { logTail })));
+    }
+    case "preview": {
+      const jobId = String(pick(input, "job", "job_id", "id") || "");
+      let file = "";
+      if (jobId) {
+        const job = await store.getJob(userDataPath, jobId);
+        if (!job) throw new Error(`Задача ${jobId} не найдена.`);
+        file = job.previewPath || job.renders?.[0]?.path || "";
+      }
+      if (!file) file = String(pick(input, "path", "image", "file") || "");
+      if (!file) throw new Error("action=preview требует job (id задачи) или path к PNG/JPEG.");
+      const image = await imageTools.fileToDataUrl(file, { maxSize: Number(input.image_max) || 1280 });
+      return truth(true, `Изображение приложено: ${path.basename(file)}`, {
+        path: file,
+        width: image.width,
+        height: image.height,
+        bytes: image.bytes,
+        __image: { url: image.dataUrl, mimeType: image.mimeType, name: path.basename(file) },
+      });
     }
     case "cancel": {
       const id = String(pick(input, "job", "job_id", "id") || "");
