@@ -1513,12 +1513,25 @@ def install_addon(path, enable=True):
                 break
             except Exception as exc:
                 report["errors"].append("%s: %s" % (repo or "auto", exc))
+        if not installed:
+            # Some packages are legacy add-ons shipped with a manifest; fall back
+            # to the classic installer instead of failing the job.
+            try:
+                bpy.ops.preferences.addon_install(filepath=path, overwrite=True)
+                installed = True
+                report["kind"] = "addon"
+                report["errors"].append("extension installer failed, installed as a legacy add-on")
+            except Exception as exc:
+                report["errors"].append(str(exc))
         if installed and enable:
-            module, error = enable_addon_module("bl_ext.user_default." + extension_id)
-            if module:
-                report["modules"].append(module)
-            elif error:
-                report["errors"].append(error)
+            candidates = ["bl_ext.user_default." + extension_id] + modules
+            for candidate in candidates:
+                module, error = enable_addon_module(candidate)
+                if module:
+                    report["modules"].append(module)
+                    break
+                if error:
+                    report["errors"].append("%s: %s" % (candidate, error))
         report["installed"] = installed
         return report
     try:

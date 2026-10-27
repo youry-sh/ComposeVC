@@ -337,125 +337,95 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
         </div>
       )}
 
-      {/* Main area: reserved IDE plugin slot on the left, custom tools panel on top */}
-      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
-        {/* Left: IDE plugins slot (reserved — plugins will be added here later) */}
+      <div className="flex min-h-0 flex-1 overflow-hidden">
         <aside
-          className="flex max-h-[30vh] w-full shrink-0 flex-col border-b border-ink-200 md:max-h-none md:w-[236px] lg:w-[268px] md:border-b-0 md:border-r"
+          className="flex w-[268px] shrink-0 flex-col border-r border-ink-200 lg:w-[320px]"
           style={{ background: "var(--sidebar-tint)", borderColor: "var(--border)" }}
         >
           <div
             className="flex h-9 shrink-0 items-center gap-2 border-b px-3"
             style={{ borderColor: "var(--border)" }}
           >
-            <Plug className="h-3.5 w-3.5 shrink-0 text-ink-500" />
+            <Terminal className="h-3.5 w-3.5 shrink-0 text-ink-500" />
             <span className="min-w-0 truncate text-[10px] font-medium uppercase tracking-[0.1em] text-ink-500">
-              {labels.pluginsIde}
+              {labels.customTools}
             </span>
-            <span className="ml-auto tabular-nums text-[10px] text-ink-500">0</span>
+            <span className="ml-auto shrink-0 tabular-nums text-[10px] text-ink-500">
+              {filteredTools.length}
+              {search ? ` / ${tools.length}` : ""}
+            </span>
           </div>
-          <div className="ide-library-list min-h-0 flex-1 overflow-y-auto px-4 py-8 text-center scrollbar-thin">
-            <Puzzle className="mx-auto h-4 w-4 text-ink-400" />
-            <div className="mt-2 text-[11px] text-ink-600">{labels.pluginsIdeEmpty}</div>
-            <div className="mt-1 text-[10px] leading-4 text-ink-500">{labels.pluginsIdeHint}</div>
+          <div className="ide-library-list min-h-0 flex-1 overflow-y-auto p-1.5 scrollbar-thin">
+            {filteredTools.length === 0 ? (
+              <div className="flex flex-col items-center justify-center px-4 py-10 text-center">
+                <FolderOpen className="h-4 w-4 text-ink-400" />
+                <div className="mt-2 text-[11px] text-ink-600">
+                  {tools.length === 0 ? labels.customToolsEmpty : labels.noResults}
+                </div>
+              </div>
+            ) : (
+              filteredTools.map((tool) => {
+                const active = selectedId === tool.id;
+                const enabled = tool.enabled !== false;
+                return (
+                  <button
+                    key={tool.id}
+                    type="button"
+                    onClick={() => openTool(tool)}
+                    className={`ide-library-row group flex w-full min-w-0 items-start gap-2.5 px-2.5 py-2 text-left outline-none transition-colors ${active ? "is-active" : ""}`}
+                    style={{ opacity: enabled ? 1 : 0.62 }}
+                    title={tool.description || tool.name}
+                  >
+                    <span
+                      className="mt-[3px] flex h-6 w-6 shrink-0 items-center justify-center rounded-[2px] border"
+                      style={{
+                        borderColor: "var(--border)",
+                        background: active ? "var(--bg)" : "var(--input-bg)",
+                      }}
+                    >
+                      <Terminal className="h-3.5 w-3.5 text-ink-600" />
+                    </span>
+                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <span className="min-w-0 truncate text-[12px] font-medium text-ink-950">
+                          {tool.title || tool.name}
+                        </span>
+                        {enabled ? null : (
+                          <span className="shrink-0 text-[9px] uppercase tracking-[0.08em] text-ink-500">
+                            {labels.customToolDisabled}
+                          </span>
+                        )}
+                      </span>
+                      <span className="min-w-0 truncate font-mono text-[10px] text-ink-500">{tool.name}</span>
+                      {tool.description ? (
+                        <span className="mt-0.5 min-w-0 truncate text-[10px] leading-4 text-ink-500">
+                          {tool.description}
+                        </span>
+                      ) : null}
+                    </span>
+                    <span
+                      className="mt-[3px] shrink-0 rounded-[2px] border px-1.5 py-[1px] font-mono text-[9px] uppercase tracking-[0.04em] text-ink-500"
+                      style={{ borderColor: "var(--border)" }}
+                    >
+                      {runtimeOf(tool)}
+                    </span>
+                  </button>
+                );
+              })
+            )}
+          </div>
+          <div
+            className="flex h-8 shrink-0 items-center justify-between gap-2 border-t px-3 text-[10px] text-ink-500"
+            style={{ borderColor: "var(--border)" }}
+          >
+            <span className="min-w-0 truncate font-mono">userData/custom-tools</span>
+            <span className="shrink-0 tabular-nums" title={labels.customToolEnabled}>
+              {enabledCount}/{tools.length}
+            </span>
           </div>
         </aside>
 
-        <section className="flex min-h-0 min-w-0 flex-1 flex-col bg-ink-0">
-          {/* Custom tools panel — pinned to the top of the tab */}
-          <div className="flex shrink-0 flex-col border-b border-ink-200">
-            <div className="flex h-9 shrink-0 items-center gap-2 px-3">
-              <Wrench className="h-3.5 w-3.5 shrink-0 text-ink-600" />
-              <span className="shrink-0 text-[10px] font-medium uppercase tracking-[0.1em] text-ink-500">
-                {labels.customTools}
-              </span>
-              <span className="tabular-nums text-[10px] text-ink-500">{filteredTools.length}</span>
-              <div className="relative ml-auto min-w-0 flex-1 sm:max-w-[260px]">
-                <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-500" />
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder={labels.customToolsSearch}
-                  className="ide-search-input h-7 w-full min-w-0 bg-transparent pl-7 pr-1 text-[12px] leading-7 text-ink-950 placeholder-ink-500 outline-none"
-                  style={fieldStyle}
-                />
-              </div>
-            </div>
-            <div className="ide-library-list max-h-[32vh] min-h-0 overflow-y-auto px-1.5 pb-1.5 scrollbar-thin">
-              {filteredTools.length === 0 ? (
-                tools.length === 0 ? null : (
-                  <div className="px-2 py-2 text-[11px] font-normal text-ink-500">{labels.noResults}</div>
-                )
-              ) : (
-                filteredTools.map((tool) => {
-                  const active = selectedId === tool.id;
-                  const enabled = tool.enabled !== false;
-                  return (
-                    <div
-                      key={tool.id}
-                      className={`ide-library-row group flex items-center gap-2 rounded-md px-2.5 py-1.5 transition-colors ${active ? "is-active" : ""}`}
-                      style={{
-                        opacity: enabled ? 1 : 0.6,
-                      }}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => openTool(tool)}
-                        className="flex min-w-0 flex-1 items-center gap-2 text-left outline-none"
-                        title={tool.description || tool.name}
-                      >
-                        <span
-                          className="h-1.5 w-1.5 shrink-0 rounded-full"
-                          style={{ background: enabled ? "var(--ink-950)" : "var(--ink-400)" }}
-                          title={enabled ? labels.customToolEnabled : labels.customToolDisabled}
-                        />
-                        <span className="min-w-0 shrink-0 truncate text-[12px] font-medium text-ink-950">
-                          {tool.title || tool.name}
-                        </span>
-                        <span className="hidden min-w-0 shrink-0 truncate font-mono text-[10px] text-ink-500 sm:inline">
-                          {tool.name}
-                        </span>
-                        <span className="hidden min-w-0 flex-1 truncate text-[10px] text-ink-500 lg:inline">
-                          {tool.description || kindOf(tool)}
-                        </span>
-                      </button>
-                      <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-                        <button
-                          type="button"
-                          onClick={() => void handleToggle(tool)}
-                          className={quietBtn}
-                        >
-                          {enabled ? labels.customToolEnabled : labels.customToolDisabled}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            void handleExport({
-                              ids: [tool.id],
-                              names: [tool.name],
-                            })
-                          }
-                          className={quietBtn}
-                          title={labels.customToolExportOne}
-                        >
-                          {labels.customToolExport}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void handleDelete(tool.id)}
-                          className="ui-btn-danger h-7 px-2 text-[10px]"
-                        >
-                          {labels.customToolDelete}
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-
+        <section className="flex min-h-0 min-w-0 flex-1 flex-col" style={{ background: "var(--bg)" }}>
           {selectedTool ? (
             <>
               <div className="ide-library-editor-body min-h-0 flex-1 overflow-y-auto px-5 py-4 scrollbar-thin">
