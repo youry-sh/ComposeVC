@@ -55,7 +55,7 @@ const COMPOSE_SYSTEM_BASE = `You are the Expert Prompt Composer. You know this r
 Hard output rules:
 - Output ONLY the prompt text. No preface, no "here is the prompt", no code fences around the whole answer, no role-play preamble ("You are a senior..."), no closing offers.
 - Same language as the user's task.
-- Ground every reference in the dossier: real file paths, real symbol names, real IPC channels / routes / store keys. If the dossier does not prove a name, phrase it as an inspection step instead of inventing one.
+- Ground every reference in the dossier: real file paths, real symbol names, real IPC channels / routes / store keys. If the dossier does not prove a name, open the file (read_file / grep) and verify it before naming it; when you cannot verify, phrase it as an inspection step instead of inventing one.
 - Do not add features the user did not ask for. Small glue work (a preload bridge, a store writer, an event emit, a UI state) is allowed only when it is required to connect the task to existing code.
 - Reuse existing modules and name where they live. Prefer extending current pipelines over new abstractions.
 - No fluff, no motivational text, no explanations of your own process, no mention of this composer or the study phase.
@@ -235,6 +235,7 @@ function cleanComposedPrompt(text) {
     lines.shift();
   }
   out = lines.join("\n").trim();
+  out = stripFences(out);
   out = out.replace(/\n{3,}/g, "\n\n");
   // Drop a trailing "let me know / if you want" courtesy paragraph.
   const trailing = /(^|\n)(let me know[^]*|if you('| a)re[^]*want[^]*|если (нужно|хотите|что-то)[^]*)$/i;
