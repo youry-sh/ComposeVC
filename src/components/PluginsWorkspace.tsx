@@ -1,28 +1,16 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   Box,
   ChevronRight,
-  Copy,
   FolderOpen,
   Loader2,
   Play,
   RefreshCw,
   Save,
-  Square,
-  TerminalSquare,
-  Trash2,
   Wand2,
-  ExternalLink,
-  Image as ImageIcon,
 } from "lucide-react";
-import type {
-  ComposeVCPlugin,
-  ComposeVCPluginConfig,
-  ComposeVCPluginJob,
-  ComposeVCPluginsState,
-} from "../types";
-import { dispatchInsertChatInput } from "../utils/mouseSnippets";
+import type { ComposeVCPlugin, ComposeVCPluginConfig, ComposeVCPluginsState } from "../types";
 
 type DraftConfig = {
   executable: string;
@@ -46,52 +34,6 @@ const fieldStyle: React.CSSProperties = { caretColor: "var(--accent)" };
 const fieldClass =
   "ide-field h-7 w-full min-w-0 px-2 text-[12px] leading-7 text-ink-950 placeholder-ink-500 outline-none";
 
-const STATUS_LABEL: Record<string, string> = {
-  queued: "в очереди",
-  running: "выполняется",
-  succeeded: "готово",
-  failed: "ошибка",
-  canceled: "отменено",
-};
-
-function statusColor(status: string): string {
-  if (status === "running") return "var(--accent)";
-  if (status === "failed") return "var(--status-err, #d9534f)";
-  if (status === "canceled") return "var(--ink-400)";
-  if (status === "succeeded") return "var(--ink-900)";
-  return "var(--ink-500)";
-}
-
-function fmtBytes(bytes: number): string {
-  const value = Number(bytes) || 0;
-  if (value < 1024) return `${value} Б`;
-  if (value < 1024 * 1024) return `${(value / 1024).toFixed(0)} КБ`;
-  return `${(value / (1024 * 1024)).toFixed(1)} МБ`;
-}
-
-function fmtDuration(ms: number): string {
-  const value = Number(ms) || 0;
-  if (value <= 0) return "—";
-  const seconds = Math.round(value / 1000);
-  if (seconds < 60) return `${seconds} с`;
-  const minutes = Math.floor(seconds / 60);
-  return `${minutes} м ${seconds % 60} с`;
-}
-
-function fmtWhen(ts: number): string {
-  if (!ts) return "—";
-  try {
-    return new Date(ts).toLocaleString([], {
-      day: "2-digit",
-      month: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return "—";
-  }
-}
-
 const Section: React.FC<{
   title: string;
   actions?: React.ReactNode;
@@ -108,7 +50,6 @@ const Section: React.FC<{
 
 const PluginsWorkspace: React.FC = () => {
   const [state, setState] = useState<ComposeVCPluginsState | null>(null);
-  const [jobs, setJobs] = useState<ComposeVCPluginJob[]>([]);
   const [activeId, setActiveId] = useState<string>("blender");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -119,13 +60,7 @@ const PluginsWorkspace: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [probing, setProbing] = useState(false);
   const [demoBusy, setDemoBusy] = useState(false);
-  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
-  const [previews, setPreviews] = useState<Record<string, string>>({});
-  const [previewFailures, setPreviewFailures] = useState<Record<string, boolean>>({});
-  const [logs, setLogs] = useState<Record<string, string>>({});
-  const [logBusy, setLogBusy] = useState(false);
   const [addonInput, setAddonInput] = useState("");
-  const pendingListRefresh = useRef<number | null>(null);
 
   const plugin = useMemo(
     () => state?.plugins.find((entry) => entry.id === activeId) || state?.plugins[0] || null,
@@ -142,71 +77,30 @@ const PluginsWorkspace: React.FC = () => {
     }
   }, []);
 
-  const refreshJobs = useCallback(async () => {
-    try {
-      const result = await window.lopster?.pluginsJobs?.({ limit: 60 });
-      if (result?.ok && result.jobs) setJobs(result.jobs);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    }
-  }, []);
-
   useEffect(() => {
     let alive = true;
     (async () => {
       setLoading(true);
-      await Promise.all([refreshPlugins(), refreshJobs()]);
+      await refreshPlugins();
       if (alive) setLoading(false);
     })();
     return () => {
       alive = false;
     };
-  }, [refreshPlugins, refreshJobs]);
+  }, [refreshPlugins]);
 
   useEffect(() => {
     const offChanged = window.lopster?.onPluginsChanged?.(() => {
       void refreshPlugins();
-      void refreshJobs();
     });
     const offJob = window.lopster?.onPluginJob?.((payload) => {
-      if (!payload?.jobId) return;
-      setJobs((prev) => {
-        const index = prev.findIndex((job) => job.id === payload.jobId);
-        if (index < 0) return prev;
-        const next = prev.slice();
-        next[index] = {
-          ...next[index],
-          status: payload.status || next[index].status,
-          progress: typeof payload.percent === "number" ? payload.percent : next[index].progress,
-          stage: payload.stage || next[index].stage,
-          error: payload.error ?? next[index].error,
-        };
-        return next;
-      });
-      if (!payload.done) {
-        // A job started by the AI (or another window) is not in the list yet —
-        // debounce a disk re-read so the row appears without hammering the store.
-        if (pendingListRefresh.current == null) {
-          pendingListRefresh.current = window.setTimeout(() => {
-            pendingListRefresh.current = null;
-            void refreshJobs();
-          }, 900);
-        }
-      }
-      if (payload.done) {
-        void refreshJobs();
-        void refreshPlugins();
-      }
+      if (payload?.done) void refreshPlugins();
     });
     return () => {
-      if (pendingListRefresh.current != null) {
-        window.clearTimeout(pendingListRefresh.current);
-        pendingListRefresh.current = null;
-      }
       offChanged?.();
       offJob?.();
     };
-  }, [refreshPlugins, refreshJobs]);
+  }, [refreshPlugins]);
 
   useEffect(() => {
     if (!plugin) return;
@@ -227,39 +121,6 @@ const PluginsWorkspace: React.FC = () => {
     setDraftFor(plugin.id);
     setDirty(false);
   }, [plugin, draftFor]);
-
-  useEffect(() => {
-    if (selectedJobId) return;
-    const withPreview = jobs.find((job) => job.status === "succeeded" && job.previewPath);
-    if (withPreview) setSelectedJobId(withPreview.id);
-  }, [jobs, selectedJobId]);
-
-  const selectedJob = useMemo(
-    () => jobs.find((job) => job.id === selectedJobId) || null,
-    [jobs, selectedJobId]
-  );
-
-  useEffect(() => {
-    const job = selectedJob;
-    if (!job || !job.previewPath || previews[job.id]) return;
-    let alive = true;
-    void window.lopster?.pluginsPreview?.(job.id).then((result) => {
-      if (!alive) return;
-      if (!result?.ok || !result.dataUrl) {
-        setPreviewFailures((prev) => ({ ...prev, [job.id]: true }));
-        return;
-      }
-      setPreviews((prev) => {
-        const next: Record<string, string> = { ...prev, [job.id]: result.dataUrl as string };
-        const ids = Object.keys(next);
-        if (ids.length > 6) delete next[ids[0]];
-        return next;
-      });
-    });
-    return () => {
-      alive = false;
-    };
-  }, [selectedJob, previews]);
 
   const updateDraft = (patch: Partial<DraftConfig>) => {
     setDraft((prev) => (prev ? { ...prev, ...patch } : prev));
