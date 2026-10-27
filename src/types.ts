@@ -174,6 +174,8 @@ export interface AiRuntimeConfig {
   inlineHintEnabled?: boolean;
   /** Model used for composer autocomplete. Empty = selected chat model. */
   inlineHintModelId?: string;
+  /** Dedicated vision model for the `vision` tool. Empty = active chat model. */
+  visionModelId?: string;
 }
 
 export interface ProviderConfig {
