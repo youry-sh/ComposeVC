@@ -645,9 +645,9 @@ const PluginsWorkspace: React.FC = () => {
                 {plugin.status?.found && (
                   <div className="mt-1 truncate font-mono text-[10px] text-ink-500">{plugin.status.executable}</div>
                 )}
-                {plugin.status?.checked?.length > 0 && !plugin.status.found && (
+                {(plugin.status?.checked || []).length > 0 && !plugin.status.found && (
                   <div className="mt-2 border-t border-ink-200 pt-1.5 font-mono text-[10px] leading-4 text-ink-500">
-                    {plugin.status.checked.slice(0, 5).map((entry) => (
+                    {(plugin.status?.checked || []).slice(0, 5).map((entry) => (
                       <div key={entry.path} className="truncate" title={entry.path}>
                         {entry.ok ? "1" : "0"} {entry.path}
                       </div>
