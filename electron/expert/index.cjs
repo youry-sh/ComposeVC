@@ -320,7 +320,15 @@ function createExpertService(deps = {}) {
     if (force) {
       store.deleteStudy(userData(), rootPath);
     }
-    if (studyJobs.has(key)) return studyJobs.get(key);
+    if (studyJobs.has(key)) {
+      emit(slotId, {
+        phase: "study",
+        status: "Waiting for the project study that is already running…",
+        sessionId,
+        immediate: true,
+      });
+      return studyJobs.get(key);
+    }
     const job = runStudy({ slotId, sessionId, rootPath, projectName, modelId, signal }).finally(() => {
       studyJobs.delete(key);
     });
