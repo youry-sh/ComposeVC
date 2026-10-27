@@ -337,6 +337,7 @@ declare global {
         projectName?: string | null;
         modelId?: string | null;
         sessionId?: string | null;
+        force?: boolean;
       }) => Promise<{
         ok: boolean;
         error?: string;

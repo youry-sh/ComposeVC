@@ -818,6 +818,7 @@ function createExpertService(deps = {}) {
         projectName,
         modelId: payload.modelId || null,
         signal: controller.signal,
+        force: payload.force === true,
       });
       return {
         ok: Boolean(study),

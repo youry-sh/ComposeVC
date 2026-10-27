@@ -412,6 +412,9 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
     }
     try {
       const status = await window.lopster?.expertStudyStatus?.(rootPath);
+      const current = slotsRef.current.find((item) => item.id === slotId);
+      // A live study owns the strip; a stale disk snapshot must not overwrite it.
+      if (current?.studying) return;
       patchSlot(slotId, { study: (status?.meta as unknown as ExpertStudyMeta) || null });
     } catch {
       patchSlot(slotId, { study: null });
@@ -425,6 +428,7 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
       projectName?: string | null;
       modelId?: string | null;
       sessionId?: string | null;
+      force?: boolean;
     }) => {
       const slot = slotsRef.current.find((item) => item.id === input.slotId);
       const rootPath = input.rootPath ?? slot?.rootPath ?? null;
@@ -452,6 +456,7 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
           projectName: input.projectName || slot.projectName || projectNameOf(rootPath),
           modelId,
           sessionId: input.sessionId ?? slot.sessionId,
+          force: input.force === true,
         });
         if (res?.ok) {
           patchSlot(input.slotId, {
@@ -511,8 +516,7 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
         const modelId = slot.selectedModelId || defaultModelId;
         if (modelId) {
           void startStudy({ slotId, rootPath: picked.path, projectName, modelId, sessionId: null });
-        }
-      } catch (error) {
+        }      } catch (error) {
         patchSlot(slotId, { error: error instanceof Error ? error.message : String(error) });
       }
     },
@@ -879,17 +883,16 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
               confirm
             </button>
           ) : (
-            <button
-              type="button"
-              className="expert-study-reset"
-              disabled={slot.running}
-              onClick={() => patchSlot(slot.id, { confirmReset: true })}
-              onBlur={() => patchSlot(slot.id, { confirmReset: false })}
-              title="Re-study the whole project on the next message"
-            >
-              <RotateCcw />
-            </button>
-          )
+              <button
+                type="button"
+                className="expert-study-reset"
+                disabled={slot.running || slot.studying}
+                onClick={() => patchSlot(slot.id, { confirmReset: true })}
+                onBlur={() => patchSlot(slot.id, { confirmReset: false })}
+                title="Re-study the whole project on the next message"
+              >
+                <RotateCcw />
+              </button>          )
         ) : null}
       </div>
     );
@@ -942,7 +945,7 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
                 <Square /> Stop study
               </button>
             ) : (
-              <button type="button" className="expert-empty-btn" onClick={() => void startStudy({ slotId: slot.id })}>
+              <button type="button" className="expert-empty-btn" onClick={() => void startStudy({ slotId: slot.id, force: studied })}>
                 <Layers /> {studied ? "Re-study" : "Study now"}
               </button>
             )}
