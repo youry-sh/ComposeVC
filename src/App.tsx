@@ -8,6 +8,7 @@ import ProxyWorkspace from "./components/ProxyWorkspace";
 import RunnerWorkspace from "./components/RunnerWorkspace";
 import RunnerSendModal from "./components/RunnerSendModal";
 import CustomToolsWorkspace from "./components/CustomToolsWorkspace";
+import PluginsWorkspace from "./components/PluginsWorkspace";
 import PromptsModal from "./components/PromptsModal";
 import McpModal from "./components/McpModal";
 import TerminalWorkspace from "./components/TerminalWorkspace";
@@ -30,7 +31,7 @@ import {
 import { CustomTool, ProjectSearchResult, ProviderConfig } from "./types";
 import { dispatchInsertChatInput, loadMouseSnippets, textForMouseButton } from "./utils/mouseSnippets";
 
-type Panel = "multiide" | "webengine" | "proxy" | "settings" | "customtools" | "runner" | "terminal" | "knowledge" | "docs" | "usage";
+type Panel = "multiide" | "webengine" | "proxy" | "settings" | "customtools" | "plugins" | "runner" | "terminal" | "knowledge" | "docs" | "usage";
 
 const App: React.FC = () => {
   const [rootPath, setRootPath] = useState<string | null>(null);
@@ -54,6 +55,7 @@ const App: React.FC = () => {
       if (saved === "webengine") return "webengine";
       if (saved === "docs") return "docs";
       if (saved === "customtools") return "customtools";
+      if (saved === "plugins") return "plugins";
       if (saved === "usage") return "usage";
     } catch {
       /* ignore */
@@ -602,6 +604,11 @@ const App: React.FC = () => {
           <div className={activePanel === "terminal" ? "flex-1 min-w-0 min-h-0 flex overflow-hidden" : "hidden"}>
             <TerminalWorkspace />
           </div>
+          {activePanel === "plugins" && (
+            <div className="flex-1 min-w-0 min-h-0 flex overflow-hidden">
+              <PluginsWorkspace />
+            </div>
+          )}
           {activePanel === "customtools" && (
             <div className="flex-1 min-w-0 min-h-0 flex overflow-hidden">
               <CustomToolsWorkspace

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Minus, Square, X } from "lucide-react";
+import { Box, Minus, Square, X } from "lucide-react";
 import {
   IcoMulti,
   IcoProxy,
@@ -21,7 +21,7 @@ import {
   formatTokenCount,
 } from "./StatusBar";
 
-type Panel = "multiide" | "webengine" | "proxy" | "settings" | "customtools" | "runner" | "terminal" | "knowledge" | "docs" | "usage";
+type Panel = "multiide" | "webengine" | "proxy" | "settings" | "customtools" | "plugins" | "runner" | "terminal" | "knowledge" | "docs" | "usage";
 
 interface TitleBarProps {
   subtitle?: string;
@@ -152,8 +152,9 @@ const TitleBar: React.FC<TitleBarProps> = ({
     { id: "terminal", title: "Terminal", icon: <IcoTerminal className="topbar-tab-ico" /> },
     { id: "knowledge", title: "Knowledge", icon: <IcoKnowledge className="topbar-tab-ico" /> },
     { id: "docs", title: "Docs", icon: <IcoDocs className="topbar-tab-ico" /> },
+    { id: "plugins", title: "Plugins", icon: <Box className="topbar-tab-ico" /> },
     { id: "usage", title: "Usage", icon: <IcoUsage className="topbar-tab-ico" /> },
-    { id: "customtools", title: "Plugin", icon: <IcoTools className="topbar-tab-ico" /> },
+    { id: "customtools", title: "Tools", icon: <IcoTools className="topbar-tab-ico" /> },
   ];
 
   return (

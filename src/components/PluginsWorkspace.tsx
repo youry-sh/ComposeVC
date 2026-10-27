@@ -354,8 +354,7 @@ const PluginsWorkspace: React.FC = () => {
     try {
       const result = await window.lopster?.pluginsRunDemo?.(plugin.id);
       if (!result?.ok) {
-        const checked = result?.error ? "" : "";
-        setError(`${result?.error || "Демо-задача не выполнилась."}${checked}`);
+        setError(result?.error || "Демо-задача не выполнилась.");
         await refreshJobs();
         return;
       }
