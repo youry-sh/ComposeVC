@@ -1448,8 +1448,12 @@ def _zip_addon_info(path):
     try:
         with zipfile.ZipFile(path) as archive:
             names = archive.namelist()
-            if "blender_manifest.toml" in names:
-                text = archive.read("blender_manifest.toml").decode("utf-8", "replace")
+            manifest_entry = next(
+                (name for name in names if name == "blender_manifest.toml" or name.endswith("/blender_manifest.toml")),
+                "",
+            )
+            if manifest_entry:
+                text = archive.read(manifest_entry).decode("utf-8", "replace")
                 match = re.search(r'^\s*id\s*=\s*"([^"]+)"', text, re.MULTILINE)
                 if match:
                     extension_id = match.group(1)
