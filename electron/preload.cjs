@@ -40,6 +40,32 @@ contextBridge.exposeInMainWorld("lopster", {
   multiIdeSaveState: (patch) => ipcRenderer.invoke("multiide:saveState", patch || {}),
   multiIdeLoadStateSync: () => ipcRenderer.sendSync("multiide:loadStateSync"),
   multiIdeSaveStateSync: (patch) => ipcRenderer.sendSync("multiide:saveStateSync", patch || {}),
+  // Expert workspace — whole-project study + prompt composer (disk-backed).
+  expertLoadState: () => ipcRenderer.invoke("expert:loadState"),
+  expertSaveState: (patch) => ipcRenderer.invoke("expert:saveState", patch || {}),
+  expertLoadStateSync: () => ipcRenderer.sendSync("expert:loadStateSync"),
+  expertSaveStateSync: (patch) => ipcRenderer.sendSync("expert:saveStateSync", patch || {}),
+  expertSend: (payload) => ipcRenderer.invoke("expert:send", payload || {}),
+  expertStop: (slotId) => ipcRenderer.invoke("expert:stop", slotId),
+  expertLoadSession: (sessionId) => ipcRenderer.invoke("expert:loadSession", sessionId),
+  expertListSessions: (rootPath) => ipcRenderer.invoke("expert:listSessions", rootPath || null),
+  expertNewSession: (input) => ipcRenderer.invoke("expert:newSession", input || {}),
+  expertDeleteSession: (sessionId) => ipcRenderer.invoke("expert:deleteSession", sessionId),
+  expertRenameSession: (sessionId, title) => ipcRenderer.invoke("expert:renameSession", sessionId, title),
+  expertSaveSession: (sessionId, name) => ipcRenderer.invoke("expert:saveSession", sessionId, name || ""),
+  expertListSaved: () => ipcRenderer.invoke("expert:listSaved"),
+  expertDeleteSaved: (savedId) => ipcRenderer.invoke("expert:deleteSaved", savedId),
+  expertOpenSaved: (input) => ipcRenderer.invoke("expert:openSaved", input || {}),
+  expertCopySession: (payload) => ipcRenderer.invoke("expert:copySession", payload || {}),
+  expertPasteSession: (input) => ipcRenderer.invoke("expert:pasteSession", input || {}),
+  expertStudyStatus: (rootPath) => ipcRenderer.invoke("expert:studyStatus", rootPath || null),
+  expertReadDossier: (rootPath) => ipcRenderer.invoke("expert:readDossier", rootPath || null),
+  expertRestudy: (rootPath) => ipcRenderer.invoke("expert:restudy", rootPath || null),
+  onExpertProgress: (callback) => {
+    const listener = (_event, payload) => callback(payload || {});
+    ipcRenderer.on("expert:progress", listener);
+    return () => ipcRenderer.removeListener("expert:progress", listener);
+  },
   // Ctrl+H pressed while a <webview> had focus — the shell opens its switcher.
   onOpenChatSwitcher: (callback) => {
     const listener = () => callback();
