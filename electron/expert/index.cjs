@@ -340,7 +340,9 @@ function createExpertService(deps = {}) {
         sessionId,
         immediate: true,
       });
-      const { scan, digest } = scanLib.scanProject(rootPath);
+      const scanned = await scanProjectSafely(rootPath, signal);
+      const scan = scanned.scan;
+      const digest = scanned.digest;
       study = store.writeStudy(userData(), rootPath, {
         ...study,
         status: "scanned",

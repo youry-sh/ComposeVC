@@ -182,9 +182,6 @@ async function main() {
 
   if (!exists(srcElectron)) fail(`missing ${srcElectron}`);
 
-  await ensureObfuscator();
-  const JavaScriptObfuscator = (await import("javascript-obfuscator")).default;
-
   log(`copy electron → ${outElectron}`);
   rmrf(outElectron);
   copyRecursive(srcElectron, outElectron);
@@ -199,6 +196,17 @@ async function main() {
       log(`removed ${drop}`);
     }
   }
+
+  // No obfuscation: packaged builds ship the plain Electron sources. This keeps
+  // stack traces, IPC contracts and the Blender driver debuggable.
+  fs.writeFileSync(
+    path.join(outElectron, ".hardened"),
+    JSON.stringify({ at: new Date().toISOString(), mode: "plain", obfuscated: false }, null, 2),
+    "utf8"
+  );
+  log("obfuscation disabled — staged plain electron sources");
+  log(`output: ${outElectron}`);
+  return;
 
   const files = listCjs(outElectron);
   log(`obfuscating ${files.length} .cjs files (${light ? "light" : "heavy"})…`);

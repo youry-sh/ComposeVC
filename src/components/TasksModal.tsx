@@ -266,11 +266,11 @@ const TasksModal: React.FC<TasksModalProps> = ({ onClose }) => {
         setPendingDeleteId(null);
         return;
       }
-      onClose();
+      handleClose();
     };
     document.addEventListener("keydown", handleKey);
     return () => document.removeEventListener("keydown", handleKey);
-  }, [cancelCreate, creating, onClose, pendingDeleteId]);
+  }, [cancelCreate, creating, handleClose, pendingDeleteId]);
 
   const renderRow = (task: TaskItem) => {
     const active = task.id === selectedId && !creating;

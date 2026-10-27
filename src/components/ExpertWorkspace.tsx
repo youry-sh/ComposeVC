@@ -31,17 +31,22 @@ type ExpertMessage = {
   role: "user" | "assistant";
   content: string;
   createdAt: number;
-  meta?: {
-    kind?: string;
-    modelId?: string;
-    modelName?: string;
-    contextTokens?: number;
-    contextLimit?: number;
-    stopped?: boolean;
-    study?: ExpertStudyMeta;
-    [key: string]: unknown;
-  };
+  meta?: Record<string, unknown>;
 };
+
+type ExpertMessageMeta = {
+  kind?: string;
+  modelId?: string;
+  modelName?: string;
+  contextTokens?: number;
+  contextLimit?: number;
+  stopped?: boolean;
+  study?: ExpertStudyMeta;
+};
+
+function readMeta(message: ExpertMessage): ExpertMessageMeta {
+  return (message.meta || {}) as ExpertMessageMeta;
+}
 
 export type ExpertStudyMeta = {
   status?: string;
