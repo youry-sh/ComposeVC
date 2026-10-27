@@ -2136,7 +2136,7 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
             : modeAtSend === "fortani"
               ? "FoRtani · LAB-IN starting…"
               : null;
-      const liveStatus = initialStatus || (thinkingMaxRef.current ? "Thinking-max" : null);
+      const liveStatus = initialStatus;
       if (liveStatus) setAgentStatusLabel(liveStatus);
       sessionLiveRef.current.set(runSessionRef.current, {
         ...(sessionLiveRef.current.get(runSessionRef.current) || emptyLiveState()),
@@ -2147,7 +2147,6 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
         agentTodos: todos,
         retryInfo: null,
         agentStatusLabel: liveStatus,
-        thinkingMaxLocked: thinkingMaxRef.current,
         thinkingTokens: 0,
         compacting: false,
         labInPackage: null,
@@ -2162,14 +2161,12 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
         // Preserve unfinished todos when user is viewing another session mid-run.
         agentTodos: todos,
         retryInfo: null,
-        agentStatusLabel: thinkingMaxRef.current
-          ? "Thinking-max"
-          : modeAtSend === "lab-in"
+        agentStatusLabel:
+          modeAtSend === "lab-in"
             ? "LAB-IN · improving prompt…"
             : modeAtSend === "fortani"
               ? "FoRtani · LAB-IN starting…"
               : null,
-        thinkingMaxLocked: thinkingMaxRef.current,
         thinkingTokens: 0,
         compacting: false,
         labInPackage: null,
