@@ -191,6 +191,7 @@ async function copyToOutput(userDataPath, job, targetDir) {
 }
 
 function jobPayload(job, extra = {}) {
+  const stats = job.stats || {};
   return {
     jobId: job.id,
     status: job.status,
@@ -201,10 +202,20 @@ function jobPayload(job, extra = {}) {
     jobDir: job.dir,
     blendPath: job.blendPath,
     renders: job.renders || [],
+    bakes: job.bakes || [],
     exports: job.exports || [],
     warnings: (job.warnings || []).slice(0, 20),
     warningsCount: (job.warnings || []).length,
-    stats: job.stats || {},
+    stats: {
+      objects: stats.objects || 0,
+      meshes: stats.meshes || 0,
+      polygons: stats.polygons || 0,
+      vertices: stats.vertices || 0,
+      materials: stats.materials || 0,
+      lights: stats.lights || 0,
+      cameras: stats.cameras || 0,
+      images: stats.images || 0,
+    },
     engine: job.blender?.engine || "",
     error: job.error || "",
     ...extra,
@@ -377,7 +388,7 @@ async function run(action, input, context) {
     case "bake": {
       const plan = parsePlan(input, config);
       if (!plan.bake) plan.bake = { passes: ["BASE_COLOR"], width: 2048, height: 2048, apply: true };
-      if (plan.render === undefined) plan.render = false;
+      if (input.render === undefined) plan.render = false;
       plan.save = plan.save === undefined ? "scene.baked.blend" : plan.save;
       const job = await blender.runPlan(userDataPath, config, plan, {
         title: input.title || "Blender bake",
