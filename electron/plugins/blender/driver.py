@@ -414,9 +414,375 @@ def _image_node(nodes, links, tex, location=(0, 0)):
     return tex_node
 
 
+MATERIAL_PRESETS = {
+    "steel": {
+        "base_color": "#8f98a3",
+        "metallic": 1.0,
+        "roughness": 0.3,
+        "texture": {
+            "type": "noise",
+            "scale": 26,
+            "detail": 5,
+            "color_a": "#6d7681",
+            "color_b": "#bcc5cf",
+            "bump": 0.05,
+            "roughness_map": True,
+            "roughness_min": 0.18,
+            "roughness_max": 0.42,
+        },
+    },
+    "brushed_metal": {
+        "base_color": "#a9afb7",
+        "metallic": 1.0,
+        "roughness": 0.34,
+        "texture": {
+            "type": "wave",
+            "scale": 90,
+            "distortion": 1.2,
+            "direction": "X",
+            "color_a": "#878e97",
+            "color_b": "#d2d8df",
+            "bump": 0.04,
+            "roughness_map": True,
+            "roughness_min": 0.22,
+            "roughness_max": 0.5,
+        },
+    },
+    "gold": {
+        "base_color": "#d8a63f",
+        "metallic": 1.0,
+        "roughness": 0.22,
+        "texture": {
+            "type": "noise",
+            "scale": 42,
+            "detail": 3,
+            "color_a": "#b07f24",
+            "color_b": "#f3d585",
+            "bump": 0.025,
+        },
+    },
+    "copper": {
+        "base_color": "#c47a4a",
+        "metallic": 1.0,
+        "roughness": 0.3,
+        "texture": {
+            "type": "noise",
+            "scale": 30,
+            "detail": 5,
+            "color_a": "#8d4c2b",
+            "color_b": "#e0a173",
+            "bump": 0.04,
+            "roughness_map": True,
+        },
+    },
+    "wood": {
+        "base_color": "#8b5a33",
+        "metallic": 0.0,
+        "roughness": 0.55,
+        "texture": {
+            "type": "wave",
+            "scale": 6,
+            "distortion": 7,
+            "detail": 3,
+            "direction": "Z",
+            "color_a": "#46280f",
+            "color_b": "#c08b52",
+            "bump": 0.16,
+            "roughness_map": True,
+            "roughness_min": 0.4,
+            "roughness_max": 0.78,
+        },
+    },
+    "oak": {
+        "base_color": "#b98a56",
+        "metallic": 0.0,
+        "roughness": 0.5,
+        "texture": {
+            "type": "wave",
+            "scale": 5,
+            "distortion": 5,
+            "detail": 3,
+            "direction": "Z",
+            "color_a": "#7c5027",
+            "color_b": "#e2c191",
+            "bump": 0.12,
+        },
+    },
+    "stone": {
+        "base_color": "#8d8d8a",
+        "metallic": 0.0,
+        "roughness": 0.72,
+        "texture": {
+            "type": "voronoi",
+            "scale": 7,
+            "randomness": 1.0,
+            "color_a": "#5f605e",
+            "color_b": "#b4b3ad",
+            "bump": 0.28,
+            "roughness_map": True,
+            "roughness_min": 0.55,
+            "roughness_max": 0.9,
+        },
+    },
+    "concrete": {
+        "base_color": "#9c9c98",
+        "roughness": 0.8,
+        "texture": {
+            "type": "noise",
+            "scale": 14,
+            "detail": 12,
+            "color_a": "#73736f",
+            "color_b": "#b9b8b2",
+            "bump": 0.12,
+            "roughness_map": True,
+            "roughness_min": 0.6,
+            "roughness_max": 0.95,
+        },
+    },
+    "brick": {
+        "base_color": "#8d5b45",
+        "roughness": 0.78,
+        "texture": {
+            "type": "brick",
+            "scale": 5,
+            "color_a": "#7c4533",
+            "color_b": "#a4694f",
+            "mortar": "#cfc7b6",
+            "mortar_size": 0.025,
+            "bump": 0.35,
+        },
+    },
+    "fabric": {
+        "base_color": "#5c6470",
+        "roughness": 0.85,
+        "sheen": 0.5,
+        "texture": {
+            "type": "noise",
+            "scale": 120,
+            "detail": 8,
+            "color_a": "#464d57",
+            "color_b": "#79828f",
+            "bump": 0.08,
+        },
+    },
+    "leather": {
+        "base_color": "#5b3a25",
+        "roughness": 0.58,
+        "texture": {
+            "type": "voronoi",
+            "scale": 55,
+            "randomness": 0.6,
+            "color_a": "#3f2718",
+            "color_b": "#7e5336",
+            "bump": 0.14,
+            "roughness_map": True,
+            "roughness_min": 0.45,
+            "roughness_max": 0.7,
+        },
+    },
+    "rubber": {
+        "base_color": "#232426",
+        "roughness": 0.92,
+        "texture": {
+            "type": "noise",
+            "scale": 90,
+            "detail": 4,
+            "color_a": "#1b1c1e",
+            "color_b": "#303236",
+            "bump": 0.06,
+        },
+    },
+    "plastic": {
+        "base_color": "#c9ced6",
+        "roughness": 0.35,
+        "coat": 0.25,
+        "texture": {
+            "type": "noise",
+            "scale": 70,
+            "detail": 2,
+            "color_a": "#b9bec6",
+            "color_b": "#e2e7ee",
+            "bump": 0.02,
+        },
+    },
+    "ceramic": {
+        "base_color": "#e6e1d6",
+        "roughness": 0.22,
+        "coat": 0.45,
+        "texture": {
+            "type": "noise",
+            "scale": 24,
+            "detail": 6,
+            "color_a": "#d8d2c5",
+            "color_b": "#f5f2ea",
+            "bump": 0.02,
+        },
+    },
+    "glass": {
+        "base_color": "#bcd8e0",
+        "roughness": 0.06,
+        "transmission": 0.92,
+        "ior": 1.45,
+        "coat": 0.35,
+    },
+    "emissive": {
+        "base_color": "#3a0f12",
+        "emission": "#ff5a2b",
+        "emission_strength": 8.0,
+        "roughness": 0.35,
+    },
+    "hologram": {
+        "base_color": "#1fd0ff",
+        "emission": "#2fe4ff",
+        "emission_strength": 3.0,
+        "alpha": 0.42,
+        "roughness": 0.15,
+        "texture": {
+            "type": "wave",
+            "scale": 30,
+            "distortion": 2.0,
+            "direction": "Z",
+            "color_a": "#0b6b86",
+            "color_b": "#9bf3ff",
+            "bump": 0.05,
+        },
+    },
+    "skin": {
+        "base_color": "#c58f74",
+        "roughness": 0.52,
+        "subsurface": 0.18,
+        "texture": {
+            "type": "noise",
+            "scale": 45,
+            "detail": 6,
+            "color_a": "#a9715a",
+            "color_b": "#e0b096",
+            "bump": 0.03,
+        },
+    },
+    "sci_fi_panel": {
+        "base_color": "#3b424c",
+        "metallic": 0.85,
+        "roughness": 0.32,
+        "texture": {
+            "type": "magic",
+            "scale": 9,
+            "distortion": 0.5,
+            "color_a": "#252a32",
+            "color_b": "#59636f",
+            "bump": 0.05,
+            "roughness_map": True,
+            "roughness_min": 0.2,
+            "roughness_max": 0.5,
+        },
+    },
+    "rust": {
+        "base_color": "#7a4a2e",
+        "metallic": 0.45,
+        "roughness": 0.85,
+        "texture": {
+            "type": "noise",
+            "scale": 18,
+            "detail": 12,
+            "color_a": "#4d2c19",
+            "color_b": "#b06a3c",
+            "bump": 0.3,
+            "roughness_map": True,
+            "roughness_min": 0.6,
+            "roughness_max": 0.95,
+        },
+    },
+    "marble": {
+        "base_color": "#e8e6e2",
+        "roughness": 0.18,
+        "coat": 0.2,
+        "texture": {
+            "type": "wave",
+            "scale": 4,
+            "distortion": 14,
+            "detail": 4,
+            "direction": "Z",
+            "color_a": "#b9b7b2",
+            "color_b": "#f4f3f0",
+            "bump": 0.02,
+        },
+    },
+    "dirt": {
+        "base_color": "#6b5334",
+        "roughness": 0.9,
+        "texture": {
+            "type": "noise",
+            "scale": 16,
+            "detail": 14,
+            "color_a": "#463420",
+            "color_b": "#9a7c52",
+            "bump": 0.2,
+        },
+    },
+}
+
+
+def apply_material_preset(spec):
+    preset_name = spec.get("preset") or spec.get("style")
+    if not preset_name or not isinstance(preset_name, str):
+        return spec
+    preset = MATERIAL_PRESETS.get(preset_name.lower())
+    if preset is None:
+        warn("unknown material preset '%s'" % preset_name)
+        return spec
+    merged = dict(preset)
+    for key, value in spec.items():
+        if key == "texture" and isinstance(value, dict) and isinstance(merged.get("texture"), dict):
+            merged["texture"] = {**merged["texture"], **value}
+        else:
+            merged[key] = value
+    merged["name"] = spec.get("name") or spec.get("id") or preset_name.title()
+    return merged
+
+
+def apply_material_animation(mat, bsdf, anim):
+    if not isinstance(anim, dict) or not anim:
+        return
+    socket_names = {"emission_strength": ("Emission Strength",), "emission": ("Emission Color",)}
+    for key, keys in anim.items():
+        names = socket_names.get(key)
+        if not names or not isinstance(keys, list):
+            continue
+        socket = None
+        for name in names:
+            socket = bsdf.inputs.get(name)
+            if socket is not None:
+                break
+        if socket is None:
+            warn("material animation: socket %s missing" % key)
+            continue
+        try:
+            index = list(bsdf.inputs).index(socket)
+        except Exception:
+            index = None
+        if index is None:
+            continue
+        data_path = 'nodes["%s"].inputs[%d].default_value' % (bsdf.name, index)
+        for entry in keys:
+            if not isinstance(entry, dict):
+                continue
+            frame = as_int(entry.get("frame", 1), 1)
+            value = entry.get("value")
+            try:
+                if key == "emission":
+                    socket.default_value = as_color(value)
+                else:
+                    socket.default_value = as_float(value, 1.0)
+                mat.node_tree.keyframe_insert(data_path=data_path, frame=frame)
+            except Exception as exc:
+                warn("material animation key failed: %s" % exc)
+                break
+
+
 def build_material(spec):
     if not isinstance(spec, dict):
         return None
+    spec = apply_material_preset(dict(spec))
     name = str(spec.get("name") or spec.get("id") or "Material")
     mat = bpy.data.materials.get(name)
     if mat is None:
@@ -537,6 +903,43 @@ def build_material(spec):
             except Exception:
                 pass
 
+    for key, names, lo_key, hi_key in (
+        ("roughness_texture", ("Roughness",), "roughness_min", "roughness_max"),
+        ("metallic_texture", ("Metallic",), "metallic_min", "metallic_max"),
+    ):
+        map_spec = spec.get(key)
+        if isinstance(map_spec, str):
+            map_spec = {"path": map_spec}
+        if not isinstance(map_spec, dict) or not (map_spec.get("path") or map_spec.get("file")):
+            continue
+        map_node = _image_node(nodes, links, {**map_spec, "type": "image"}, (-420, -680))
+        if map_node is None:
+            continue
+        try:
+            map_node.image.colorspace_settings.name = "Non-Color"
+        except Exception:
+            pass
+        target = None
+        for socket_name in names:
+            target = bsdf.inputs.get(socket_name)
+            if target is not None:
+                break
+        if target is None:
+            continue
+        source = map_node.outputs["Color"]
+        low = map_spec.get(lo_key)
+        high = map_spec.get(hi_key)
+        if low is not None or high is not None:
+            mapper = nodes.new("ShaderNodeMapRange")
+            mapper.location = (-180, -680)
+            set_input(mapper, 0.0, "From Min")
+            set_input(mapper, 1.0, "From Max")
+            set_input(mapper, as_float(low, 0.0), "To Min")
+            set_input(mapper, as_float(high, 1.0), "To Max")
+            links.new(source, mapper.inputs["Value"])
+            source = mapper.outputs["Result"]
+        links.new(source, target)
+
     for extra in spec.get("nodes") or []:
         if not isinstance(extra, dict):
             continue
@@ -550,6 +953,7 @@ def build_material(spec):
                 links.new(node.outputs[str(target.get("from"))], bsdf.inputs[str(target.get("to"))])
         except Exception as exc:
             warn("material extra node failed: %s" % exc)
+    apply_material_animation(mat, bsdf, spec.get("animation"))
     return mat
 
 
