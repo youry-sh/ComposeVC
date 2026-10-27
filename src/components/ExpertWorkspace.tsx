@@ -615,6 +615,10 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
         patchSlot(slotId, { error: "No model configured. Add one in Providers." });
         return;
       }
+      if (!window.lopster?.expertSend) {
+        patchSlot(slotId, { error: "Expert bridge is unavailable — restart ComposeVC." });
+        return;
+      }
       const optimistic: ExpertMessage = {
         id: `local-${Date.now().toString(36)}`,
         role: "user",
