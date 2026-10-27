@@ -944,6 +944,17 @@ const PluginsWorkspace: React.FC = () => {
                                 <span className="shrink-0 font-mono text-[10px] text-ink-500">
                                   {STATUS_LABEL[job.status] || job.status}
                                 </span>
+                                {job.quality && (
+                                  <span
+                                    className="shrink-0 font-mono text-[10px]"
+                                    style={{
+                                      color: job.quality.game_ready ? "var(--ink-600)" : "var(--status-err, #d9534f)",
+                                    }}
+                                    title={job.quality.issues.join(", ") || "quality"}
+                                  >
+                                    QA {job.quality.score}
+                                  </span>
+                                )}
                               </span>
                               <span className="mt-0.5 block truncate text-[10px] text-ink-500">
                                 {job.error || job.summary || job.stage || fmtWhen(job.createdAt)}
@@ -1078,6 +1089,52 @@ const PluginsWorkspace: React.FC = () => {
                               <span className="min-w-0 flex-1 truncate" title={item.path}>
                                 {item.path}
                               </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {selectedJob.quality && (
+                        <div className="border-t border-ink-200 pt-1.5">
+                          <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.08em] text-ink-500">
+                            <span>качество</span>
+                            <span
+                              className="font-mono text-[11px] tracking-normal"
+                              style={{
+                                color: selectedJob.quality.game_ready ? "var(--ink-800)" : "var(--status-err, #d9534f)",
+                              }}
+                            >
+                              {selectedJob.quality.score}/100
+                            </span>
+                            <span>{selectedJob.quality.game_ready ? "game-ready" : "есть замечания"}</span>
+                            <span className="ml-auto font-mono text-[10px] tracking-normal text-ink-500">
+                              текстуры: {selectedJob.quality.materials.textured}/{selectedJob.quality.materials.total}
+                            </span>
+                          </div>
+                          {selectedJob.quality.issues.length > 0 && (
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              {selectedJob.quality.issues.slice(0, 10).map((issue) => (
+                                <span key={issue} className="border border-ink-200 px-1.5 py-0.5 font-mono text-[10px] text-ink-600">
+                                  {issue}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          <div className="mt-1 flex flex-wrap gap-2 font-mono text-[10px] text-ink-500">
+                            {selectedJob.quality.checks.map((check) => (
+                              <span key={check.id} className={check.ok ? "text-ink-700" : "text-status-err"}>
+                                {check.ok ? "1" : "0"} {check.id}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {selectedJob.addons.length > 0 && (
+                        <div className="border-t border-ink-200 pt-1.5 text-[10px] leading-4 text-ink-600">
+                          <div className="mb-0.5 text-[10px] uppercase tracking-[0.08em] text-ink-500">аддоны</div>
+                          {selectedJob.addons.slice(0, 10).map((addon, index) => (
+                            <div key={`${selectedJob.id}-a-${index}`} className="truncate" title={addon.error || addon.module || addon.path}>
+                              {addon.enabled ? "1" : "0"} {addon.module || addon.path}
+                              {addon.error ? ` · ${addon.error}` : ""}
                             </div>
                           ))}
                         </div>
