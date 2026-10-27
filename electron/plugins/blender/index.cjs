@@ -534,13 +534,30 @@ async function execute(userDataPath, job, executable, args, options = {}) {
 
 async function runPlan(userDataPath, config, plan, options = {}) {
   const blender = requireBlender(config);
+  const mergedPlan = { ...(plan || {}) };
+  const configuredAddons = Array.isArray(config?.addons)
+    ? config.addons.map((entry) => String(entry || "").trim()).filter(Boolean)
+    : [];
+  if (configuredAddons.length) {
+    const disabled = new Set(
+      (Array.isArray(mergedPlan.disable_addons) ? mergedPlan.disable_addons : []).map((entry) => String(entry || ""))
+    );
+    const existingEntries = Array.isArray(mergedPlan.addons) ? mergedPlan.addons : [];
+    const existing = new Set(
+      existingEntries.map((entry) => (typeof entry === "string" ? entry : entry?.module ? String(entry.module) : "")).filter(Boolean)
+    );
+    const missing = configuredAddons.filter((module) => !existing.has(module) && !disabled.has(module));
+    if (missing.length) {
+      mergedPlan.addons = [...existingEntries, ...missing.map((module) => ({ module, enable: true }))];
+    }
+  }
   const job = await store.createJob(userDataPath, {
     pluginId: PLUGIN_ID,
     kind: options.kind || "scene",
-    title: String(options.title || plan?.name || plan?.title || "Blender scene"),
+    title: String(options.title || mergedPlan?.name || mergedPlan?.title || "Blender scene"),
   });
   const planPath = path.join(job.dir, "plan.json");
-  await fs.promises.writeFile(planPath, JSON.stringify(plan || {}, null, 2), "utf8");
+  await fs.promises.writeFile(planPath, JSON.stringify(mergedPlan, null, 2), "utf8");
   const startedAt = Date.now();
   let current = await store.updateJob(userDataPath, job.id, {
     status: "running",
@@ -591,6 +608,57 @@ async function runPython(userDataPath, config, code, options = {}) {
     version: blender.version,
   });
   return current;
+}
+
+/**
+ * Install / enable / disable Blender add-ons and extensions. The driver writes
+ * into Blender's user addons/extensions folders; enabled module ids are stored
+ * in the plugin config so every later job re-enables them automatically.
+ */
+async function runAddonJob(userDataPath, config, spec = {}, options = {}) {
+  const plan = {
+    name: String(spec.title || "Blender add-on"),
+    reset: false,
+    render: false,
+    export: false,
+    save: false,
+    install_addons: [],
+    addons: [],
+    disable_addons: [],
+  };
+  if (spec.path) plan.install_addons.push({ path: String(spec.path), enable: spec.enable !== false });
+  if (spec.module) {
+    if (spec.enable === false) plan.disable_addons.push(String(spec.module));
+    else plan.addons.push({ module: String(spec.module), enable: true });
+  }
+  for (const module of spec.disable || []) plan.disable_addons.push(String(module));
+  if (!plan.install_addons.length && !plan.addons.length && !plan.disable_addons.length) {
+    throw new Error("Не указан аддон: передайте path (zip), module или pkg_id.");
+  }
+  const job = await runPlan(userDataPath, { ...config, addons: [] }, plan, {
+    kind: "addon",
+    title: plan.name,
+    onProgress: options.onProgress,
+    signal: options.signal,
+  });
+  const reports = Array.isArray(job.driverResult?.addons) ? job.driverResult.addons : [];
+  const enabled = [];
+  for (const report of reports) {
+    if (report?.module && (report.enabled || report.installed)) enabled.push(String(report.module));
+    for (const module of report?.modules || []) if (module) enabled.push(String(module));
+  }
+  const disabled = (spec.disable || []).concat(spec.module && spec.enable === false ? [spec.module] : []);
+  if (job.status === "succeeded" && (enabled.length || disabled.length)) {
+    const current = Array.isArray(config?.addons) ? config.addons : [];
+    const next = Array.from(new Set([...current.filter((module) => !disabled.includes(module)), ...enabled])).slice(0, 60);
+    const plugin = await store.getPlugin(userDataPath, PLUGIN_ID);
+    if (plugin) {
+      await store.updatePlugin(userDataPath, PLUGIN_ID, {
+        config: { ...plugin.config, addons: next },
+      });
+    }
+  }
+  return { ...job, addonsEnabled: Array.from(new Set(enabled)) };
 }
 
 async function probe(userDataPath, config) {
