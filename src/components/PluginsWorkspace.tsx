@@ -241,7 +241,12 @@ const PluginsWorkspace: React.FC = () => {
     let alive = true;
     void window.lopster?.pluginsPreview?.(job.id).then((result) => {
       if (!alive || !result?.ok || !result.dataUrl) return;
-      setPreviews((prev) => ({ ...prev, [job.id]: result.dataUrl as string }));
+      setPreviews((prev) => {
+        const next: Record<string, string> = { ...prev, [job.id]: result.dataUrl as string };
+        const ids = Object.keys(next);
+        if (ids.length > 6) delete next[ids[0]];
+        return next;
+      });
     });
     return () => {
       alive = false;
@@ -1010,7 +1015,10 @@ const PluginsWorkspace: React.FC = () => {
                         </div>
                       )}
                       {logs[selectedJob.id] && (
-                        <pre className="max-h-[220px] overflow-auto whitespace-pre-wrap break-words border border-ink-200 bg-[var(--terminal-bg,var(--input-bg))] p-2 font-mono text-[10px] leading-4 text-ink-600 scrollbar-thin">
+                        <pre
+                          className="max-h-[220px] overflow-auto whitespace-pre-wrap break-words border border-ink-200 p-2 font-mono text-[10px] leading-4 text-ink-600 scrollbar-thin"
+                          style={{ background: "var(--terminal-bg, var(--input-bg))" }}
+                        >
                           {logs[selectedJob.id]}
                         </pre>
                       )}

@@ -553,7 +553,7 @@ def build_material(spec):
     return mat
 
 
-def material_for(spec, cache):
+def material_for(spec, cache, hint=""):
     if spec is None:
         return None
     if isinstance(spec, str):
@@ -562,7 +562,7 @@ def material_for(spec, cache):
             return existing
         return cache.get(spec)
     if isinstance(spec, dict):
-        name = str(spec.get("name") or spec.get("id") or "Material")
+        name = str(spec.get("name") or spec.get("id") or ((str(hint) + " Material") if hint else "Material"))
         if name in cache:
             return cache[name]
         mat = build_material({**spec, "name": name})
@@ -805,13 +805,16 @@ def create_object(spec, coll, materials):
         if not isinstance(material_specs, list):
             material_specs = [material_specs]
         for entry in material_specs:
-            mat = material_for(entry, materials)
+            mat = material_for(entry, materials, obj.name)
             if mat is None:
                 continue
             try:
                 obj.data.materials.append(mat)
             except Exception:
                 warn("cannot assign material to %s" % obj.name)
+        if obj.type == "MESH" and not obj.data.uv_layers:
+            # Image textures need UVs; game exports look broken without them.
+            smart_uv(obj, {})
 
     if spec.get("smooth") or spec.get("shade_smooth"):
         try:
@@ -1743,6 +1746,14 @@ def execute_plan(plan, out_dir):
         progress("export", 92)
         for spec in export_specs:
             exports.extend(export_scene(spec, out_dir))
+
+    # Save again after render/export so the .blend keeps the final render
+    # settings and baked texture nodes the job actually used.
+    if blend_path:
+        try:
+            bpy.ops.wm.save_as_mainfile(filepath=blend_path)
+        except Exception as exc:
+            warn("final blend save failed: %s" % exc)
 
     stats = describe_scene()
     progress("done", 100)
