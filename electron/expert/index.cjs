@@ -468,12 +468,13 @@ function createExpertService(deps = {}) {
           },
         });
         if (result?.stopped) {
-          stopped = true;
+          if (signal?.aborted) stopped = true;
+          else roundError = "Study round timed out";
         }
         roundText = String(result?.text || "");
         roundTokens = Math.max(roundTokens, Number(result?.contextTokens) || 0);
       } catch (error) {
-        if (error?.name === "AbortError" || signal?.aborted) stopped = true;
+        if (signal?.aborted) stopped = true;
         roundError = error instanceof Error ? error.message : String(error);
       } finally {
         clearTimeout(timer);
