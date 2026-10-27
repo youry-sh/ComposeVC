@@ -260,28 +260,80 @@ const CustomToolsWorkspace: React.FC<CustomToolsWorkspaceProps> = ({
     }
   };
 
-  const kindOf = (tool: CustomTool) => {
-    const body = tool.body || {};
-    return String((body as { kind?: string; type?: string }).kind || (body as { type?: string }).type || "folder");
-  };
-
   return (
     <div className="ide-tools-shell flex h-full w-full flex-col overflow-hidden" style={{ background: "var(--bg)" }}>
-      <div className="ide-library-header flex h-10 shrink-0 items-center justify-between gap-3 border-b border-ink-200 px-4">
+      <div className="ide-library-header flex h-11 shrink-0 flex-wrap items-center gap-3 border-b border-ink-200 px-4">
         <div className="flex min-w-0 items-center gap-2.5">
-          <Puzzle className="h-3.5 w-3.5 shrink-0 text-ink-600" />
+          <Wrench className="h-3.5 w-3.5 shrink-0 text-ink-600" />
           <h2 className="min-w-0 truncate text-[13px] font-medium tracking-[-0.01em] text-ink-950">
-            {labels.pluginTab}
+            {labels.customTools}
           </h2>
-          <span className="tabular-nums text-[10px] text-ink-500">{tools.length}</span>
+          <span
+            className="shrink-0 rounded border px-1.5 py-[1px] text-[10px] tabular-nums text-ink-500"
+            style={{ borderColor: "var(--border)" }}
+          >
+            {tools.length}
+          </span>
+          <span
+            className="hidden shrink-0 items-center gap-1.5 text-[10px] text-ink-500 sm:flex"
+            title={labels.customToolEnabled}
+          >
+            <span className="h-1 w-1 rounded-full" style={{ background: "var(--ok)" }} />
+            {enabledCount}/{tools.length}
+          </span>
+        </div>
+        <div className="ml-auto flex min-w-0 flex-1 items-center justify-end gap-1.5">
+          <div className="relative min-w-0 flex-1 sm:max-w-[280px]">
+            <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-500" />
+            <input
+              type="text"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder={labels.customToolsSearch}
+              aria-label={labels.customToolsSearch}
+              className="ide-search-input h-7 w-full min-w-0 bg-transparent pl-7 pr-7 text-[12px] leading-7 text-ink-950 placeholder-ink-500 outline-none"
+              style={fieldStyle}
+            />
+            {search ? (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                aria-label="Clear"
+                title="Clear"
+                className="absolute right-1 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center text-ink-500 outline-none transition-colors hover:text-ink-950"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            onClick={() => void handleExport()}
+            disabled={busyShare || tools.length === 0}
+            className={quietBtn}
+            title={labels.customToolExportAll}
+          >
+            <Download className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">{labels.customToolExportAll}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleCopyPack()}
+            disabled={busyShare || tools.length === 0}
+            className={quietBtn}
+            title={labels.customToolCopyPack}
+          >
+            <Copy className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">{labels.customToolCopyPack}</span>
+          </button>
         </div>
       </div>
 
       {/* Status/error bar */}
       {(statusMsg || error) && (
         <div className="flex shrink-0 items-center gap-2 border-b border-ink-200 px-4 py-1.5 text-[11px]">
-          {statusMsg && <span className="text-ink-600">{statusMsg}</span>}
-          {error && <span className="text-status-err">{error}</span>}
+          {statusMsg && <span className="min-w-0 truncate text-ink-600">{statusMsg}</span>}
+          {error && <span className="min-w-0 truncate text-status-err">{error}</span>}
         </div>
       )}
 
