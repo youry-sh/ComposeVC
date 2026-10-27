@@ -49,10 +49,26 @@ function normalizeExtension(item) {
   };
 }
 
+function compareVersions(a, b) {
+  const left = String(a || "").split(".").map((part) => Number(part) || 0);
+  const right = String(b || "").split(".").map((part) => Number(part) || 0);
+  const length = Math.max(left.length, right.length);
+  for (let index = 0; index < length; index += 1) {
+    const diff = (left[index] || 0) - (right[index] || 0);
+    if (diff !== 0) return diff;
+  }
+  return 0;
+}
+
 async function searchExtensions(query, { limit = 20 } = {}) {
   const json = await fetchJson(EXTENSIONS_API);
   const data = Array.isArray(json?.data) ? json.data : [];
-  const entries = data.map(normalizeExtension).filter(Boolean);
+  const byId = new Map();
+  for (const entry of data.map(normalizeExtension).filter(Boolean)) {
+    const previous = byId.get(entry.id);
+    if (!previous || compareVersions(entry.version, previous.version) > 0) byId.set(entry.id, entry);
+  }
+  const entries = Array.from(byId.values());
   const text = String(query || "").trim().toLowerCase();
   let results = entries;
   if (text) {
