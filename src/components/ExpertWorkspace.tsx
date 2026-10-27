@@ -838,7 +838,7 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
       <div className={`expert-study ${studied ? "is-ready" : partial ? "is-partial" : ""}`}>
         <span className="expert-study-dot" aria-hidden />
         <span className="expert-study-label">
-          {slot.running
+          {slot.studying
             ? "STUDYING"
             : studied
               ? "STUDIED"
@@ -884,19 +884,59 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
 
   const renderMessages = (slot: ExpertSlot) => {
     if (!slot.messages.length && !slot.running) {
-      return (
-        <div className="expert-empty">
-          <div className="expert-empty-mark">
-            <Sparkles />
+      if (!slot.rootPath) {
+        return (
+          <div className="expert-empty">
+            <div className="expert-empty-mark">
+              <Sparkles />
+            </div>
+            <p className="expert-empty-title">Whole-project prompt composer</p>
+            <p className="expert-empty-text">
+              Pick a directory. Expert scans every file, maps modules, contracts and flows, then turns your task
+              into one prompt that plugs into the code that already exists.
+            </p>
+            <button type="button" className="expert-empty-btn" onClick={() => void chooseFolder(slot.id)}>
+              <FolderOpen /> Select directory
+            </button>
           </div>
-          <p className="expert-empty-title">Whole-project prompt composer</p>
-          <p className="expert-empty-text">
-            Pick a directory. Expert scans every file, maps modules, contracts and flows, then turns your task
-            into one prompt that plugs into the code that already exists.
+        );
+      }
+
+      const studied = slot.study?.status === "ready";
+      const files = Number(slot.study?.files) || 0;
+      const rounds = Number(slot.study?.rounds) || 0;
+      const readFiles = Number(slot.study?.readFiles) || 0;
+      return (
+        <div className="expert-empty is-project">
+          <div className="expert-empty-mark">
+            {slot.studying ? <Loader2 className="expert-live-spin" /> : <FolderOpen />}
+          </div>
+          <p className="expert-empty-title">{slot.studying ? "Studying project" : "Project selected"}</p>
+          <p className="expert-empty-project">{slot.projectName || projectNameOf(slot.rootPath)}</p>
+          <p className="expert-empty-path" title={slot.rootPath}>
+            {slot.rootPath}
           </p>
-          <button type="button" className="expert-empty-btn" onClick={() => void chooseFolder(slot.id)}>
-            <FolderOpen /> Select directory
-          </button>
+          <p className="expert-empty-text">
+            {slot.studying
+              ? slot.status || "Scanning every file, mapping modules, contracts and flows…"
+              : studied
+                ? `Studied ${files.toLocaleString()} files · ${rounds} rounds${readFiles ? ` · ${readFiles} read in depth` : ""}. Write your task and you get one implementation prompt.`
+                : "The project is selected. Write your task — Expert studies it fully first, then composes the prompt."}
+          </p>
+          <div className="expert-empty-actions">
+            {slot.studying ? (
+              <button type="button" className="expert-empty-btn is-quiet" onClick={() => void stop(slot.id)}>
+                <Square /> Stop study
+              </button>
+            ) : (
+              <button type="button" className="expert-empty-btn" onClick={() => void startStudy({ slotId: slot.id })}>
+                <Layers /> {studied ? "Re-study" : "Study now"}
+              </button>
+            )}
+            <button type="button" className="expert-empty-btn is-quiet" onClick={() => void chooseFolder(slot.id)}>
+              <FolderOpen /> Change folder
+            </button>
+          </div>
         </div>
       );
     }
@@ -1024,12 +1064,12 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
             </button>
             <button
               type="button"
-              disabled={!slot.sessionId}
+              disabled={!slot.messages.length}
               onClick={() => {
                 setSaveName(slot.messages.find((message) => message.role === "user")?.content.slice(0, 60) || "Expert chat");
                 setModal({ kind: "save", slotId: slot.id });
               }}
-              title="Save session"
+              title={slot.messages.length ? "Save session" : "Save session — send a task first"}
             >
               <BookmarkPlus />
             </button>
