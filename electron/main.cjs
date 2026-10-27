@@ -363,6 +363,13 @@ visionBridge.setVisionExecutor(async (request = {}) => {
     if (model) break;
   }
   if (!model) throw new Error("Vision model not found in provider config.");
+  const supportsImages = modelSupportsImages(model.name || model.id, "openai");
+  if (!supportsImages) {
+    throw new Error(
+      `Модель '${model.name || model.id}' помечена как текстовая и не принимает изображения. ` +
+        "Выберите vision-модель (например deepseek-flash) в Settings → Vision или передайте model=..."
+    );
+  }
   const provider = (config.providers || []).find((item) => item.id === model.providerId);
   if (!provider) throw new Error(`Provider for vision model '${model.name || model.id}' not found.`);
   if (!provider.apiKey) throw new Error(`API key is empty for ${provider.name || provider.id}.`);
