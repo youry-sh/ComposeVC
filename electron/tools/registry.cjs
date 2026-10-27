@@ -29,6 +29,7 @@ const generateImage = require("./generateImage.cjs");
 const blenderTool = require("./blenderTool.cjs");
 const pluginTool = require("./pluginTool.cjs");
 const visionTool = require("./visionTool.cjs");
+const visionBlenderTool = require("./visionBlenderTool.cjs");
 
 const TOOLS = [
   readFile,
@@ -62,6 +63,7 @@ const TOOLS = [
         blenderTool,
         pluginTool,
         visionTool,
+        visionBlenderTool,
 				];/** Common aliases the model may emit */const TOOL_ALIASES = {  timer: "work_timer",  worktimer: "work_timer",
   minimum_work_timer: "work_timer",
   glob: "grep",
