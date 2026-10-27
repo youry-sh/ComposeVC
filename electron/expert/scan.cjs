@@ -607,15 +607,17 @@ function scanProject(rootPath) {
   const files_compact = files
     .slice()
     .sort((a, b) => b.score - a.score)
-    .map((file) => ({
+    .map((file, index) => ({
       p: file.p,
       ext: file.ext,
       size: file.size,
       lines: file.lines,
       score: Math.round(file.score * 10) / 10,
       symbols: file.symbols.slice(0, MAX_SYMBOLS_PER_FILE),
-      imports: file.imports.slice(0, MAX_IMPORTS_PER_FILE),
-      ...(file.usedBy ? { usedBy: file.usedBy } : {}),
+      // Persisting the full import graph for thousands of files makes the study
+      // file huge; the top 600 carry every edge the digest and focus lists use.
+      imports: index < 600 ? file.imports.slice(0, MAX_IMPORTS_PER_FILE) : [],
+      ...(index < 600 && file.usedBy ? { usedBy: file.usedBy } : {}),
     }));
 
   // Strip text bodies before persisting: the digest below carries the excerpts.
