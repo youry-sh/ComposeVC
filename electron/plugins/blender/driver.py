@@ -2459,25 +2459,56 @@ def bake_plan(spec, out_dir):
 
 
 def apply_baked_textures(results, objects):
-    by_key = {}
-    for item in results:
-        by_key.setdefault((item["path"].split(os.sep)[-1]), item)
+    if not results:
+        return
     for obj in objects:
         for mat in obj.data.materials:
             if mat is None or not mat.use_nodes:
                 continue
             nodes = mat.node_tree.nodes
             links = mat.node_tree.links
-            for node in nodes:
-                if node.type != "TEX_IMAGE" or node.image is None:
-                    continue
-                name = node.image.name.lower()
-                if name.endswith("_base_color"):
-                    bsdf = next((n for n in nodes if n.type == "BSDF_PRINCIPLED"), None)
-                    if bsdf is not None:
-                        for link in list(bsdf.inputs["Base Color"].links):
-                            links.remove(link)
-                        links.new(node.outputs["Color"], bsdf.inputs["Base Color"])
+            bsdf = next((node for node in nodes if node.type == "BSDF_PRINCIPLED"), None)
+            if bsdf is None:
+                continue
+
+            def find(suffix):
+                for node in nodes:
+                    if node.type == "TEX_IMAGE" and node.image is not None and node.image.name.lower().endswith(suffix):
+                        return node
+                return None
+
+            base = find("_base_color")
+            if base is not None:
+                links.new(base.outputs["Color"], bsdf.inputs["Base Color"])
+            roughness = find("_roughness")
+            if roughness is not None:
+                try:
+                    roughness.image.colorspace_settings.name = "Non-Color"
+                except Exception:
+                    pass
+                links.new(roughness.outputs["Color"], bsdf.inputs["Roughness"])
+            normal = find("_normal")
+            if normal is not None:
+                try:
+                    normal.image.colorspace_settings.name = "Non-Color"
+                except Exception:
+                    pass
+                normal_node = next((node for node in nodes if node.type == "NORMAL_MAP"), None)
+                if normal_node is None:
+                    normal_node = nodes.new("ShaderNodeNormalMap")
+                    normal_node.location = (-220, -720)
+                links.new(normal.outputs["Color"], normal_node.inputs["Color"])
+                links.new(normal_node.outputs["Normal"], bsdf.inputs["Normal"])
+
+
+def materials_need_bake():
+    for mat in bpy.data.materials:
+        if not mat.use_nodes:
+            continue
+        for node in mat.node_tree.nodes:
+            if node.type in PROCEDURAL_NODE_TYPES:
+                return True
+    return False
 
 
 # ── assets / plan execution ────────────────────────────────────────────────
