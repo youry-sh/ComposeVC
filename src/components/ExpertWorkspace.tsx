@@ -392,6 +392,18 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
     return () => unsubscribe?.();
   }, []);
 
+  useEffect(() => {
+    if (!modal) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      setModal(null);
+    };
+    document.addEventListener("keydown", onKey, true);
+    return () => document.removeEventListener("keydown", onKey, true);
+  }, [modal]);
+
   // ── folder / session actions ───────────────────────────────────────────────
   const loadStudyStatus = useCallback(async (slotId: string, rootPath: string | null) => {
     if (!rootPath) {
@@ -529,6 +541,7 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
     async (slotId: string) => {
       const slot = slotsRef.current.find((item) => item.id === slotId);
       setModal({ kind: "history", slotId });
+      setHistoryTab("chats");
       setHistory({ loading: true, sessions: [], saved: [] });
       try {
         const [sessions, saved] = await Promise.all([
@@ -1212,15 +1225,37 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
                 </div>
               </div>
             ) : (
-              <div className="expert-modal-body is-scroll">
-                {history.loading ? (
-                  <div className="expert-modal-loading">
-                    <Loader2 className="expert-live-spin" /> Loading…
-                  </div>
-                ) : (
-                  <>
-                    <div className="expert-modal-section">CHATS</div>
-                    {history.sessions.length === 0 ? (
+              <>
+                <div className="expert-modal-tabs" role="tablist">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={historyTab === "chats"}
+                    className={`expert-modal-tab ${historyTab === "chats" ? "is-active" : ""}`}
+                    onClick={() => setHistoryTab("chats")}
+                  >
+                    Chats <span>{history.sessions.length}</span>
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={historyTab === "saved"}
+                    className={`expert-modal-tab ${historyTab === "saved" ? "is-active" : ""}`}
+                    onClick={() => setHistoryTab("saved")}
+                  >
+                    Saved <span>{history.saved.length}</span>
+                  </button>
+                  <span className="expert-modal-tabs-hint">
+                    {slots.find((slot) => slot.id === modal.slotId)?.projectName || "all folders"}
+                  </span>
+                </div>
+                <div className="expert-modal-body is-scroll">
+                  {history.loading ? (
+                    <div className="expert-modal-loading">
+                      <Loader2 className="expert-live-spin" /> Loading…
+                    </div>
+                  ) : historyTab === "chats" ? (
+                    history.sessions.length === 0 ? (
                       <div className="expert-modal-empty">No chats for this folder yet.</div>
                     ) : (
                       <ul className="expert-session-list">
@@ -1231,10 +1266,15 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
                               className="expert-session-open"
                               onClick={() => void openSession(modal.slotId, session.sessionId)}
                               disabled={slots.find((slot) => slot.id === modal.slotId)?.running}
+                              title={session.title || "Expert chat"}
                             >
-                              <span className="expert-session-title">{session.title || "Expert chat"}</span>
+                              <span className="expert-session-title">
+                                <FileText />
+                                <span className="expert-session-name">{session.title || "Expert chat"}</span>
+                              </span>
                               <span className="expert-session-meta">
-                                {session.promptCount} prompts · {session.messageCount} msgs · {formatWhen(session.updatedAt)}
+                                {session.promptCount} prompts · {session.messageCount} msgs ·{" "}
+                                {formatWhen(session.updatedAt)}
                               </span>
                             </button>
                             <button
@@ -1248,49 +1288,50 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
                           </li>
                         ))}
                       </ul>
-                    )}
-
-                    <div className="expert-modal-section">SAVED</div>
-                    {history.saved.length === 0 ? (
-                      <div className="expert-modal-empty">Saved sessions appear here.</div>
-                    ) : (
-                      <ul className="expert-session-list">
-                        {history.saved.map((entry) => (
-                          <li key={entry.id} className="expert-session-item">
-                            <button
-                              type="button"
-                              className="expert-session-open"
-                              onClick={() => void openSaved(modal.slotId, entry.id)}
-                              disabled={slots.find((slot) => slot.id === modal.slotId)?.running}
-                            >
-                              <span className="expert-session-title">
-                                <Bookmark /> {entry.name}
-                              </span>
-                              <span className="expert-session-meta">
-                                {entry.messageCount} msgs · {formatWhen(entry.updatedAt)}
-                              </span>
-                            </button>
-                            <button
-                              type="button"
-                              className="expert-session-del"
-                              title="Delete saved session"
-                              onClick={async () => {
-                                await window.lopster?.expertDeleteSaved?.(entry.id);
-                                setHistory((prev) => ({
-                                  ...prev,
-                                  saved: prev.saved.filter((item) => item.id !== entry.id),
-                                }));
-                              }}
-                            >
-                              <Trash2 />
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </>
-                )}
-              </div>
+                    )
+                  ) : history.saved.length === 0 ? (
+                    <div className="expert-modal-empty">
+                      Saved sessions appear here. Use the bookmark button in a chat header to save one.
+                    </div>
+                  ) : (
+                    <ul className="expert-session-list">
+                      {history.saved.map((entry) => (
+                        <li key={entry.id} className="expert-session-item">
+                          <button
+                            type="button"
+                            className="expert-session-open"
+                            onClick={() => void openSaved(modal.slotId, entry.id)}
+                            disabled={slots.find((slot) => slot.id === modal.slotId)?.running}
+                            title={entry.name}
+                          >
+                            <span className="expert-session-title">
+                              <Bookmark />
+                              <span className="expert-session-name">{entry.name}</span>
+                            </span>
+                            <span className="expert-session-meta">
+                              {entry.messageCount} msgs · {formatWhen(entry.updatedAt)}
+                            </span>
+                          </button>
+                          <button
+                            type="button"
+                            className="expert-session-del"
+                            title="Delete saved session"
+                            onClick={async () => {
+                              await window.lopster?.expertDeleteSaved?.(entry.id);
+                              setHistory((prev) => ({
+                                ...prev,
+                                saved: prev.saved.filter((item) => item.id !== entry.id),
+                              }));
+                            }}
+                          >
+                            <Trash2 />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </>
             )}
           </div>
         </div>
