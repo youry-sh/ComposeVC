@@ -411,82 +411,96 @@ const PluginsWorkspace: React.FC = () => {
                 <div className="mb-3 border border-ink-200 px-3 py-2 text-[11px] text-ink-600">{notice}</div>
               )}
 
-              <Section
-                title="Blender и статус"
-                actions={
-                  <>
-                    <button type="button" className={quietBtn} onClick={() => void probe()} disabled={probing}>
-                      {probing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
-                      Проверить
-                    </button>
-                    <button type="button" className={quietBtn} onClick={() => void openFolder(null)}>
-                      <FolderOpen className="h-3.5 w-3.5" />
-                      Папка задач
-                    </button>
-                  </>
-                }
-              >
-                <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px]">
-                  <span
-                    className="h-1.5 w-1.5 rounded-full"
-                    style={{ background: plugin.status?.found ? "var(--accent)" : "var(--ink-400)" }}
-                  />
-                  <span className="text-ink-800">
-                    {plugin.status?.found
-                      ? `Blender ${plugin.status.version || "?"} · ${plugin.status.source === "config" ? "путь из настроек" : "автоопределение"}`
-                      : plugin.status?.error || "Blender не найден"}
-                  </span>
-                  {(plugin.stats?.runs || 0) > 0 && (
-                    <span className="ml-auto font-mono text-[10px] text-ink-500">
-                      запусков {plugin.stats.runs} · ошибок {plugin.stats.failures}
-                    </span>
-                  )}
-                </div>
-                <div className="flex flex-wrap items-end gap-2">
-                  <label className="grid min-w-0 flex-1 gap-1">
-                    <span className={labelClass}>Путь к blender.exe</span>
-                    <input
-                      type="text"
-                      value={draft?.executable ?? ""}
-                      onChange={(event) => updateDraft({ executable: event.target.value })}
-                      placeholder="Автоопределение (Program Files, PATH, Steam…)"
-                      className={fieldClass}
-                      style={fieldStyle}
-                      spellCheck={false}
-                    />
-                  </label>
-                  <button type="button" className={quietBtn} onClick={() => void pickExecutable()}>
-                    Обзор…
-                  </button>
-                </div>
-                {plugin.status?.found && (
-                  <div className="mt-1 truncate font-mono text-[10px] text-ink-500">{plugin.status.executable}</div>
-                )}
-                {(plugin.status?.checked || []).length > 0 && !plugin.status.found && (
-                  <div className="mt-2 border-t border-ink-200 pt-1.5 font-mono text-[10px] leading-4 text-ink-500">
-                    {(plugin.status?.checked || []).slice(0, 5).map((entry) => (
-                      <div key={entry.path} className="truncate" title={entry.path}>
-                        {entry.ok ? "1" : "0"} {entry.path}
+              <Section title="Blender и статус">
+                <div className="grid gap-3 lg:grid-cols-2">
+                  <div className="min-w-0 border border-ink-200 bg-ink-0 p-3">
+                    <div className="mb-2 text-[10px] font-medium uppercase tracking-[0.1em] text-ink-500">
+                      состояние
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                      <span
+                        className="h-1.5 w-1.5 rounded-full"
+                        style={{ background: plugin.status?.found ? "var(--accent)" : "var(--ink-400)" }}
+                      />
+                      <span className="text-ink-800">
+                        {plugin.status?.found
+                          ? `Blender ${plugin.status.version || "?"} · ${
+                              plugin.status.source === "config" ? "путь из настроек" : "автоопределение"
+                            }`
+                          : plugin.status?.error || "Blender не найден"}
+                      </span>
+                      {(plugin.stats?.runs || 0) > 0 && (
+                        <span className="ml-auto font-mono text-[10px] text-ink-500">
+                          запусков {plugin.stats.runs} · ошибок {plugin.stats.failures}
+                        </span>
+                      )}
+                    </div>
+                    {plugin.status?.found && (
+                      <div className="mt-1 truncate font-mono text-[10px] text-ink-500">{plugin.status.executable}</div>
+                    )}
+                    {(plugin.status?.checked || []).length > 0 && !plugin.status.found && (
+                      <div className="mt-2 border-t border-ink-200 pt-1.5 font-mono text-[10px] leading-4 text-ink-500">
+                        {(plugin.status?.checked || []).slice(0, 5).map((entry) => (
+                          <div key={entry.path} className="truncate" title={entry.path}>
+                            {entry.ok ? "1" : "0"} {entry.path}
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
+                    {probeInfo && (
+                      <div className="mt-2 grid gap-1 border-t border-ink-200 pt-2 text-[10px] leading-4 text-ink-600">
+                        <div>
+                          <span className="text-ink-500">движки: </span>
+                          {(probeInfo.engines || []).join(", ") || "—"}
+                        </div>
+                        <div className="break-words">
+                          <span className="text-ink-500">экспортёры: </span>
+                          {Object.entries(probeInfo.operators || {})
+                            .filter(([, value]) => value)
+                            .map(([key]) => key.replace("export_scene.", "").replace("wm.", ""))
+                            .join(", ") || "—"}
+                        </div>
+                        {probeInfo.error && <div className="text-status-err">{probeInfo.error}</div>}
+                      </div>
+                    )}
                   </div>
-                )}
-                {probeInfo && (
-                  <div className="mt-2 grid gap-1 border-t border-ink-200 pt-2 text-[10px] leading-4 text-ink-600">
-                    <div>
-                      <span className="text-ink-500">движки: </span>
-                      {(probeInfo.engines || []).join(", ") || "—"}
+
+                  <div className="min-w-0 border border-ink-200 bg-ink-0 p-3">
+                    <div className="mb-2 text-[10px] font-medium uppercase tracking-[0.1em] text-ink-500">
+                      путь и проверка
                     </div>
-                    <div className="break-words">
-                      <span className="text-ink-500">экспортёры: </span>
-                      {Object.entries(probeInfo.operators || {})
-                        .filter(([, value]) => value)
-                        .map(([key]) => key.replace("export_scene.", "").replace("wm.", ""))
-                        .join(", ") || "—"}
+                    <label className="grid min-w-0 gap-1">
+                      <span className={labelClass}>Путь к blender.exe</span>
+                      <div className="flex min-w-0 items-center gap-1.5">
+                        <input
+                          type="text"
+                          value={draft?.executable ?? ""}
+                          onChange={(event) => updateDraft({ executable: event.target.value })}
+                          placeholder="Автоопределение (Program Files, PATH, Steam…)"
+                          className={fieldClass}
+                          style={fieldStyle}
+                          spellCheck={false}
+                        />
+                        <button type="button" className={quietBtn} onClick={() => void pickExecutable()}>
+                          Обзор…
+                        </button>
+                      </div>
+                    </label>
+                    <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                      <button type="button" className={primaryBtn} onClick={() => void probe()} disabled={probing}>
+                        {probing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
+                        Проверить
+                      </button>
+                      <button type="button" className={quietBtn} onClick={() => void openFolder()}>
+                        <FolderOpen className="h-3.5 w-3.5" />
+                        Папка задач
+                      </button>
                     </div>
-                    {probeInfo.error && <div className="text-status-err">{probeInfo.error}</div>}
+                    <div className="mt-2 text-[10px] leading-4 text-ink-500">
+                      Пустое поле — автоопределение: Program Files, PATH, Steam, snap/flatpak, macOS Applications.
+                    </div>
                   </div>
-                )}
+                </div>
               </Section>
 
               <Section
