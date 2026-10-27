@@ -293,6 +293,8 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
           selectedModelId: saved.selectedModelId || defaultModelId,
           sessionId: saved.sessionId || null,
           draft: saved.draft || "",
+          contextTokens: Number(saved.contextTokens) || 0,
+          contextLimit: Number(saved.contextLimit) || 0,
         };
       });
       setSlots(next);
@@ -734,6 +736,8 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
         messages: session.messages || [],
         rootPath: session.rootPath || slot.rootPath,
         projectName: session.projectName || slot.projectName,
+        contextTokens: Number(session.contextTokens) || 0,
+        contextLimit: Number(session.contextLimit) || 0,
         error: null,
         phase: null,
         status: "",
