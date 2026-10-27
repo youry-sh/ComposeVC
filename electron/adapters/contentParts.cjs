@@ -146,9 +146,10 @@ function modelSupportsImages(modelName, providerType) {
   // Explicit non-vision / tiny models
   if (
     /\b(text-embedding|embed|tts|whisper|moderation|dall-e|davinci|curie|babbage|ada)\b/.test(m) ||
-    // DeepSeek chat/reasoner are text-only, but deepseek-flash / V4 / VL accept
-    // OpenAI image_url parts (base64, URL or Files API) — keep those vision-capable.
-    (m.includes("deepseek") && !/v4|vl|vision|omni|multimodal|flash/i.test(m)) ||
+    // DeepSeek's current OpenAI-compatible models (deepseek-flash / V4 / chat)
+    // accept image_url parts; only the legacy text reasoning endpoints are
+    // treated as text-only. This also prevents the old base64-in-text fallback.
+    (m.includes("deepseek") && /reasoner|embedding|tts|whisper/i.test(m)) ||
     /\b(llama\b(?!-vision|-vl))/i.test(m) ||
     m.includes("mixtral") ||
     m.includes("mistral") ||
