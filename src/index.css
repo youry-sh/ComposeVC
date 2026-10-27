@@ -14469,6 +14469,44 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   box-shadow: inset 2px 0 0 color-mix(in srgb, var(--danger) 60%, transparent);
 }
 .expert-msg-assistant.is-stopped { opacity: .85; }
+.expert-msg-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 9px;
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--panel-header-bg) 45%, transparent);
+}
+.expert-msg-foot-meta {
+  margin-right: auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--terminal-font);
+  font-size: 8.5px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--ink-500);
+}
+.expert-ctx-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  min-width: 0;
+  margin-left: auto;
+}
+.expert-ctx-group .context-ring { margin: 0; }
+.expert-ctx-numbers {
+  font-family: var(--terminal-font);
+  font-size: 9.5px;
+  color: var(--ink-500);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.expert-ctx-group.is-warn .expert-ctx-numbers { color: var(--warn); }
+.expert-ctx-group.is-danger .expert-ctx-numbers { color: var(--danger); }
 .expert-msg-head {
   display: flex;
   align-items: center;
