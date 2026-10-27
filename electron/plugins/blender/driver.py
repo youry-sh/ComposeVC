@@ -2432,8 +2432,9 @@ def bake_plan(spec, out_dir):
     if not objects:
         warn("bake: no mesh objects")
         return []
-    use_engine("CYCLES")
     scene_obj = scene()
+    previous_engine = scene_obj.render.engine
+    use_engine("CYCLES")
     try:
         scene_obj.cycles.samples = as_int(spec.get("samples", 8), 8)
         scene_obj.cycles.use_denoising = False
@@ -2491,6 +2492,10 @@ def bake_plan(spec, out_dir):
             baked_materials.add(mat.name)
     if spec.get("apply") and results:
         apply_baked_textures(results, objects)
+    try:
+        scene_obj.render.engine = previous_engine
+    except Exception:
+        pass
     return results
 
 
@@ -2823,7 +2828,7 @@ def execute_plan(plan, out_dir):
                 continue
             fmt = str(spec.get("format", "GLB")).upper()
             preset = str(spec.get("preset", "")).lower()
-            wants_textures = preset in ("unity", "godot", "web", "unreal") or fmt in ("GLB", "GLTF")
+            wants_textures = preset in ("unity", "godot", "web", "unreal") or fmt in ("GLB", "GLTF", "FBX", "OBJ")
             if (
                 wants_textures
                 and not plan.get("bake")

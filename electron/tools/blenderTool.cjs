@@ -754,7 +754,7 @@ module.exports = {
     "(2) model at a sane real-world scale (unit METRIC), add bevels/weight so silhouette reads, ensure UVs, apply scale and set origin with optimize {apply_scale, origin:'center_floor'}; " +
     "(3) for game assets set quality {require_textures:true, require_uv:true, max_polygons:…} and export.preset unity|unreal|godot|web, then READ result.quality and FIX every issue and re-run until quality.game_ready=true; " +
     "(4) presentation matters: pick a lighting preset, a camera (hero/three_quarter), render 2–3 views, add render.effects bloom and optional turntable frames; " +
-    "(5) use downloaded CC0 maps (asset_search/asset_download) or generate_image textures for unique looks, and bake procedural materials for GLB when the target engine needs baked maps. " +
+    "(5) use downloaded CC0 maps (asset_search/asset_download) or generate_image textures for unique looks, and bake procedural materials for GLB when the target engine needs baked maps — GLB/GLTF/FBX/OBJ exports auto-bake procedural surfaces by default (set export.auto_bake=false to keep procedural-only). " +
     "ANIMATION: objects[].animation keyframes (location/rotation/scale), material emission animation, armatures[] with auto-weights, scene frame range — glTF/FBX export carries animations. " +
     "EFFECTS: render.effects bloom/glare + chromatic dispersion (compositor), emissive materials, hologram/transparent blends, world HDRI/sky, turntable renders. " +
     "Scene outputs are real files: .blend, PNG renders, GLB/GLTF/FBX/OBJ/USD/STL/PLY, baked textures — all inside the job folder and copyable to the project. " +
