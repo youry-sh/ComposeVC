@@ -1386,14 +1386,6 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
                             </button>
                             <button
                               type="button"
-                              className="expert-session-copy"
-                              title="Copy session ID"
-                              onClick={() => void copySessionId(session.sessionId)}
-                            >
-                              <Hash />
-                            </button>
-                            <button
-                              type="button"
                               className="expert-session-del"
                               title="Delete chat"
                               onClick={() => void deleteSession(modal.slotId, session.sessionId)}
@@ -1426,6 +1418,14 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
                             <span className="expert-session-meta">
                               {entry.messageCount} msgs · {formatWhen(entry.updatedAt)}
                             </span>
+                          </button>
+                          <button
+                            type="button"
+                            className="expert-session-copy"
+                            title="Copy saved session ID"
+                            onClick={() => void copySessionId(entry.sessionId)}
+                          >
+                            <Hash />
                           </button>
                           <button
                             type="button"
