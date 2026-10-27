@@ -545,6 +545,7 @@ async function runPython(userDataPath, config, code, options = {}) {
   current = await execute(userDataPath, current, blender.executable, args, {
     timeoutSec: config?.timeoutSec || 900,
     onProgress: options.onProgress,
+    signal: options.signal,
     version: blender.version,
   });
   return current;
@@ -655,6 +656,7 @@ function isBlenderInstalled(config) {
 module.exports = {
   PLUGIN_ID,
   DRIVER,
+  setProgressSink,
   detect,
   probe,
   isBlenderInstalled,
