@@ -7,7 +7,7 @@ import ThinkingIndicator from "./ThinkingIndicator";
 import { CustomTool, MainAgentMode, ProviderConfig } from "../types";
 import { HotkeyDefinition, matchesHotkey } from "../utils/hotkeys";
 import { Cable, ChevronLeft, ChevronRight, ChevronsLeft, LayoutGrid, Pencil, X } from "lucide-react";
-import { IcoPrompts } from "./topIcons";
+import { IcoDocs, IcoPrompts, IcoTerminal, IcoUsage } from "./topIcons";
 
 /** Ctrl+H (Cmd+H on macOS) — the chat switcher, matched by physical key. */
 const SWITCHER_HOTKEY: HotkeyDefinition = { code: "KeyH", modifiers: ["mod"] };
@@ -100,6 +100,8 @@ interface MultiIdeWorkspaceProps {
   onOpenPrompts?: () => void;
   /** Open the MCP connector modal from the rail footer quick buttons. */
   onOpenMcp?: () => void;
+  /** Open a workspace panel from the rail footer quick buttons (Terminal / Docs / Usage). */
+  onOpenPanel?: (panel: "terminal" | "docs" | "usage") => void;
   /** Bring the MultiIDE panel to the front (used by the Alt+1…4 workspace hotkeys). */
   onRequestFocus?: () => void;
 }
@@ -479,6 +481,7 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
   onOpenRunners,
   onOpenPrompts,
   onOpenMcp,
+  onOpenPanel,
   onRequestFocus,
 }) => {
   const [workspaceState, setWorkspaceState] = useState(() => loadWorkspaceState(slots));
@@ -1138,6 +1141,33 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
             >
               <Cable aria-hidden />
               <span>MCP</span>
+            </button>
+            <button
+              type="button"
+              className="chat-rail-quick-btn"
+              onClick={() => onOpenPanel?.("terminal")}
+              title="Terminal"
+            >
+              <IcoTerminal />
+              <span>Terminal</span>
+            </button>
+            <button
+              type="button"
+              className="chat-rail-quick-btn"
+              onClick={() => onOpenPanel?.("docs")}
+              title="Docs"
+            >
+              <IcoDocs />
+              <span>Docs</span>
+            </button>
+            <button
+              type="button"
+              className="chat-rail-quick-btn"
+              onClick={() => onOpenPanel?.("usage")}
+              title="Usage"
+            >
+              <IcoUsage />
+              <span>Usage</span>
             </button>
           </div>
           <span className="chat-rail-foot-count">
