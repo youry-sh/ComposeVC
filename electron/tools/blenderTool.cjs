@@ -4,6 +4,7 @@ const path = require("path");
 const blender = require("../plugins/blender/index.cjs");
 const blenderAddons = require("../plugins/blender/addons.cjs");
 const blenderAssets = require("../plugins/blender/assets.cjs");
+const imageTools = require("../vision/image.cjs");
 const registry = require("../plugins/registry.cjs");
 const store = require("../plugins/store.cjs");
 
@@ -34,6 +35,7 @@ const ACTIONS = [
   "asset_download",
   "asset_list",
   "asset_remove",
+  "preview",
 ];
 
 const PLAN_REFERENCE = `
