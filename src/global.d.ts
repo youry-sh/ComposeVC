@@ -256,6 +256,164 @@ declare global {
         activeWorkspaceId?: string | null;
         ui?: MultiIdeDiskUi;
       }) => { ok: boolean; state?: MultiIdeDiskState; error?: string };
+      // Expert workspace — whole-project study + prompt composer (disk-backed).
+      expertLoadState: () => Promise<{
+        version: number;
+        ui: { activeSlot?: string };
+        slots: Array<{
+          id: string;
+          rootPath: string | null;
+          projectName: string | null;
+          selectedModelId: string | null;
+          sessionId: string | null;
+          draft: string;
+          updatedAt: number;
+        }>;
+        saved: Array<{
+          id: string;
+          name: string;
+          sessionId: string;
+          title: string;
+          rootPath: string | null;
+          projectName: string | null;
+          messageCount: number;
+          createdAt: number;
+          updatedAt: number;
+        }>;
+      }>;
+      expertSaveState: (patch: {
+        slots?: Array<Record<string, unknown>>;
+        ui?: Record<string, unknown>;
+        saved?: Array<Record<string, unknown>>;
+      }) => Promise<{ ok: boolean; error?: string }>;
+      expertLoadStateSync: () => {
+        version: number;
+        ui: { activeSlot?: string };
+        slots: Array<{
+          id: string;
+          rootPath: string | null;
+          projectName: string | null;
+          selectedModelId: string | null;
+          sessionId: string | null;
+          draft: string;
+          updatedAt: number;
+        }>;
+        saved: Array<Record<string, unknown>>;
+      };
+      expertSaveStateSync: (patch: {
+        slots?: Array<Record<string, unknown>>;
+        ui?: Record<string, unknown>;
+        saved?: Array<Record<string, unknown>>;
+      }) => { ok: boolean; error?: string };
+      expertSend: (payload: {
+        slotId: string;
+        task: string;
+        modelId?: string | null;
+        rootPath?: string | null;
+        projectName?: string | null;
+        sessionId?: string | null;
+      }) => Promise<{
+        ok: boolean;
+        error?: string;
+        runId?: string;
+        sessionId?: string;
+        title?: string;
+        stopped?: boolean;
+        contextTokens?: number;
+        contextLimit?: number;
+        study?: Record<string, unknown> | null;
+        message?: {
+          id: string;
+          role: "user" | "assistant";
+          content: string;
+          createdAt: number;
+          meta?: Record<string, unknown>;
+        };
+      }>;
+      expertStop: (slotId: string) => Promise<{ ok: boolean; error?: string }>;
+      expertLoadSession: (sessionId: string) => Promise<{
+        sessionId: string;
+        title: string;
+        rootPath: string | null;
+        projectName: string | null;
+        messages: Array<{
+          id: string;
+          role: "user" | "assistant";
+          content: string;
+          createdAt: number;
+          meta?: Record<string, unknown>;
+        }>;
+        updatedAt: number;
+        contextTokens?: number;
+        contextLimit?: number;
+      } | null>;
+      expertListSessions: (rootPath: string | null) => Promise<
+        Array<{
+          sessionId: string;
+          title: string;
+          rootPath: string | null;
+          projectName: string | null;
+          messageCount: number;
+          promptCount: number;
+          updatedAt: number;
+          createdAt: number;
+        }>
+      >;
+      expertNewSession: (input: {
+        rootPath?: string | null;
+        projectName?: string | null;
+        slotId?: string | null;
+      }) => Promise<{ ok: boolean; session?: Record<string, unknown>; error?: string }>;
+      expertDeleteSession: (sessionId: string) => Promise<{ deleted: boolean }>;
+      expertRenameSession: (
+        sessionId: string,
+        title: string
+      ) => Promise<{ ok: boolean; session?: Record<string, unknown>; error?: string }>;
+      expertSaveSession: (
+        sessionId: string,
+        name?: string
+      ) => Promise<{ ok: boolean; entry?: Record<string, unknown>; error?: string }>;
+      expertListSaved: () => Promise<
+        Array<{
+          id: string;
+          name: string;
+          sessionId: string;
+          title: string;
+          rootPath: string | null;
+          projectName: string | null;
+          messageCount: number;
+          createdAt: number;
+          updatedAt: number;
+        }>
+      >;
+      expertDeleteSaved: (savedId: string) => Promise<{ deleted: boolean }>;
+      expertOpenSaved: (input: {
+        savedId: string;
+        slotId?: string | null;
+      }) => Promise<{ ok: boolean; session?: Record<string, unknown>; error?: string }>;
+      expertCopySession: (payload: {
+        sessionId: string;
+      }) => Promise<{ ok: boolean; messageCount?: number; error?: string }>;
+      expertPasteSession: (input: {
+        rootPath?: string | null;
+        projectName?: string | null;
+        slotId?: string | null;
+      }) => Promise<{ ok: boolean; session?: Record<string, unknown>; error?: string }>;
+      expertStudyStatus: (rootPath: string | null) => Promise<{
+        ok: boolean;
+        study?: Record<string, unknown>;
+        meta?: Record<string, number | string>;
+      }>;
+      expertReadDossier: (rootPath: string | null) => Promise<{
+        ok: boolean;
+        error?: string;
+        meta?: Record<string, number | string>;
+        dossier?: Record<string, unknown> | null;
+        text?: string;
+        digest?: string;
+      }>;
+      expertRestudy: (rootPath: string | null) => Promise<{ ok: boolean; error?: string }>;
+      onExpertProgress: (callback: (payload: Record<string, unknown>) => void) => () => void;
       onOpenChatSwitcher: (callback: () => void) => () => void;
       onFoldWebDock: (callback: () => void) => () => void;
       onStorageOpen: (callback: () => void) => () => void;
