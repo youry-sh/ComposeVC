@@ -34,7 +34,6 @@ import {
   Sparkles,
   Trash2,
   X,
-  ListTodo,
   Clock,
   Zap,
 } from "lucide-react";
@@ -50,7 +49,6 @@ import {
   CompactionInfo,
   CustomTool,
   LabInPackage,
-  ProjectTask,
   TodoItem,
   MainAgentMode,
   TelegramBotConfig,
@@ -172,8 +170,6 @@ interface ChatPanelProps {
   onSelectModel: (modelId: string) => void;
   agentMode: MainAgentMode;
   onSelectAgentMode: (mode: MainAgentMode) => void;
-  thinkingMaxEnabled?: boolean;
-  onToggleThinkingMax?: () => void;
   /** Send text and optional images (data URLs) together. Images-only is allowed. */
   onSend: (
     content: string,
@@ -3994,8 +3990,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   onSelectModel,
   agentMode,
   onSelectAgentMode,
-  thinkingMaxEnabled = false,
-  onToggleThinkingMax,
   onSend,
   onStop,
   labels,
@@ -4085,7 +4079,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   const [autoInsertModalOpen, setAutoInsertModalOpen] = useState(false);
   const [instructionsModalOpen, setInstructionsModalOpen] = useState(false);
   const [telegramModalOpen, setTelegramModalOpen] = useState(false);
-  const [projectTasksModalOpen, setProjectTasksModalOpen] = useState(false);
   const [labInPackageModalOpen, setLabInPackageModalOpen] = useState(false);
   const [hasProjectInstructions, setHasProjectInstructions] = useState(false);
   const [telegramHeaderStatus, setTelegramHeaderStatus] = useState<TelegramBotStatus | null>(null);
@@ -4857,17 +4850,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
           )}
           <button
             onClick={() => {
-              setShowHistory(false);
-              setTelegramModalOpen(false);
-              setProjectTasksModalOpen(true);
-            }}
-            title={rootPath ? "Project tasks" : "Project tasks (open a folder first)"}
-            className={`chat-header-icon ${projectTasksModalOpen ? "is-active" : ""}`}
-          >
-            <ListTodo className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={() => {
               setShowHistory((value) => {
                 const next = !value;
                 if (next) onRefreshSessions?.();
@@ -4883,7 +4865,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             <button
               onClick={() => {
                 setShowHistory(false);
-                setProjectTasksModalOpen(false);
                 setTelegramModalOpen(true);
               }}
               title={
@@ -4952,10 +4933,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
 
       {chatBookmarksModalOpen && (
         <ChatBookmarksModal activeSessionId={activeSessionId} onClose={() => setChatBookmarksModalOpen(false)} />
-      )}
-
-      {projectTasksModalOpen && (
-        <ProjectTasksModal rootPath={rootPath} onClose={() => setProjectTasksModalOpen(false)} />
       )}
 
       {telegramModalOpen && telegramSlotId && (
@@ -5523,16 +5500,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
               aria-label="Attach images"
             >
               <ImagePlus className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={onToggleThinkingMax}
-              title={thinkingMaxEnabled ? "Thinking-max: always on" : "Enable Thinking-max for every request"}
-              aria-label="Toggle Thinking-max"
-              aria-pressed={thinkingMaxEnabled}
-              className={`chat-composer-icon-btn ${thinkingMaxEnabled ? "bg-ink-200 text-ink-950 ring-1 ring-ink-400" : ""}`}
-            >
-              <BrainCircuit className="w-3.5 h-3.5" />
             </button>
             <McpConnector rootPath={rootPath} />
             <button
