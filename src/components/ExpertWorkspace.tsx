@@ -670,7 +670,7 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
       if (res?.ok) {
         if (res.sessionId) patchSlot(slotId, { sessionId: res.sessionId });
         setModal(null);
-        pushToast("Session saved");
+        pushToast("Session saved — History → Saved");
       } else {
         pushToast(res?.error || "Could not save the session");
       }
@@ -794,8 +794,8 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
           sessionId,
         });
         const resolvedSessionId = res?.sessionId || sessionId;
-        if (sessionId) {
-          const session = await window.lopster?.expertLoadSession?.(sessionId);
+        if (resolvedSessionId) {
+          const session = await window.lopster?.expertLoadSession?.(resolvedSessionId);
           if (session) {
             patchSlot(slotId, {
               sessionId: session.sessionId,
