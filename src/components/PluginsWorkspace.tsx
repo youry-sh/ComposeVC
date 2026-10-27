@@ -713,7 +713,20 @@ const PluginsWorkspace: React.FC = () => {
 
               <Section
                 title="Blender-аддоны"
-                actions={<span className="font-mono text-[10px] text-ink-500">{draft?.addons.length || 0}</span>}
+                actions={
+                  <>
+                    <span className="font-mono text-[10px] text-ink-500">{draft?.addons.length || 0}</span>
+                    <button
+                      type="button"
+                      className={primaryBtn}
+                      onClick={() => void saveConfig()}
+                      disabled={!dirty || saving}
+                    >
+                      {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                      Сохранить
+                    </button>
+                  </>
+                }
               >
                 <div className="mb-2 text-[10px] leading-4 text-ink-500">
                   Агент ставит и включает аддоны сам: <span className="font-mono">addon_search</span> →{" "}

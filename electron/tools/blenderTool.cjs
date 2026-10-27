@@ -631,7 +631,11 @@ async function run(action, input, context) {
       const jobs = await store.listJobs(userDataPath, { limit, pluginId: input.plugin_id || undefined });
       const text = jobs.length
         ? jobs
-            .map((job) => `${job.status === "succeeded" ? "1" : "0"} ${job.id} [${job.kind}] ${job.title || ""} ${job.summary || ""}`.trim())
+            .map(
+              (job) =>
+                `${job.status === "succeeded" ? "1" : "0"} ${job.id} [${job.kind}] ${job.title || ""}` +
+                `${job.quality ? ` QA${job.quality.score}${job.quality.game_ready ? "" : "!"}` : ""} ${job.summary || ""}`.trim()
+            )
             .join("\n")
         : "Задач пока нет.";
       return truth(true, text, {
@@ -646,6 +650,8 @@ async function run(action, input, context) {
           preview: job.previewPath,
           exports: job.exports.map((item) => item.format),
           error: job.error,
+          quality: job.quality ? { score: job.quality.score, game_ready: job.quality.game_ready, issues: job.quality.issues } : null,
+          addons: (job.addons || []).map((entry) => entry.module || entry.path).filter(Boolean),
         })),
       });
     }

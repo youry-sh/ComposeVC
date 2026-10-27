@@ -4122,8 +4122,8 @@ function buildBlenderDemoPlan(config) {
     quality: { require_textures: true, require_uv: true },
     render: {
       engine: config?.engine || "EEVEE",
-      resolution: [resolution.width, resolution.height],
-      samples: Math.min(96, config?.samples || 64),
+      resolution: [width, height],
+      samples: Math.min(32, config?.samples || 32),
       views: ["hero", "three_quarter"],
       turntable: { frames: 3 },
       effects: { bloom: { type: "Fog Glow", threshold: 0.8, strength: 0.7, size: 0.7 }, chromatic: 0.02 },
