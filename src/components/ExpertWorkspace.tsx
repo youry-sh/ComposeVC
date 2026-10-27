@@ -734,7 +734,7 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
       <div className={`expert-study ${studied ? "is-ready" : partial ? "is-partial" : ""}`}>
         <span className="expert-study-dot" aria-hidden />
         <span className="expert-study-label">
-          {slot.running && slot.phase === "study"
+          {slot.running
             ? "STUDYING"
             : studied
               ? "STUDIED"
@@ -755,6 +755,7 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
             <button
               type="button"
               className="expert-study-reset is-confirm"
+              disabled={slot.running}
               onClick={() => void resetStudy(slot.id)}
               title="Confirm: delete the stored study"
             >
