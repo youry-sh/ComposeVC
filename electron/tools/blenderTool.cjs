@@ -518,6 +518,8 @@ async function run(action, input, context) {
         archive = await blenderAddons.downloadAddonArchive(userDataPath, resolved);
       }
       if (!archive?.path) {
+        const moduleOnly = pick(input, "module", "addon");
+        if (moduleOnly) return run("addon_enable", { ...input, module: String(moduleOnly) }, context);
         throw new Error(
           "action=addon_install требует path (локальный zip), url (прямая ссылка) или pkg_id из каталога extensions.blender.org."
         );
@@ -851,6 +853,23 @@ module.exports = {
       open_blender: "open_gui",
       folder: "open_output",
       copy: "copy_artifacts",
+      list_addons: "addons",
+      addon_list: "addons",
+      search_addons: "addon_search",
+      find_addon: "addon_search",
+      install_addon: "addon_install",
+      enable_addon: "addon_enable",
+      disable_addon: "addon_disable",
+      plugins_addons: "addons",
+      search_assets: "asset_search",
+      find_asset: "asset_search",
+      texture_search: "asset_search",
+      asset_find: "asset_search",
+      download_asset: "asset_download",
+      assets: "asset_list",
+      list_assets: "asset_list",
+      library: "asset_list",
+      delete_asset: "asset_remove",
     };
     if (aliases[action]) action = aliases[action];
     if (!ACTIONS.includes(action)) throw new Error(`unknown action "${action}". Valid: ${ACTIONS.join(", ")}`);
