@@ -304,7 +304,7 @@ function buildUsage(metadata, folder) {
     const material = { name: metadata.name || metadata.id, base_color: "#ffffff", roughness: 0.5, metallic: 0 };
     if (byKey.base) material.texture = { type: "image", path: byKey.base, projection: "uv", uv_scale: 1 };
     if (byKey.normal) material.normal_map = { path: byKey.normal, strength: 1 };
-    if (byKey.roughness) material.roughness_texture = { path: byKey.roughness, roughness_min: 0.15, roughness_max: 0.95 };
+    if (byKey.roughness) material.roughness_texture = { path: byKey.roughness };
     if (byKey.metallic) material.metallic_texture = { path: byKey.metallic };
     if (!byKey.base) usage.notes.push("Нет diffuse-карты: задайте base_color вручную.");
     usage.material = material;
