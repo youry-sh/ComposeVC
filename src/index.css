@@ -14732,12 +14732,13 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   margin-top: 6px;
   min-width: 0;
 }
-.expert-composer-row .model-picker { flex: 0 1 auto; min-width: 0; max-width: 190px; }
+.expert-composer-row .model-picker { flex: 1 1 110px; min-width: 0; max-width: 190px; }
 .expert-ctx {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  flex: none;
+  flex: 0 1 auto;
+  min-width: 0;
   height: 22px;
   margin-left: auto;
   padding: 0 6px;
@@ -14749,6 +14750,11 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   letter-spacing: .02em;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+}
+.expert-ctx-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .expert-ctx-bar {
   width: 24px;
