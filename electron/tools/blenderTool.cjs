@@ -1,4 +1,5 @@
 const fs = require("fs");
+const path = require("path");
 
 const blender = require("../plugins/blender/index.cjs");
 const blenderAddons = require("../plugins/blender/addons.cjs");
@@ -140,6 +141,12 @@ function pick(input, ...keys) {
     if (value !== undefined && value !== null && value !== "") return value;
   }
   return undefined;
+}
+
+function safeFileName(value) {
+  return String(value || "addon")
+    .replace(/[^a-z0-9._-]/gi, "_")
+    .slice(0, 60) || "addon";
 }
 
 function parsePlan(input, config) {
@@ -453,6 +460,157 @@ async function run(action, input, context) {
         signal,
       });
       return truth(job.status === "succeeded", jobSummary(job), jobPayload(job));
+    }
+    case "addons": {
+      let probe = null;
+      try {
+        probe = await blender.probe(userDataPath, config);
+      } catch (error) {
+        probe = { ok: false, error: error instanceof Error ? error.message : String(error) };
+      }
+      const configured = Array.isArray(config.addons) ? config.addons : [];
+      const installed = Array.isArray(probe?.addons) ? probe.addons : [];
+      const lines = [
+        `включаются плагином автоматически: ${configured.length ? configured.join(", ") : "—"}`,
+        `загружено в Blender: ${installed.length}`,
+      ];
+      if (installed.length) lines.push(installed.slice(0, 60).join(", "));
+      if (probe && probe.error) lines.push(`probe: ${probe.error}`);
+      return truth(Boolean(probe?.ok), lines.join("\n"), { configured, installed, probe });
+    }
+    case "addon_search": {
+      const query = String(pick(input, "query", "q", "search") || "").trim();
+      const limit = Math.max(1, Math.min(50, Number(input.limit) || 20));
+      const found = await blenderAddons.searchExtensions(query, { limit });
+      const text = found.results.length
+        ? found.results
+            .map(
+              (entry) =>
+                `${entry.id} — ${entry.name}${entry.version ? ` v${entry.version}` : ""}` +
+                `${entry.blenderMin ? ` (Blender ≥${entry.blenderMin})` : ""} — ${entry.tagline}`
+            )
+            .join("\n") + `\n\nУстановка: action=addon_install pkg_id="<id>" (или url="<archive_url>").`
+        : `Ничего не найдено по запросу "${query}". Каталог: https://extensions.blender.org`;
+      return truth(found.results.length > 0, text, found);
+    }
+    case "addon_install": {
+      const localPath = pick(input, "path", "file", "zip");
+      const sourceUrl = pick(input, "url", "archive_url");
+      const pkgId = pick(input, "pkg_id", "extension", "package", "id", "name");
+      let archive = null;
+      if (localPath) {
+        const file = String(localPath);
+        archive = { path: file, id: path.basename(file, path.extname(file)), name: path.basename(file) };
+      } else if (sourceUrl) {
+        const url = String(sourceUrl);
+        let base = "addon";
+        try {
+          base = path.basename(new URL(url).pathname).replace(/\.zip$/i, "");
+        } catch {
+          /* keep default */
+        }
+        const name = safeFileName(base);
+        const target = path.join(blenderAddons.addonsDir(userDataPath), `${name}.zip`);
+        const saved = await blenderAddons.downloadFile(url, target);
+        archive = { ...saved, id: name, name };
+      } else if (pkgId) {
+        const resolved = await blenderAddons.resolveExtension(String(pkgId));
+        archive = await blenderAddons.downloadAddonArchive(userDataPath, resolved);
+      }
+      if (!archive?.path) {
+        throw new Error(
+          "action=addon_install требует path (локальный zip), url (прямая ссылка) или pkg_id из каталога extensions.blender.org."
+        );
+      }
+      const job = await blender.runAddonJob(
+        userDataPath,
+        config,
+        {
+          path: archive.path,
+          enable: input.enable !== false,
+          title: `Аддон: ${archive.name || archive.id || path.basename(archive.path)}`,
+        },
+        { onProgress, signal }
+      );
+      const enabled = job.addonsEnabled || [];
+      const text =
+        job.status === "succeeded"
+          ? `Аддон установлен: ${archive.name || archive.id}\n${enabled.length ? `включено: ${enabled.join(", ")}\n` : ""}${jobSummary(job)}`
+          : `Не удалось установить аддон: ${job.error || "неизвестная ошибка"}\n${(job.logTail || "").slice(-1600)}`;
+      return truth(job.status === "succeeded", text, jobPayload(job, { addonsEnabled: enabled, archive }));
+    }
+    case "addon_enable":
+    case "addon_disable": {
+      const module = String(pick(input, "module", "addon", "name", "id", "package") || "").trim();
+      if (!module) throw new Error(`action=${action} требует module (имя аддона).`);
+      const enable = action === "addon_enable";
+      const job = await blender.runAddonJob(
+        userDataPath,
+        config,
+        { module, enable, title: `${enable ? "Включить" : "Выключить"} аддон ${module}` },
+        { onProgress, signal }
+      );
+      const enabled = job.addonsEnabled || [];
+      const text =
+        job.status === "succeeded"
+          ? `${enable ? "Включён" : "Выключен"} аддон ${module}\n${enabled.length ? `активно: ${enabled.join(", ")}` : ""}`
+          : `Не удалось изменить аддон: ${job.error || "неизвестная ошибка"}\n${(job.logTail || "").slice(-1200)}`;
+      return truth(job.status === "succeeded", text, jobPayload(job, { addonsEnabled: enabled }));
+    }
+    case "asset_search": {
+      const found = await blenderAssets.searchAssets({
+        type: pick(input, "type", "asset_type", "kind") || "textures",
+        query: pick(input, "query", "q", "search") || "",
+        categories: input.categories || "",
+        limit: Number(input.limit) || 20,
+      });
+      const text = found.results.length
+        ? found.results
+            .map(
+              (entry) =>
+                `${entry.id} — ${entry.name}${entry.categories?.length ? ` [${entry.categories.slice(0, 4).join(", ")}]` : ""}`
+            )
+            .join("\n") + `\n\nСкачать: action=asset_download id="<id>" type="${found.type}" resolution="1k|2k|4k".`
+        : `Ничего не найдено (${found.type}).`;
+      return truth(found.results.length > 0, text, found);
+    }
+    case "asset_download": {
+      const id = String(pick(input, "id", "asset", "name") || "").trim();
+      if (!id) throw new Error("action=asset_download требует id ассета (из asset_search).");
+      const result = await blenderAssets.downloadAsset(userDataPath, {
+        id,
+        type: pick(input, "type", "asset_type", "kind") || "textures",
+        resolution: pick(input, "resolution", "res") || "1k",
+        force: input.force === true,
+      });
+      const usage = JSON.stringify(result.usage, null, 2);
+      const text =
+        `Ассет ${result.asset.name} (${result.asset.type}, ${result.asset.resolution}) → ${result.asset.folder}\n` +
+        `файлов: ${result.asset.files.length}${result.asset.errors?.length ? ` (ошибки: ${result.asset.errors.join(" | ")})` : ""}\n` +
+        `Лицензия: ${result.asset.license}. Источник: ${result.asset.source}\n\n` +
+        `Готовый фрагмент плана:\n${usage.slice(0, 6000)}`;
+      return truth(Boolean(result.ok), text, result);
+    }
+    case "asset_list": {
+      const listed = await blenderAssets.listAssets(userDataPath, {
+        type: pick(input, "type", "asset_type", "kind") || "",
+        limit: Number(input.limit) || 100,
+      });
+      const text = listed.assets.length
+        ? listed.assets
+            .map((asset) => `${asset.type}/${asset.id} — ${asset.name} (${asset.resolution}, ${asset.files?.length || 0} файлов)`)
+            .join("\n")
+        : "Локальная библиотека ассетов пуста — используйте asset_search + asset_download.";
+      return truth(true, text, listed);
+    }
+    case "asset_remove": {
+      const id = String(pick(input, "id", "asset", "name") || "").trim();
+      if (!id) throw new Error("action=asset_remove требует id ассета.");
+      const removed = await blenderAssets.removeAsset(userDataPath, {
+        id,
+        type: pick(input, "type", "asset_type", "kind") || "textures",
+      });
+      return truth(true, `Ассет ${id} удалён из библиотеки.`, removed);
     }
     case "jobs": {
       const limit = Math.max(1, Math.min(200, Number(input.limit) || 20));
