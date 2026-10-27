@@ -1005,16 +1005,14 @@ function createExpertService(deps = {}) {
     ipcMain.handle("expert:copySession", (_event, payload) => {
       const session = store.readSession(userData(), payload?.sessionId);
       if (!session) return { ok: false, error: "Session not found" };
-      const pack = {
-        type: "composevc-expert-session",
-        version: store.VERSION,
-        title: session.title,
-        rootPath: session.rootPath,
-        projectName: session.projectName,
-        messages: session.messages,
+      // Same contract as the main chat: the clipboard carries the session id,
+      // and Paste makes a fresh copy of that session.
+      clipboard.writeText(session.sessionId);
+      return {
+        ok: true,
+        sessionId: session.sessionId,
+        messageCount: session.messages.length,
       };
-      clipboard.writeText(JSON.stringify(pack));
-      return { ok: true, messageCount: session.messages.length };
     });
 
     ipcMain.handle("expert:pasteSession", (_event, input) => {
@@ -1027,12 +1025,17 @@ function createExpertService(deps = {}) {
       const text = String(raw || "").trim();
       if (!text) return { ok: false, error: "Clipboard is empty" };
 
+      const copyTitle = (title) => {
+        const base = String(title || "").trim() || "Expert chat";
+        return /^copy of\s/i.test(base) ? base : `Copy of ${base}`;
+      };
+
       const cloneSession = (session) =>
         store.createSession(userData(), {
           rootPath: input?.rootPath || session.rootPath || null,
           projectName: input?.projectName || session.projectName || null,
           modelId: input?.modelId || session.modelId || null,
-          title: session.title,
+          title: copyTitle(session.title),
           messages: session.messages,
           slotId: input?.slotId || null,
         });
@@ -1067,7 +1070,7 @@ function createExpertService(deps = {}) {
       const session = store.createSession(userData(), {
         rootPath: input?.rootPath || pack.rootPath || null,
         projectName: input?.projectName || pack.projectName || null,
-        title: pack.title || "Pasted session",
+        title: copyTitle(pack.title || "Expert chat"),
         messages: pack.messages,
         slotId: input?.slotId || null,
       });
