@@ -618,6 +618,74 @@ async function runPlan(userDataPath, config, plan, options = {}) {
   return current;
 }
 
+const IMAGE_EXTS = new Set([".png", ".jpg", ".jpeg", ".webp"]);
+const EXPORT_EXTS = {
+  ".glb": "GLB",
+  ".gltf": "GLTF",
+  ".fbx": "FBX",
+  ".obj": "OBJ",
+  ".usd": "USD",
+  ".usdc": "USD",
+  ".usdz": "USD",
+  ".stl": "STL",
+  ".ply": "PLY",
+};
+
+async function collectJobArtifacts(jobDir) {
+  const renders = [];
+  const bakes = [];
+  const exportsList = [];
+  let blendPath = "";
+  async function walk(folder) {
+    let entries = [];
+    try {
+      entries = await fs.promises.readdir(folder, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      const full = path.join(folder, entry.name);
+      if (entry.isDirectory()) {
+        await walk(full);
+        continue;
+      }
+      const ext = path.extname(entry.name).toLowerCase();
+      const rel = path.relative(jobDir, full).replace(/\\/g, "/");
+      if (IMAGE_EXTS.has(ext)) {
+        const record = { name: entry.name, path: full };
+        if (/(^|\/)textures\//i.test(rel) || /^cvbake_/i.test(entry.name)) bakes.push(record);
+        else renders.push(record);
+        continue;
+      }
+      if (ext === ".blend") {
+        if (!blendPath || entry.name.toLowerCase() === "scene.blend") blendPath = full;
+        continue;
+      }
+      const format = EXPORT_EXTS[ext];
+      if (format) {
+        let bytes = 0;
+        try {
+          bytes = (await fs.promises.stat(full)).size;
+        } catch {
+          bytes = 0;
+        }
+        exportsList.push({ format, path: full, bytes });
+      }
+    }
+  }
+  await walk(jobDir);
+  renders.sort((a, b) => a.path.localeCompare(b.path));
+  bakes.sort((a, b) => a.path.localeCompare(b.path));
+  exportsList.sort((a, b) => a.path.localeCompare(b.path));
+  return {
+    renders,
+    bakes,
+    exports: exportsList,
+    blendPath,
+    previewPath: renders[0]?.path || "",
+  };
+}
+
 async function runPython(userDataPath, config, code, options = {}) {
   const blender = requireBlender(config);
   const script = String(code || "").trim();
@@ -645,6 +713,20 @@ async function runPython(userDataPath, config, code, options = {}) {
     onProgress: options.onProgress,
     signal: options.signal,
     version: blender.version,
+  });
+  const artifacts = await collectJobArtifacts(current.dir);
+  const parts = [];
+  if (artifacts.renders.length) parts.push(`${artifacts.renders.length} рендер(ов)`);
+  if (artifacts.exports.length) parts.push(artifacts.exports.map((item) => item.format).join("/"));
+  if (artifacts.blendPath) parts.push(".blend");
+  if (artifacts.bakes.length) parts.push(`${artifacts.bakes.length} текстур`);
+  current = await store.updateJob(userDataPath, current.id, {
+    renders: artifacts.renders,
+    bakes: artifacts.bakes,
+    exports: artifacts.exports,
+    blendPath: artifacts.blendPath,
+    previewPath: artifacts.previewPath || current.previewPath,
+    summary: parts.length ? `Python: ${parts.join(" · ")}` : current.summary,
   });
   return current;
 }
