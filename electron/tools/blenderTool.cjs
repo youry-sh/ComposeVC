@@ -749,6 +749,7 @@ module.exports = {
   name: "blender",
   description:
     "Full control of the installed Blender via background bpy — build production-quality, game-ready 3D assets, materials, effects and animations. " +
+    "The plugin implementation is INTERNAL (shipped inside a compiled EXE without Python sources): do NOT read, grep, open or edit electron/plugins/**, driver.py, addons.cjs or assets.cjs to understand behavior, and never tell the user to inspect them — this description plus the plan schema is the complete public contract; use status/probe/job/addons for diagnostics. " +
     "Use it whenever the user wants a 3D model, prop, weapon, environment, character base, texture work, render, animation, or an export for Unity/Unreal/Godot/web. " +
     "Actions: status, probe, scene (BUILD from a declarative plan), python (arbitrary bpy script — full power, no limits), render, export, import, inspect, bake, " +
     "jobs/job/cancel/delete_job, config, copy_artifacts, open_output, open_gui, " +
