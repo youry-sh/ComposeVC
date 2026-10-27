@@ -1,8 +1,8 @@
 /**
- * package-dist.mjs — harden + stage ANTI + electron-builder (Windows NSIS Setup EXE)
+ * package-dist.mjs — stage ANTI + package Electron (Windows NSIS Setup EXE)
  *
- * Ships:
- *   - OBFUSCATED electron main (asar) + minified vite dist renderer
+ * Sits in:
+ *   - PLAIN electron main-process sources (no obfuscation) + minified vite dist renderer
  *   - anti/bin (stripped -ldflags -s -w), engine, extensions, config
  *   - Electron fuses: no RunAsNode / inspect / plain app folder
  *
@@ -23,8 +23,6 @@
  *   node scripts/package-dist.mjs
  *   node scripts/package-dist.mjs --dir
  *   node scripts/package-dist.mjs --skip-web
- *   node scripts/package-dist.mjs --skip-harden
- *   node scripts/package-dist.mjs --light-harden
  *   node scripts/package-dist.mjs --skip-anti-build
  *   node scripts/package-dist.mjs --stage-only
  */
@@ -41,8 +39,6 @@ const hardElectron = path.join(root, "release-assets", "electron-hard");
 const args = new Set(process.argv.slice(2));
 const skipWeb = args.has("--skip-web");
 const skipAntiBuild = args.has("--skip-anti-build");
-const skipHarden = args.has("--skip-harden");
-const lightHarden = args.has("--light-harden");
 const dirOnly = args.has("--dir");
 const stageOnly = args.has("--stage-only");
 const help = args.has("--help") || args.has("-h");
