@@ -335,6 +335,52 @@ function normalizeProviderType(type) {
   return "openai";
 }
 
+/**
+ * Dedicated vision runner for the `vision` tool. Reuses the user's configured
+ * providers/models and the same adapters as chat, but never writes a chat
+ * session or registers usage as a typed prompt.
+ */
+visionBridge.setVisionExecutor(async (request = {}) => {
+  const config = await readProviderConfig();
+  if (request.kind === "models") {
+    return {
+      visionModelId: config.aiRuntime?.visionModelId || "",
+      selectedModelId: config.selectedModelId || "",
+      models: (config.models || []).map((model) => ({
+        id: model.id,
+        name: model.name || model.id,
+        providerId: model.providerId,
+        supportsImages: modelSupportsImages(model.name || model.id, "openai"),
+      })),
+    };
+  }
+  const candidates = [request.modelId, config.aiRuntime?.visionModelId, request.fallbackModelId, config.selectedModelId]
+    .map((value) => (typeof value === "string" ? value.trim() : ""))
+    .filter(Boolean);
+  let model = null;
+  for (const candidate of candidates) {
+    model = (config.models || []).find((item) => item.id === candidate || item.name === candidate) || null;
+    if (model) break;
+  }
+  if (!model) throw new Error("Vision model not found in provider config.");
+  const provider = (config.providers || []).find((item) => item.id === model.providerId);
+  if (!provider) throw new Error(`Provider for vision model '${model.name || model.id}' not found.`);
+  if (!provider.apiKey) throw new Error(`API key is empty for ${provider.name || provider.id}.`);
+  const adapter = getProviderAdapter(provider.type || "openai");
+  const result = await adapter.execute({
+    provider,
+    model,
+    messages: Array.isArray(request.messages) ? request.messages : [],
+    tools: [],
+  });
+  return {
+    text: result?.text || "",
+    model: model.name || model.id,
+    usage: result?.usage || null,
+    supportsImages: modelSupportsImages(model.name || model.id, "openai"),
+  };
+});
+
 function isOpenAIProviderType(type) {
   return !type || type === "openai" || type === "openai-compat" || type === "openai-compatible";
 }
@@ -382,6 +428,12 @@ function normalizeAiRuntimeConfig(config) {
       : typeof config?.inline_hint_model_id === "string"
         ? config.inline_hint_model_id.trim()
         : "";
+  const visionModelId =
+    typeof config?.visionModelId === "string"
+      ? config.visionModelId.trim()
+      : typeof config?.vision_model_id === "string"
+        ? config.vision_model_id.trim()
+        : "";
   return {
     agentCompletionNotifications: config?.agentCompletionNotifications !== false,
     maxContextTokens,
@@ -393,6 +445,7 @@ function normalizeAiRuntimeConfig(config) {
     cloudflareApiToken,
     inlineHintEnabled: config?.inlineHintEnabled === true,
     inlineHintModelId,
+    visionModelId,
   };
 }
 
