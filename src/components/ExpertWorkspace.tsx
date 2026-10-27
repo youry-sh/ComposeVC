@@ -1073,17 +1073,6 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
                   </span>
                 ) : null}
                 <span className="expert-msg-actions">
-                  {isPrompt ? (
-                    <button
-                      type="button"
-                      className="expert-copy"
-                      onClick={() => void copyPrompt(message.id, message.content)}
-                      title="Copy the whole prompt"
-                    >
-                      {copiedId === message.id ? <Check /> : <Copy />}
-                      <span>{copiedId === message.id ? "copied" : "copy"}</span>
-                    </button>
-                  ) : null}
                   <span className="expert-msg-time">{formatWhen(message.createdAt)}</span>
                 </span>
               </div>
@@ -1096,6 +1085,22 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
                   <MarkdownContent content={message.content} />
                 </div>
               )}
+              {isPrompt ? (
+                <div className="expert-msg-foot">
+                  <span className="expert-msg-foot-meta">
+                    {meta.stopped ? "stopped" : "whole prompt · markdown"}
+                  </span>
+                  <button
+                    type="button"
+                    className="expert-copy"
+                    onClick={() => void copyPrompt(message.id, message.content)}
+                    title="Copy the whole prompt"
+                  >
+                    {copiedId === message.id ? <Check /> : <Copy />}
+                    <span>{copiedId === message.id ? "copied" : "copy prompt"}</span>
+                  </button>
+                </div>
+              ) : null}
             </article>
           );
         })}
