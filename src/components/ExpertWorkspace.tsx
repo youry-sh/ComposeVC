@@ -454,7 +454,7 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
         error: null,
         phase: "scan",
         status: "Scanning every file in the project…",
-        study: { ...(slot.study || {}), status: "studying" },
+        study: { status: "studying" },
       });
       try {
         const res = await window.lopster.expertStudy({
