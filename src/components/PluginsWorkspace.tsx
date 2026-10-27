@@ -703,29 +703,10 @@ const PluginsWorkspace: React.FC = () => {
                 </div>
               </Section>
 
-              <Section
-                title="Задачи"
-              >
 
-
-
-
-
-                      {logs[selectedJob.id] && (
-                        <pre
-                          className="max-h-[220px] overflow-auto whitespace-pre-wrap break-words border border-ink-200 p-2 font-mono text-[10px] leading-4 text-ink-600 scrollbar-thin"
-                          style={{ background: "var(--terminal-bg, var(--input-bg))" }}
-                        >
-                          {logs[selectedJob.id]}
-                        </pre>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </Section>
 
               <Section title="Что умеет плагин">
-                <ul className="grid gap-1 text-[10px] leading-4 text-ink-600">
+                <ul className="grid gap-1 text-[10px] leading-4 text-ink-600 sm:grid-cols-2">
                   {plugin.capabilities.map((capability) => (
                     <li key={capability} className="flex gap-1.5">
                       <span className="mt-[3px] h-1 w-1 shrink-0 rounded-full bg-[var(--ink-400)]" />
@@ -733,39 +714,6 @@ const PluginsWorkspace: React.FC = () => {
                     </li>
                   ))}
                 </ul>
-              </Section>
-
-              <Section title="Примеры запросов агенту">
-                <div className="grid gap-1.5">
-                  {plugin.examples.map((example) => (
-                    <div key={example} className="flex items-start gap-2 border border-ink-200 px-2.5 py-1.5">
-                      <span className="min-w-0 flex-1 text-[11px] leading-4 text-ink-700">{example}</span>
-                      <div className="flex shrink-0 items-center gap-1">
-                        <button
-                          type="button"
-                          className={quietBtn}
-                          onClick={() => insertPrompt(example)}
-                          title="Вставить в чат"
-                        >
-                          в чат
-                        </button>
-                        <button
-                          type="button"
-                          className={quietBtn}
-                          onClick={() => void copyPrompt(example)}
-                          title="Скопировать"
-                        >
-                          <Copy className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-2 text-[10px] leading-4 text-ink-500">
-                  Агент вызывает инструмент <span className="font-mono">blender</span>: декларативный план сцены, PBR-материалы,
-                  процедурные или файловые текстуры, свет, камеры, рендер, запекание и экспорт. Для полной свободы доступен
-                  произвольный bpy-скрипт.
-                </div>
               </Section>
             </div>
           )}
