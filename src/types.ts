@@ -614,7 +614,8 @@ export interface ProblemItem {
   severity: "error" | "warning";
 }
 
-export interface ProjectTask {
+/** One item of the global task inbox (shared across every project/chat). */
+export interface TaskItem {
   id: string;
   text: string;
   completed: boolean;

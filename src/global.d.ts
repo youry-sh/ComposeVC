@@ -25,7 +25,7 @@ type SizeworkoutUpdate = {
   payload?: unknown;
 };
 
-import { AgentToolProgress, CfMailConfig, ChatExecutionRequest, ChatExecutionResponse, ChatMessage, ChatRequestMessage, ChatSession, ChatSessionPage, ChatSessionSummary, CompactChatRequest, CompactChatResponse, ComposeVCPlugin, ComposeVCPluginConfig, ComposeVCPluginJob, ComposeVCPluginStatus, ComposeVCPluginsState, FileNode, KnowledgeChunk, KnowledgeChunkSummary, KnowledgeExportResult, KnowledgeImportCanceled, KnowledgeImportResult, KnowledgeListResponse, ProblemItem, ProjectSearchResult, ProjectTask, ProviderConfig, RunnerJob, RunnerReport, RunnerReportSummary } from "./types";
+import { AgentToolProgress, CfMailConfig, ChatExecutionRequest, ChatExecutionResponse, ChatMessage, ChatRequestMessage, ChatSession, ChatSessionPage, ChatSessionSummary, CompactChatRequest, CompactChatResponse, ComposeVCPlugin, ComposeVCPluginConfig, ComposeVCPluginJob, ComposeVCPluginStatus, ComposeVCPluginsState, FileNode, KnowledgeChunk, KnowledgeChunkSummary, KnowledgeExportResult, KnowledgeImportCanceled, KnowledgeImportResult, KnowledgeListResponse, ProblemItem, ProjectSearchResult, ProviderConfig, TaskItem, RunnerJob, RunnerReport, RunnerReportSummary } from "./types";
 
 /** Snapshot of a chat folder's repository — see electron/gitService.cjs */
 export type GitStatus =
@@ -863,8 +863,8 @@ declare global {
       openFolder: () => Promise<FileNode | null>;
       readFolder: (rootPath: string) => Promise<FileNode>;
       searchProject: (rootPath: string, query: string) => Promise<ProjectSearchResult[]>;
-      readTasks: (rootPath: string | null) => Promise<ProjectTask[]>;
-      saveTasks: (rootPath: string | null, tasks: ProjectTask[]) => Promise<ProjectTask[]>;
+      readTasks: () => Promise<TaskItem[]>;
+      saveTasks: (tasks: TaskItem[]) => Promise<TaskItem[]>;
       readFile: (filePath: string) => Promise<string>;
       readMediaFile: (filePath: string) => Promise<{ dataUrl: string; mimeType: string; size: number }>;
       writeFile: (filePath: string, content: string) => Promise<boolean>;

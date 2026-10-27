@@ -273,11 +273,11 @@ function getProviderConfigPath() {
   return path.join(app.getPath("userData"), "providers_config.json");
 }
 
-function getProjectTaskPath(rootPath) {
-  return path.join(rootPath, ".lopster", "task.json");
+function getGlobalTaskPath() {
+  return path.join(app.getPath("userData"), "tasks.json");
 }
 
-function normalizeProjectTasks(value) {
+function normalizeTasks(value) {
   const tasks = Array.isArray(value?.tasks) ? value.tasks : Array.isArray(value) ? value : [];
   return tasks
     .filter((task) => task && typeof task === "object" && typeof task.text === "string" && task.text.trim())
@@ -290,23 +290,28 @@ function normalizeProjectTasks(value) {
     }));
 }
 
-async function readProjectTasks(rootPath) {
-  if (!rootPath) return [];
+/** Global task inbox — one userData file shared by every project and chat. */
+async function readTasks() {
   try {
-    const raw = await fs.promises.readFile(getProjectTaskPath(rootPath), "utf8");
-    return normalizeProjectTasks(JSON.parse(raw));
+    const raw = await fs.promises.readFile(getGlobalTaskPath(), "utf8");
+    return normalizeTasks(JSON.parse(raw));
   } catch (error) {
     if (error?.code === "ENOENT") return [];
     throw error;
   }
 }
 
-async function saveProjectTasks(rootPath, tasks) {
-  if (!rootPath) throw new Error("Project folder is required");
-  const normalized = normalizeProjectTasks({ tasks });
-  const taskPath = getProjectTaskPath(rootPath);
+async function saveTasks(tasks) {
+  const normalized = normalizeTasks({ tasks });
+  const taskPath = getGlobalTaskPath();
   await fs.promises.mkdir(path.dirname(taskPath), { recursive: true });
-  await fs.promises.writeFile(taskPath, JSON.stringify({ tasks: normalized }, null, 2), "utf8");
+  const tmpPath = `${taskPath}.tmp`;
+  await fs.promises.writeFile(
+    tmpPath,
+    JSON.stringify({ version: 1, tasks: normalized }, null, 2),
+    "utf8"
+  );
+  await fs.promises.rename(tmpPath, taskPath);
   return normalized;
 }
 
@@ -4920,12 +4925,12 @@ ipcMain.handle("project:search", async (_event, rootPath, query) => {
   return searchProject(rootPath, query || "");
 });
 
-ipcMain.handle("tasks:read", async (_event, rootPath) => {
-  return readProjectTasks(rootPath);
+ipcMain.handle("tasks:read", async () => {
+  return readTasks();
 });
 
-ipcMain.handle("tasks:save", async (_event, rootPath, tasks) => {
-  return saveProjectTasks(rootPath, tasks);
+ipcMain.handle("tasks:save", async (_event, tasks) => {
+  return saveTasks(tasks);
 });
 
 ipcMain.handle("file:read", async (_event, filePath) => {
