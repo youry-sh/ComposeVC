@@ -1416,7 +1416,7 @@ def animate_object(obj, spec):
     try:
         action = obj.animation_data.action if obj.animation_data else None
         if action is not None:
-            for curve in getattr(action, "fcurves", []):
+            for curve in action_fcurves(action):
                 for point in curve.keyframe_points:
                     point.interpolation = interpolation
     except Exception:
