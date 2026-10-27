@@ -23,6 +23,12 @@ const DRIVER = path.join(__dirname, "driver.py");
 const active = new Map();
 const detectCache = new Map();
 const probeCache = new Map();
+let progressSink = null;
+
+/** Main wires this to broadcast `plugins:job` so the Plugins tab streams live progress. */
+function setProgressSink(sink) {
+  progressSink = typeof sink === "function" ? sink : null;
+}
 
 function isFile(candidate) {
   try {
@@ -301,15 +307,20 @@ async function execute(userDataPath, job, executable, args, options = {}) {
   active.set(job.id, { child, cancel: () => { canceled = true; killTree(child); } });
 
   const emitProgress = (stage, percent) => {
-    if (typeof options.onProgress !== "function") return;
     const value = Math.max(0, Math.min(100, Number(percent) || 0));
     if (value === lastProgress && stage === options.lastStage) return;
     lastProgress = value;
     options.lastStage = stage;
+    const payload = { jobId: job.id, pluginId: PLUGIN_ID, stage, percent: value, status: "running" };
     try {
-      options.onProgress({ jobId: job.id, stage, percent: value });
+      if (typeof options.onProgress === "function") options.onProgress(payload);
     } catch {
       /* renderer gone */
+    }
+    try {
+      if (progressSink) progressSink(payload);
+    } catch {
+      /* sink listener failed */
     }
   };
 
