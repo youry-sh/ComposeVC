@@ -2238,6 +2238,18 @@ def export_scene(spec, out_dir):
         return []
     if isinstance(spec, str):
         spec = {"format": spec}
+    preset = str(spec.get("preset") or spec.get("engine_target") or "").lower()
+    preset_defaults = {
+        "unity": {"format": "GLB", "include_lights": False, "include_cameras": False},
+        "godot": {"format": "GLB", "include_lights": False, "include_cameras": False},
+        "web": {"format": "GLB", "include_lights": False, "include_cameras": False},
+        "unreal": {"format": "FBX", "include_lights": False, "include_cameras": False},
+        "3dprint": {"format": "STL"},
+        "print": {"format": "STL"},
+        "blender": {"format": "BLEND"},
+    }.get(preset)
+    if preset_defaults:
+        spec = {**preset_defaults, **spec}
     fmt = str(spec.get("format", "GLB")).upper()
     exports = []
     selected = list(spec.get("objects") or [])
@@ -2250,16 +2262,44 @@ def export_scene(spec, out_dir):
     os.makedirs(os.path.dirname(filepath) or out_dir, exist_ok=True)
     op = None
     kwargs = {}
+    include_lights = bool(spec.get("include_lights", spec.get("lights", False)))
+    include_cameras = bool(spec.get("include_cameras", spec.get("cameras", False)))
     try:
         if fmt == "GLB":
             op = bpy.ops.export_scene.gltf
-            kwargs = dict(filepath=filepath, export_format="GLB", use_selection=use_selection, export_apply=bool(spec.get("apply_modifiers", True)), export_yup=True)
+            kwargs = dict(
+                filepath=filepath,
+                export_format="GLB",
+                use_selection=use_selection,
+                export_apply=bool(spec.get("apply_modifiers", True)),
+                export_yup=True,
+                export_animations=spec.get("export_animations", True) is not False,
+                export_cameras=include_cameras,
+                export_lights=include_lights,
+            )
         elif fmt == "GLTF":
             op = bpy.ops.export_scene.gltf
-            kwargs = dict(filepath=filepath, export_format="GLTF_SEPARATE", use_selection=use_selection, export_apply=bool(spec.get("apply_modifiers", True)), export_yup=True)
+            kwargs = dict(
+                filepath=filepath,
+                export_format="GLTF_SEPARATE",
+                use_selection=use_selection,
+                export_apply=bool(spec.get("apply_modifiers", True)),
+                export_yup=True,
+                export_animations=spec.get("export_animations", True) is not False,
+                export_cameras=include_cameras,
+                export_lights=include_lights,
+            )
         elif fmt == "FBX":
             op = bpy.ops.export_scene.fbx
-            kwargs = dict(filepath=filepath, use_selection=use_selection, apply_scale_options="FBX_SCALE_ALL", path_mode="COPY", embed_textures=True, mesh_smooth_type="FACE")
+            kwargs = dict(
+                filepath=filepath,
+                use_selection=use_selection,
+                apply_scale_options="FBX_SCALE_ALL",
+                path_mode="COPY",
+                embed_textures=True,
+                mesh_smooth_type="FACE",
+                bake_anim=spec.get("export_animations", True) is not False,
+            )
         elif fmt == "OBJ":
             if hasattr(bpy.ops.wm, "obj_export"):
                 op = bpy.ops.wm.obj_export
@@ -2294,7 +2334,11 @@ def export_scene(spec, out_dir):
         warn("export setup failed: %s" % exc)
         return []
 
+    if op is None:
+        warn("export %s: no operator" % fmt)
+        return []
     try:
+        kwargs = _filter_op_kwargs(op, kwargs)
         op(**kwargs)
     except TypeError:
         try:
