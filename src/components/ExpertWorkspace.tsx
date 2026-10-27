@@ -690,7 +690,7 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
         return;
       }
       const res = await window.lopster?.expertCopySession?.({ sessionId: slot.sessionId });
-      pushToast(res?.ok ? "Session copied" : res?.error || "Could not copy the session");
+      pushToast(res?.ok ? `Session ID copied · ${res.sessionId || slot.sessionId}` : res?.error || "Could not copy the session");
     },
     [pushToast]
   );
@@ -736,7 +736,7 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
         phase: null,
         status: "",
       });
-      pushToast("Session pasted");
+      pushToast("Session copied — the original stays untouched");
     },
     [patchSlot, pushToast]
   );
@@ -1150,7 +1150,7 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
             <button type="button" disabled={slot.running} onClick={() => void loadHistory(slot.id)} title="Chat history">
               <History />
             </button>
-            <button type="button" disabled={!slot.sessionId} onClick={() => void copySession(slot.id)} title="Copy session">
+            <button type="button" disabled={!slot.sessionId} onClick={() => void copySession(slot.id)} title="Copy session ID">
               <Copy />
             </button>
             <button type="button" disabled={slot.running} onClick={() => void pasteSession(slot.id)} title="Paste session or session ID">
