@@ -634,6 +634,8 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
         messages: session.messages || [],
         rootPath: session.rootPath || null,
         projectName: session.projectName || projectNameOf(session.rootPath || null),
+        contextTokens: Number((session as { contextTokens?: number }).contextTokens) || 0,
+        contextLimit: Number((session as { contextLimit?: number }).contextLimit) || 0,
         error: null,
         phase: null,
         status: "",
