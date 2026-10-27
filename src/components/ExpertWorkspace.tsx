@@ -406,6 +406,71 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
     }
   }, [patchSlot]);
 
+  const startStudy = useCallback(
+    async (input: {
+      slotId: string;
+      rootPath?: string | null;
+      projectName?: string | null;
+      modelId?: string | null;
+      sessionId?: string | null;
+    }) => {
+      const slot = slotsRef.current.find((item) => item.id === input.slotId);
+      const rootPath = input.rootPath ?? slot?.rootPath ?? null;
+      if (!slot || !rootPath || slot.studying) return;
+      const modelId = input.modelId || slot.selectedModelId || defaultModelId;
+      if (!modelId) {
+        patchSlot(input.slotId, { error: "No model configured. Add one in Providers, then study." });
+        return;
+      }
+      if (!window.lopster?.expertStudy) {
+        patchSlot(input.slotId, { error: "Expert study bridge is unavailable — restart ComposeVC." });
+        return;
+      }
+      patchSlot(input.slotId, {
+        studying: true,
+        error: null,
+        phase: "scan",
+        status: "Scanning every file in the project…",
+        study: { ...(slot.study || {}), status: "studying" },
+      });
+      try {
+        const res = await window.lopster.expertStudy({
+          slotId: input.slotId,
+          rootPath,
+          projectName: input.projectName || slot.projectName || projectNameOf(rootPath),
+          modelId,
+          sessionId: input.sessionId ?? slot.sessionId,
+        });
+        if (res?.ok) {
+          patchSlot(input.slotId, {
+            studying: false,
+            phase: "done",
+            status: "",
+            study: (res.meta as unknown as ExpertStudyMeta) || null,
+          });
+        } else {
+          const current = slotsRef.current.find((item) => item.id === input.slotId);
+          patchSlot(input.slotId, {
+            studying: false,
+            phase: null,
+            status: "",
+            error: res?.stopped ? null : res?.error || "Study failed",
+            study: { ...(current?.study || {}), status: "partial" },
+          });
+          if (!res?.stopped) pushToast(res?.error || "Study failed");
+        }
+      } catch (error) {
+        patchSlot(input.slotId, {
+          studying: false,
+          phase: null,
+          status: "",
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    },
+    [defaultModelId, patchSlot, pushToast]
+  );
+
   const chooseFolder = useCallback(
     async (slotId: string) => {
       const slot = slotsRef.current.find((item) => item.id === slotId);
@@ -413,9 +478,10 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
       try {
         const picked = await window.lopster?.openFolder?.();
         if (!picked?.path) return;
+        const projectName = picked.name || projectNameOf(picked.path);
         patchSlot(slotId, {
           rootPath: picked.path,
-          projectName: picked.name || projectNameOf(picked.path),
+          projectName,
           sessionId: null,
           messages: [],
           contextTokens: 0,
@@ -423,13 +489,22 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
           error: null,
           status: "",
           phase: null,
+          studying: false,
+          study: null,
         });
         void loadStudyStatus(slotId, picked.path);
+        // Study starts immediately: by the time the first task arrives the whole
+        // project is already mapped, and the pane shows live progress instead of
+        // a stale "pick a directory" screen.
+        const modelId = slot.selectedModelId || defaultModelId;
+        if (modelId) {
+          void startStudy({ slotId, rootPath: picked.path, projectName, modelId, sessionId: null });
+        }
       } catch (error) {
         patchSlot(slotId, { error: error instanceof Error ? error.message : String(error) });
       }
     },
-    [loadStudyStatus, patchSlot]
+    [defaultModelId, loadStudyStatus, patchSlot, startStudy]
   );
 
   const newChat = useCallback(
