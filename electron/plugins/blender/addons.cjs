@@ -14,6 +14,15 @@ const { pipeline } = require("stream/promises");
 
 const EXTENSIONS_API = "https://extensions.blender.org/api/v1/extensions/";
 const USER_AGENT = "ComposeVC/1.0 (Blender plugin)";
+const listCache = { at: 0, data: null };
+
+async function fetchExtensionList() {
+  if (listCache.data && Date.now() - listCache.at < 10 * 60 * 1000) return listCache.data;
+  const json = await fetchJson(EXTENSIONS_API);
+  listCache.at = Date.now();
+  listCache.data = json;
+  return json;
+}
 
 async function fetchJson(url, { timeoutMs = 45000 } = {}) {
   const controller = new AbortController();
@@ -61,7 +70,7 @@ function compareVersions(a, b) {
 }
 
 async function searchExtensions(query, { limit = 20 } = {}) {
-  const json = await fetchJson(EXTENSIONS_API);
+  const json = await fetchExtensionList();
   const data = Array.isArray(json?.data) ? json.data : [];
   const byId = new Map();
   for (const entry of data.map(normalizeExtension).filter(Boolean)) {

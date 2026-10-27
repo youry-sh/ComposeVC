@@ -535,11 +535,17 @@ async function run(action, input, context) {
         { onProgress, signal }
       );
       const enabled = job.addonsEnabled || [];
-      const text =
-        job.status === "succeeded"
-          ? `Аддон установлен: ${archive.name || archive.id}\n${enabled.length ? `включено: ${enabled.join(", ")}\n` : ""}${jobSummary(job)}`
-          : `Не удалось установить аддон: ${job.error || "неизвестная ошибка"}\n${(job.logTail || "").slice(-1600)}`;
-      return truth(job.status === "succeeded", text, jobPayload(job, { addonsEnabled: enabled, archive }));
+      const reports = Array.isArray(job.driverResult?.addons) ? job.driverResult.addons : [];
+      const installedOk = reports.some((report) => report?.installed);
+      const reportErrors = reports
+        .flatMap((report) => [].concat(report?.errors || [], report?.error ? [report.error] : []))
+        .filter(Boolean)
+        .join(" | ");
+      const ok = job.status === "succeeded" && (installedOk || enabled.length > 0);
+      const text = ok
+        ? `Аддон установлен: ${archive.name || archive.id}\n${enabled.length ? `включено: ${enabled.join(", ")}\n` : ""}${jobSummary(job)}`
+        : `Не удалось установить аддон: ${reportErrors || job.error || "неизвестная ошибка"}\n${(job.logTail || "").slice(-1600)}`;
+      return truth(ok, text, jobPayload(job, { addonsEnabled: enabled, archive, reportErrors }));
     }
     case "addon_enable":
     case "addon_disable": {
@@ -553,11 +559,17 @@ async function run(action, input, context) {
         { onProgress, signal }
       );
       const enabled = job.addonsEnabled || [];
-      const text =
-        job.status === "succeeded"
-          ? `${enable ? "Включён" : "Выключен"} аддон ${module}\n${enabled.length ? `активно: ${enabled.join(", ")}` : ""}`
-          : `Не удалось изменить аддон: ${job.error || "неизвестная ошибка"}\n${(job.logTail || "").slice(-1200)}`;
-      return truth(job.status === "succeeded", text, jobPayload(job, { addonsEnabled: enabled }));
+      const reports = Array.isArray(job.driverResult?.addons) ? job.driverResult.addons : [];
+      const disabledOk = reports.some((report) => report?.disabled);
+      const reportErrors = reports
+        .flatMap((report) => [].concat(report?.errors || [], report?.error ? [report.error] : []))
+        .filter(Boolean)
+        .join(" | ");
+      const ok = job.status === "succeeded" && (enable ? enabled.length > 0 : disabledOk);
+      const text = ok
+        ? `${enable ? "Включён" : "Выключен"} аддон ${module}\n${enabled.length ? `активно: ${enabled.join(", ")}` : ""}`
+        : `Не удалось изменить аддон: ${reportErrors || job.error || "неизвестная ошибка"}\n${(job.logTail || "").slice(-1200)}`;
+      return truth(ok, text, jobPayload(job, { addonsEnabled: enabled, reportErrors }));
     }
     case "asset_search": {
       const found = await blenderAssets.searchAssets({
@@ -690,6 +702,9 @@ async function run(action, input, context) {
       if (input.samples) patch.samples = Number(input.samples);
       const format = pick(input, "format");
       if (format) patch.format = String(format).toUpperCase();
+      if (Array.isArray(input.addons)) {
+        patch.addons = input.addons.map((entry) => String(entry || "").trim()).filter(Boolean);
+      }
       if (input.auto_render !== undefined) patch.autoRender = Boolean(input.auto_render);
       if (input.timeout_sec) patch.timeoutSec = Number(input.timeout_sec);
       if (input.factory_startup !== undefined) patch.factoryStartup = Boolean(input.factory_startup);
