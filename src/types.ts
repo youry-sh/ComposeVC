@@ -690,6 +690,7 @@ export interface ComposeVCPluginStatus {
   version: string;
   source?: string;
   error?: string;
+  note?: string;
   running?: string[];
   checked?: Array<{ path: string; ok: boolean; version?: string; error?: string }>;
   probe?: {

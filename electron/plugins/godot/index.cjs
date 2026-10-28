@@ -207,7 +207,7 @@ function readVersion(executable) {
   const probeOnce = (binary) => {
     try {
       const output = execFileSync(binary, ["--version"], {
-        timeout: 10000,
+        timeout: 5000,
         windowsHide: true,
         encoding: "utf8",
         maxBuffer: 2 * 1024 * 1024,
@@ -242,6 +242,11 @@ function readVersion(executable) {
   return result;
 }
 
+function versionFromName(fileName) {
+  const match = String(fileName || "").match(/v?(\d+\.\d+(?:\.\d+)?)/i);
+  return match ? match[1] : "";
+}
+
 function detect(config) {
   const candidates = executableCandidates(config);
   const checked = [];
@@ -250,6 +255,21 @@ function detect(config) {
     if (!isFile(candidate.path)) {
       checked.push({ path: candidate.path, ok: false, error: "не найден" });
       continue;
+    }
+    // Portable Godot builds carry the version in the file name
+    // (Godot_v4.7.2-stable_win64.exe) — no need to spawn the GUI binary.
+    const fromName = versionFromName(path.basename(candidate.path));
+    if (fromName) {
+      checked.push({ path: candidate.path, ok: true, version: fromName, error: "" });
+      return {
+        found: true,
+        executable: candidate.path,
+        version: fromName,
+        source: candidate.source,
+        checked,
+        error: "",
+        note: "",
+      };
     }
     const info = readVersion(candidate.path);
     checked.push({
@@ -1373,7 +1393,9 @@ async function probe(userDataPath, config) {
   const cached = probeCache.get(cacheKey);
   if (cached && Date.now() - cached.at < 10 * 60 * 1000) return cached.value;
 
-  const run = await runCommand(executable, ["--version"], { timeoutSec: 20 });
+  const run = detected.version
+    ? { ok: true, stdout: "", stderr: "" }
+    : await runCommand(executable, ["--version"], { timeoutSec: 8 });
   const output = `${run.stdout}\n${run.stderr}`.trim();
   const version = (output.match(/(\d+\.\d+(?:\.\d+)?[.\w-]*)/) || [])[1] || detected.version || "";
   const templates = exportTemplatesRoot(version) || exportTemplatesRoot(detected.version);
