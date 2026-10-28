@@ -135,16 +135,17 @@ const ChatMonoScroll = forwardRef<ChatMonoScrollHandle, ChatMonoScrollProps>(
     const mo =
       typeof MutationObserver !== "undefined"
         ? new MutationObserver(() => {
-            requestAnimationFrame(syncThumb);
+            requestAnimationFrame(() => syncThumb());
           })
         : null;
     mo?.observe(el, { childList: true, subtree: true });
-    window.addEventListener("resize", syncThumb);
+    const onResize = () => syncThumb();
+    window.addEventListener("resize", onResize);
     return () => {
       el.removeEventListener("scroll", onScroll);
       ro?.disconnect();
       mo?.disconnect();
-      window.removeEventListener("resize", syncThumb);
+      window.removeEventListener("resize", onResize);
     };
   }, [syncThumb]);
 
