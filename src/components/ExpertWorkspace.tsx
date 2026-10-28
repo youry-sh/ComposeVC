@@ -24,6 +24,7 @@ import {
 import ChatMonoScroll, { ChatMonoScrollHandle } from "./ChatMonoScroll";
 import ContextRing from "./ContextRing";
 import ModelPicker, { ModelPickerLabels } from "./ModelPicker";
+import SendToChatModal from "./SendToChatModal";
 import MarkdownContent from "./markdown/MarkdownContent";
 import { AIModel, AIProvider, ProviderConfig } from "../types";
 
@@ -116,11 +117,14 @@ type ExpertLabels = ModelPickerLabels & {
 type ExpertWorkspaceProps = {
   providerConfig: ProviderConfig;
   labels: ExpertLabels;
+  /** Bring another workspace tab to the front (used by "В чат"). */
+  onOpenPanel?: (panel: "multiide") => void;
 };
 
 type ModalState =
   | { kind: "history"; slotId: string }
   | { kind: "save"; slotId: string }
+  | { kind: "send"; slotId: string; messageId: string }
   | null;
 
 const PHASES: Array<{ id: string; label: string }> = [
@@ -232,7 +236,7 @@ const AutoTextarea: React.FC<{
   );
 };
 
-const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, labels }) => {
+const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, labels, onOpenPanel }) => {
   const [slots, setSlots] = useState<ExpertSlot[]>(createSlots);
   const [hydrated, setHydrated] = useState(false);
   const [modal, setModal] = useState<ModalState>(null);
@@ -1092,6 +1096,15 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
                   </span>
                   <button
                     type="button"
+                    className="expert-copy expert-send-chat"
+                    onClick={() => setModal({ kind: "send", slotId: slot.id, messageId: message.id })}
+                    title="Отправить промпт в чат"
+                  >
+                    <Send />
+                    <span>В чат</span>
+                  </button>
+                  <button
+                    type="button"
                     className="expert-copy"
                     onClick={() => void copyPrompt(message.id, message.content)}
                     title="Copy the whole prompt"
@@ -1315,7 +1328,7 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
 
       <div className="expert-stage">{slots.map(renderPane)}</div>
 
-      {modal ? (
+      {modal && modal.kind !== "send" ? (
         <div className="expert-modal-backdrop" onClick={() => setModal(null)}>
           <div className="expert-modal" onClick={(event) => event.stopPropagation()}>
             <header className="expert-modal-head">
@@ -1495,6 +1508,22 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
           </div>
         </div>
       ) : null}
+
+      <SendToChatModal
+        open={modal?.kind === "send"}
+        prompt={
+          modal?.kind === "send"
+            ? slots
+                .find((slot) => slot.id === modal.slotId)
+                ?.messages.find((message) => message.id === modal.messageId)?.content || ""
+            : ""
+        }
+        onClose={() => setModal(null)}
+        onOpenMultiIde={() => {
+          setModal(null);
+          onOpenPanel?.("multiide");
+        }}
+      />
 
       {toast ? <div className="expert-toast">{toast}</div> : null}
     </div>

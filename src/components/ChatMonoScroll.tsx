@@ -10,10 +10,17 @@ import React, {
 type ChatMonoScrollProps = {
   className?: string;
   children: React.ReactNode;
+  /** Render the floating «jump to bottom» button once the user scrolls away from the end. */
+  showScrollToBottom?: boolean;
+  /** Tooltip / accessible label for that button. */
+  scrollToBottomLabel?: string;
+  /** Called when the «viewport is pinned to the end» state flips. */
+  onAtBottomChange?: (atBottom: boolean) => void;
 };
 
 export type ChatMonoScrollHandle = {
   scrollToBottom: (opts?: { smooth?: boolean }) => void;
+  jumpToBottom: () => void;
   getViewport: () => HTMLDivElement | null;
 };
 
@@ -25,11 +32,23 @@ type ThumbState = {
 
 const MIN_THUMB = 28;
 const RAIL_INSET = 4;
+/** Same threshold ChatPanel uses to decide whether the transcript is pinned to the end. */
+const BOTTOM_GAP = 96;
 
 const ChatMonoScroll = forwardRef<ChatMonoScrollHandle, ChatMonoScrollProps>(
-  ({ className = "", children }, ref) => {
+  (
+    {
+      className = "",
+      children,
+      showScrollToBottom = false,
+      scrollToBottomLabel = "Scroll to bottom",
+      onAtBottomChange,
+    },
+    ref
+  ) => {
   const viewportRef = useRef<HTMLDivElement>(null);
   const [thumb, setThumb] = useState<ThumbState>({ visible: false, top: 0, height: 0 });
+  const [atBottom, setAtBottom] = useState(true);
   const [active, setActive] = useState(false);
   const dragRef = useRef<{ startY: number; startScroll: number } | null>(null);
 
@@ -40,6 +59,7 @@ const ChatMonoScroll = forwardRef<ChatMonoScrollHandle, ChatMonoScrollProps>(
     const overflow = scrollHeight - clientHeight;
     if (overflow <= 2 || clientHeight <= 0) {
       setThumb((prev) => (prev.visible ? { visible: false, top: 0, height: 0 } : prev));
+      setAtBottom(true);
       return;
     }
     const track = Math.max(0, clientHeight - RAIL_INSET * 2);
@@ -48,6 +68,7 @@ const ChatMonoScroll = forwardRef<ChatMonoScrollHandle, ChatMonoScrollProps>(
     const maxTop = Math.max(0, track - height);
     const top = RAIL_INSET + Math.round((scrollTop / overflow) * maxTop);
     setThumb({ visible: true, top, height });
+    setAtBottom(scrollHeight - scrollTop - clientHeight < BOTTOM_GAP);
   }, []);
 
   const scrollToBottom = useCallback((opts?: { smooth?: boolean }) => {
@@ -73,14 +94,23 @@ const ChatMonoScroll = forwardRef<ChatMonoScrollHandle, ChatMonoScrollProps>(
     });
   }, [syncThumb]);
 
+  const jumpToBottom = useCallback(() => {
+    scrollToBottom({ smooth: true });
+  }, [scrollToBottom]);
+
   useImperativeHandle(
     ref,
     () => ({
       scrollToBottom,
+      jumpToBottom,
       getViewport: () => viewportRef.current,
     }),
-    [scrollToBottom]
+    [scrollToBottom, jumpToBottom]
   );
+
+  useEffect(() => {
+    onAtBottomChange?.(atBottom);
+  }, [atBottom, onAtBottomChange]);
 
   useEffect(() => {
     const el = viewportRef.current;
@@ -159,6 +189,29 @@ const ChatMonoScroll = forwardRef<ChatMonoScrollHandle, ChatMonoScrollProps>(
       <div ref={viewportRef} className="chat-mono-scroll-viewport">
         {children}
       </div>
+      {showScrollToBottom && !atBottom && (
+        <button
+          type="button"
+          className="chat-mono-scroll-jump"
+          title={scrollToBottomLabel}
+          aria-label={scrollToBottomLabel}
+          onClick={jumpToBottom}
+          onPointerDown={(event) => event.preventDefault()}
+        >
+          <svg
+            viewBox="0 0 16 16"
+            width="14"
+            height="14"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="square"
+            aria-hidden
+          >
+            <path d="M4 6l4 4 4-4" />
+          </svg>
+        </button>
+      )}
       {thumb.visible && (
         <div
           className="chat-mono-scroll-rail"

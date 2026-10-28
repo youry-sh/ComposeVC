@@ -594,7 +594,14 @@ const App: React.FC = () => {
             }
           >
             {expertMounted && (
-              <ExpertWorkspace providerConfig={providerConfig} labels={chatPanelLabels} />
+              <ExpertWorkspace
+                providerConfig={providerConfig}
+                labels={chatPanelLabels}
+                onOpenPanel={() => {
+                  setMultiIdeMounted(true);
+                  setActivePanel("multiide");
+                }}
+              />
             )}
           </div>
 
