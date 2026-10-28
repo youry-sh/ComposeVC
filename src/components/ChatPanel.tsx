@@ -294,6 +294,9 @@ const TOOL_META: Record<string, { label: string }> = {
   swarm_council: { label: "swarm_council" },
   cf_mail: { label: "cf_mail" },
   generate_image: { label: "generate_image" },
+  vision: { label: "vision" },
+  vision_blender: { label: "vision_blender" },
+  vision_godot: { label: "vision_godot" },
   restore_backup: { label: "restore_backup" },
   timezone: { label: "timezone" },
 };
@@ -504,6 +507,94 @@ const WebFetchPreview: React.FC<{ url: string; title?: string; text?: string; tr
   );
 };
 
+type VisionPreviewImage = {
+  name?: string;
+  path?: string;
+  url?: string;
+  mimeType?: string;
+  width?: number;
+  height?: number;
+};
+
+/**
+ * Thumbnails of the image(s) a `vision` / `vision_blender` call actually looked at.
+ * The tool returns compact path/url descriptors (never base64), so local files are
+ * resolved through the readMedia IPC on demand and survive a chat reload.
+ */
+const VisionPreviewCard: React.FC<{ previews: VisionPreviewImage[] }> = ({ previews }) => {
+  const [sources, setSources] = useState<string[]>([]);
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  // Identity of the preview set — the array is rebuilt on every parent render.
+  const key = previews.map((preview) => preview.path || preview.url || preview.name || "").join("|");
+
+  useEffect(() => {
+    let cancelled = false;
+    const resolve = async () => {
+      const next = await Promise.all(
+        previews.map(async (preview) => {
+          const remote = String(preview.url || "");
+          if (/^(https?:|file:|data:)/i.test(remote)) return remote;
+          if (!preview.path) return "";
+          try {
+            const loaded = await window.lopster?.readMediaFile?.(preview.path);
+            return loaded?.dataUrl || "";
+          } catch {
+            return "";
+          }
+        })
+      );
+      if (!cancelled) setSources(next);
+    };
+    void resolve();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+
+  if (!previews.length) return null;
+  const active = openIndex != null ? sources[openIndex] || "" : "";
+
+  return (
+    <div className="gen-image-card vision-image-card">
+      <div className="vision-image-grid">
+        {previews.map((preview, index) => {
+          const src = sources[index] || "";
+          const label = preview.name || `image ${index + 1}`;
+          const hint = preview.path || preview.url || label;
+          return (
+            <figure key={`${label}-${index}`} className="vision-image-figure">
+              {src ? (
+                <button
+                  type="button"
+                  className="gen-image-frame"
+                  onClick={() => setOpenIndex(index)}
+                  title={`Open ${label}`}
+                >
+                  <img src={src} alt={label} draggable={false} />
+                </button>
+              ) : (
+                <div className="vision-image-pending" title={hint}>
+                  {label}
+                </div>
+              )}
+              <figcaption className="vision-image-caption" title={hint}>
+                {label}
+              </figcaption>
+            </figure>
+          );
+        })}
+      </div>
+      {openIndex != null && active && createPortal(
+        <div className="gen-image-lightbox" onClick={() => setOpenIndex(null)} role="presentation">
+          <img src={active} alt={previews[openIndex]?.name || "image"} draggable={false} />
+        </div>,
+        document.body,
+      )}
+    </div>
+  );
+};
+
 function getToolSubtitle(step: AgentToolProgress): string {
   const input = (step.input || {}) as Record<string, unknown>;
   switch (step.name) {
@@ -599,6 +690,16 @@ function getToolSubtitle(step: AgentToolProgress): string {
         return `${action} ${e}`;
       }
       return action || email || "";
+    }
+    case "vision":
+    case "vision_blender":
+    case "vision_godot": {
+      const action = typeof input.action === "string" ? input.action : "see";
+      const job = typeof input.job === "string" ? `job ${input.job}` : "";
+      const rawPath = typeof input.path === "string" ? shortPath(input.path) : "";
+      const rawUrl = typeof input.url === "string" ? getDomain(input.url) : "";
+      const source = rawPath || job || rawUrl;
+      return source ? `${action} ${source}` : action;
     }
     default: {
       const action = typeof input.action === "string" ? input.action : "";

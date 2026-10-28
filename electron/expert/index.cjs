@@ -60,7 +60,9 @@ const READONLY_EXCLUDE = [
   "think",
   "vision",
   "vision_blender",
+  "vision_godot",
   "blender",
+  "godot",
   "plugin",
 ];
 

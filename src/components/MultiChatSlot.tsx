@@ -204,6 +204,33 @@ function summarizeToolResultForLive(value: unknown): unknown {
         status: typeof record.status === "string" ? record.status : "running",
       };
     }
+    // vision / vision_blender results: keep compact image descriptors so the
+    // chat row can render the inspected picture as a preview card. The base64
+    // __images payload is intentionally dropped (it is huge and only needed by
+    // the model), while path/url descriptors survive a chat reload.
+    if (Array.isArray(record.previews)) {
+      const previews = (record.previews as unknown[])
+        .slice(0, 6)
+        .map((entry) => {
+          if (!entry || typeof entry !== "object") return null;
+          const p = entry as Record<string, unknown>;
+          const out = {
+            name: typeof p.name === "string" ? p.name : undefined,
+            path: typeof p.path === "string" ? p.path : undefined,
+            url: typeof p.url === "string" ? p.url : undefined,
+            mimeType: typeof p.mimeType === "string" ? p.mimeType : undefined,
+            width: typeof p.width === "number" ? p.width : undefined,
+            height: typeof p.height === "number" ? p.height : undefined,
+          };
+          return out.path || out.url ? out : null;
+        })
+        .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+      return {
+        text: typeof record.text === "string" ? record.text.slice(0, 4000) : undefined,
+        model: typeof record.model === "string" ? record.model : undefined,
+        previews,
+      };
+    }
     // read_file: keep line stats for console body (drop full content).
     if (
       typeof record.totalLines === "number" ||

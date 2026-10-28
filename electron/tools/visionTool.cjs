@@ -107,6 +107,7 @@ async function resolveImages(input, userDataPath, options = {}) {
         url: loaded.dataUrl,
         mimeType: loaded.mimeType,
         name: path.basename(String(input.path2)),
+        path: path.resolve(String(input.path2)),
         width: loaded.width,
         height: loaded.height,
       });
@@ -236,6 +237,7 @@ async function run(action, input, context, options = {}) {
     model: result.model || "",
     usage: result.usage || null,
     images: summarizeImages(images),
+    previews: previewEntries(images),
     ...(input.attach === false ? {} : attachPayload(images)),
   };
   return truth(Boolean(answer), text, payload);
