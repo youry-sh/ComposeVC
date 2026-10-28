@@ -194,7 +194,7 @@ const SetupCard: React.FC<{
           ) : (
             <button
               type="button"
-              className="ui-btn-primary h-7 whitespace-nowrap px-2.5 text-[11px]"
+              className="ui-btn-primary h-[30px] whitespace-nowrap px-2.5 text-[11px]"
               disabled={disabled}
               onClick={() => onInstall(component.id)}
             >
@@ -442,7 +442,7 @@ export const SetupSettings: React.FC<SetupSettingsProps> = () => {
               </button>
               <button
                 type="button"
-                className="ui-btn-primary h-7 px-3 text-[11px]"
+                className="ui-btn-primary h-[30px] px-3 text-[11px]"
                 disabled={!supported || installingAll || anyActive}
                 onClick={() => void installAll()}
               >
