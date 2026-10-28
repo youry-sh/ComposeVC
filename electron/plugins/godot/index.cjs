@@ -264,6 +264,7 @@ function detect(config) {
       return {
         found: true,
         executable: candidate.path,
+        runner: consoleSibling(candidate.path) || candidate.path,
         version: fromName,
         source: candidate.source,
         checked,
@@ -282,6 +283,7 @@ function detect(config) {
       return {
         found: true,
         executable: candidate.path,
+        runner: consoleSibling(candidate.path) || candidate.path,
         version: info.version,
         source: candidate.source,
         checked,
@@ -297,6 +299,7 @@ function detect(config) {
     return {
       found: true,
       executable: existingWithoutVersion.candidate.path,
+      runner: consoleSibling(existingWithoutVersion.candidate.path) || existingWithoutVersion.candidate.path,
       version: "",
       source: existingWithoutVersion.candidate.source,
       checked,
@@ -1395,7 +1398,7 @@ async function probe(userDataPath, config) {
 
   const run = detected.version
     ? { ok: true, stdout: "", stderr: "" }
-    : await runCommand(executable, ["--version"], { timeoutSec: 8 });
+    : await runCommand(detected.runner || executable, ["--version"], { timeoutSec: 8 });
   const output = `${run.stdout}\n${run.stderr}`.trim();
   const version = (output.match(/(\d+\.\d+(?:\.\d+)?[.\w-]*)/) || [])[1] || detected.version || "";
   const templates = exportTemplatesRoot(version) || exportTemplatesRoot(detected.version);
