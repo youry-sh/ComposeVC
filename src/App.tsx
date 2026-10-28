@@ -522,6 +522,7 @@ const App: React.FC = () => {
     compactFailed: t.compactFailed,
     more: t.more,
     moreCount: t.moreCount,
+    scrollToBottom: t.scrollToBottom,
     collapse: t.collapse,
     collapseUnits: t.collapseUnits,
     allUnitsCount: t.allUnitsCount,
