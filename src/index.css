@@ -15957,11 +15957,11 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   .expert-live-spin { animation: none; }
 }
 
-/* ══ Graphite: warm black base + orange chrome ═════════════════════════════
-   The base is black with a faint burnt tint, and the single accent leaks into
-   the structural hairlines — composer edge, rail/stage dividers, panel headers,
-   scrollbars, selected rows — so the window reads as one warm surface instead
-   of a grey UI with one red button. Opacity stays low: chrome, never decoration. */
+/* ══ Graphite: warm black base, restrained orange chrome ═══════════════════
+   The base is black with a faint burnt tint, so the greys never read cold.
+   The accent is spent sparingly: a soft contour around the composer, focus,
+   scrollbars and the active marker — structural dividers stay neutral so a
+   screen full of panels does not turn into a stack of orange bars. */
 
 /* Structural hairlines stay neutral — one warm accent line is enough chrome. */
 [data-theme="graphite"] .titlebar-root {
