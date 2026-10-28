@@ -41,7 +41,14 @@ async function imageFromInput(input, userDataPath, prefix = "", options = {}) {
     }
     // A plain path passed in url= is treated as a local file.
     const loaded = await imageTools.fileToDataUrl(value, { maxSize: input.max_size });
-    return { url: loaded.dataUrl, mimeType: loaded.mimeType, name: path.basename(value), width: loaded.width, height: loaded.height };
+    return {
+      url: loaded.dataUrl,
+      mimeType: loaded.mimeType,
+      name: path.basename(value),
+      path: path.resolve(value),
+      width: loaded.width,
+      height: loaded.height,
+    };
   }
   const filePath = pick(input, `${prefix}path`, `${prefix}file`, `${prefix}image_path`);
   if (filePath) {
@@ -50,6 +57,7 @@ async function imageFromInput(input, userDataPath, prefix = "", options = {}) {
       url: loaded.dataUrl,
       mimeType: loaded.mimeType,
       name: path.basename(String(filePath)),
+      path: path.resolve(String(filePath)),
       width: loaded.width,
       height: loaded.height,
       bytes: loaded.bytes,
@@ -137,6 +145,31 @@ function attachPayload(images) {
   };
 }
 
+/**
+ * Compact, persistable descriptors of the inspected images so the chat UI can
+ * render a preview card (and still resolve it after a reload). Base64 data URLs
+ * are deliberately excluded — local files travel as `path`, remote as `url`.
+ */
+function previewEntries(images) {
+  return images
+    .map((image, index) => {
+      const url = String(image.url || "");
+      const inline = /^data:/i.test(url);
+      const entry = {
+        index: index + 1,
+        name: image.name || `image-${index + 1}`,
+        mimeType: image.mimeType || undefined,
+        path: image.path ? String(image.path) : undefined,
+        url: !inline && /^(https?:|file:)/i.test(url) ? url : undefined,
+        width: image.width || undefined,
+        height: image.height || undefined,
+        bytes: image.bytes || undefined,
+      };
+      return entry.path || entry.url ? entry : null;
+    })
+    .filter(Boolean);
+}
+
 async function run(action, input, context, options = {}) {
   const userDataPath = resolveUserData(context);
 
@@ -171,7 +204,7 @@ async function run(action, input, context, options = {}) {
     return truth(
       true,
       `Изображение приложено к результату инструмента (${images.length}).`,
-      { images: summarizeImages(images), ...attachPayload(images) }
+      { images: summarizeImages(images), previews: previewEntries(images), ...attachPayload(images) }
     );
   }
 
