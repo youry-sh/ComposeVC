@@ -846,7 +846,9 @@ declare global {
         jobId: string,
         name?: string
       ) => Promise<{ ok: boolean; dataUrl?: string; path?: string; bytes?: number; error?: string }>;
-      pluginsPickExecutable: () => Promise<{ ok: boolean; canceled?: boolean; path?: string; error?: string }>;
+      pluginsPickExecutable: (
+        id?: string
+      ) => Promise<{ ok: boolean; canceled?: boolean; path?: string; error?: string }>;
       pluginsPickDirectory: () => Promise<{ ok: boolean; canceled?: boolean; path?: string; error?: string }>;
       pluginsCopyArtifacts: (
         jobId: string,
@@ -858,6 +860,41 @@ declare global {
         blendPath?: string
       ) => Promise<{ ok: boolean; file?: string; executable?: string; error?: string }>;
       pluginsRunDemo: (id?: string) => Promise<{ ok: boolean; job?: ComposeVCPluginJob; error?: string }>;
+      pluginsGodotDemo: (options?: {
+        preset?: string;
+        frames?: number;
+        files?: string | string[];
+      }) => Promise<{ ok: boolean; job?: ComposeVCPluginJob | null; error?: string; hint?: string }>;
+      pluginsGodotBuild: (
+        id?: string,
+        options?: {
+          preset?: string;
+          exportPath?: string;
+          export_path?: string;
+          timeoutSec?: number;
+          title?: string;
+        }
+      ) => Promise<{
+        ok: boolean;
+        job?: ComposeVCPluginJob | null;
+        error?: string;
+        hint?: string;
+        preset?: string;
+        exportPath?: string;
+        bytes?: number;
+      }>;
+      pluginsGodotImportGlb: (payload?: {
+        files?: string | string[];
+        glb?: string | string[];
+        paths?: string | string[];
+        sourceDir?: string;
+        title?: string;
+      }) => Promise<{
+        ok: boolean;
+        job?: ComposeVCPluginJob | null;
+        imported?: Array<{ source: string; target: string; importFile?: string; ok?: boolean; bytes?: number }>;
+        error?: string;
+      }>;
       onPluginsChanged: (
         callback: (payload: { type?: string; pluginId?: string; jobId?: string; status?: string }) => void
       ) => () => void;
