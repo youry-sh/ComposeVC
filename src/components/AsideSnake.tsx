@@ -11,9 +11,9 @@ import React from "react";
  * nostril are cut out by `fill-rule`. All geometry is computed once at module
  * load; every frame is one composited CSS rotation plus a tongue-flick opacity
  * tween, so there are no timers, no React re-renders and no layout work per
- * frame. Colours come from the theme tokens, so mono / winter / graphite
- * re-tint it on their own, and `prefers-reduced-motion` freezes it into a
- * readable still frame.
+ * frame. Colours come from the theme tokens, so the single palette drives it
+ * on its own, and `prefers-reduced-motion` freezes it into a readable still
+ * frame.
  */
 
 const VIEW = 120;
