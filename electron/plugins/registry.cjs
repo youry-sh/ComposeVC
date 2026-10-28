@@ -196,6 +196,11 @@ async function configForBlender(userDataPath) {
   return record?.config || { ...store.DEFAULT_BLENDER_CONFIG };
 }
 
+async function configForGodot(userDataPath) {
+  const record = await store.getPlugin(userDataPath, "godot");
+  return record?.config || { ...store.DEFAULT_GODOT_CONFIG };
+}
+
 async function jobs(userDataPath, options = {}) {
   return store.listJobs(userDataPath, options);
 }
@@ -205,17 +210,22 @@ async function job(userDataPath, jobId) {
 }
 
 function cancel(jobId) {
-  return blender.cancelJob(jobId);
+  const cancelled = blender.cancelJob(jobId);
+  if (cancelled?.canceled) return cancelled;
+  return godot.cancelJob(jobId);
 }
 
 async function deleteJob(userDataPath, jobId) {
+  const record = await store.getJob(userDataPath, jobId);
+  if (record?.pluginId === "godot") return godot.deleteJob(userDataPath, jobId);
   return blender.deleteJob(userDataPath, jobId);
 }
 
 async function copyArtifacts(userDataPath, jobId, targetDir) {
   const record = await store.getJob(userDataPath, jobId);
   if (!record) throw new Error("Задача не найдена.");
-  const root = String(targetDir || "").trim() || store.resolveOutputDir(userDataPath, (await store.getPlugin(userDataPath, "blender"))?.config);
+  const plugin = await store.getPlugin(userDataPath, record.pluginId || "blender");
+  const root = String(targetDir || "").trim() || store.resolveOutputDir(userDataPath, plugin?.config);
   const folder = path.join(root, record.id);
   await fs.promises.mkdir(folder, { recursive: true });
   const copied = [];
@@ -224,6 +234,8 @@ async function copyArtifacts(userDataPath, jobId, targetDir) {
     ...record.renders.map((item) => item.path),
     ...(record.bakes || []).map((item) => item.path),
     ...(record.blendPath ? [record.blendPath] : []),
+    ...(record.scenePath ? [record.scenePath] : []),
+    ...(record.exportPath ? [record.exportPath] : []),
   ];
   for (const file of files) {
     try {
@@ -252,6 +264,7 @@ module.exports = {
   updatePlugin,
   statusFor,
   configForBlender,
+  configForGodot,
   jobs,
   job,
   cancel,

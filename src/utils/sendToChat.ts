@@ -148,7 +148,7 @@ function focusTarget(target: SendTarget, slots: ReturnType<typeof loadMultiIdeSl
   }
 }
 
-/** Make the target workspace + column the active ones (memory, localStorage, disk). */
+/** Re-deliver a send that was queued before MultiIDE mounted. */
 function replayPending() {
   const pending = readPending();
   if (!pending) return;
