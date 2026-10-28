@@ -16034,6 +16034,9 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   width: 2px;
   background: color-mix(in srgb, var(--accent) 55%, var(--ink-700));
 }
+[data-theme="graphite"] .chat-msg-user::before {
+  background: color-mix(in srgb, var(--accent) 12%, var(--border));
+}
 [data-theme="graphite"] .theme-input::placeholder,
 [data-theme="graphite"] .settings-field-input::placeholder,
 [data-theme="graphite"] .settings-field-textarea::placeholder {
