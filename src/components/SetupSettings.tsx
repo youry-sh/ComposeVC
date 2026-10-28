@@ -27,13 +27,6 @@ type SetupSettingsProps = {
 
 type Notice = { kind: "ok" | "err"; text: string };
 
-const GROUP_ORDER: Array<{ id: SetupComponentGroup; title: string; hint: string }> = [
-  { id: "runtime", title: "Среды выполнения", hint: "Интерпретаторы и компиляторы" },
-  { id: "tool", title: "Инструменты", hint: "Системные утилиты" },
-  { id: "3d", title: "3D", hint: "Графика и моделирование" },
-  { id: "search", title: "Поиск", hint: "Агент веб-поиска" },
-];
-
 const ICONS: Record<SetupComponentIcon, React.FC<{ className?: string }>> = {
   python: IcoPython,
   git: IcoGit,
@@ -169,20 +162,15 @@ const SetupCard: React.FC<{
         </div>
       ) : null}
 
-      <div className="mt-auto flex items-center justify-between gap-2 pt-2">
-        <span
-          className="min-w-0 flex-1 truncate font-mono text-[10px]"
-          style={{ color: !active && errorText ? "var(--danger)" : "var(--ink-500)" }}
-          title={active ? progress?.step : isInstalled ? component.path || undefined : undefined}
-        >
-          {active
-            ? `${percent !== null ? `${percent}% · ` : ""}${progress?.step || "…"}`
-            : isInstalled
-              ? "установлено"
-              : errorText
-                ? "ошибка"
-                : "не установлено"}
-        </span>
+      <div className="mt-auto flex items-center gap-2 pt-2">
+        {active ? (
+          <span
+            className="min-w-0 flex-1 truncate font-mono text-[10px] text-ink-500"
+            title={progress?.step}
+          >
+            {`${percent !== null ? `${percent}% · ` : ""}${progress?.step || "…"}`}
+          </span>
+        ) : null}
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
           {isInstalled ? (
             <button
@@ -475,31 +463,21 @@ export const SetupSettings: React.FC<SetupSettingsProps> = () => {
         </div>
       </div>
 
-      {GROUP_ORDER.map((group) => {
-        const items = components.filter((component) => component.group === group.id);
-        if (!items.length) return null;
-        return (
-          <div className="settings-section" key={group.id}>
-            <div className="flex items-baseline justify-between gap-2 px-0.5">
-              <div className="settings-card-title !mb-0">{group.title}</div>
-              <span className="text-[10px] uppercase tracking-[0.1em] text-ink-500">{group.hint}</span>
-            </div>
-            <div className="grid grid-cols-1 items-stretch gap-2 md:grid-cols-2 lg:grid-cols-3">
-              {items.map((component) => (
-                <SetupCard
-                  key={component.id}
-                  component={component}
-                  progress={progress[component.id]}
-                  disabled={!supported}
-                  onInstall={(id) => void install(id)}
-                  onCancel={(id) => void cancel(id)}
-                  onManual={(id) => void openManual(id)}
-                />
-              ))}
-            </div>
-          </div>
-        );
-      })}
+      <div className="settings-section">
+        <div className="grid auto-rows-fr grid-cols-1 items-stretch gap-2 md:grid-cols-2 lg:grid-cols-3">
+          {components.map((component) => (
+            <SetupCard
+              key={component.id}
+              component={component}
+              progress={progress[component.id]}
+              disabled={!supported}
+              onInstall={(id) => void install(id)}
+              onCancel={(id) => void cancel(id)}
+              onManual={(id) => void openManual(id)}
+            />
+          ))}
+        </div>
+      </div>
     </div>
   );
 };
