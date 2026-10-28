@@ -2,6 +2,7 @@ const fs = require("fs");
 
 const registry = require("../plugins/registry.cjs");
 const blender = require("../plugins/blender/index.cjs");
+const godot = require("../plugins/godot/index.cjs");
 const store = require("../plugins/store.cjs");
 
 const ACTIONS = [
@@ -83,7 +84,7 @@ async function run(action, input, context) {
     case "probe": {
       const id = pluginId(input);
       const plugin = await registry.getPlugin(userDataPath, id);
-      if (id !== "blender") {
+      if (id !== "blender" && id !== "godot") {
         return truth(false, `Для плагина '${id}' нет исполнителя статуса.`, { plugin });
       }
       if (action === "status") {
@@ -92,7 +93,7 @@ async function run(action, input, context) {
           : `${plugin.name} не найден: ${plugin.status.error}`;
         return truth(plugin.status.found, text, { plugin });
       }
-      const probed = await blender.probe(userDataPath, plugin.config);
+      const probed = id === "godot" ? await godot.probe(userDataPath, plugin.config) : await blender.probe(userDataPath, plugin.config);
       return truth(Boolean(probed.ok), probed.ok
         ? `${plugin.name} ${probed.version} · движки: ${(probed.engines || []).join(", ") || "—"}`
         : `Не удалось опросить ${plugin.name}: ${probed.error || "ошибка"}`,
@@ -107,8 +108,24 @@ async function run(action, input, context) {
     case "config": {
       const id = pluginId(input);
       const patch = input.config && typeof input.config === "object" ? { ...input.config } : {};
-      for (const key of ["executable", "outputDir", "engine", "samples", "format", "autoRender", "timeoutSec", "factoryStartup"]) {
-        if (input[key] !== undefined) patch[key] = input[key];
+      for (const key of [
+        "executable",
+        "outputDir",
+        "engine",
+        "samples",
+        "format",
+        "autoRender",
+        "timeoutSec",
+        "factoryStartup",
+        "projectDir",
+        "preset",
+        "exportPath",
+        "headless",
+        "importGlb",
+        "glbDir",
+        "timeout_sec",
+      ]) {
+        if (input[key] !== undefined) patch[key === "timeout_sec" ? "timeoutSec" : key] = input[key];
       }
       if (input.resolution) patch.resolution = input.resolution;
       if (input.width || input.height) {

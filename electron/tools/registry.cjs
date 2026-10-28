@@ -30,6 +30,8 @@ const blenderTool = require("./blenderTool.cjs");
 const pluginTool = require("./pluginTool.cjs");
 const visionTool = require("./visionTool.cjs");
 const visionBlenderTool = require("./visionBlenderTool.cjs");
+const godotTool = require("./godotTool.cjs");
+const visionGodotTool = require("./visionGodotTool.cjs");
 
 const TOOLS = [
   readFile,
@@ -61,9 +63,11 @@ const TOOLS = [
 		knowledgeTool,
         generateImage,
         blenderTool,
+        godotTool,
         pluginTool,
         visionTool,
         visionBlenderTool,
+        visionGodotTool,
 				];/** Common aliases the model may emit */const TOOL_ALIASES = {  timer: "work_timer",  worktimer: "work_timer",
   minimum_work_timer: "work_timer",
   glob: "grep",
@@ -232,6 +236,16 @@ const TOOLS = [
   render_review: "vision_blender",
   art_review: "vision_blender",
   critique_render: "vision_blender",
+  // Godot (headless scenes / build / export) and its frame review
+  godot_tool: "godot",
+  godot_build: "godot",
+  godot_export: "godot",
+  export_game: "godot",
+  game_export: "godot",
+  godot_vision: "vision_godot",
+  godot_review: "vision_godot",
+  review_game: "vision_godot",
+  game_review: "vision_godot",
   memory: "knowledge",
   knowledge_memory: "knowledge",
   lab_in_memory: "knowledge",

@@ -262,7 +262,11 @@ function createVisionTool(config = {}) {
     };
     if (aliases[action]) action = aliases[action];
     if (!ACTIONS.includes(action)) throw new Error(`unknown action "${action}". Valid: ${ACTIONS.join(", ")}`);
-    return run(action, input, context, { defaultPrompt: config.defaultPrompt });
+    return run(action, input, context, {
+      defaultPrompt: config.defaultPrompt,
+      jobPreview: config.jobPreview,
+      jobLabel: config.jobLabel || "blender jobId",
+    });
   },
   };
 }
