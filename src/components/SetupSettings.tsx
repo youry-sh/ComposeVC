@@ -405,8 +405,8 @@ export const SetupSettings: React.FC<SetupSettingsProps> = () => {
 
   return (
     <div className="settings-body-scroll">
-      {!supported ? (
-        <div className="settings-section">
+      <div className="settings-section" style={{ maxWidth: "none" }}>
+        {!supported ? (
           <div className="settings-card">
             <div className="flex items-center gap-2">
               <IcoAlertTriangle className="h-4 w-4 shrink-0" style={{ color: "var(--ink-500)" }} />
@@ -417,10 +417,8 @@ export const SetupSettings: React.FC<SetupSettingsProps> = () => {
               браузерной сборке.
             </p>
           </div>
-        </div>
-      ) : null}
+        ) : null}
 
-      <div className="settings-section">
         <div className="settings-card">
           <div className="flex flex-wrap items-center gap-2">
             <span className="settings-chip is-active">OS: {PLATFORM_LABEL[platform]}</span>
@@ -461,10 +459,8 @@ export const SetupSettings: React.FC<SetupSettingsProps> = () => {
             </p>
           ) : null}
         </div>
-      </div>
 
-      <div className="settings-section">
-        <div className="grid auto-rows-fr grid-cols-1 items-stretch gap-2 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid auto-rows-fr grid-cols-1 items-stretch gap-3 md:grid-cols-2 lg:grid-cols-3">
           {components.map((component) => (
             <SetupCard
               key={component.id}
