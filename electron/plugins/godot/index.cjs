@@ -157,13 +157,23 @@ function unixCandidates() {
 function executableCandidates(config) {
   const entries = [];
   const add = (candidate, source) => {
-    const value = String(candidate || "").trim();
+    const value = String(candidate || "")
+      .trim()
+      .replace(/^"(.*)"$/, "$1")
+      .trim();
     if (!value) return;
     if (entries.some((entry) => entry.path === value)) return;
     entries.push({ path: value, source });
   };
 
-  add(config?.executable, "config");
+  const configured = String(config?.executable || "").trim();
+  if (configured && isDir(configured)) {
+    // A folder was pasted instead of the binary: look for Godot inside it.
+    for (const found of scanDir(configured, process.platform === "win32" ? /^godot.*\.exe$/i : /^godot/i)) {
+      add(found, "config");
+    }
+  }
+  add(configured, "config");
   for (const key of ["GODOT_BIN", "GODOT", "GODOT4"]) {
     add(process.env[key], "env");
   }
