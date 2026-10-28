@@ -558,7 +558,7 @@ const ModelSelect: React.FC<{
               placeholder="Search models or providers"
               onChange={(event) => {
                 setQuery(event.target.value);
-                setHot(event.target.value.trim() ? 1 : 0);
+                setHot(event.target.value.trim() && flat.length > 1 ? 1 : 0);
               }}
             />
           </div>
@@ -1303,7 +1303,7 @@ const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, 
               active={activeTab === "setup"}
               icon={<IcoDownload className="h-4 w-4" />}
               label="Setup"
-              hint="Install runtimes"
+              hint="Установка сред"
               onClick={() => setActiveTab("setup")}
             />
           </nav>
