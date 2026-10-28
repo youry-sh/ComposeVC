@@ -9947,8 +9947,8 @@
    A skeletal snake eating its own tail instead of the old radar scope: one
    filled SVG body with vertebra spikes and an open-jawed head, turned by a
    single composited rotation plus a tongue-flick opacity tween. No timers, no
-   React state, no layout work per frame; colours are theme tokens, so mono /
-   winter / graphite re-tint it for free, and reduced motion freezes it into a
+   React state, no layout work per frame; colours are theme tokens, so it
+   re-tints with the palette for free, and reduced motion freezes it into a
    readable still frame. */
 .aside-snake {
   display: flex;
