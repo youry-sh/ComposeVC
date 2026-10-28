@@ -39,7 +39,6 @@ import {
 } from "lucide-react";
 import { AppLanguage, languageNames, Translation } from "../i18n";
 import { ProviderConfig, CfMailConfig, TokenCountingMode } from "../types";
-import { applyTheme, getStoredTheme, THEMES, ThemeId } from "../themes";
 import {
   DEFAULT_MOUSE_SNIPPETS,
   loadMouseSnippets,
@@ -1158,9 +1157,6 @@ const CfMailSettings: React.FC = () => {
 const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, labels, language, onLanguageChange, onChange }) => {
   const [state, dispatch] = useReducer(fsmReducer, { status: "idle", draft: config, errorMsg: null, tx: 0 });
   const [activeTab, setActiveTab] = useState<NavTab>("appearance");
-  const [theme, setTheme] = useState<ThemeId>(() =>
-    typeof window !== "undefined" ? getStoredTheme() : "mono"
-  );
   const [mouseSnippets, setMouseSnippets] = useState<MouseSnippetsConfig>(() =>
     typeof window !== "undefined" ? loadMouseSnippets() : { ...DEFAULT_MOUSE_SNIPPETS }
   );
