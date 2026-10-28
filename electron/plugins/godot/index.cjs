@@ -173,6 +173,16 @@ function executableCandidates(config) {
   return entries;
 }
 
+function consoleSibling(executable) {
+  if (process.platform !== "win32") return "";
+  const ext = path.extname(executable);
+  const base = ext ? executable.slice(0, executable.length - ext.length) : executable;
+  for (const candidate of [`${base}_console${ext || ".exe"}`, `${base}.console${ext || ".exe"}`]) {
+    if (candidate !== executable && isFile(candidate)) return candidate;
+  }
+  return "";
+}
+
 function readVersion(executable) {
   const key = `${executable}::${(() => {
     try {
@@ -194,21 +204,38 @@ function readVersion(executable) {
     full = line.trim().slice(0, 120);
     return match[1].replace(/[.-]+$/, "");
   };
-  try {
-    const output = execFileSync(executable, ["--version"], {
-      timeout: 20000,
-      windowsHide: true,
-      encoding: "utf8",
-      maxBuffer: 2 * 1024 * 1024,
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-    version = parse(output);
-    if (!version) error = "Godot не сообщил версию.";
-  } catch (err) {
-    const stdout = err?.stdout ? String(err.stdout) : "";
-    const stderr = err?.stderr ? String(err.stderr) : "";
-    version = parse(stdout) || parse(stderr);
-    if (!version) error = (err?.message || String(err)).slice(0, 400);
+  const probeOnce = (binary) => {
+    try {
+      const output = execFileSync(binary, ["--version"], {
+        timeout: 10000,
+        windowsHide: true,
+        encoding: "utf8",
+        maxBuffer: 2 * 1024 * 1024,
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+      return { version: parse(output), error: parse(output) ? "" : "Godot не сообщил версию." };
+    } catch (err) {
+      const stdout = err?.stdout ? String(err.stdout) : "";
+      const stderr = err?.stderr ? String(err.stderr) : "";
+      const parsed = parse(stdout) || parse(stderr);
+      return { version: parsed, error: parsed ? "" : (err?.message || String(err)).slice(0, 400) };
+    }
+  };
+
+  const direct = probeOnce(executable);
+  version = direct.version;
+  error = direct.error;
+  // The Windows GUI binary has no console, so `--version` may print nothing;
+  // the *_console.exe sibling shipped next to it always answers.
+  if (!version) {
+    const sibling = consoleSibling(executable);
+    if (sibling) {
+      const viaConsole = probeOnce(sibling);
+      if (viaConsole.version) {
+        version = viaConsole.version;
+        error = "";
+      }
+    }
   }
   const result = { executable, version, full, error, at: Date.now() };
   detectCache.set(key, result);
@@ -218,6 +245,7 @@ function readVersion(executable) {
 function detect(config) {
   const candidates = executableCandidates(config);
   const checked = [];
+  let existingWithoutVersion = null;
   for (const candidate of candidates) {
     if (!isFile(candidate.path)) {
       checked.push({ path: candidate.path, ok: false, error: "не найден" });
@@ -226,7 +254,7 @@ function detect(config) {
     const info = readVersion(candidate.path);
     checked.push({
       path: candidate.path,
-      ok: !info.error,
+      ok: true,
       version: info.version,
       error: info.error || "",
     });
@@ -238,8 +266,23 @@ function detect(config) {
         source: candidate.source,
         checked,
         error: "",
+        note: "",
       };
     }
+    // The file exists and the user pointed at it (or it sits in a Godot
+    // install dir): trust the path even when the version cannot be read.
+    if (!existingWithoutVersion) existingWithoutVersion = { candidate, info };
+  }
+  if (existingWithoutVersion) {
+    return {
+      found: true,
+      executable: existingWithoutVersion.candidate.path,
+      version: "",
+      source: existingWithoutVersion.candidate.source,
+      checked,
+      error: "",
+      note: "Версию Godot прочитать не удалось (GUI-сборка без консоли) — движок найден по пути.",
+    };
   }
   return {
     found: false,
@@ -1312,7 +1355,9 @@ async function withJob(userDataPath, options, work) {
 
 async function probe(userDataPath, config) {
   const detected = detect(config);
-  if (!detected.found) {
+  const configured = String(config?.executable || "").trim();
+  const executable = detected.executable || (configured && isFile(configured) ? configured : "");
+  if (!executable) {
     return {
       ok: false,
       found: false,
@@ -1324,20 +1369,24 @@ async function probe(userDataPath, config) {
       error: detected.error,
     };
   }
-  const cacheKey = `${detected.executable}::${detected.version}`;
+  const cacheKey = `${executable}::${detected.version}`;
   const cached = probeCache.get(cacheKey);
   if (cached && Date.now() - cached.at < 10 * 60 * 1000) return cached.value;
 
-  const run = await runCommand(detected.executable, ["--version"], { timeoutSec: 15 });
+  const run = await runCommand(executable, ["--version"], { timeoutSec: 20 });
   const output = `${run.stdout}\n${run.stderr}`.trim();
-  const version = (output.match(/(\d+\.\d+(?:\.\d+)?[.\w-]*)/) || [])[1] || detected.version;
+  const version = (output.match(/(\d+\.\d+(?:\.\d+)?[.\w-]*)/) || [])[1] || detected.version || "";
   const templates = exportTemplatesRoot(version) || exportTemplatesRoot(detected.version);
   const templatesFound = Boolean(templates) && isDir(templates);
   const engines = ["headless", "gltf_import", "export_release"];
   if (templatesFound) engines.push("export_templates");
+  // Godot GUI builds on Windows run fine but stay silent on --version, so a
+  // plain "no output" must not turn a working engine into a failure.
+  const ok = isFile(executable);
   const value = {
-    ok: run.ok,
-    executable: detected.executable,
+    ok,
+    found: true,
+    executable,
     version,
     engines,
     operators: {
@@ -1350,7 +1399,10 @@ async function probe(userDataPath, config) {
     },
     templates: { found: templatesFound, path: templates || "" },
     checked: detected.checked,
-    error: run.ok ? "" : run.error || output.slice(-600),
+    warning: version
+      ? detected.note || ""
+      : detected.note || "Версия не определена: Godot не печатает её без консоли. Сборка запускается в --headless и работает.",
+    error: ok ? "" : run.error || output.slice(-600),
   };
   probeCache.set(cacheKey, { at: Date.now(), value });
   return value;

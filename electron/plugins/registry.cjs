@@ -121,6 +121,7 @@ async function statusFor(userDataPath, plugin, { deep = false } = {}) {
       version: detected.version,
       source: detected.source,
       error: detected.error,
+      note: detected.note || "",
       running: godot.listRunning(),
       checked: (detected.checked || []).slice(0, 12),
     };

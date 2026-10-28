@@ -274,22 +274,24 @@ const PluginsWorkspace: React.FC = () => {
     setNotice(null);
     try {
       const result = await window.lopster?.pluginsProbe?.(plugin.id);
+      if (result?.probe) {
+        setState((prev) =>
+          prev
+            ? {
+                ...prev,
+                plugins: prev.plugins.map((entry) =>
+                  entry.id === plugin.id ? { ...entry, status: { ...entry.status, probe: result.probe } } : entry
+                ),
+              }
+            : prev
+        );
+      }
       if (!result?.ok) {
-        setError(result?.error || "Не удалось опросить плагин.");
+        setError(result?.probe?.error || result?.error || "Не удалось опросить плагин.");
         return;
       }
-      setState((prev) =>
-        prev
-          ? {
-              ...prev,
-              plugins: prev.plugins.map((entry) =>
-                entry.id === plugin.id ? { ...entry, status: { ...entry.status, probe: result.probe } } : entry
-              ),
-            }
-          : prev
-      );
       const engines = result.probe?.engines?.join(", ") || "—";
-      setNotice(`Возможности: ${engines}`);
+      setNotice(`Возможности: ${engines}${result.probe?.warning ? ` · ${result.probe.warning}` : ""}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {

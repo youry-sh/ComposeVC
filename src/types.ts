@@ -699,6 +699,8 @@ export interface ComposeVCPluginStatus {
     operators?: Record<string, boolean>;
     addons?: string[];
     error?: string;
+    warning?: string;
+    templates?: { found: boolean; path: string };
   };
 }
 

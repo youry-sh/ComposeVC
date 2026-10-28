@@ -4346,7 +4346,7 @@ ipcMain.handle("plugins:probe", async (_event, id) => {
           : null;
     if (!config) return { ok: false, error: "Для этого плагина нет опроса возможностей." };
     const probe = pluginId === "blender" ? await blenderPlugin.probe(pluginsUserData(), config) : await godotPlugin.probe(pluginsUserData(), config);
-    return { ok: Boolean(probe.ok), probe };
+    return { ok: Boolean(probe.ok), probe, error: probe.ok ? "" : probe.error || "" };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : String(error), checked: error?.checked || [] };
   }
