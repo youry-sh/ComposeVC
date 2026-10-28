@@ -6,19 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <title>ComposeVC</title>
-    <!-- Apply theme before paint to avoid flash -->
+    <!-- Single theme: pin the chrome before paint so there is no flash -->
     <script>
       (function () {
-        var allowed = { mono: 1, winter: 1, graphite: 1 };
-        var light = {};
+        document.documentElement.setAttribute("data-theme", "mono");
+        document.documentElement.style.colorScheme = "dark";
         try {
-          var t = localStorage.getItem("lopster-theme");
-          if (!allowed[t]) t = "mono";
-          document.documentElement.setAttribute("data-theme", t);
-          document.documentElement.style.colorScheme = light[t] ? "light" : "dark";
+          localStorage.removeItem("lopster-theme");
         } catch (e) {
-          document.documentElement.setAttribute("data-theme", "mono");
-          document.documentElement.style.colorScheme = "dark";
+          /* storage unavailable — the attribute above is enough */
         }
       })();
     </script>
