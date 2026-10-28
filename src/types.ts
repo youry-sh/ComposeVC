@@ -667,6 +667,9 @@ export interface ComposeVCPluginJob {
   dir: string;
   blendPath: string;
   previewPath: string;
+  scenePath?: string;
+  exportPath?: string;
+  preset?: string;
   renders: Array<{ name: string; path: string }>;
   bakes: Array<{ name: string; path: string }>;
   exports: Array<{ format: string; path: string; bytes: number }>;
@@ -678,6 +681,7 @@ export interface ComposeVCPluginJob {
   summary: string;
   stats: ComposeVCPluginJobStats;
   blender: { path: string; version: string; engine: string };
+  godot?: { path: string; version: string; preset: string } | null;
 }
 
 export interface ComposeVCPluginStatus {
@@ -710,6 +714,12 @@ export interface ComposeVCPluginConfig {
   factoryStartup: boolean;
   keepJobFiles?: boolean;
   addons: string[];
+  projectDir?: string;
+  preset?: string;
+  exportPath?: string;
+  headless?: boolean;
+  importGlb?: boolean;
+  glbDir?: string;
 }
 
 export interface ComposeVCPlugin {
