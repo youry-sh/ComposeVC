@@ -3925,6 +3925,12 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
         return;
       }
       const chunk = detail.text;
+      // Expert "В чат" / notification-style delivery: go straight to the model
+      // instead of parking the prompt in the composer.
+      if (detail.autoSend) {
+        autoSendRef.current(chunk);
+        return;
+      }
       setInput((current) => {
         if (!detail.append || !current.trim()) return chunk;
         const sep = current.endsWith("\n") ? "\n" : "\n\n";
@@ -4258,9 +4264,9 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
     [addPendingImages, applyPendingFiles, flashAttachNotice]
   );
 
-  const handleSend = () => {
-    const text = input.trim();
-    const images = pendingImages.length ? [...pendingImages] : undefined;
+  /** Shared send path — used by the composer button and by auto-send inserts. */
+  const sendContent = (raw: string, images?: ChatImageAttachment[]) => {
+    const text = raw.trim();
     const filesBlock = buildAttachedFilesBlock(pendingFiles);
     // Attachments travel inside the user turn, so queue/retry/history all keep them.
     const content = [text, filesBlock].filter(Boolean).join("\n\n");
@@ -4285,6 +4291,30 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
     window.setTimeout(pin, 32);
     window.setTimeout(pin, 120);
     window.setTimeout(pin, 280);
+  };
+
+  /** Expert "В чат" delivers the prompt straight to the model — no composer stop. */
+  const autoSendContent = (raw: string) => {
+    const text = raw.trim();
+    if (!text) return;
+    pushInputHistory(text);
+    historyIndexRef.current = -1;
+    draftBeforeHistoryRef.current = "";
+    stickToBottomRef.current = true;
+    onSend(text, undefined);
+    setHint(null);
+    const pin = () => messagesScrollRef.current?.scrollToBottom({ smooth: false });
+    pin();
+    requestAnimationFrame(pin);
+    window.setTimeout(pin, 32);
+    window.setTimeout(pin, 120);
+    window.setTimeout(pin, 280);
+  };
+  const autoSendRef = useRef<(raw: string) => void>(autoSendContent);
+  autoSendRef.current = autoSendContent;
+
+  const handleSend = () => {
+    sendContent(input, pendingImages.length ? [...pendingImages] : undefined);
   };
 
   const handlePasteImages = (e: React.ClipboardEvent) => {

@@ -204,12 +204,16 @@ export function dispatchSendToChat(detail: { text: string; target: SendTarget })
 
   focusTarget(target, slots);
   const requestId = `stc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  const payload = { requestId, text, target };
+  const payload = { requestId, text, target, autoSend: true };
   window.dispatchEvent(new CustomEvent(SEND_TO_CHAT_EVENT, { detail: payload }));
 
   const hostReady = hasMountedChatHost();
   if (!hostReady) writePending({ ...payload, at: Date.now() });
-  dispatchInsertChatInput(text, false, { targetSlotId: target.slotId, requestId });
+  dispatchInsertChatInput(text, false, {
+    targetSlotId: target.slotId,
+    requestId,
+    autoSend: true,
+  });
   if (hostReady) clearPending(requestId);
   return { ok: true };
 }
