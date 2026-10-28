@@ -149,12 +149,24 @@ const SetupCard: React.FC<{
       ) : null}
 
       {!active && errorText ? (
-        <p
-          className="scrollbar-thin mt-2 max-h-24 overflow-auto whitespace-pre-line border-t pt-2 font-mono text-[10px] leading-snug"
-          style={{ borderColor: "var(--border)", color: "var(--danger)" }}
-        >
-          {errorText}
-        </p>
+        <div className="mt-2 min-w-0 border-t pt-2" style={{ borderColor: "var(--border)" }}>
+          <p
+            className="scrollbar-thin max-h-24 overflow-auto whitespace-pre-line font-mono text-[10px] leading-snug"
+            style={{ color: "var(--danger)" }}
+          >
+            {errorText}
+          </p>
+          <div className="mt-1 flex justify-end">
+            <button
+              type="button"
+              className="settings-chip whitespace-nowrap"
+              disabled={disabled}
+              onClick={() => onManual(component.id)}
+            >
+              Скачать вручную
+            </button>
+          </div>
+        </div>
       ) : null}
 
       <div className="mt-auto flex items-center justify-between gap-2 pt-2">
@@ -166,12 +178,12 @@ const SetupCard: React.FC<{
           {active
             ? `${percent !== null ? `${percent}% · ` : ""}${progress?.step || "…"}`
             : isInstalled
-              ? "готово к работе"
+              ? "установлено"
               : errorText
                 ? "ошибка"
                 : "не установлено"}
         </span>
-        <div className="flex shrink-0 items-center gap-1.5">
+        <div className="ml-auto flex shrink-0 items-center gap-1.5">
           {isInstalled ? (
             <button
               type="button"
@@ -201,16 +213,6 @@ const SetupCard: React.FC<{
               Скачать и установить
             </button>
           )}
-          {!active && state === "error" ? (
-            <button
-              type="button"
-              className="settings-chip whitespace-nowrap"
-              disabled={disabled}
-              onClick={() => onManual(component.id)}
-            >
-              Вручную
-            </button>
-          ) : null}
         </div>
       </div>
     </div>
