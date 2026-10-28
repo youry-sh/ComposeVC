@@ -1485,6 +1485,16 @@ const ToolActivityRow: React.FC<{
     step.name === "web_fetch"
       ? (step.result as { url?: string; title?: string; text?: string; truncated?: boolean } | undefined)
       : undefined;
+  // vision / vision_blender return compact preview descriptors (path or url) of the
+  // pictures they looked at — the row renders them as a thumbnail card when opened.
+  const visionPreviews: VisionPreviewImage[] =
+    step.name === "vision" || step.name === "vision_blender" || step.name === "vision_godot"
+      ? step.result && typeof step.result === "object" && Array.isArray((step.result as { previews?: unknown }).previews)
+        ? ((step.result as { previews: VisionPreviewImage[] }).previews || []).filter(
+            (preview) => Boolean(preview && (preview.path || preview.url)),
+          )
+        : []
+      : [];
   const askResult =
     step.name === "ask_user" && step.type === "tool_end" && step.ok && step.result && typeof step.result === "object"
       ? (step.result as AskUserResult)
@@ -1545,7 +1555,8 @@ const ToolActivityRow: React.FC<{
     step.name === "read_file" ||
     step.name === "grep" ||
     step.name === "web_search" ||
-    step.name === "web_fetch";
+    step.name === "web_fetch" ||
+    visionPreviews.length > 0;
 
   const [open, setOpen] = useState(false);
   const [imageHidden, setImageHidden] = useState(false);
@@ -1744,6 +1755,10 @@ const ToolActivityRow: React.FC<{
               text={webFetchResult.text}
               truncated={webFetchResult.truncated}
             />
+          )}
+
+          {visionPreviews.length > 0 && step.type === "tool_end" && (
+            <VisionPreviewCard previews={visionPreviews} />
           )}
         </>
       )}
