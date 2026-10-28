@@ -54,7 +54,12 @@ const ChatMonoScroll = forwardRef<ChatMonoScrollHandle, ChatMonoScrollProps>(
   const measuredRef = useRef(false);
   const dragRef = useRef<{ startY: number; startScroll: number } | null>(null);
 
-  const syncThumb = useCallback(() => {
+  /**
+   * `trackAway` is only passed for real scroll events (and the first mount measure): content
+   * growth must never flip the «user scrolled away» flag, otherwise a big streamed chunk would
+   * cancel ChatPanel's auto-follow for a frame.
+   */
+  const syncThumb = useCallback((trackAway = false) => {
     const el = viewportRef.current;
     if (!el) return;
     const { scrollTop, scrollHeight, clientHeight } = el;
@@ -71,7 +76,9 @@ const ChatMonoScroll = forwardRef<ChatMonoScrollHandle, ChatMonoScrollProps>(
     const maxTop = Math.max(0, track - height);
     const top = RAIL_INSET + Math.round((scrollTop / overflow) * maxTop);
     setThumb({ visible: true, top, height });
-    setAtBottom(scrollHeight - scrollTop - clientHeight < BOTTOM_GAP);
+    const gap = scrollHeight - scrollTop - clientHeight;
+    if (gap < BOTTOM_GAP) setAtBottom(true);
+    else if (trackAway) setAtBottom(false);
   }, []);
 
   const scrollToBottom = useCallback((opts?: { smooth?: boolean }) => {
@@ -119,8 +126,8 @@ const ChatMonoScroll = forwardRef<ChatMonoScrollHandle, ChatMonoScrollProps>(
   useEffect(() => {
     const el = viewportRef.current;
     if (!el) return;
-    syncThumb();
-    const onScroll = () => syncThumb();
+    syncThumb(true);
+    const onScroll = () => syncThumb(true);
     el.addEventListener("scroll", onScroll, { passive: true });
     const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => syncThumb()) : null;
     ro?.observe(el);
