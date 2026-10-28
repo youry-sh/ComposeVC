@@ -13903,12 +13903,12 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   .titlebar-update-bar > i { transition: none; }
 }
 
-/* ── Graphite: dialogs & settings stay neutral ─────────────────────────────
-   No orange outlines or rings inside modals and the settings surface — the
-   accent lives in the chrome (active tab, chat rail, primary actions, live
-   dots), not on dialog frames, fields or selected rows. */
+/* ── Graphite: dialogs & settings ──────────────────────────────────────────
+   Modal frames and rows stay neutral, but fields, focus and the active nav
+   marker carry the warm accent so the settings surface belongs to the same
+   theme as the chrome. */
 [data-theme="graphite"] .settings-theme-row[aria-pressed="true"] {
-  border-color: var(--border-strong);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
   box-shadow: none;
 }
 [data-theme="graphite"] .settings-theme-row[aria-pressed="true"] .settings-theme-active-dot {
@@ -16034,6 +16034,14 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
 [data-theme="graphite"] .theme-panel,
 [data-theme="graphite"] .runner-header {
   border-color: color-mix(in srgb, var(--accent) 14%, var(--border));
+}
+/* Selected workspace row mirrors the chat rail: orange bar, warm wash. */
+[data-theme="graphite"] .chat-workspace-item.is-active {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 24%, var(--border));
+}
+[data-theme="graphite"] .chat-workspace-item.is-active::before {
+  background: var(--accent);
 }
 [data-theme="graphite"] .theme-input::placeholder,
 [data-theme="graphite"] .settings-field-input::placeholder,
