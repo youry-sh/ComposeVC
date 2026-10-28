@@ -8233,47 +8233,6 @@
 		.settings-grid-2 { grid-template-columns: minmax(0, 1fr); }
 	}
 
-	/* Theme picker row (Appearance). */
-	.settings-theme-row {
-		display: flex;
-		align-items: center;
-		gap: 14px;
-		width: 100%;
-		padding: 12px 14px;
-		border: 1px solid var(--border);
-		border-radius: 10px;
-		background: color-mix(in srgb, var(--surface) 72%, transparent);
-		text-align: left;
-		cursor: pointer;
-		outline: none;
-		transition: border-color .14s ease, background .14s ease;
-	}
-	.settings-theme-row:hover {
-		border-color: var(--border-strong);
-		background: var(--surface-2);
-	}
-	.settings-theme-row[aria-pressed="true"] {
-		border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
-		box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 14%, transparent);
-	}
-	.settings-theme-swatches {
-		display: inline-flex;
-		gap: 3px;
-		flex-shrink: 0;
-	}
-	.settings-theme-swatch {
-		width: 26px;
-		height: 26px;
-		border-radius: 6px;
-		border: 1px solid var(--border-strong);
-	}
-	.settings-theme-active-dot {
-		width: 9px;
-		height: 9px;
-		border-radius: 999px;
-		flex-shrink: 0;
-		box-shadow: 0 0 8px var(--glow, transparent);
-	}
 
 /* Settings is static UI: native scrolling avoids MutationObserver and React scroll-thumb updates. */
 .settings-native-scroll {
