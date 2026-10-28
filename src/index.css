@@ -401,15 +401,15 @@
     --scrim: rgba(0, 0, 0, 0.84);
     --shadow-modal: 0 24px 80px rgba(0, 0, 0, 0.78);
     --shadow-menu: 0 12px 40px rgba(0, 0, 0, 0.68);
-    --scrollbar: #2e2e2e;
-    --scrollbar-hover: #454545;
-    --thinking-dot: #ff6a52;
-    --code-link: #ff8d78;
-    --code-link-hover: #ffc3b6;
-    --chat-user-bg: #141414;
+    --scrollbar: #402a22;
+    --scrollbar-hover: #6b4032;
+    --thinking-dot: #ff7059;
+    --code-link: #ff9a86;
+    --code-link-hover: #ffd0c5;
+    --chat-user-bg: #1a110e;
     --chat-assistant-bg: transparent;
-    --sidebar-tint: #060606;
-    --terminal-bg: #080808;
+    --sidebar-tint: #050302;
+    --terminal-bg: #070504;
 
     --radius-control: 6px;
     --radius-card: 10px;
