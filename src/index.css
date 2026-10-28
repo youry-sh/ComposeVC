@@ -9131,12 +9131,7 @@
   border-radius: 0;
   background: var(--ink-950);
 }
-/* Graphite: the live dot is the accent; selected rows are handled with the
-   neutral marker further down. */
-[data-theme="graphite"] .chat-rail-item.is-running .chat-rail-dot {
-  background: var(--accent);
-  box-shadow: 0 0 0 3px rgba(240, 68, 46, 0.13);
-}
+
 .chat-rail-btn {
   flex: 1 1 auto;
   min-width: 0;
@@ -13530,59 +13525,7 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   .titlebar-update-bar > i { transition: none; }
 }
 
-/* ── Graphite: dialogs & settings ──────────────────────────────────────────
-   Modal frames and rows stay neutral, but fields, focus and the active nav
-   marker carry the warm accent so the settings surface belongs to the same
-   theme as the chrome. */
-[data-theme="graphite"] .settings-theme-row[aria-pressed="true"] {
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
-  box-shadow: none;
-}
-[data-theme="graphite"] .settings-theme-row[aria-pressed="true"] .settings-theme-active-dot {
-  background-color: var(--ink-600) !important;
-  box-shadow: none;
-}
-[data-theme="graphite"] .settings-nav-item.is-active { box-shadow: none; }
-[data-theme="graphite"] .settings-nav-item.is-active::before {
-  background: var(--accent);
-  box-shadow: 0 0 8px -2px color-mix(in srgb, var(--accent) 60%, transparent);
-}
-[data-theme="graphite"] .settings-chip.is-active,
-[data-theme="graphite"] .settings-provider-row.is-active,
-[data-theme="graphite"] .provider-model-tile.is-selected {
-  border-color: color-mix(in srgb, var(--accent) 38%, var(--border));
-}
-[data-theme="graphite"] .settings-provider-row.is-active { box-shadow: none; }
-[data-theme="graphite"] .settings-header-mark {
-  border-color: var(--border-strong);
-  background: var(--surface-2);
-  color: var(--ink-800);
-}
-[data-theme="graphite"] .settings-field-input:focus,
-[data-theme="graphite"] .settings-field-textarea:focus,
-[data-theme="graphite"] .theme-input:focus,
-[data-theme="graphite"] .theme-input:focus-within {
-  border-color: var(--focus-border) !important;
-  box-shadow: 0 0 0 1px var(--focus-ring) !important;
-}
-[data-theme="graphite"] .provider-model-tile.is-selected .provider-model-indicator {
-  border-color: var(--ink-700);
-  background: var(--ink-700);
-  box-shadow: none;
-}
-[data-theme="graphite"] .chat-history-search:focus-within {
-  border-color: var(--focus-border);
-  box-shadow: 0 0 0 1px var(--focus-ring);
-}
-[data-theme="graphite"] .chat-history-row.is-active {
-  border-color: var(--border-strong);
-  background: var(--surface-2);
-}
-[data-theme="graphite"] .chat-history-badge {
-  border-color: var(--border);
-  color: var(--ink-700);
-}
-[data-theme="graphite"] .prompt-copy-status.is-ok { color: var(--ink-700); }
+
 
 /* ── Global tasks modal (rail → Tasks) ───────────────────────────────── */
 .tasks-modal {
