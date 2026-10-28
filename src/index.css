@@ -26,10 +26,9 @@
 @layer base {
   /*
    * Theme tokens — every surface/control should use these.
-   * Switch via <html data-theme="mono|winter|graphite">.
+   * One palette only: <html data-theme="mono"> (no switcher).
    *
-   * ink-0 … ink-950: chrome ladder (bg → text). Dark themes: 0=darkest.
-   * Light themes invert the ladder so existing Tailwind classes keep working.
+   * ink-0 … ink-950: chrome ladder (bg → text), 0 = darkest.
    */
 
   /* ── Mono — neutral enterprise chrome ──────────────────────────────────
