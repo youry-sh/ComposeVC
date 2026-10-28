@@ -236,9 +236,12 @@ const SendToChatModal: React.FC<Props> = ({ open, onClose, prompt, onOpenMultiId
               </div>
 
               <div className="space-y-1">
-                <span className="text-[10px] font-medium uppercase tracking-wide text-ink-500">
-                  Промпт
-                </span>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-medium uppercase tracking-wide text-ink-500">
+                    Промпт
+                  </span>
+                  <span className="text-[10px] text-ink-500">уйдёт сразу в работу</span>
+                </div>
                 <div className="send-to-chat-preview scrollbar-thin">{prompt}</div>
               </div>
 

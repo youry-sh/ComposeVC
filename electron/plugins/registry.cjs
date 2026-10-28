@@ -3,6 +3,7 @@ const path = require("path");
 
 const store = require("./store.cjs");
 const blender = require("./blender/index.cjs");
+const godot = require("./godot/index.cjs");
 
 /**
  * ComposeVC plugin host.
@@ -57,6 +58,37 @@ const PLUGINS = [
     ],
     accent: "#e87d33",
   },
+  {
+    id: "godot",
+    name: "Godot",
+    kind: "builtin",
+    version: "4.x",
+    tagline: "Сборка сцены, импорт GLB из Blender, headless-сборка и экспорт игры",
+    description:
+      "Управляет установленным Godot в headless-режиме. Создаёт проект и текстовые .tscn-сцены (Node3D, MeshInstance3D, " +
+      "StandardMaterial3D), импортирует GLB/GLTF из Blender, собирает игру через --export-release с пресетами windows/linux/macos/web, " +
+      "проверяет сцену запуском проекта. Все задачи пишутся в общий журнал плагинов и видны агенту и во вкладке «Плагины».",
+    icon: "gamepad",
+    homepage: "https://godotengine.org/download",
+    tools: ["godot"],
+    capabilities: [
+      "Проект: создание минимального project.godot, каталогов assets/scenes и главной сцены",
+      "Сцена: декларативные .tscn — Node3D, MeshInstance3D (Box/Cylinder/Sphere/Plane), StandardMaterial3D, свет и камера",
+      "Импорт: копирование GLB/GLTF из Blender в assets/ и `godot --headless --import`",
+      "Сборка: `--export-release` с пресетами windows, linux, macos, web (создаёт export_presets.cfg при необходимости)",
+      "Проверка: headless-запуск проекта на N кадров и разбор ошибок Godot",
+      "Журнал: задачи в userData/plugins/jobs с живым прогрессом в интерфейсе",
+      "Экспорт артефактов игры в папку проекта одной командой",
+    ],
+    examples: [
+      "Импортируй последний GLB из Blender в Godot и собери Windows-билд в build/windows/game.exe.",
+      "Собери в Godot демо-сцену с полом, пьедесталом и светящимся кристаллом, затем проверь её запуском.",
+      "Сделай web-экспорт проекта Godot и положи его в build/web.",
+      "Проверь, что проект Godot запускается без ошибок, и покажи лог последних строк.",
+      "Импортируй GLB, собери игру и покажи кадр через vision_godot, если есть скриншот.",
+    ],
+    accent: "#478cbf",
+  },
 ];
 
 const META_BY_ID = new Map(PLUGINS.map((plugin) => [plugin.id, plugin]));
@@ -66,22 +98,37 @@ function metaFor(id) {
 }
 
 async function statusFor(userDataPath, plugin, { deep = false } = {}) {
-  if (plugin.id !== "blender") {
-    return { found: false, error: "Для этого плагина ещё нет исполнителя.", executable: "", version: "" };
+  if (plugin.id === "blender") {
+    const detected = blender.detect(plugin.config);
+    const base = {
+      found: detected.found,
+      executable: detected.executable,
+      version: detected.version,
+      source: detected.source,
+      error: detected.error,
+      running: blender.listRunning(),
+      checked: (detected.checked || []).slice(0, 12),
+    };
+    if (!detected.found || !deep) return base;
+    const probed = await blender.probe(userDataPath, plugin.config);
+    return { ...base, probe: probed };
   }
-  const detected = blender.detect(plugin.config);
-  const base = {
-    found: detected.found,
-    executable: detected.executable,
-    version: detected.version,
-    source: detected.source,
-    error: detected.error,
-    running: blender.listRunning(),
-    checked: (detected.checked || []).slice(0, 12),
-  };
-  if (!detected.found || !deep) return base;
-  const probed = await blender.probe(userDataPath, plugin.config);
-  return { ...base, probe: probed };
+  if (plugin.id === "godot") {
+    const detected = godot.detect(plugin.config);
+    const base = {
+      found: detected.found,
+      executable: detected.executable,
+      version: detected.version,
+      source: detected.source,
+      error: detected.error,
+      running: godot.listRunning(),
+      checked: (detected.checked || []).slice(0, 12),
+    };
+    if (!detected.found || !deep) return base;
+    const probed = await godot.probe(userDataPath, plugin.config);
+    return { ...base, probe: probed };
+  }
+  return { found: false, error: "Для этого плагина ещё нет исполнителя.", executable: "", version: "" };
 }
 
 async function listPlugins(userDataPath, options = {}) {
@@ -109,7 +156,7 @@ async function listPlugins(userDataPath, options = {}) {
     version: state.version,
     plugins: list,
     jobsRoot: store.jobsRoot(userDataPath),
-    running: blender.listRunning(),
+    running: [...blender.listRunning(), ...godot.listRunning()],
   };
 }
 

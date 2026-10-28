@@ -149,6 +149,7 @@ function focusTarget(target: SendTarget, slots: ReturnType<typeof loadMultiIdeSl
 }
 
 /** Make the target workspace + column the active ones (memory, localStorage, disk). */
+function replayPending() {
   const pending = readPending();
   if (!pending) return;
   const slots = loadMultiIdeSlots();

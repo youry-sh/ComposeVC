@@ -1345,7 +1345,7 @@ async function probe(userDataPath, config) {
 }
 
 async function runScene(userDataPath, config, plan, options = {}) {
-  return withJob(userDataPath, { kind: "scene", title: options.title || (plan?.name ? `Сцена: ${plan.name}` : "Godot сцена"), config }, async ({ job, project, ctx, setStage }) => {
+  return withJob(userDataPath, { kind: "scene", title: options.title || (plan?.name ? `Сцена: ${plan.name}` : "Godot сцена"), config }, async ({ job, project, godot, ctx, setStage }) => {
     await setStage("scene", 25);
     const name = sanitizeName(plan?.name, "scene").replace(/[^\w.-]+/g, "_").toLowerCase() || "scene";
     const file = path.join(project.projectDir, "scenes", `${name}.tscn`);
@@ -1368,22 +1368,23 @@ async function runScene(userDataPath, config, plan, options = {}) {
     const nodes = (Array.isArray(plan?.nodes) ? plan.nodes : Array.isArray(plan?.objects) ? plan.objects : []).length;
     await appendLog(job.logPath, `сцена: ${file} (${nodes} узлов)\n`);
     await setStage("scene written", 55);
+    let importInfo = null;
     if (config.importGlb !== false) {
       await setStage("import", 70);
-      await runCommand(godotExecutable(config).executable || "", ["--version"]).catch(() => null);
+      const sources = await collectGlbSources(userDataPath, config, []);
+      if (sources.length) {
+        importInfo = await performImport(userDataPath, config, sources, project, godot, ctx);
+        if (!importInfo.ok) await appendLog(job.logPath, `импорт GLB с замечаниями: ${importInfo.error}\n`);
+      }
     }
     return {
       ok: true,
       scenePath: file,
-      summary: `сцена ${path.basename(file)} · ${nodes} узлов`,
-      stats: { objects: nodes },
-      warnings: [],
+      summary: `сцена ${path.basename(file)} · ${nodes} узлов${importInfo?.imported?.length ? ` · ${importInfo.imported.length} GLB` : ""}`,
+      stats: { objects: nodes + (importInfo?.imported?.length || 0) },
+      warnings: importInfo && !importInfo.ok ? [`glb: ${importInfo.error}`] : [],
     };
   });
-}
-
-function godotExecutable(config) {
-  return detect(config);
 }
 
 async function importGlb(userDataPath, config, files, options = {}) {
