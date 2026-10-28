@@ -3747,9 +3747,19 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
     chatWidthRef.current = chatWidth;
   }, [chatWidth]);
 
-  /** ChatMonoScroll tracks the same `< 96` gap for its «jump to bottom» button. */
-  const handleAtBottomChange = useCallback((atBottom: boolean) => {
-    stickToBottomRef.current = atBottom;
+  // Kept as a plain scroll listener (not via ChatMonoScroll's onAtBottomChange) so the flag
+  // updates synchronously inside the scroll event — a streaming append can never pin the
+  // view right after the user scrolled up.
+  useEffect(() => {
+    const viewport = messagesScrollRef.current?.getViewport();
+    if (!viewport) return;
+    const onScroll = () => {
+      const gap = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
+      stickToBottomRef.current = gap < 96;
+    };
+    viewport.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => viewport.removeEventListener("scroll", onScroll);
   }, []);
 
   useEffect(() => {
@@ -4645,7 +4655,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
         className="flex-1 min-h-0"
         showScrollToBottom
         scrollToBottomLabel={labels.scrollToBottom}
-        onAtBottomChange={handleAtBottomChange}
       >
       <div className="relative px-4 py-4 space-y-5 min-h-full">
         {messages.length === 0 && !thinking && (
