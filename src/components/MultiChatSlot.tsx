@@ -2542,10 +2542,7 @@ const MultiChatSlot: React.FC<MultiChatSlotProps> = ({
         void window.lopster?.notifyAgentComplete({
           body: (labels.agentFinished || "{name}: agent finished").replace("{name}", finishedName),
           force: document.visibilityState !== "visible",
-          theme:
-            document.documentElement.getAttribute("data-theme") ||
-            window.localStorage.getItem("lopster-theme") ||
-            "mono",
+          theme: document.documentElement.getAttribute("data-theme") || "mono",
         });
       }
       drainMessageQueue(runSessionId);

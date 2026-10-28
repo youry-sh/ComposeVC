@@ -157,10 +157,8 @@
   }
 
   /* ── Mono is the only palette ───────────────────────────────────────────
-     Older builds shipped two extra palettes (winter, graphite); their tokens
-     and overrides were removed together with the theme switcher. */
-
-  /* ── Чёрный (Graphite) palette removed ─────────────────────────────────── */
+     The old winter/graphite palettes and their overrides were removed together
+     with the theme switcher; every surface below reads the mono tokens only. */
 
 	  * {
 	    margin: 0;
