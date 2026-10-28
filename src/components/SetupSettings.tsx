@@ -85,67 +85,40 @@ const SetupCard: React.FC<{
   const currentStep = stepIndex(state);
 
   return (
-    <div className="settings-card">
-      <div className="flex items-start gap-2.5">
-        <span className="settings-header-mark shrink-0" style={{ width: 26, height: 26 }}>
+    <div className="settings-card flex h-full min-w-0 flex-col">
+      <div className="flex items-start gap-2">
+        <span className="settings-header-mark shrink-0" style={{ width: 24, height: 24 }}>
           <Icon className="h-3.5 w-3.5" />
         </span>
-
         <div className="min-w-0 flex-1">
-          <div className="settings-card-title !mb-0 truncate">{component.name}</div>
-          <p className="mt-1 text-[11px] leading-snug text-ink-500">{component.blurb}</p>
-          {component.dependsOn.length > 0 ? (
-            <p className="mt-1 font-mono text-[10px] leading-snug text-ink-500">
-              Зависимости: {component.dependsOn.join(", ")}
-            </p>
-          ) : null}
-          {isInstalled && component.path ? (
-            <p className="mt-1 truncate font-mono text-[10px] leading-snug text-ink-600" title={component.path}>
-              {component.path}
-            </p>
-          ) : null}
-        </div>
-
-        <div className="flex shrink-0 flex-col items-end gap-1.5">
-          {isInstalled ? (
-            <button
-              type="button"
-              disabled
-              title={component.path || undefined}
-              className="settings-chip is-active inline-flex items-center gap-1"
-            >
-              <IcoCheckCircle className="h-3 w-3" />
-              {`Уже установлено${version ? ` · v${version}` : ""}`}
-            </button>
-          ) : active ? (
-            <button
-              type="button"
-              className="settings-chip"
-              style={{ color: "var(--danger)" }}
-              onClick={() => onCancel(component.id)}
-            >
-              Отмена
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="ui-btn-primary h-7 px-3 text-[11px]"
-              disabled={disabled}
-              onClick={() => onInstall(component.id)}
-            >
-              Скачать и установить
-            </button>
-          )}
-          {state === "error" ? (
-            <button type="button" className="settings-chip" disabled={disabled} onClick={() => onManual(component.id)}>
-              Скачать вручную
-            </button>
-          ) : null}
+          <div className="flex items-center gap-1.5">
+            <div className="settings-card-title !mb-0 truncate">{component.name}</div>
+            {isInstalled ? <IcoCheckCircle className="h-3 w-3 shrink-0" style={{ color: "var(--ok)" }} /> : null}
+          </div>
+          <p
+            className="mt-1 overflow-hidden text-[11px] leading-snug text-ink-500"
+            style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}
+          >
+            {component.blurb}
+          </p>
         </div>
       </div>
 
+      <div className="mt-2 min-w-0">
+        {component.dependsOn.length > 0 ? (
+          <p className="truncate font-mono text-[10px] leading-snug text-ink-500">
+            Зависимости: {component.dependsOn.join(", ")}
+          </p>
+        ) : null}
+        {isInstalled ? (
+          <p className="truncate font-mono text-[10px] leading-snug text-ink-600" title={component.path || undefined}>
+            {component.path || "путь не определён"}
+          </p>
+        ) : null}
+      </div>
+
       {active ? (
-        <div className="mt-2 border-t pt-2" style={{ borderColor: "var(--border)" }}>
+        <div className="mt-2 min-w-0 border-t pt-2" style={{ borderColor: "var(--border)" }}>
           <div className="flex items-center gap-1.5 font-mono text-[10px]">
             {STEPS.map((step, index) => {
               const done = index < currentStep || state === "done";
@@ -164,11 +137,6 @@ const SetupCard: React.FC<{
             })}
             {percent !== null ? <span className="ml-auto text-ink-600">{percent}%</span> : null}
           </div>
-          {progress?.step ? (
-            <p className="mt-1 truncate font-mono text-[10px] text-ink-600" title={progress.step}>
-              {progress.step}
-            </p>
-          ) : null}
           {log.length > 0 ? (
             <pre
               className="scrollbar-thin mt-1 max-h-24 overflow-auto whitespace-pre-wrap break-all rounded-sm px-1.5 py-1 font-mono text-[10px] leading-[1.45] text-ink-600"
@@ -182,12 +150,69 @@ const SetupCard: React.FC<{
 
       {!active && errorText ? (
         <p
-          className="mt-2 whitespace-pre-line border-t pt-2 font-mono text-[10px] leading-snug"
+          className="scrollbar-thin mt-2 max-h-24 overflow-auto whitespace-pre-line border-t pt-2 font-mono text-[10px] leading-snug"
           style={{ borderColor: "var(--border)", color: "var(--danger)" }}
         >
           {errorText}
         </p>
       ) : null}
+
+      <div className="mt-auto flex items-center justify-between gap-2 pt-2">
+        <span
+          className="min-w-0 flex-1 truncate font-mono text-[10px]"
+          style={{ color: !active && errorText ? "var(--danger)" : "var(--ink-500)" }}
+          title={active ? progress?.step : isInstalled ? component.path || undefined : undefined}
+        >
+          {active
+            ? `${percent !== null ? `${percent}% · ` : ""}${progress?.step || "…"}`
+            : isInstalled
+              ? "готово к работе"
+              : errorText
+                ? "ошибка"
+                : "не установлено"}
+        </span>
+        <div className="flex shrink-0 items-center gap-1.5">
+          {isInstalled ? (
+            <button
+              type="button"
+              disabled
+              title={component.path || undefined}
+              className="settings-chip is-active inline-flex items-center gap-1 whitespace-nowrap"
+            >
+              <IcoCheckCircle className="h-3 w-3" />
+              {`Уже установлено${version ? ` · v${version}` : ""}`}
+            </button>
+          ) : active ? (
+            <button
+              type="button"
+              className="settings-chip whitespace-nowrap"
+              style={{ color: "var(--danger)" }}
+              onClick={() => onCancel(component.id)}
+            >
+              Отмена
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="ui-btn-primary h-7 whitespace-nowrap px-2.5 text-[11px]"
+              disabled={disabled}
+              onClick={() => onInstall(component.id)}
+            >
+              Скачать и установить
+            </button>
+          )}
+          {!active && state === "error" ? (
+            <button
+              type="button"
+              className="settings-chip whitespace-nowrap"
+              disabled={disabled}
+              onClick={() => onManual(component.id)}
+            >
+              Вручную
+            </button>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 };
@@ -457,7 +482,7 @@ export const SetupSettings: React.FC<SetupSettingsProps> = () => {
               <div className="settings-card-title !mb-0">{group.title}</div>
               <span className="text-[10px] uppercase tracking-[0.1em] text-ink-500">{group.hint}</span>
             </div>
-            <div className="grid gap-2">
+            <div className="grid grid-cols-1 items-stretch gap-2 md:grid-cols-2 lg:grid-cols-3">
               {items.map((component) => (
                 <SetupCard
                   key={component.id}
