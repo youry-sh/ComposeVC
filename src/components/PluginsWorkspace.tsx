@@ -515,8 +515,17 @@ const PluginsWorkspace: React.FC = () => {
                   <button type="button" className={quietBtn} onClick={() => void toggleEnabled()}>
                     {plugin.enabled ? "Включён" : "Выключен"}
                   </button>
-                  <button type="button" className={primaryBtn} onClick={() => void runDemo()} disabled={demoBusy}>
-                    {demoBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
+                  <button
+                    type="button"
+                    className={primaryBtn}
+                    onClick={() => void (plugin.id === "godot" ? godotDemo() : runDemo())}
+                    disabled={plugin.id === "godot" ? godotAction !== null : demoBusy}
+                  >
+                    {(plugin.id === "godot" ? godotAction === "demo" : demoBusy) ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Wand2 className="h-3.5 w-3.5" />
+                    )}
                     Демо-сцена
                   </button>
                 </div>
@@ -630,6 +639,152 @@ const PluginsWorkspace: React.FC = () => {
                 </div>
               </Section>
 
+              {plugin.id === "godot" && (
+                <Section
+                  title="Сборка и экспорт"
+                  actions={
+                    <button
+                      type="button"
+                      className={primaryBtn}
+                      onClick={() => void saveConfig()}
+                      disabled={!dirty || saving}
+                    >
+                      {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                      Сохранить
+                    </button>
+                  }
+                >
+                  <div className="grid gap-2 lg:grid-cols-4">
+                    <label className="col-span-2 grid min-w-0 gap-1">
+                      <span className={labelClass}>Проект</span>
+                      <div className="flex min-w-0 items-center gap-1.5">
+                        <input
+                          type="text"
+                          value={draft?.projectDir ?? ""}
+                          onChange={(event) => updateDraft({ projectDir: event.target.value })}
+                          placeholder="userData/plugins/godot/project"
+                          className={fieldClass}
+                          style={fieldStyle}
+                          spellCheck={false}
+                        />
+                        <button type="button" className={quietBtn} onClick={() => void pickProjectDir()}>
+                          Обзор…
+                        </button>
+                      </div>
+                    </label>
+                    <label className="col-span-2 grid min-w-0 gap-1">
+                      <span className={labelClass}>Файл экспорта</span>
+                      <input
+                        type="text"
+                        value={draft?.exportPath ?? ""}
+                        onChange={(event) => updateDraft({ exportPath: event.target.value })}
+                        placeholder="build/<preset>/game"
+                        className={fieldClass}
+                        style={fieldStyle}
+                        spellCheck={false}
+                      />
+                    </label>
+                    <label className="col-span-2 grid min-w-0 gap-1">
+                      <span className={labelClass}>Каталог GLB</span>
+                      <input
+                        type="text"
+                        value={draft?.glbDir ?? ""}
+                        onChange={(event) => updateDraft({ glbDir: event.target.value })}
+                        placeholder="по умолчанию: папка результатов Blender"
+                        className={fieldClass}
+                        style={fieldStyle}
+                        spellCheck={false}
+                      />
+                    </label>
+                    <label className="grid min-w-0 gap-1">
+                      <span className={labelClass}>Таймаут, с</span>
+                      <input
+                        type="number"
+                        min={10}
+                        max={7200}
+                        value={draft?.timeoutSec ?? 1800}
+                        onChange={(event) => updateDraft({ timeoutSec: Number(event.target.value) })}
+                        className={fieldClass}
+                        style={fieldStyle}
+                      />
+                    </label>
+                    <div className="col-span-2 flex flex-wrap items-center gap-1.5 lg:col-span-4">
+                      <span className={labelClass}>Пресет</span>
+                      {["windows", "linux", "macos", "web", "android"].map((preset) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          className={draft?.preset === preset ? primaryBtn : quietBtn}
+                          onClick={() => updateDraft({ preset })}
+                        >
+                          {preset}
+                        </button>
+                      ))}
+                    </div>
+                    <label className="flex items-center gap-2 text-[11px] text-ink-700">
+                      <input
+                        type="checkbox"
+                        checked={draft?.headless !== false}
+                        onChange={(event) => updateDraft({ headless: event.target.checked })}
+                      />
+                      headless
+                    </label>
+                    <label className="flex items-center gap-2 text-[11px] text-ink-700">
+                      <input
+                        type="checkbox"
+                        checked={draft?.importGlb !== false}
+                        onChange={(event) => updateDraft({ importGlb: event.target.checked })}
+                      />
+                      Импорт GLB
+                    </label>
+                    <div className="col-span-2 flex flex-wrap items-center gap-1.5 lg:col-span-4">
+                      <button
+                        type="button"
+                        className={quietBtn}
+                        onClick={() => void godotImportGlb()}
+                        disabled={godotAction !== null}
+                      >
+                        {godotAction === "import" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                        Импорт GLB
+                      </button>
+                      <button
+                        type="button"
+                        className={primaryBtn}
+                        onClick={() => void godotBuild()}
+                        disabled={godotAction !== null}
+                      >
+                        {godotAction === "build" ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Play className="h-3.5 w-3.5" />
+                        )}
+                        Сборка
+                      </button>
+                      <button
+                        type="button"
+                        className={quietBtn}
+                        onClick={() => void godotDemo()}
+                        disabled={godotAction !== null}
+                      >
+                        {godotAction === "demo" ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Wand2 className="h-3.5 w-3.5" />
+                        )}
+                        Демо
+                      </button>
+                      {godotProgress && (
+                        <span className="ml-auto font-mono text-[10px] text-ink-500">
+                          {godotProgress.stage || "job"} · {godotProgress.percent}%
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </Section>
+              )}
+
+              {plugin.id === "blender" && (
+                <>
               <Section
                 title="Blender-аддоны"
                 actions={
@@ -851,6 +1006,9 @@ const PluginsWorkspace: React.FC = () => {
               </Section>
 
 
+
+                </>
+              )}
 
               <Section title="Что умеет плагин">
                 <ul className="grid gap-1 text-[10px] leading-4 text-ink-600 sm:grid-cols-2">
