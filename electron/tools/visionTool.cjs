@@ -28,7 +28,7 @@ const GENERAL_PROMPT =
   "Посмотри на изображение и опиши, что на нём видно. Ответь на вопрос пользователя по содержимому: " +
   "объекты, люди, текст, интерфейс, детали. Если чего-то не видно — так и скажи, не выдумывай.";
 
-async function imageFromInput(input, userDataPath, prefix = "") {
+async function imageFromInput(input, userDataPath, prefix = "", options = {}) {
   const dataUrl = pick(input, `${prefix}data_url`, `${prefix}dataUrl`);
   if (dataUrl) {
     return { url: String(dataUrl), mimeType: String(dataUrl).slice(5).split(";")[0] || "image/png", name: "inline" };
@@ -57,7 +57,8 @@ async function imageFromInput(input, userDataPath, prefix = "") {
   }
   const jobId = pick(input, `${prefix}job`, `${prefix}job_id`);
   if (jobId) {
-    const preview = await blender.readPreviewDataUrl(userDataPath, String(jobId), pick(input, `${prefix}image`, "image_name") || "");
+    const readPreview = typeof options.jobPreview === "function" ? options.jobPreview : blender.readPreviewDataUrl;
+    const preview = await readPreview(userDataPath, String(jobId), pick(input, `${prefix}image`, "image_name") || "");
     return {
       url: preview.dataUrl,
       mimeType: "image/png",
@@ -69,7 +70,7 @@ async function imageFromInput(input, userDataPath, prefix = "") {
   return null;
 }
 
-async function resolveImages(input, userDataPath) {
+async function resolveImages(input, userDataPath, options = {}) {
   const images = [];
   const list = Array.isArray(input.images) ? input.images : Array.isArray(input.paths) ? input.paths : null;
   if (list) {
@@ -82,15 +83,15 @@ async function resolveImages(input, userDataPath) {
           images.push({ url: loaded.dataUrl, mimeType: loaded.mimeType, name: path.basename(entry) });
         }
       } else if (entry && typeof entry === "object") {
-        const image = await imageFromInput(entry, userDataPath, "");
+        const image = await imageFromInput(entry, userDataPath, "", options);
         if (image) images.push(image);
       }
     }
   }
   if (!images.length) {
-    const first = await imageFromInput(input, userDataPath, "");
+    const first = await imageFromInput(input, userDataPath, "", options);
     if (first) images.push(first);
-    const second = await imageFromInput(input, userDataPath, "image2_");
+    const second = await imageFromInput(input, userDataPath, "image2_", options);
     if (second) images.push(second);
     if (!second && input.path2) {
       const loaded = await imageTools.fileToDataUrl(String(input.path2), { maxSize: input.max_size });
@@ -159,10 +160,10 @@ async function run(action, input, context, options = {}) {
     });
   }
 
-  const images = await resolveImages(input, userDataPath);
+  const images = await resolveImages(input, userDataPath, options);
   if (!images.length) {
     throw new Error(
-      "vision: нужен источник изображения — path=/abs/file.png, job=<blender jobId>, url=https://…, data_url=data:image/… или images=[…]."
+      `vision: нужен источник изображения — path=/abs/file.png, job=<${options.jobLabel || "blender jobId"}>, url=https://…, data_url=data:image/… или images=[…].`
     );
   }
 
