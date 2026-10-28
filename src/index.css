@@ -314,8 +314,8 @@
     --surface: #0c0908;
     --surface-2: #110d0b;
     --surface-3: #17110e;
-    --border: #2a211d;
-    --border-strong: #3d2c25;
+    --border: #241e1b;
+    --border-strong: #352924;
     --text: #eae0d9;
     --text-muted: #92867e;
     --text-dim: #b3a69d;
@@ -16027,18 +16027,16 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
     0 0 14px -6px rgba(240, 68, 46, 0.45);
 }
 
-/* Panels, fields and other workspaces pick up the same warm edge. */
-[data-theme="graphite"] .theme-panel,
-[data-theme="graphite"] .runner-header {
-  border-color: color-mix(in srgb, var(--accent) 14%, var(--border));
+/* Selected chat/workspace rows: a thin, muted marker instead of a colour bar. */
+[data-theme="graphite"] .chat-workspace-item.is-active,
+[data-theme="graphite"] .chat-rail-item.is-active {
+  background: color-mix(in srgb, var(--ink-950) 7%, var(--surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 14%, var(--border));
 }
-/* Selected workspace row mirrors the chat rail: orange bar, warm wash. */
-[data-theme="graphite"] .chat-workspace-item.is-active {
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 24%, var(--border));
-}
-[data-theme="graphite"] .chat-workspace-item.is-active::before {
-  background: var(--accent);
+[data-theme="graphite"] .chat-workspace-item.is-active::before,
+[data-theme="graphite"] .chat-rail-item.is-active::before {
+  width: 2px;
+  background: color-mix(in srgb, var(--accent) 55%, var(--ink-700));
 }
 [data-theme="graphite"] .theme-input::placeholder,
 [data-theme="graphite"] .settings-field-input::placeholder,
