@@ -363,24 +363,32 @@ const TasksModal: React.FC<TasksModalProps> = ({ onClose }) => {
         onClick={(event) => event.stopPropagation()}
       >
         <header className="tasks-modal-head theme-strip">
-          <div className="flex items-center gap-2.5 min-w-0">
+          <div className="tasks-modal-brand">
             <span className="tasks-modal-badge">
               <ListTodo className="w-4 h-4" aria-hidden />
             </span>
-            <div className="min-w-0">
+            <div className="tasks-modal-heading">
               <div className="tasks-modal-title">Задачи</div>
-              <div className="tasks-modal-sub">
-                {counts.open} активных · {counts.done} выполнено · общий список
-              </div>
+              <div className="tasks-modal-sub">Общий список · автосохранение включено</div>
             </div>
           </div>
-          <div className="flex items-center gap-1 flex-shrink-0">
+          <div className="tasks-modal-stats" aria-hidden>
+            <span className="tasks-stat">
+              <i className="tasks-stat-dot is-open" />
+              {counts.open} активных
+            </span>
+            <span className="tasks-stat">
+              <i className="tasks-stat-dot is-done" />
+              {counts.done} выполнено
+            </span>
+          </div>
+          <div className="tasks-modal-actions">
             <button type="button" className="tasks-primary theme-primary" onClick={startCreate}>
               <Plus className="w-3.5 h-3.5" aria-hidden />
-              Новая
+              Новая задача
             </button>
             <button type="button" className="tasks-icon-btn" onClick={handleClose} aria-label="Закрыть">
-              <X className="w-3.5 h-3.5" aria-hidden />
+              <X className="w-4 h-4" aria-hidden />
             </button>
           </div>
         </header>
@@ -486,26 +494,42 @@ const TasksModal: React.FC<TasksModalProps> = ({ onClose }) => {
             {creating ? (
               <ChatMonoScroll ref={detailScrollRef} className="tasks-detail-scroll">
                 <div className="tasks-detail-inner">
-                  <div className="tasks-detail-kicker">Новая задача</div>
-                  <textarea
-                    ref={createTextareaRef}
-                    autoFocus
-                    value={draft}
-                    onChange={(event) => {
-                      setDraft(event.target.value);
-                      if (error) setError(null);
-                    }}
-                    onKeyDown={(event) => {
-                      if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
-                        event.preventDefault();
-                        createTask();
-                      }
-                    }}
-                    rows={5}
-                    placeholder="Что нужно сделать?"
-                    className="tasks-editor tasks-editor-create"
-                    aria-label="Текст новой задачи"
-                  />
+                  <div className="tasks-detail-head">
+                    <span className="tasks-detail-mark">
+                      <Plus className="w-4 h-4" aria-hidden />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="tasks-detail-kicker">Создание</div>
+                      <div className="tasks-detail-title">Новая задача</div>
+                    </div>
+                  </div>
+
+                  <div className="tasks-sheet">
+                    <div className="tasks-sheet-head">
+                      <span>Текст задачи</span>
+                      <span className="tasks-sheet-count">{draft.trim().length} симв.</span>
+                    </div>
+                    <textarea
+                      ref={createTextareaRef}
+                      autoFocus
+                      value={draft}
+                      onChange={(event) => {
+                        setDraft(event.target.value);
+                        if (error) setError(null);
+                      }}
+                      onKeyDown={(event) => {
+                        if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+                          event.preventDefault();
+                          createTask();
+                        }
+                      }}
+                      rows={6}
+                      placeholder="Что нужно сделать?"
+                      className="tasks-editor tasks-editor-create"
+                      aria-label="Текст новой задачи"
+                    />
+                  </div>
+
                   <div className="tasks-detail-actions">
                     <button type="button" className="tasks-ghost" onClick={cancelCreate}>
                       Отмена
@@ -520,7 +544,15 @@ const TasksModal: React.FC<TasksModalProps> = ({ onClose }) => {
                       Создать задачу
                     </button>
                   </div>
-                  <div className="tasks-hint">Ctrl+Enter — создать · Esc — отмена</div>
+                  <div className="tasks-hint">
+                    <kbd>Ctrl</kbd>
+                    <span>+</span>
+                    <kbd>Enter</kbd>
+                    <span>— создать</span>
+                    <span className="tasks-hint-sep" aria-hidden />
+                    <kbd>Esc</kbd>
+                    <span>— отмена</span>
+                  </div>
                 </div>
               </ChatMonoScroll>
             ) : selected ? (
@@ -538,41 +570,48 @@ const TasksModal: React.FC<TasksModalProps> = ({ onClose }) => {
                       {selected.completed ? <Check className="w-4 h-4" aria-hidden /> : null}
                     </button>
                     <div className="min-w-0 flex-1">
-                      <div className="tasks-detail-kicker">
-                        {selected.completed ? "Выполнена" : "В работе"}
-                      </div>
+                      <div className="tasks-detail-kicker">Задача</div>
                       <div className="tasks-detail-id" title={selected.id}>
                         task://{selected.id.slice(0, 18)}
                       </div>
                     </div>
+                    <span className={`tasks-status-pill${selected.completed ? " is-done" : ""}`}>
+                      {selected.completed ? "Выполнена" : "В работе"}
+                    </span>
                   </div>
 
-                  <textarea
-                    ref={editTextareaRef}
-                    value={draft}
-                    onChange={(event) => {
-                      setDraft(event.target.value);
-                      if (error) setError(null);
-                    }}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
-                        event.preventDefault();
-                        const text = draft.trim();
-                        if (text && text !== selected.text) {
-                          persist(
-                            tasksRef.current.map((task) =>
-                              task.id === selected.id
-                                ? { ...task, text, updatedAt: Date.now() }
-                                : task
-                            )
-                          );
+                  <div className="tasks-sheet">
+                    <div className="tasks-sheet-head">
+                      <span>Текст задачи</span>
+                      <span className="tasks-sheet-count">{draft.trim().length} симв.</span>
+                    </div>
+                    <textarea
+                      ref={editTextareaRef}
+                      value={draft}
+                      onChange={(event) => {
+                        setDraft(event.target.value);
+                        if (error) setError(null);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+                          event.preventDefault();
+                          const text = draft.trim();
+                          if (text && text !== selected.text) {
+                            persist(
+                              tasksRef.current.map((task) =>
+                                task.id === selected.id
+                                  ? { ...task, text, updatedAt: Date.now() }
+                                  : task
+                              )
+                            );
+                          }
                         }
-                      }
-                    }}
-                    rows={8}
-                    className="tasks-editor"
-                    aria-label="Текст задачи"
-                  />
+                      }}
+                      rows={9}
+                      className="tasks-editor"
+                      aria-label="Текст задачи"
+                    />
+                  </div>
 
                   <div className="tasks-meta">
                     <span>создана {formatStamp(selected.createdAt)}</span>
@@ -619,18 +658,28 @@ const TasksModal: React.FC<TasksModalProps> = ({ onClose }) => {
                   </div>
 
                   <div className="tasks-hint">
-                    Изменения сохраняются автоматически · Ctrl+Enter — сохранить сразу · Esc —
-                    закрыть
+                    <span>Автосохранение</span>
+                    <span className="tasks-hint-sep" aria-hidden />
+                    <kbd>Ctrl</kbd>
+                    <span>+</span>
+                    <kbd>Enter</kbd>
+                    <span>— сохранить</span>
+                    <span className="tasks-hint-sep" aria-hidden />
+                    <kbd>Esc</kbd>
+                    <span>— закрыть</span>
                   </div>
                 </div>
               </ChatMonoScroll>
             ) : (
               <ChatMonoScroll className="tasks-detail-scroll">
                 <div className="tasks-detail-empty">
-                  <ListTodo aria-hidden />
+                  <span className="tasks-detail-empty-mark">
+                    <ListTodo aria-hidden />
+                  </span>
                   <div className="tasks-detail-empty-title">Задача не выбрана</div>
                   <div className="tasks-detail-empty-sub">
-                    Выберите задачу слева или создайте новую.
+                    Выберите задачу в списке слева или создайте новую — она сразу появится в общем
+                    списке.
                   </div>
                   <button type="button" className="tasks-primary theme-primary" onClick={startCreate}>
                     <Plus className="w-3.5 h-3.5" aria-hidden />
