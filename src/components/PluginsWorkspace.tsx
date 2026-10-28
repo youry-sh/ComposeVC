@@ -317,6 +317,77 @@ const PluginsWorkspace: React.FC = () => {
     }
   };
 
+  const pickProjectDir = async () => {
+    const result = await window.lopster?.pluginsPickDirectory?.();
+    if (result?.ok && result.path) updateDraft({ projectDir: result.path });
+  };
+
+  const godotBuild = async () => {
+    if (!plugin || !draft) return;
+    setGodotAction("build");
+    setError(null);
+    setNotice(null);
+    try {
+      const result = await window.lopster?.pluginsGodotBuild?.(plugin.id, {
+        preset: draft.preset,
+        exportPath: draft.exportPath.trim(),
+        timeoutSec: Number(draft.timeoutSec) || 1800,
+      });
+      if (!result?.ok) {
+        setError([result?.error || "Сборка не удалась.", result?.hint].filter(Boolean).join(" "));
+        return;
+      }
+      setNotice(`Сборка готова: ${result.exportPath || result.preset || "ok"}`);
+      await refreshPlugins();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setGodotAction(null);
+    }
+  };
+
+  const godotImportGlb = async () => {
+    if (!draft) return;
+    setGodotAction("import");
+    setError(null);
+    setNotice(null);
+    try {
+      const result = await window.lopster?.pluginsGodotImportGlb?.({
+        files: draft.glbDir.trim() || undefined,
+      });
+      if (!result?.ok) {
+        setError(result?.error || "Импорт GLB не удался.");
+        return;
+      }
+      setNotice(`Импортировано GLB: ${result.imported?.length ?? 0}`);
+      await refreshPlugins();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setGodotAction(null);
+    }
+  };
+
+  const godotDemo = async () => {
+    if (!draft) return;
+    setGodotAction("demo");
+    setError(null);
+    setNotice(null);
+    try {
+      const result = await window.lopster?.pluginsGodotDemo?.({ preset: draft.preset });
+      if (!result?.ok) {
+        setError([result?.error || "Демо Godot не выполнилось.", result?.hint].filter(Boolean).join(" "));
+        return;
+      }
+      setNotice(`Демо готово: ${result.job?.summary || "проект собран"}`);
+      await refreshPlugins();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setGodotAction(null);
+    }
+  };
+
   const openFolder = async () => {
     try {
       const result = await window.lopster?.pluginsOpenPath?.("", state?.jobsRoot || "");
@@ -336,7 +407,7 @@ const PluginsWorkspace: React.FC = () => {
         <span className="tabular-nums text-[10px] text-ink-500">{state?.plugins.length ?? 0}</span>
         <div className="ml-auto flex min-w-0 items-center gap-1.5">
           <span className="hidden truncate font-mono text-[10px] text-ink-500 md:inline">
-            ИИ-инструменты: blender · plugin
+            {(state?.plugins || []).flatMap((entry) => entry.tools).join(" · ") || "blender"} · plugin
           </span>
           <button type="button" className={quietBtn} onClick={() => void openFolder()} title="Папка задач">
             <FolderOpen className="h-3.5 w-3.5" />
@@ -361,7 +432,7 @@ const PluginsWorkspace: React.FC = () => {
         >
           <div className="flex shrink-0 items-center justify-between px-3 py-2">
             <span className="text-[10px] font-medium uppercase tracking-[0.1em] text-ink-500">Установленные</span>
-            <span className="font-mono text-[10px] text-ink-400">1-й: Blender</span>
+            <span className="font-mono text-[10px] text-ink-400">{state?.plugins.length ?? 0} шт.</span>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-2 scrollbar-thin">
             {loading && !state ? (
