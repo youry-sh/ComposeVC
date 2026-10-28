@@ -6585,6 +6585,7 @@
     justify-content: center;
     padding: 16px;
     background: var(--ink-0);
+    overflow: hidden;
   }
 
   .chat-image-lightbox-img {
@@ -11796,7 +11797,9 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
 .gen-image-lightbox {
   position: fixed;
   inset: 0;
-  z-index: 80;
+  /* Portalled to <body> for the same reason as the chat image viewer: inside a chat
+     pane a fixed overlay is trapped in that pane and covered by sibling columns. */
+  z-index: 10020;
   display: flex;
   align-items: center;
   justify-content: center;

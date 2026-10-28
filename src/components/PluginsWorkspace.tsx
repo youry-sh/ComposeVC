@@ -23,6 +23,12 @@ type DraftConfig = {
   autoRender: boolean;
   timeoutSec: number;
   addons: string[];
+  projectDir: string;
+  preset: string;
+  exportPath: string;
+  headless: boolean;
+  importGlb: boolean;
+  glbDir: string;
 };
 
 const quietBtn =
@@ -48,6 +54,22 @@ const Section: React.FC<{
   </section>
 );
 
+const IcoGodot: React.FC<{ className?: string }> = ({ className }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    aria-hidden="true"
+  >
+    <path d="M8.2 5.6a9.4 9.4 0 0 1 7.6 0l1 0.4 2.6-.9a1 1 0 0 1 1.3.8l2 11a1 1 0 0 1-.6 1.1l-3 1.2a1 1 0 0 1-1.2-.4l-1.2-1.8H7.3L6.1 18.8a1 1 0 0 1-1.2.4l-3-1.2a1 1 0 0 1-.6-1.1l2-11a1 1 0 0 1 1.3-.8l2.6.9Z" />
+    <path d="M9.4 10.6h.01M14.6 10.6h.01" />
+  </svg>
+);
+
 const PluginsWorkspace: React.FC = () => {
   const [state, setState] = useState<ComposeVCPluginsState | null>(null);
   const [activeId, setActiveId] = useState<string>("blender");
@@ -61,6 +83,8 @@ const PluginsWorkspace: React.FC = () => {
   const [probing, setProbing] = useState(false);
   const [demoBusy, setDemoBusy] = useState(false);
   const [addonInput, setAddonInput] = useState("");
+  const [godotAction, setGodotAction] = useState<"build" | "import" | "demo" | null>(null);
+  const [godotProgress, setGodotProgress] = useState<{ stage: string; percent: number; done: boolean } | null>(null);
 
   const plugin = useMemo(
     () => state?.plugins.find((entry) => entry.id === activeId) || state?.plugins[0] || null,
@@ -94,6 +118,13 @@ const PluginsWorkspace: React.FC = () => {
       void refreshPlugins();
     });
     const offJob = window.lopster?.onPluginJob?.((payload) => {
+      if (payload?.pluginId === "godot") {
+        setGodotProgress({
+          stage: payload.stage || "",
+          percent: Number(payload.percent) || 0,
+          done: Boolean(payload.done),
+        });
+      }
       if (payload?.done) void refreshPlugins();
     });
     return () => {

@@ -1521,10 +1521,11 @@ const ToolActivityRow: React.FC<{
               </button>
             </>
           )}
-          {imageOpen && !imageHidden && (
+          {imageOpen && !imageHidden && createPortal(
             <div className="gen-image-lightbox" onClick={() => setImageOpen(false)} role="presentation">
               <img src={generatedSrc} alt={generated?.__image?.name || "generated"} draggable={false} />
-            </div>
+            </div>,
+            document.body,
           )}
         </div>
       )}
