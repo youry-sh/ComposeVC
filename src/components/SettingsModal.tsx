@@ -47,6 +47,8 @@ import {
   saveMouseSnippets,
 } from "../utils/mouseSnippets";
 import ChatMonoScroll from "./ChatMonoScroll";
+import SetupSettings from "./SetupSettings";
+import { IcoDownload } from "./topIcons";
 
 export interface SettingsModalProps {
   open: boolean;
@@ -59,7 +61,7 @@ export interface SettingsModalProps {
 }
 
 type SaveStatus = "idle" | "dirty" | "saving" | "saved" | "error";
-type NavTab = "ai" | "shortcuts" | "appearance" | "cfmail";
+type NavTab = "ai" | "shortcuts" | "appearance" | "cfmail" | "setup";
 
 function keyboardShortcuts(labels: Translation): Array<{ keys: string; action: string }> {
   return [
@@ -629,9 +631,10 @@ const AiRuntimeTab: React.FC<{
   aiRuntime: AiRuntimeState;
   matches: { labInPrompt: boolean; labInSearch: boolean; fortani: boolean; inlineHint: boolean; vision: boolean };
   choices: ModelChoice[];
+  labels: Translation;
   onPatch: (updates: Partial<AiRuntimeState>) => void;
   onTokenCountingMode: (mode: TokenCountingMode) => void;
-}> = ({ draft, aiRuntime, matches, choices, onPatch, onTokenCountingMode }) => {
+}> = ({ draft, aiRuntime, matches, choices, labels, onPatch, onTokenCountingMode }) => {
   const readId = (raw?: string) => (typeof raw === "string" ? raw.trim() : "");
   const selectValue = (raw?: string) => {
     const id = readId(raw);
@@ -650,12 +653,12 @@ const AiRuntimeTab: React.FC<{
   const mainProvider = mainModel ? draft.providers.find((provider) => provider.id === mainModel.providerId) : null;
   const mainProviderName = mainModel ? mainProvider?.name || "Unassigned provider" : "";
 
-  const stage = (raw: string, missing: boolean): RuntimeRow => {
+  const stage = (raw: string, missing: boolean): Omit<RuntimeRow, "key" | "label"> => {
     const choice = raw ? choices.find((item) => item.value === raw) || null : null;
     if (!raw || missing || !choice) {
-      return { key: "", label: "", value: "main model", provider: mainProviderName, inherit: true };
+      return { value: "main model", provider: mainProviderName, inherit: true };
     }
-    return { key: "", label: "", value: choice.modelName, provider: choice.providerName, inherit: false };
+    return { value: choice.modelName, provider: choice.providerName, inherit: false };
   };
 
   const runtimeRows: RuntimeRow[] = [
@@ -1243,12 +1246,14 @@ const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, 
     ai: labels.settingsAiRuntime,
     shortcuts: labels.settingsShortcuts,
     cfmail: "CF Mail",
+    setup: "Setup",
   }[activeTab];
   const tabSubtitle = {
     appearance: "Theme, language and mouse snippets",
     ai: "Model routing, stage models and runtime behavior",
     shortcuts: labels.mouseSnippets,
     cfmail: "cf_mail credentials",
+    setup: "Install runtimes",
   }[activeTab];
 
   return (
@@ -1293,6 +1298,13 @@ const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, 
               label="CF Mail"
               hint="cf_mail"
               onClick={() => setActiveTab("cfmail")}
+            />
+            <NavItem
+              active={activeTab === "setup"}
+              icon={<IcoDownload className="h-4 w-4" />}
+              label="Setup"
+              hint="Install runtimes"
+              onClick={() => setActiveTab("setup")}
             />
           </nav>
           <div className="settings-rail-foot">
@@ -1500,12 +1512,15 @@ const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, 
                   vision: !!visionModelId && !visionModelMatch,
                 }}
                 choices={modelChoices}
+                labels={labels}
                 onPatch={updateAiRuntime}
                 onTokenCountingMode={(mode) => commitConfig({ ...draft, tokenCountingMode: mode })}
               />
             )}
 
             {activeTab === "cfmail" && <CfMailSettings />}
+
+            {activeTab === "setup" && <SetupSettings labels={labels} />}
 
           </div>
           </ChatMonoScroll>

@@ -263,8 +263,14 @@ const TasksModal: React.FC<TasksModalProps> = ({ onClose }) => {
   useEffect(() => {
     const el = creating ? createTextareaRef.current : editTextareaRef.current;
     if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${el.scrollHeight + 2}px`;
+    const fit = () => {
+      el.style.height = "auto";
+      el.style.height = `${el.scrollHeight + 2}px`;
+    };
+    fit();
+    // Rewrapping after a window/modal resize changes the content height.
+    window.addEventListener("resize", fit);
+    return () => window.removeEventListener("resize", fit);
   }, [creating, draft, selectedId]);
 
   // Opening another task starts the detail pane at the top again.

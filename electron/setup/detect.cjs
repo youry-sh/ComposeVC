@@ -282,6 +282,8 @@ async function detectComponent(userDataPath, id, { force = false } = {}) {
     );
   }
   cache.set(component.id, { at: Date.now(), result });
+  // A forced single-component probe makes the aggregate scan snapshot stale.
+  if (force) lastScan.results = null;
   return result;
 }
 
