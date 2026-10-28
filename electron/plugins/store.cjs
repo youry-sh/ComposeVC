@@ -38,6 +38,20 @@ const DEFAULT_BLENDER_CONFIG = {
   addons: [],
 };
 
+const GODOT_EXPORT_PRESETS = ["windows", "linux", "macos", "web", "android"];
+
+const DEFAULT_GODOT_CONFIG = {
+  executable: "",
+  projectDir: "",
+  outputDir: "",
+  preset: "windows",
+  exportPath: "",
+  headless: true,
+  importGlb: true,
+  timeoutSec: 1800,
+  glbDir: "",
+};
+
 function requireUserDataPath(userDataPath) {
   const value = typeof userDataPath === "string" ? userDataPath.trim() : "";
   if (!value) throw new Error("Plugins require Electron userDataPath");
@@ -108,7 +122,12 @@ function normalizePlugin(entry, fallbackId) {
   if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
   const id = cleanString(entry.id || fallbackId, 64);
   if (!id) return null;
-  const config = id === "blender" ? normalizeBlenderConfig(entry.config) : {};
+  const config =
+    id === "blender"
+      ? normalizeBlenderConfig(entry.config)
+      : id === "godot"
+        ? normalizeGodotConfig(entry.config)
+        : {};
   return {
     id,
     enabled: entry.enabled !== false,
