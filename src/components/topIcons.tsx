@@ -145,7 +145,7 @@ export const IcoTasks: React.FC<IconProps> = ({ className }) => (
 
 /* ── Setup tab: status glyphs + language marks (24×24 stroke style) ───────── */
 
-type SetupIconProps = { className?: string };
+type SetupIconProps = { className?: string; style?: React.CSSProperties };
 
 const setupBase = {
   viewBox: "0 0 24 24",
@@ -166,16 +166,16 @@ export const IcoDownload: React.FC<SetupIconProps> = ({ className }) => (
 );
 
 /** Installed — check inside a circle */
-export const IcoCheckCircle: React.FC<SetupIconProps> = ({ className }) => (
-  <svg {...setupBase} className={className}>
+export const IcoCheckCircle: React.FC<SetupIconProps> = ({ className, style }) => (
+  <svg {...setupBase} className={className} style={style}>
     <circle cx="12" cy="12" r="8.6" />
     <path d="M8 12.3l2.7 2.7 5.4-6" />
   </svg>
 );
 
 /** Failure — warning triangle */
-export const IcoAlertTriangle: React.FC<SetupIconProps> = ({ className }) => (
-  <svg {...setupBase} className={className}>
+export const IcoAlertTriangle: React.FC<SetupIconProps> = ({ className, style }) => (
+  <svg {...setupBase} className={className} style={style}>
     <path d="M12 3.6 21 20H3z" />
     <path d="M12 9.4v4.6" />
     <circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none" />

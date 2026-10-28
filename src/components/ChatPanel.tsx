@@ -248,6 +248,7 @@ interface ChatPanelProps {
     minutesAgo?: string;
     hoursAgo?: string;
     daysAgo?: string;
+    scrollToBottom?: string;
   };
 }
 
@@ -3746,16 +3747,9 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
     chatWidthRef.current = chatWidth;
   }, [chatWidth]);
 
-  useEffect(() => {
-    const viewport = messagesScrollRef.current?.getViewport();
-    if (!viewport) return;
-    const onScroll = () => {
-      const gap = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
-      stickToBottomRef.current = gap < 96;
-    };
-    viewport.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => viewport.removeEventListener("scroll", onScroll);
+  /** ChatMonoScroll tracks the same `< 96` gap for its «jump to bottom» button. */
+  const handleAtBottomChange = useCallback((atBottom: boolean) => {
+    stickToBottomRef.current = atBottom;
   }, []);
 
   useEffect(() => {
@@ -4646,7 +4640,13 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
       )}
 
       {/* Messages */}
-      <ChatMonoScroll ref={messagesScrollRef} className="flex-1 min-h-0">
+      <ChatMonoScroll
+        ref={messagesScrollRef}
+        className="flex-1 min-h-0"
+        showScrollToBottom
+        scrollToBottomLabel={labels.scrollToBottom}
+        onAtBottomChange={handleAtBottomChange}
+      >
       <div className="relative px-4 py-4 space-y-5 min-h-full">
         {messages.length === 0 && !thinking && (
           <div className="chat-empty">

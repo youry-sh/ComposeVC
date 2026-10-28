@@ -50,12 +50,15 @@ const ChatMonoScroll = forwardRef<ChatMonoScrollHandle, ChatMonoScrollProps>(
   const [thumb, setThumb] = useState<ThumbState>({ visible: false, top: 0, height: 0 });
   const [atBottom, setAtBottom] = useState(true);
   const [active, setActive] = useState(false);
+  /** True once syncThumb measured the real viewport — avoids notifying with the optimistic default. */
+  const measuredRef = useRef(false);
   const dragRef = useRef<{ startY: number; startScroll: number } | null>(null);
 
   const syncThumb = useCallback(() => {
     const el = viewportRef.current;
     if (!el) return;
     const { scrollTop, scrollHeight, clientHeight } = el;
+    measuredRef.current = true;
     const overflow = scrollHeight - clientHeight;
     if (overflow <= 2 || clientHeight <= 0) {
       setThumb((prev) => (prev.visible ? { visible: false, top: 0, height: 0 } : prev));
@@ -109,6 +112,7 @@ const ChatMonoScroll = forwardRef<ChatMonoScrollHandle, ChatMonoScrollProps>(
   );
 
   useEffect(() => {
+    if (!measuredRef.current) return;
     onAtBottomChange?.(atBottom);
   }, [atBottom, onAtBottomChange]);
 

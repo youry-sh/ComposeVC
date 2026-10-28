@@ -735,7 +735,14 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
         projectName: slot.projectName,
       });
       const session = res?.session as unknown as
-        | { sessionId: string; messages: ExpertMessage[]; rootPath?: string | null; projectName?: string | null }
+        | {
+            sessionId: string;
+            messages: ExpertMessage[];
+            rootPath?: string | null;
+            projectName?: string | null;
+            contextTokens?: number;
+            contextLimit?: number;
+          }
         | undefined;
       if (!res?.ok || !session) {
         pushToast(res?.error || "Clipboard has no Expert session");
