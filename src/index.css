@@ -6511,7 +6511,10 @@
   .chat-image-lightbox {
     position: fixed;
     inset: 0;
-    z-index: 80;
+    /* Rendered through a portal on <body>, so it has to outrank the chat panes
+       (z-index: 9999 while one of them owns a scrim) — otherwise a sibling chat
+       column paints over the viewer and clips it. */
+    z-index: 10020;
     display: flex;
     align-items: center;
     justify-content: center;

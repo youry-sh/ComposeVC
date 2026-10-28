@@ -1106,7 +1106,7 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
                     type="button"
                     className="expert-copy expert-send-chat"
                     onClick={() => setModal({ kind: "send", slotId: slot.id, messageId: message.id })}
-                    title="Отправить промпт в чат — сразу в работу"}
+                    title="Отправить промпт в чат — сразу в работу"
                   >
                     <Send />
                     <span>В чат</span>

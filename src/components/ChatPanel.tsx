@@ -3384,7 +3384,11 @@ const ChatImageLightbox: React.FC<{
   if (!current) return null;
   const src = imageSrc(current);
 
-  return (
+  /* Portalled to <body>: a fixed overlay rendered inside a chat pane is trapped in
+     that pane's stacking context, so in a split view the sibling chat painted on top
+     of it — the photo was clipped against the neighbouring column, the close button
+     disappeared and the rest of the app stayed undimmed. */
+  return createPortal(
     <div className="chat-image-lightbox" role="dialog" aria-modal="true" onClick={onClose}>
       <div className="chat-image-lightbox-inner" onClick={(e) => e.stopPropagation()}>
         <div className="chat-image-lightbox-bar">
@@ -3434,7 +3438,8 @@ const ChatImageLightbox: React.FC<{
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
 

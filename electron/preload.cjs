@@ -222,12 +222,15 @@ contextBridge.exposeInMainWorld("lopster", {
   pluginsCancel: (jobId) => ipcRenderer.invoke("plugins:cancel", jobId),
   pluginsDeleteJob: (jobId) => ipcRenderer.invoke("plugins:deleteJob", jobId),
   pluginsPreview: (jobId, name) => ipcRenderer.invoke("plugins:preview", jobId, name || ""),
-  pluginsPickExecutable: () => ipcRenderer.invoke("plugins:pickExecutable"),
+  pluginsPickExecutable: (id) => ipcRenderer.invoke("plugins:pickExecutable", id || ""),
   pluginsPickDirectory: () => ipcRenderer.invoke("plugins:pickDirectory"),
   pluginsCopyArtifacts: (jobId, targetDir) => ipcRenderer.invoke("plugins:copyArtifacts", jobId, targetDir || ""),
   pluginsOpenPath: (jobId, target) => ipcRenderer.invoke("plugins:openPath", jobId || "", target || ""),
   pluginsOpenInBlender: (jobId, blendPath) => ipcRenderer.invoke("plugins:openInBlender", jobId || "", blendPath || ""),
   pluginsRunDemo: (id) => ipcRenderer.invoke("plugins:runDemo", id || "blender"),
+  pluginsGodotDemo: (options) => ipcRenderer.invoke("plugins:godotDemo", options || {}),
+  pluginsGodotBuild: (id, options) => ipcRenderer.invoke("plugins:godotBuild", id || "godot", options || {}),
+  pluginsGodotImportGlb: (payload) => ipcRenderer.invoke("plugins:godotImportGlb", payload || {}),
   onPluginsChanged: (callback) => {
     const listener = (_event, payload) => callback(payload || { type: "changed" });
     ipcRenderer.on("plugins:changed", listener);

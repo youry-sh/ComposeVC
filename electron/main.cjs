@@ -50,6 +50,7 @@ const docsStore = require("./docs/docsStore.cjs");
 const promptsStore = require("./promptsStore.cjs");
 const pluginsRegistry = require("./plugins/registry.cjs");
 const blenderPlugin = require("./plugins/blender/index.cjs");
+const godotPlugin = require("./plugins/godot/index.cjs");
 const cfMailConfig = require("./cfMailConfig.cjs");
 const { createExpertService } = require("./expert/index.cjs");
 
@@ -4133,6 +4134,7 @@ function broadcastPromptsChanged(payload) {
 // ── PLUGINS: built-in capabilities with their own AI tools (Blender first) ──
 
 blenderPlugin.setProgressSink((payload) => broadcastPluginJob(payload));
+godotPlugin.setProgressSink((payload) => broadcastPluginJob(payload));
 
 function broadcastPluginsChanged(payload) {
   for (const win of BrowserWindow.getAllWindows()) {
@@ -4178,6 +4180,9 @@ function publicPluginJob(job) {
     dir: job.dir,
     blendPath: job.blendPath,
     previewPath: job.previewPath,
+    scenePath: job.scenePath || "",
+    exportPath: job.exportPath || "",
+    preset: job.godot?.preset || "",
     renders: job.renders || [],
     bakes: job.bakes || [],
     exports: job.exports || [],
@@ -4198,6 +4203,7 @@ function publicPluginJob(job) {
       images: stats.images || 0,
     },
     blender: job.blender || { path: "", version: "", engine: "" },
+    godot: job.godot || null,
   };
 }
 
@@ -4332,12 +4338,17 @@ ipcMain.handle("plugins:update", async (_event, id, patch) => {
 ipcMain.handle("plugins:probe", async (_event, id) => {
   try {
     const pluginId = String(id || "blender");
-    if (pluginId !== "blender") return { ok: false, error: "Для этого плагина нет опроса возможностей." };
-    const config = await pluginsRegistry.configForBlender(pluginsUserData());
-    const probe = await blenderPlugin.probe(pluginsUserData(), config);
+    const config =
+      pluginId === "blender"
+        ? await pluginsRegistry.configForBlender(pluginsUserData())
+        : pluginId === "godot"
+          ? await pluginsRegistry.configForGodot(pluginsUserData())
+          : null;
+    if (!config) return { ok: false, error: "Для этого плагина нет опроса возможностей." };
+    const probe = pluginId === "blender" ? await blenderPlugin.probe(pluginsUserData(), config) : await godotPlugin.probe(pluginsUserData(), config);
     return { ok: Boolean(probe.ok), probe };
   } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+    return { ok: false, error: error instanceof Error ? error.message : String(error), checked: error?.checked || [] };
   }
 });
 
@@ -4347,7 +4358,7 @@ ipcMain.handle("plugins:jobs", async (_event, options) => {
       limit: Number(options?.limit) || 40,
       pluginId: options?.pluginId || undefined,
     });
-    return { ok: true, jobs: jobs.map(publicPluginJob), running: blenderPlugin.listRunning() };
+    return { ok: true, jobs: jobs.map(publicPluginJob), running: [...blenderPlugin.listRunning(), ...godotPlugin.listRunning()] };
   } catch (error) {
     return { ok: false, jobs: [], error: error instanceof Error ? error.message : String(error) };
   }
@@ -4407,24 +4418,31 @@ ipcMain.handle("plugins:deleteJob", async (_event, jobId) => {
 
 ipcMain.handle("plugins:preview", async (_event, jobId, name) => {
   try {
-    const preview = await blenderPlugin.readPreviewDataUrl(pluginsUserData(), String(jobId || ""), name || "");
+    const record = await pluginsRegistry.job(pluginsUserData(), String(jobId || ""));
+    const reader = record?.pluginId === "godot" ? godotPlugin : blenderPlugin;
+    const preview = await reader.readPreviewDataUrl(pluginsUserData(), String(jobId || ""), name || "");
     return { ok: true, ...preview };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : String(error) };
   }
 });
 
-ipcMain.handle("plugins:pickExecutable", async (event) => {
+ipcMain.handle("plugins:pickExecutable", async (event, id) => {
   try {
+    const pluginId = String(id || "blender");
+    const label = pluginId === "godot" ? "Godot" : "Blender";
     const win = BrowserWindow.fromWebContents(event.sender);
     const options = {
-      title: "Путь к Blender",
+      title: `Путь к ${label}`,
       properties: ["openFile"],
       filters:
         process.platform === "win32"
-          ? [{ name: "Blender", extensions: ["exe"] }]
-          : [{ name: "Все файлы", extensions: ["*"] }],
+          ? [{ name: label, extensions: ["exe"] }]
+          : pluginId === "godot"
+            ? [{ name: "Все файлы", extensions: ["*"] }]
+            : [{ name: "Все файлы", extensions: ["*"] }],
     };
+    if (pluginId === "godot" && process.platform !== "win32") options.properties = ["openFile"];
     const result = win ? await dialog.showOpenDialog(win, options) : await dialog.showOpenDialog(options);
     if (result.canceled || !result.filePaths?.length) return { ok: false, canceled: true };
     return { ok: true, path: result.filePaths[0] };
@@ -4506,6 +4524,65 @@ ipcMain.handle("plugins:runDemo", async (_event, id) => {
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return { ok: false, error: message, checked: error?.checked || [] };
+  }
+});
+
+ipcMain.handle("plugins:godotDemo", async (_event, options) => {
+  try {
+    const plugin = await pluginsRegistry.getPlugin(pluginsUserData(), "godot");
+    if (!plugin.enabled) return { ok: false, error: "Плагин Godot выключен." };
+    const config = await pluginsRegistry.configForGodot(pluginsUserData());
+    const job = await godotPlugin.runDemo(pluginsUserData(), config, options || {});
+    broadcastPluginsChanged({ type: "job-finished", jobId: job.job?.id || "", status: job.job?.status || "" });
+    return {
+      ok: Boolean(job.ok),
+      job: publicPluginJob(job.job),
+      error: job.error || job.hint || "",
+      hint: job.hint || "",
+    };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error), checked: error?.checked || [] };
+  }
+});
+
+ipcMain.handle("plugins:godotBuild", async (_event, id, options) => {
+  try {
+    const plugin = await pluginsRegistry.getPlugin(pluginsUserData(), String(id || "godot"));
+    if (!plugin.enabled) return { ok: false, error: "Плагин Godot выключен." };
+    const config = await pluginsRegistry.configForGodot(pluginsUserData());
+    const result = await godotPlugin.build(pluginsUserData(), config, options || {});
+    broadcastPluginsChanged({ type: "job-finished", jobId: result.job?.id || "", status: result.job?.status || "" });
+    return {
+      ok: Boolean(result.ok),
+      job: publicPluginJob(result.job),
+      error: result.error || "",
+      hint: result.hint || "",
+      preset: result.preset || "",
+      exportPath: result.exportPath || "",
+      bytes: result.bytes || 0,
+    };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error), checked: error?.checked || [] };
+  }
+});
+
+ipcMain.handle("plugins:godotImportGlb", async (_event, payload) => {
+  try {
+    const plugin = await pluginsRegistry.getPlugin(pluginsUserData(), "godot");
+    if (!plugin.enabled) return { ok: false, error: "Плагин Godot выключен." };
+    const input = payload && typeof payload === "object" ? payload : {};
+    const files = input.files || input.glb || input.paths || input.sourceDir || "";
+    const config = await pluginsRegistry.configForGodot(pluginsUserData());
+    const result = await godotPlugin.importGlb(pluginsUserData(), config, files, { title: input.title || "Импорт GLB в Godot" });
+    broadcastPluginsChanged({ type: "job-finished", jobId: result.job?.id || "", status: result.job?.status || "" });
+    return {
+      ok: Boolean(result.ok),
+      job: publicPluginJob(result.job),
+      imported: result.imported || [],
+      error: result.error || "",
+    };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error), checked: error?.checked || [] };
   }
 });
 
