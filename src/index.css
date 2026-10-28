@@ -14754,6 +14754,7 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
 
 .expert-transcript { flex: 1 1 auto; min-height: 0; }
 .expert-transcript .chat-mono-scroll-viewport { padding: 12px 12px 18px; }
+.expert-transcript .chat-mono-scroll-jump { right: 8px; bottom: 8px; width: 24px; height: 24px; }
 
 .expert-thread {
   display: flex;
