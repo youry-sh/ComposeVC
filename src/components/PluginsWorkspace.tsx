@@ -591,13 +591,17 @@ const PluginsWorkspace: React.FC = () => {
                       путь и проверка
                     </div>
                     <label className="grid min-w-0 gap-1">
-                      <span className={labelClass}>Путь к blender.exe</span>
+                      <span className={labelClass}>Путь к {plugin.name}</span>
                       <div className="flex min-w-0 items-center gap-1.5">
                         <input
                           type="text"
                           value={draft?.executable ?? ""}
                           onChange={(event) => updateDraft({ executable: event.target.value })}
-                          placeholder="Автоопределение (Program Files, PATH, Steam…)"
+                          placeholder={
+                            plugin.id === "godot"
+                              ? "Автоопределение (PATH, Program Files, LOCALAPPDATA)"
+                              : "Автоопределение (Program Files, PATH, Steam…)"
+                          }
                           className={fieldClass}
                           style={fieldStyle}
                           spellCheck={false}
@@ -618,7 +622,9 @@ const PluginsWorkspace: React.FC = () => {
                       </button>
                     </div>
                     <div className="mt-2 text-[10px] leading-4 text-ink-500">
-                      Пустое поле — автоопределение: Program Files, PATH, Steam, snap/flatpak, macOS Applications.
+                      {plugin.id === "godot"
+                        ? "Пустое поле — автоопределение: PATH, LOCALAPPDATA, Program Files, scoop/choco, snap/flatpak, Applications."
+                        : "Пустое поле — автоопределение: Program Files, PATH, Steam, snap/flatpak, macOS Applications."}
                     </div>
                   </div>
                 </div>
