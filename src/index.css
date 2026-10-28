@@ -9432,12 +9432,8 @@
   border-radius: 0;
   background: var(--ink-950);
 }
-/* Graphite: orange marks the live/selected chat in the rail. */
-[data-theme="graphite"] .chat-rail-item.is-active::before { background: var(--accent); }
-[data-theme="graphite"] .chat-rail-item.is-active {
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 24%, var(--border));
-}
+/* Graphite: the live dot is the accent; selected rows are handled with the
+   neutral marker further down. */
 [data-theme="graphite"] .chat-rail-item.is-running .chat-rail-dot {
   background: var(--accent);
   box-shadow: 0 0 0 3px rgba(240, 68, 46, 0.13);
