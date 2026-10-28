@@ -15967,65 +15967,64 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
    scrollbars, selected rows — so the window reads as one warm surface instead
    of a grey UI with one red button. Opacity stays low: chrome, never decoration. */
 
-/* Shell hairlines */
+/* Structural hairlines stay neutral — one warm accent line is enough chrome. */
 [data-theme="graphite"] .titlebar-root {
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--accent) 6%, var(--ink-50)) 0%,
+    color-mix(in srgb, var(--accent) 3%, var(--ink-50)) 0%,
     var(--ink-0) 100%
   );
-  border-bottom-color: color-mix(in srgb, var(--accent) 24%, var(--border));
-}
-[data-theme="graphite"] .chat-stage-frame {
-  border-left-color: color-mix(in srgb, var(--accent) 18%, var(--border));
-  border-right-color: color-mix(in srgb, var(--accent) 18%, var(--border));
 }
 [data-theme="graphite"] .chat-shell .multi-slot-header,
 [data-theme="graphite"] .chat-shell .chat-header-bar,
 [data-theme="graphite"] .chat-rail-head {
-  border-bottom-color: color-mix(in srgb, var(--accent) 20%, var(--border));
+  border-bottom-color: var(--border);
 }
+/* The per-chat hue underline is a navigational cue, not decoration: keep it
+   quiet in the warm theme so a list of chats does not turn into colour bars. */
+[data-theme="graphite"] .chat-workspace-item::after { opacity: .16; }
+[data-theme="graphite"] .chat-workspace-item:hover::after { opacity: .26; }
+[data-theme="graphite"] .chat-workspace-item.is-active::after { opacity: .34; }
 
-/* Composer dock — the warmest part of the window. */
+/* Composer dock — warm, but only as a hint around the field. */
 [data-theme="graphite"] .chat-input-dock {
   background: radial-gradient(
     120% 150% at 50% 120%,
-    rgba(240, 68, 46, 0.07) 0%,
+    rgba(240, 68, 46, 0.035) 0%,
     transparent 62%
   );
 }
 [data-theme="graphite"] .chat-composer-shell {
-  border-top-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  border-top-color: color-mix(in srgb, var(--accent) 22%, var(--border));
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--accent) 7%, transparent) 0%,
+    color-mix(in srgb, var(--accent) 4%, transparent) 0%,
     color-mix(in srgb, var(--surface) 72%, transparent) 40%,
     color-mix(in srgb, var(--surface) 90%, transparent) 100%
   );
 }
 [data-theme="graphite"] .chat-composer-shell:focus-within {
-  border-top-color: color-mix(in srgb, var(--accent) 74%, var(--border));
+  border-top-color: color-mix(in srgb, var(--accent) 44%, var(--border));
   box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--accent) 26%, transparent),
-    0 -14px 30px -22px color-mix(in srgb, var(--accent) 90%, transparent);
+    inset 0 1px 0 color-mix(in srgb, var(--accent) 14%, transparent),
+    0 -14px 30px -24px color-mix(in srgb, var(--accent) 55%, transparent);
 }
 [data-theme="graphite"] .chat-composer-shell textarea::placeholder {
-  color: color-mix(in srgb, var(--accent-soft) 30%, var(--ink-500));
+  color: color-mix(in srgb, var(--accent-soft) 16%, var(--ink-500));
 }
 [data-theme="graphite"] .chat-composer-icon-btn:hover {
   color: var(--accent-soft);
 }
 [data-theme="graphite"] .chat-send-fab:not(:disabled) {
   box-shadow:
-    inset 0 1px 0 rgba(255, 190, 172, 0.42),
-    0 0 0 1px rgba(240, 68, 46, 0.34),
-    0 0 20px -6px rgba(240, 68, 46, 0.55);
+    inset 0 1px 0 rgba(255, 190, 172, 0.32),
+    0 0 0 1px rgba(240, 68, 46, 0.22);
 }
 [data-theme="graphite"] .chat-send-fab:hover:not(:disabled) {
   box-shadow:
-    inset 0 1px 0 rgba(255, 214, 200, 0.6),
-    0 0 0 1px rgba(240, 68, 46, 0.5),
-    0 0 26px -4px rgba(240, 68, 46, 0.72);
+    inset 0 1px 0 rgba(255, 214, 200, 0.45),
+    0 0 0 1px rgba(240, 68, 46, 0.36),
+    0 0 14px -6px rgba(240, 68, 46, 0.45);
 }
 
 /* Panels, fields and other workspaces pick up the same warm edge. */
