@@ -146,8 +146,14 @@ const PluginsWorkspace: React.FC = () => {
       samples: config.samples || 64,
       format: config.format || "GLB",
       autoRender: config.autoRender !== false,
-      timeoutSec: config.timeoutSec || 900,
+      timeoutSec: config.timeoutSec || (plugin.id === "godot" ? 1800 : 900),
       addons: Array.isArray(config.addons) ? config.addons.slice() : [],
+      projectDir: config.projectDir || "",
+      preset: config.preset || "windows",
+      exportPath: config.exportPath || "",
+      headless: config.headless !== false,
+      importGlb: config.importGlb !== false,
+      glbDir: config.glbDir || "",
     });
     setDraftFor(plugin.id);
     setDirty(false);
@@ -176,17 +182,30 @@ const PluginsWorkspace: React.FC = () => {
     setError(null);
     setNotice(null);
     try {
-      const config: Partial<ComposeVCPluginConfig> = {
-        executable: draft.executable.trim(),
-        outputDir: draft.outputDir.trim(),
-        engine: draft.engine,
-        resolution: { width: Number(draft.width) || 1600, height: Number(draft.height) || 1000 },
-        samples: Number(draft.samples) || 64,
-        format: draft.format,
-        autoRender: draft.autoRender,
-        timeoutSec: Number(draft.timeoutSec) || 900,
-        addons: draft.addons,
-      };
+      const config: Partial<ComposeVCPluginConfig> =
+        plugin.id === "godot"
+          ? {
+              executable: draft.executable.trim(),
+              projectDir: draft.projectDir.trim(),
+              outputDir: draft.outputDir.trim(),
+              preset: draft.preset,
+              exportPath: draft.exportPath.trim(),
+              headless: draft.headless !== false,
+              importGlb: draft.importGlb !== false,
+              glbDir: draft.glbDir.trim(),
+              timeoutSec: Number(draft.timeoutSec) || 1800,
+            }
+          : {
+              executable: draft.executable.trim(),
+              outputDir: draft.outputDir.trim(),
+              engine: draft.engine,
+              resolution: { width: Number(draft.width) || 1600, height: Number(draft.height) || 1000 },
+              samples: Number(draft.samples) || 64,
+              format: draft.format,
+              autoRender: draft.autoRender,
+              timeoutSec: Number(draft.timeoutSec) || 900,
+              addons: draft.addons,
+            };
       const result = await window.lopster?.pluginsUpdate?.(plugin.id, { config });
       if (!result?.ok || !result.plugin) {
         setError(result?.error || "Не удалось сохранить настройки.");
@@ -220,7 +239,7 @@ const PluginsWorkspace: React.FC = () => {
   };
 
   const pickExecutable = async () => {
-    const result = await window.lopster?.pluginsPickExecutable?.();
+    const result = await window.lopster?.pluginsPickExecutable?.(plugin?.id);
     if (!result?.ok || !result.path) return;
     updateDraft({ executable: result.path });
     if (plugin && draft) {
@@ -230,7 +249,7 @@ const PluginsWorkspace: React.FC = () => {
           config: { executable: result.path },
         });
         if (saved?.ok) {
-          setNotice("Blender найден и сохранён.");
+          setNotice(`${plugin?.name || "Плагин"} найден и сохранён.`);
           await refreshPlugins();
           setDraft((prev) => (prev ? { ...prev, executable: result.path as string } : prev));
           setDirty(false);
