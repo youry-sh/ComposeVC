@@ -9435,6 +9435,7 @@
 /* Graphite: orange marks the live/selected chat in the rail. */
 [data-theme="graphite"] .chat-rail-item.is-active::before { background: var(--accent); }
 [data-theme="graphite"] .chat-rail-item.is-active {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 24%, var(--border));
 }
 [data-theme="graphite"] .chat-rail-item.is-running .chat-rail-dot {
@@ -15974,9 +15975,6 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
     var(--ink-0) 100%
   );
   border-bottom-color: color-mix(in srgb, var(--accent) 24%, var(--border));
-}
-[data-theme="graphite"] .chat-rail {
-  border-right: 1px solid color-mix(in srgb, var(--accent) 14%, var(--border));
 }
 [data-theme="graphite"] .chat-stage-frame {
   border-left-color: color-mix(in srgb, var(--accent) 18%, var(--border));
