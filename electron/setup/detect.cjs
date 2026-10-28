@@ -87,9 +87,9 @@ function parseVersion(output) {
   return match ? match[1] : null;
 }
 
-const WINDOWS_STORE_ALIAS = /[\\/]WindowsApps[\\/]/i;
+const WINDOWS_STORE_ALIAS = /[\\/]Microsoft[\\/]WindowsApps[\\/](python3?|py)\.exe$/i;
 
-/** The python/python3 App Execution Alias is a stub that opens the Store. */
+/** The python/python3 App Execution Alias is a 0-byte stub that opens the Store. */
 function isStoreStub(binPath) {
   return process.platform === "win32" && WINDOWS_STORE_ALIAS.test(String(binPath || ""));
 }

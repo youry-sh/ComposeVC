@@ -181,7 +181,10 @@ function mergeDetection(userDataPath, plat, results) {
         path: result.installed ? text(result.path, MAX_PATH_LEN) : null,
         method: previous.method,
         lastCheckAt: now(),
-        lastError: result.installed ? null : text(result.error, MAX_ERROR_LEN) || previous.lastError,
+        lastError: result.installed
+          ? null
+          : text(result.error, MAX_ERROR_LEN) ||
+            (previous.lastError && previous.lastError !== "Установка отменена" ? previous.lastError : null),
       };
     }
   });

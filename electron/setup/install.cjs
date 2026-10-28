@@ -89,7 +89,7 @@ function logLine(job, line) {
 function jobPayload(job) {
   return {
     id: job.id,
-    state: job.state,
+    state: job.state === "queued" ? "checking" : job.state,
     step: job.step,
     log: job.log.slice(-25),
     percent: job.percent,
@@ -425,6 +425,8 @@ async function runInstall(userDataPath, id, job) {
     };
   }
 
+  if (job.cancelled) return finishCancelled(userDataPath, job);
+
   const missing = [];
   for (const depId of component.dependsOn) {
     logLine(job, `зависимость: ${registry.getComponent(depId)?.name || depId}`);
@@ -532,6 +534,7 @@ function installComponent(userDataPath, id, { wait = true } = {}) {
 
   const job = createJob(userDataPath, component.id);
   jobs.set(component.id, job);
+  publish(job, true);
   job.promise = queueTask(() => runInstall(userDataPath, component.id, job));
 
   if (!wait) return Promise.resolve({ ok: true, running: true, job: jobView(component.id) });

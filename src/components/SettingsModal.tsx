@@ -558,7 +558,7 @@ const ModelSelect: React.FC<{
               placeholder="Search models or providers"
               onChange={(event) => {
                 setQuery(event.target.value);
-                setHot(0);
+                setHot(event.target.value.trim() ? 1 : 0);
               }}
             />
           </div>
