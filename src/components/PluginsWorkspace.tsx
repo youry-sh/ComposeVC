@@ -532,7 +532,7 @@ const PluginsWorkspace: React.FC = () => {
                 <div className="mb-3 border border-ink-200 px-3 py-2 text-[11px] text-ink-600">{notice}</div>
               )}
 
-              <Section title="Blender и статус">
+              <Section title={plugin.id === "godot" ? "Godot и статус" : "Blender и статус"}>
                 <div className="grid gap-3 lg:grid-cols-2">
                   <div className="min-w-0 border border-ink-200 bg-ink-0 p-3">
                     <div className="mb-2 text-[10px] font-medium uppercase tracking-[0.1em] text-ink-500">
@@ -545,10 +545,10 @@ const PluginsWorkspace: React.FC = () => {
                       />
                       <span className="text-ink-800">
                         {plugin.status?.found
-                          ? `Blender ${plugin.status.version || "?"} · ${
+                          ? `${plugin.name} ${plugin.status.version || "?"} · ${
                               plugin.status.source === "config" ? "путь из настроек" : "автоопределение"
                             }`
-                          : plugin.status?.error || "Blender не найден"}
+                          : plugin.status?.error || `${plugin.name} не найден`}
                       </span>
                       {(plugin.stats?.runs || 0) > 0 && (
                         <span className="ml-auto font-mono text-[10px] text-ink-500">
