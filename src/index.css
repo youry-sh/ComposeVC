@@ -14703,7 +14703,6 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
     border-bottom: 1px solid var(--border);
   }
   .tasks-detail-scroll .chat-mono-scroll-viewport { padding: 14px 14px 18px; }
-  .tasks-modal-actions .tasks-primary span { display: none; }
 }
 
 /* ══ Expert workspace ══════════════════════════════════════════════════════
