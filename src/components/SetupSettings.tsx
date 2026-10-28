@@ -177,10 +177,10 @@ const SetupCard: React.FC<{
               type="button"
               disabled
               title={component.path || undefined}
-              className="settings-chip is-active inline-flex items-center gap-1 whitespace-nowrap"
+              className="settings-chip is-active inline-flex min-w-0 max-w-full items-center gap-1 whitespace-nowrap"
             >
-              <IcoCheckCircle className="h-3 w-3" />
-              {`Уже установлено${version ? ` · v${version}` : ""}`}
+              <IcoCheckCircle className="h-3 w-3 shrink-0" />
+              <span className="truncate">{`Уже установлено${version ? ` · v${version}` : ""}`}</span>
             </button>
           ) : active ? (
             <button
