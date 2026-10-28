@@ -73,6 +73,8 @@ export type InsertChatInputOptions = {
   targetSlotId?: string;
   /** Stable id so a repeated delivery of the same insert is applied once. */
   requestId?: string;
+  /** Send the text straight to the model instead of parking it in the composer. */
+  autoSend?: boolean;
 };
 
 export function dispatchInsertChatInput(
@@ -88,6 +90,7 @@ export function dispatchInsertChatInput(
         append,
         ...(options?.targetSlotId ? { targetSlotId: options.targetSlotId } : {}),
         ...(options?.requestId ? { requestId: options.requestId } : {}),
+        ...(options?.autoSend ? { autoSend: true } : {}),
       },
     })
   );
@@ -98,4 +101,6 @@ export type InsertChatInputDetail = {
   append: boolean;
   targetSlotId?: string;
   requestId?: string;
+  /** Skip the composer — dispatch the text to the model immediately. */
+  autoSend?: boolean;
 };

@@ -46,6 +46,8 @@ type PendingSend = {
   text: string;
   target: SendTarget;
   at: number;
+  /** Expert composer button sends straight to the model, not into the input. */
+  autoSend?: boolean;
 };
 
 function readWorkspaceState() {
@@ -165,6 +167,7 @@ function replayPending() {
   dispatchInsertChatInput(pending.text, false, {
     targetSlotId: pending.target.slotId,
     requestId: pending.requestId,
+    autoSend: pending.autoSend !== false,
   });
 }
 

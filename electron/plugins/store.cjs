@@ -118,6 +118,22 @@ function normalizeBlenderConfig(input) {
   return config;
 }
 
+function normalizeGodotConfig(input) {
+  const src = input && typeof input === "object" ? input : {};
+  const preset = String(src.preset || "").trim().toLowerCase();
+  return {
+    executable: cleanString(src.executable),
+    projectDir: cleanString(src.projectDir),
+    outputDir: cleanString(src.outputDir),
+    preset: GODOT_EXPORT_PRESETS.includes(preset) ? preset : DEFAULT_GODOT_CONFIG.preset,
+    exportPath: cleanString(src.exportPath),
+    headless: src.headless !== false,
+    importGlb: src.importGlb !== false,
+    timeoutSec: clampNumber(src.timeoutSec, DEFAULT_GODOT_CONFIG.timeoutSec, 10, 7200),
+    glbDir: cleanString(src.glbDir),
+  };
+}
+
 function normalizePlugin(entry, fallbackId) {
   if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
   const id = cleanString(entry.id || fallbackId, 64);
@@ -152,6 +168,13 @@ function emptyStore() {
         id: "blender",
         enabled: true,
         config: { ...DEFAULT_BLENDER_CONFIG },
+        stats: { runs: 0, failures: 0, lastRunAt: 0, lastError: "" },
+        updatedAt: Date.now(),
+      },
+      godot: {
+        id: "godot",
+        enabled: true,
+        config: { ...DEFAULT_GODOT_CONFIG },
         stats: { runs: 0, failures: 0, lastRunAt: 0, lastError: "" },
         updatedAt: Date.now(),
       },
@@ -234,7 +257,9 @@ async function updatePlugin(userDataPath, id, patch = {}) {
   const mergedConfig =
     key === "blender"
       ? normalizeBlenderConfig({ ...existing.config, ...(patch.config || {}) })
-      : { ...existing.config, ...(patch.config || {}) };
+      : key === "godot"
+        ? normalizeGodotConfig({ ...existing.config, ...(patch.config || {}) })
+        : { ...existing.config, ...(patch.config || {}) };
   const next = {
     ...existing,
     enabled: patch.enabled == null ? existing.enabled : patch.enabled !== false,
@@ -340,6 +365,8 @@ function normalizeJob(entry, fallbackId) {
     dir: cleanString(entry.dir, 4096),
     blendPath: cleanString(entry.blendPath, 4096),
     previewPath: cleanString(entry.previewPath, 4096),
+    scenePath: cleanString(entry.scenePath, 4096),
+    exportPath: cleanString(entry.exportPath, 4096),
     renders: Array.isArray(entry.renders) ? entry.renders.map(normalizeRender).filter(Boolean) : [],
     bakes: Array.isArray(entry.bakes) ? entry.bakes.map(normalizeRender).filter(Boolean) : [],
     exports: Array.isArray(entry.exports) ? entry.exports.map(normalizeExport).filter(Boolean) : [],
@@ -356,6 +383,11 @@ function normalizeJob(entry, fallbackId) {
       path: cleanString(entry.blender?.path, 4096),
       version: cleanString(entry.blender?.version, 80),
       engine: cleanString(entry.blender?.engine, 32),
+    },
+    godot: {
+      path: cleanString(entry.godot?.path, 4096),
+      version: cleanString(entry.godot?.version, 80),
+      preset: cleanString(entry.godot?.preset, 32),
     },
   };
 }
@@ -469,6 +501,8 @@ module.exports = {
   ENGINE_VALUES,
   FORMAT_VALUES,
   DEFAULT_BLENDER_CONFIG,
+  GODOT_EXPORT_PRESETS,
+  DEFAULT_GODOT_CONFIG,
   pluginsRoot,
   jobsRoot,
   defaultOutputDir,
@@ -485,4 +519,5 @@ module.exports = {
   jobDir,
   writeJsonAtomic,
   normalizeBlenderConfig,
+  normalizeGodotConfig,
 };
