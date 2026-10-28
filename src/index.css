@@ -16046,6 +16046,30 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
 }
 
+/* MEM / TOK / CTX equalizer stays white here too: the instruments read as
+   light, not as another accent surface. */
+[data-theme="graphite"] .topbar-wave-group {
+  border-left-color: var(--border);
+}
+[data-theme="graphite"] .topbar-wave-bars::before {
+  background: rgba(255, 255, 255, 0.10);
+}
+[data-theme="graphite"] .topbar-wave-bar {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.95),
+    rgba(255, 255, 255, 0.55) 58%,
+    rgba(255, 255, 255, 0.18)
+  );
+  box-shadow: 0 0 7px rgba(255, 255, 255, 0.12);
+}
+[data-theme="graphite"] .topbar-wave-value {
+  color: var(--ink-950);
+}
+[data-theme="graphite"] .topbar-wave-label {
+  color: rgba(255, 255, 255, 0.45);
+}
+
 
 
 
