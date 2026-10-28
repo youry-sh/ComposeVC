@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, Clock, ListTodo, Plus, Search, Trash2, X } from "lucide-react";
-import ChatMonoScroll from "./ChatMonoScroll";
+import ChatMonoScroll, { type ChatMonoScrollHandle } from "./ChatMonoScroll";
 import { TaskItem } from "../types";
 
 type TaskFilter = "all" | "open" | "done";
@@ -58,6 +58,10 @@ const TasksModal: React.FC<TasksModalProps> = ({ onClose }) => {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const saveChainRef = useRef<Promise<unknown>>(Promise.resolve());
+  const listScrollRef = useRef<ChatMonoScrollHandle>(null);
+  const detailScrollRef = useRef<ChatMonoScrollHandle>(null);
+  const createTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const editTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   const applyTasks = useCallback((next: TaskItem[]) => {
     const sorted = sortTasks(next);
@@ -253,6 +257,28 @@ const TasksModal: React.FC<TasksModalProps> = ({ onClose }) => {
     return () => window.clearTimeout(timer);
   }, [creating, draft, selected, persist]);
 
+  // The task text belongs to the pane scroll, not to a nested scroller: the
+  // textarea always grows to its content, so wheel events over the text scroll
+  // the ChatMonoScroll viewport (the only scroll owner in the detail pane).
+  useEffect(() => {
+    const el = creating ? createTextareaRef.current : editTextareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight + 2}px`;
+  }, [creating, draft, selectedId]);
+
+  // Opening another task starts the detail pane at the top again.
+  useEffect(() => {
+    const viewport = detailScrollRef.current?.getViewport();
+    if (viewport) viewport.scrollTop = 0;
+  }, [creating, selectedId]);
+
+  // New search/filter results start from the first row.
+  useEffect(() => {
+    const viewport = listScrollRef.current?.getViewport();
+    if (viewport) viewport.scrollTop = 0;
+  }, [filter, query]);
+
   useEffect(() => {
     const handleKey = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
@@ -404,7 +430,7 @@ const TasksModal: React.FC<TasksModalProps> = ({ onClose }) => {
               ))}
             </div>
 
-            <ChatMonoScroll className="tasks-list">
+            <ChatMonoScroll ref={listScrollRef} className="tasks-list">
               {loading ? (
                 <div className="tasks-empty">Загрузка…</div>
               ) : visible.length === 0 ? (
@@ -452,10 +478,11 @@ const TasksModal: React.FC<TasksModalProps> = ({ onClose }) => {
 
           <section className="tasks-detail">
             {creating ? (
-              <ChatMonoScroll className="tasks-detail-scroll">
+              <ChatMonoScroll ref={detailScrollRef} className="tasks-detail-scroll">
                 <div className="tasks-detail-inner">
                   <div className="tasks-detail-kicker">Новая задача</div>
                   <textarea
+                    ref={createTextareaRef}
                     autoFocus
                     value={draft}
                     onChange={(event) => {
@@ -491,7 +518,7 @@ const TasksModal: React.FC<TasksModalProps> = ({ onClose }) => {
                 </div>
               </ChatMonoScroll>
             ) : selected ? (
-              <ChatMonoScroll className="tasks-detail-scroll">
+              <ChatMonoScroll ref={detailScrollRef} className="tasks-detail-scroll">
                 <div className="tasks-detail-inner">
                   <div className="tasks-detail-head">
                     <button
@@ -515,6 +542,7 @@ const TasksModal: React.FC<TasksModalProps> = ({ onClose }) => {
                   </div>
 
                   <textarea
+                    ref={editTextareaRef}
                     value={draft}
                     onChange={(event) => {
                       setDraft(event.target.value);
@@ -591,17 +619,19 @@ const TasksModal: React.FC<TasksModalProps> = ({ onClose }) => {
                 </div>
               </ChatMonoScroll>
             ) : (
-              <div className="tasks-detail-empty">
-                <ListTodo aria-hidden />
-                <div className="tasks-detail-empty-title">Задача не выбрана</div>
-                <div className="tasks-detail-empty-sub">
-                  Выберите задачу слева или создайте новую.
+              <ChatMonoScroll className="tasks-detail-scroll">
+                <div className="tasks-detail-empty">
+                  <ListTodo aria-hidden />
+                  <div className="tasks-detail-empty-title">Задача не выбрана</div>
+                  <div className="tasks-detail-empty-sub">
+                    Выберите задачу слева или создайте новую.
+                  </div>
+                  <button type="button" className="tasks-primary theme-primary" onClick={startCreate}>
+                    <Plus className="w-3.5 h-3.5" aria-hidden />
+                    Новая задача
+                  </button>
                 </div>
-                <button type="button" className="tasks-primary theme-primary" onClick={startCreate}>
-                  <Plus className="w-3.5 h-3.5" aria-hidden />
-                  Новая задача
-                </button>
-              </div>
+              </ChatMonoScroll>
             )}
           </section>
         </div>

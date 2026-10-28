@@ -14014,7 +14014,8 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
 .tasks-editor {
   width: 100%;
   min-height: 150px;
-  resize: vertical;
+  resize: none;
+  overflow: hidden;
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: 2px;
@@ -14117,6 +14118,7 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   text-align: center;
   color: var(--ink-500);
 }
+.tasks-detail-scroll .tasks-detail-empty { min-height: 100%; }
 .tasks-detail-empty > svg { width: 26px; height: 26px; opacity: 0.4; }
 .tasks-detail-empty-title {
   margin-top: 2px;

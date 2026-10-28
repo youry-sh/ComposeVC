@@ -35,6 +35,19 @@ contextBridge.exposeInMainWorld("lopster", {
   webEngineCopyText: (text) => ipcRenderer.invoke("webengine:copyText", text || ""),
   webEngineCaptureScreenshot: (webContentsId) => ipcRenderer.invoke("webengine:captureScreenshot", webContentsId),
   webEngineClearCache: () => ipcRenderer.invoke("webengine:clearCache"),
+  // Setup tab — main process detects / downloads / installs runtimes and tools.
+  setupScan: () => ipcRenderer.invoke("setup:scan"),
+  setupInstall: (id) => ipcRenderer.invoke("setup:install", id),
+  setupInstallAll: () => ipcRenderer.invoke("setup:installAll"),
+  setupCancel: (id) => ipcRenderer.invoke("setup:cancel", id),
+  setupState: () => ipcRenderer.invoke("setup:state"),
+  setupOpenManual: (id) => ipcRenderer.invoke("setup:openManual", id),
+  setupOpenDownloads: () => ipcRenderer.invoke("setup:openDownloads"),
+  onSetupProgress: (callback) => {
+    const listener = (_event, payload) => callback(payload);
+    ipcRenderer.on("setup:progress", listener);
+    return () => ipcRenderer.removeListener("setup:progress", listener);
+  },
   // MultiIDE layout (workspaces + their chat panels) — disk-backed JSON store.
   multiIdeLoadState: () => ipcRenderer.invoke("multiide:loadState"),
   multiIdeSaveState: (patch) => ipcRenderer.invoke("multiide:saveState", patch || {}),

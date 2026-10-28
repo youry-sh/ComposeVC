@@ -14,13 +14,31 @@ import React, {
   ReactNode,
   useCallback,
   useEffect,
+  useMemo,
   useReducer,
   useRef,
   useState,
 } from "react";
-import { Check, ChevronDown, Cpu, Keyboard, Mail, Mouse, Palette, X } from "lucide-react";
+import {
+  AlertTriangle,
+  Bot,
+  Check,
+  ChevronDown,
+  Cpu,
+  Eye,
+  Keyboard,
+  Layers,
+  Mail,
+  Mouse,
+  Palette,
+  Search,
+  ShieldCheck,
+  Sparkles,
+  Wand2,
+  X,
+} from "lucide-react";
 import { AppLanguage, languageNames, Translation } from "../i18n";
-import { ProviderConfig, CfMailConfig } from "../types";
+import { ProviderConfig, CfMailConfig, TokenCountingMode } from "../types";
 import { applyTheme, getStoredTheme, THEMES, ThemeId } from "../themes";
 import {
   DEFAULT_MOUSE_SNIPPETS,
@@ -337,6 +355,604 @@ const UiSelect: React.FC<{
   );
 };
 
+/* ---------------------------------------------------------------------------
+ * AI Runtime tab: model choices, floating model picker, two-column workspace.
+ * Presentation only — every edit still flows through updateAiRuntime.
+ * ------------------------------------------------------------------------- */
+
+type ModelChoice = {
+  value: string;
+  label: string;
+  providerName: string;
+  modelName: string;
+  contextLabel: string;
+  providerId: string;
+};
+
+const INHERIT_MODEL_LABEL = "Same as main model (default)";
+
+function formatContextLabel(limit?: number): string {
+  if (typeof limit !== "number" || !Number.isFinite(limit) || limit <= 0) return "";
+  if (limit >= 1000) {
+    const k = limit / 1000;
+    return `${Number.isInteger(k) ? k : k.toFixed(1)}k ctx`;
+  }
+  return `${limit} ctx`;
+}
+
+function buildModelChoices(draft: ProviderConfig): ModelChoice[] {
+  return draft.models.map((model) => {
+    const provider = draft.providers.find((p) => p.id === model.providerId);
+    const apiName = model.name || model.id;
+    const idHint = model.id && model.id !== apiName ? ` · id ${model.id}` : "";
+    return {
+      value: model.id,
+      label: provider ? `${provider.name} / ${apiName}${idHint}` : `${apiName}${idHint}`,
+      providerName: provider ? provider.name : "Unassigned provider",
+      modelName: apiName,
+      contextLabel: formatContextLabel(model.contextLimit),
+      providerId: model.providerId || "",
+    };
+  });
+}
+
+/** Deterministic provider hue so one provider always reads the same across the tab. */
+function providerAccent(providerId: string): string {
+  if (!providerId) return "var(--accent)";
+  let hash = 0;
+  for (let i = 0; i < providerId.length; i += 1) hash = (hash * 31 + providerId.charCodeAt(i)) % 360;
+  return `hsl(${hash} 58% 54%)`;
+}
+
+const ModelSelect: React.FC<{
+  value: string;
+  choices: ModelChoice[];
+  onChange: (value: string) => void;
+  ariaLabel: string;
+  placeholder?: string;
+}> = ({ value, choices, onChange, ariaLabel, placeholder }) => {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [hot, setHot] = useState(0);
+  const [isUp, setIsUp] = useState(false);
+  const [isEnd, setIsEnd] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const listIdRef = useRef(`settings-model-${uid()}`);
+  const selected = choices.find((choice) => choice.value === value) || null;
+  const inheritLabel = placeholder || INHERIT_MODEL_LABEL;
+
+  const groups = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    const filtered = needle
+      ? choices.filter((choice) =>
+          `${choice.label} ${choice.providerName} ${choice.modelName}`.toLowerCase().includes(needle)
+        )
+      : choices;
+    const map = new Map<string, ModelChoice[]>();
+    filtered.forEach((choice) => {
+      const bucket = map.get(choice.providerName);
+      if (bucket) bucket.push(choice);
+      else map.set(choice.providerName, [choice]);
+    });
+    return Array.from(map, ([name, items]) => ({ name, items }));
+  }, [choices, query]);
+
+  const flat = useMemo(
+    () => [{ value: "", label: inheritLabel }, ...groups.flatMap((group) => group.items)],
+    [groups, inheritLabel]
+  );
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (event: MouseEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const node = listRef.current?.querySelector<HTMLElement>('[data-hot="true"]');
+    node?.scrollIntoView({ block: "nearest" });
+  }, [open, hot]);
+
+  const openPopup = () => {
+    if (typeof window !== "undefined") {
+      const rect = rootRef.current?.getBoundingClientRect();
+      if (rect) {
+        setIsUp(window.innerHeight - rect.bottom < 300);
+        setIsEnd(rect.right + 420 > window.innerWidth - 24);
+      }
+    }
+    const index = flat.findIndex((option) => option.value === value);
+    setHot(index > -1 ? index : 0);
+    setQuery("");
+    setOpen(true);
+  };
+
+  const pick = (next: string) => {
+    onChange(next);
+    setOpen(false);
+  };
+
+  const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!open) {
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        openPopup();
+      }
+      return;
+    }
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setHot((index) => Math.min(index + 1, flat.length - 1));
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setHot((index) => Math.max(index - 1, 0));
+    } else if (event.key === "Home") {
+      event.preventDefault();
+      setHot(0);
+    } else if (event.key === "End") {
+      event.preventDefault();
+      setHot(flat.length - 1);
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      pick(flat[hot]?.value ?? "");
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      setOpen(false);
+    }
+  };
+
+  return (
+    <div ref={rootRef} className="settings-model-select" onKeyDown={onKeyDown}>
+      <button
+        type="button"
+        aria-label={ariaLabel}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => (open ? setOpen(false) : openPopup())}
+        className="settings-model-trigger"
+      >
+        <span
+          className="settings-model-dot"
+          style={{ background: selected ? providerAccent(selected.providerId) : "var(--accent)" }}
+        />
+        <span className={`settings-model-trigger-label ${selected ? "" : "is-empty"}`}>
+          {selected ? selected.modelName : inheritLabel}
+        </span>
+        {selected?.contextLabel ? <span className="settings-model-ctx">{selected.contextLabel}</span> : null}
+        <ChevronDown
+          className={`h-3.5 w-3.5 shrink-0 text-ink-600 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open && (
+        <div
+          role="listbox"
+          aria-label={ariaLabel}
+          className={`settings-model-popup ${isUp ? "is-up" : ""} ${isEnd ? "is-end" : ""}`}
+        >
+          <div className="settings-model-search-wrap">
+            <Search className="settings-model-search-icon" />
+            <input
+              className="settings-model-search"
+              value={query}
+              autoFocus
+              role="combobox"
+              aria-expanded
+              aria-controls={listIdRef.current}
+              aria-activedescendant={flat[hot] ? `${listIdRef.current}-${hot}` : undefined}
+              placeholder="Search models or providers"
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setHot(0);
+              }}
+            />
+          </div>
+
+          <div ref={listRef} id={listIdRef.current} className="settings-model-list">
+            <button
+              type="button"
+              role="option"
+              id={`${listIdRef.current}-0`}
+              aria-selected={value === ""}
+              data-hot={hot === 0}
+              onMouseEnter={() => setHot(0)}
+              onClick={() => pick("")}
+              className={`settings-model-option ${value === "" ? "is-selected" : ""} ${hot === 0 ? "is-hot" : ""}`}
+            >
+              <span className="settings-model-option-label">{inheritLabel}</span>
+              {value === "" ? <Check className="h-3.5 w-3.5 shrink-0" /> : null}
+            </button>
+
+            {groups.map((group) => (
+              <div key={group.name} className="settings-model-group">
+                <div className="settings-model-group-head">
+                  <span
+                    className="settings-model-group-dot"
+                    style={{ background: providerAccent(group.items[0]?.providerId || "") }}
+                  />
+                  <span className="min-w-0 flex-1 truncate">{group.name}</span>
+                  <span className="settings-model-group-count">{group.items.length}</span>
+                </div>
+                {group.items.map((choice) => {
+                  const index = flat.findIndex((option) => option.value === choice.value);
+                  const isSelected = choice.value === value;
+                  return (
+                    <button
+                      key={choice.value}
+                      type="button"
+                      role="option"
+                      id={`${listIdRef.current}-${index}`}
+                      aria-selected={isSelected}
+                      data-hot={hot === index}
+                      onMouseEnter={() => setHot(index)}
+                      onClick={() => pick(choice.value)}
+                      className={`settings-model-option ${isSelected ? "is-selected" : ""} ${hot === index ? "is-hot" : ""}`}
+                    >
+                      <span className="settings-model-option-label">{choice.modelName}</span>
+                      {choice.contextLabel ? <span className="settings-model-meta">{choice.contextLabel}</span> : null}
+                      {isSelected ? <Check className="h-3.5 w-3.5 shrink-0" /> : null}
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
+
+            {groups.length === 0 ? (
+              <div className="settings-model-empty">No models match “{query.trim()}”.</div>
+            ) : null}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+type AiRuntimeState = NonNullable<ProviderConfig["aiRuntime"]>;
+
+type RuntimeRow = { key: string; label: string; value: string; provider: string; inherit: boolean };
+
+const AiRuntimeTab: React.FC<{
+  draft: ProviderConfig;
+  aiRuntime: AiRuntimeState;
+  matches: { labInPrompt: boolean; labInSearch: boolean; fortani: boolean; inlineHint: boolean; vision: boolean };
+  choices: ModelChoice[];
+  onPatch: (updates: Partial<AiRuntimeState>) => void;
+  onTokenCountingMode: (mode: TokenCountingMode) => void;
+}> = ({ draft, aiRuntime, matches, choices, onPatch, onTokenCountingMode }) => {
+  const readId = (raw?: string) => (typeof raw === "string" ? raw.trim() : "");
+  const selectValue = (raw?: string) => {
+    const id = readId(raw);
+    return id && choices.some((choice) => choice.value === id) ? id : "";
+  };
+  const inlineHintEnabled = aiRuntime.inlineHintEnabled === true;
+
+  const promptId = readId(aiRuntime.labInPromptModelId);
+  const searchId = readId(aiRuntime.labInSearchModelId);
+  const visionId = readId(aiRuntime.visionModelId);
+  const fortaniId = readId(aiRuntime.fortaniModelId);
+  const inlineHintId = readId(aiRuntime.inlineHintModelId);
+
+  const mainModel =
+    draft.models.find((model) => model.id === draft.selectedModelId || model.name === draft.selectedModelId) || null;
+  const mainProvider = mainModel ? draft.providers.find((provider) => provider.id === mainModel.providerId) : null;
+  const mainProviderName = mainModel ? mainProvider?.name || "Unassigned provider" : "";
+
+  const stage = (raw: string, missing: boolean): RuntimeRow => {
+    const choice = raw ? choices.find((item) => item.value === raw) || null : null;
+    if (!raw || missing || !choice) {
+      return { key: "", label: "", value: "main model", provider: mainProviderName, inherit: true };
+    }
+    return { key: "", label: "", value: choice.modelName, provider: choice.providerName, inherit: false };
+  };
+
+  const runtimeRows: RuntimeRow[] = [
+    {
+      key: "main",
+      label: "Main model",
+      value: mainModel ? mainModel.name || mainModel.id : "Not selected",
+      provider: mainModel ? mainProviderName : "Active chat model",
+      inherit: false,
+    },
+    { key: "prompt", label: "Prompt refiner", ...stage(promptId, matches.labInPrompt) },
+    { key: "search", label: "Knowledge search", ...stage(searchId, matches.labInSearch) },
+    { key: "vision", label: "Vision", ...stage(visionId, matches.vision) },
+    { key: "fortani", label: "FoRtani", ...stage(fortaniId, matches.fortani) },
+    { key: "autocomplete", label: "Autocomplete", ...stage(inlineHintId, matches.inlineHint) },
+  ];
+
+  const routing: Array<{
+    key: string;
+    title: string;
+    description: string;
+    titleText: string;
+    icon: ReactNode;
+    aria: string;
+    value: string;
+    onChange: (next: string) => void;
+    warning: string;
+  }> = [
+    {
+      key: "prompt",
+      title: "LAB-IN prompt refiner",
+      description: "Rewrites the task into a precise brief before the agent run. Empty = active chat model.",
+      titleText:
+        "Stage models inherit the active chat model when left empty. The main task always executes with the active chat model.",
+      icon: <Sparkles className="h-3.5 w-3.5" />,
+      aria: "LAB-IN prompt refiner model",
+      value: selectValue(aiRuntime.labInPromptModelId),
+      onChange: (next) => onPatch({ labInPromptModelId: next || "" }),
+      warning:
+        promptId && matches.labInPrompt
+          ? `Saved prompt model "${promptId}" is missing — falls back to main model.`
+          : "",
+    },
+    {
+      key: "search",
+      title: "LAB-IN knowledge search",
+      description: "Searches shared knowledge memory for reusable notes before answering. Empty = active chat model.",
+      titleText:
+        "Stage models inherit the active chat model when left empty. The main task always executes with the active chat model.",
+      icon: <Search className="h-3.5 w-3.5" />,
+      aria: "LAB-IN knowledge search model",
+      value: selectValue(aiRuntime.labInSearchModelId),
+      onChange: (next) => onPatch({ labInSearchModelId: next || "" }),
+      warning:
+        searchId && matches.labInSearch
+          ? `Saved search model "${searchId}" is missing — falls back to main model.`
+          : "",
+    },
+    {
+      key: "vision",
+      title: "Vision",
+      description: "Reads screenshots, reference photos and Blender renders. Empty = active chat model.",
+      titleText:
+        "Model used by the vision tool to read screenshots, reference photos and Blender renders. DeepSeek flash/v4 accept images (PNG/JPEG/WebP/GIF); leave empty to use the active chat model.",
+      icon: <Eye className="h-3.5 w-3.5" />,
+      aria: "Vision model",
+      value: selectValue(aiRuntime.visionModelId),
+      onChange: (next) => onPatch({ visionModelId: next || "" }),
+      warning:
+        visionId && matches.vision
+          ? `Saved vision model "${visionId}" is missing — falls back to the active chat model.`
+          : "",
+    },
+    {
+      key: "fortani",
+      title: "FoRtani follow-up",
+      description: "Reviews the task and the agent's diff, then sends corrections back. Does not edit files.",
+      titleText:
+        "Model that reviews the task and the agent's diff, then sends corrections back. It does not edit files. Empty = active chat model. The main agent still applies the fixes.",
+      icon: <ShieldCheck className="h-3.5 w-3.5" />,
+      aria: "FoRtani follow-up model",
+      value: selectValue(aiRuntime.fortaniModelId),
+      onChange: (next) => onPatch({ fortaniModelId: next || "" }),
+      warning:
+        fortaniId && matches.fortani
+          ? `Saved FoRtani model "${fortaniId}" is missing — falls back to main model.`
+          : "",
+    },
+    {
+      key: "autocomplete",
+      title: "Composer autocomplete",
+      description: "Faint ghost text continues the prompt while typing; Tab inserts it. Empty = active chat model.",
+      titleText:
+        "While you type a prompt, the model continues it as faint ghost text inside the input. Tab inserts the suggestion; keep typing and a fresh one appears.",
+      icon: <Wand2 className="h-3.5 w-3.5" />,
+      aria: "Composer autocomplete model",
+      value: selectValue(aiRuntime.inlineHintModelId),
+      onChange: (next) => onPatch({ inlineHintModelId: next || "" }),
+      warning:
+        inlineHintId && matches.inlineHint
+          ? `Saved autocomplete model "${inlineHintId}" is missing — falls back to the main model.`
+          : "",
+    },
+  ];
+
+  return (
+    <div className="settings-body-scroll settings-chat-scrollbar">
+      <div className="settings-section settings-ai-section">
+        <div className="settings-ai-grid">
+          <div className="settings-ai-col">
+            <div className="settings-card">
+              <div className="mb-2 flex items-center gap-2">
+                <Layers className="h-3.5 w-3.5 shrink-0 text-ink-600" />
+                <div className="settings-card-title !mb-0">Model routing</div>
+              </div>
+              <p className="mb-3 text-[11px] leading-snug text-ink-500">
+                Stage models inherit the active chat model when left empty. The main task always executes with the
+                active chat model.
+              </p>
+
+              <div className="settings-routing-list">
+                {routing.map((row) => (
+                  <div key={row.key} className="settings-routing-entry">
+                    <div className="settings-routing-row">
+                      <span className="settings-routing-icon" title={row.title}>
+                        {row.icon}
+                      </span>
+                      <div className="settings-routing-body">
+                        <div className="settings-routing-title" title={row.titleText}>
+                          {row.title}
+                        </div>
+                        <p className="settings-routing-desc" title={row.titleText}>
+                          {row.description}
+                        </p>
+                      </div>
+                      <div className="settings-routing-picker">
+                        <ModelSelect
+                          value={row.value}
+                          choices={choices}
+                          ariaLabel={row.aria}
+                          onChange={row.onChange}
+                        />
+                      </div>
+                    </div>
+                    {row.warning ? (
+                      <p className="settings-routing-warning" style={{ color: "var(--danger)" }}>
+                        <AlertTriangle className="h-3 w-3 shrink-0" />
+                        <span className="min-w-0">{row.warning}</span>
+                      </p>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="settings-card">
+              <div className="settings-card-title">Composer autocomplete</div>
+              <p className="mb-2 text-[11px] leading-snug text-ink-500">
+                While you type a prompt, the model continues it as faint ghost text inside the input. Tab inserts the
+                suggestion; keep typing and a fresh one appears. It sees the whole input and the current caret
+                position.
+              </p>
+              <button
+                type="button"
+                onClick={() => onPatch({ inlineHintEnabled: !inlineHintEnabled })}
+                className="settings-toggle-row"
+              >
+                <span
+                  className={`relative h-5 w-9 shrink-0 rounded-full border transition-colors ${
+                    inlineHintEnabled ? "theme-toggle-on" : "border-ink-300 bg-ink-300"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-[3px] h-3.5 w-3.5 rounded-full theme-toggle-thumb shadow-sm transition-transform ${
+                      inlineHintEnabled ? "translate-x-4" : "translate-x-0.5"
+                    }`}
+                  />
+                </span>
+                <span
+                  className="min-w-0 text-[12px] leading-none"
+                  style={{ color: inlineHintEnabled ? "var(--ink-950)" : "var(--ink-700)" }}
+                >
+                  {inlineHintEnabled ? "Ghost suggestions on · Tab to insert" : "Ghost suggestions off"}
+                </span>
+              </button>
+            </div>
+
+            <div className="settings-card">
+              <div className="settings-card-title">Cloudflare image</div>
+              <p className="mb-3 text-[11px] leading-snug text-ink-500">
+                Used by generate_image. Flux 2 Dev draws the subject on a flat green screen, then the tool removes only
+                that green.
+              </p>
+              <div className="settings-grid-2">
+                <Field
+                  label="Account ID"
+                  mono
+                  value={typeof aiRuntime.cloudflareAccountId === "string" ? aiRuntime.cloudflareAccountId : ""}
+                  placeholder="account id"
+                  onChange={(next) => onPatch({ cloudflareAccountId: next.trim() })}
+                />
+                <Field
+                  label="API token"
+                  mono
+                  type="password"
+                  value={typeof aiRuntime.cloudflareApiToken === "string" ? aiRuntime.cloudflareApiToken : ""}
+                  placeholder="cfut_…"
+                  onChange={(next) => onPatch({ cloudflareApiToken: next.trim() })}
+                />
+              </div>
+            </div>
+          </div>
+
+          <aside className="settings-ai-aside">
+            <div className="settings-card">
+              <div className="mb-2 flex items-center gap-2">
+                <Bot className="h-3.5 w-3.5 shrink-0 text-ink-600" />
+                <div className="settings-card-title !mb-0">Runtime map</div>
+              </div>
+              <div className="settings-runtime-map">
+                {runtimeRows.map((row) => (
+                  <div key={row.key} className="settings-runtime-row">
+                    <div className="settings-runtime-label">{row.label}</div>
+                    {row.inherit ? (
+                      <div className="settings-runtime-value is-inherit">main model</div>
+                    ) : (
+                      <div className="settings-runtime-value" title={row.value}>
+                        {row.value}
+                      </div>
+                    )}
+                    {row.provider ? (
+                      <div className="settings-runtime-provider" title={row.provider}>
+                        {row.provider}
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="settings-card">
+              <div className="settings-card-title">{labels.notifications}</div>
+              <button
+                type="button"
+                onClick={() => onPatch({ agentCompletionNotifications: !aiRuntime.agentCompletionNotifications })}
+                className="settings-toggle-row"
+              >
+                <span
+                  className={`relative h-5 w-9 shrink-0 rounded-full border transition-colors ${
+                    aiRuntime.agentCompletionNotifications ? "theme-toggle-on" : "border-ink-300 bg-ink-300"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-[3px] h-3.5 w-3.5 rounded-full theme-toggle-thumb shadow-sm transition-transform ${
+                      aiRuntime.agentCompletionNotifications ? "translate-x-4" : "translate-x-0.5"
+                    }`}
+                  />
+                </span>
+                <span
+                  className="min-w-0 text-[12px] leading-none"
+                  style={{ color: aiRuntime.agentCompletionNotifications ? "var(--ink-950)" : "var(--ink-700)" }}
+                >
+                  {aiRuntime.agentCompletionNotifications
+                    ? labels.notifyWhenAgentFinishes
+                    : labels.finishNotificationsOff}
+                </span>
+              </button>
+            </div>
+
+            <div className="settings-card">
+              <div className="settings-card-title">Token counting</div>
+              <div className="settings-lang-row">
+                {[
+                  { value: "provider" as const, title: "Provider" },
+                  { value: "auto" as const, title: "Estimate" },
+                ].map((mode) => {
+                  const active = (draft.tokenCountingMode || "provider") === mode.value;
+                  return (
+                    <button
+                      key={mode.value}
+                      type="button"
+                      onClick={() => onTokenCountingMode(mode.value)}
+                      className={`settings-chip ${active ? "is-active" : ""}`}
+                    >
+                      {mode.title}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 /**
  * CF Mail (cf_mail) credentials editor — reads/writes the shared
  * runtime-app/data/config.json store used by the cf_mail tool.
@@ -604,46 +1220,35 @@ const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, 
   const labInSearchModelMatch = labInSearchModelId
     ? draft.models.find((m) => m.id === labInSearchModelId || m.name === labInSearchModelId)
     : null;
-  const labInPromptSelectValue = labInPromptModelMatch ? labInPromptModelMatch.id : "";
-  const labInSearchSelectValue = labInSearchModelMatch ? labInSearchModelMatch.id : "";
   const fortaniModelId =
     typeof aiRuntime.fortaniModelId === "string" ? aiRuntime.fortaniModelId.trim() : "";
   const fortaniModelMatch = fortaniModelId
     ? draft.models.find((m) => m.id === fortaniModelId || m.name === fortaniModelId)
     : null;
-  const fortaniSelectValue = fortaniModelMatch ? fortaniModelMatch.id : "";
   const inlineHintModelId =
     typeof aiRuntime.inlineHintModelId === "string" ? aiRuntime.inlineHintModelId.trim() : "";
   const inlineHintModelMatch = inlineHintModelId
     ? draft.models.find((m) => m.id === inlineHintModelId || m.name === inlineHintModelId)
     : null;
-  const inlineHintSelectValue = inlineHintModelMatch ? inlineHintModelMatch.id : "";
-  const inlineHintEnabled = aiRuntime.inlineHintEnabled === true;
   const visionModelId =
     typeof aiRuntime.visionModelId === "string" ? aiRuntime.visionModelId.trim() : "";
   const visionModelMatch = visionModelId
     ? draft.models.find((m) => m.id === visionModelId || m.name === visionModelId)
     : null;
-  const visionSelectValue = visionModelMatch ? visionModelMatch.id : "";
-  const modelOptions = [
-    { value: "", label: "Same as main model (default)" },
-    ...draft.models.map((model) => {
-      const provider = draft.providers.find((p) => p.id === model.providerId);
-      const apiName = model.name || model.id;
-      const idHint = model.id && model.id !== apiName ? ` · id ${model.id}` : "";
-      return {
-        value: model.id,
-        label: provider ? `${provider.name} / ${apiName}${idHint}` : `${apiName}${idHint}`,
-      };
-    }),
-  ];
-  
+  const modelChoices = buildModelChoices(draft);
+
   const updateAiRuntime = (updates: Partial<typeof aiRuntime>) => commitConfig({ ...draft, aiRuntime: { ...aiRuntime, ...updates } });
   const tabTitle = {
     appearance: labels.appearance,
     ai: labels.settingsAiRuntime,
     shortcuts: labels.settingsShortcuts,
     cfmail: "CF Mail",
+  }[activeTab];
+  const tabSubtitle = {
+    appearance: "Theme, language and mouse snippets",
+    ai: "Model routing, stage models and runtime behavior",
+    shortcuts: labels.mouseSnippets,
+    cfmail: "cf_mail credentials",
   }[activeTab];
 
   return (
@@ -672,7 +1277,7 @@ const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, 
               active={activeTab === "ai"}
               icon={<Cpu className="h-4 w-4" />}
               label={labels.settingsAiRuntime}
-              hint="Automatic per model"
+              hint="Models & routing"
               onClick={() => setActiveTab("ai")}
             />
             <NavItem
@@ -701,7 +1306,7 @@ const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, 
               <div className="settings-header-mark">C</div>
               <div className="min-w-0">
                 <h2 className="settings-header-title truncate">{tabTitle}</h2>
-                <p className="settings-header-subtitle">All configuration in one workspace</p>
+                <p className="settings-header-subtitle">{tabSubtitle}</p>
               </div>
             </div>
             <div className="settings-header-actions">
@@ -884,220 +1489,20 @@ const SettingsContent: React.FC<SettingsModalProps> = ({ open, onClose, config, 
 
 
             {activeTab === "ai" && (
-              <div className="settings-body-scroll settings-chat-scrollbar">
-              <div className="settings-section">
-                <div className="settings-card">
-                  <div className="settings-card-title">{labels.notifications}</div>
-                  <button
-                    type="button"
-                    onClick={() => updateAiRuntime({ agentCompletionNotifications: !aiRuntime.agentCompletionNotifications })}
-                    className="settings-toggle-row"
-                  >
-                    <span
-                      className={`relative h-5 w-9 shrink-0 rounded-full border transition-colors ${
-                        aiRuntime.agentCompletionNotifications
-                          ? "theme-toggle-on"
-                          : "border-ink-300 bg-ink-300"
-                      }`}
-                    >
-                      <span
-                        className={`absolute top-[3px] h-3.5 w-3.5 rounded-full theme-toggle-thumb shadow-sm transition-transform ${
-                          aiRuntime.agentCompletionNotifications ? "translate-x-4" : "translate-x-0.5"
-                        }`}
-                      />
-                    </span>
-                    <span
-                      className="min-w-0 text-[12px] leading-none"
-                      style={{ color: aiRuntime.agentCompletionNotifications ? "var(--ink-950)" : "var(--ink-700)" }}
-                    >
-                      {aiRuntime.agentCompletionNotifications
-                        ? labels.notifyWhenAgentFinishes
-                        : labels.finishNotificationsOff}
-                    </span>
-                  </button>
-                </div>
-
-                <div className="settings-card">
-                  <div className="settings-card-title">LAB-IN models</div>
-                  <p className="mb-3 text-[11px] leading-snug text-ink-500">
-                    Stage models inherit the active chat model when left empty. The main task always executes with the active chat model.
-                  </p>
-                  <div className="settings-grid-2">
-                    <div className="grid gap-1.5">
-                      <span className="text-[10px] font-medium uppercase tracking-[0.1em] text-ink-500">
-                        Prompt refiner
-                      </span>
-                      <UiSelect
-                        ariaLabel="LAB-IN prompt refiner model"
-                        value={labInPromptSelectValue}
-                        options={modelOptions}
-                        onChange={(next) => updateAiRuntime({ labInPromptModelId: next || "" })}
-                      />
-                      {labInPromptModelId && !labInPromptModelMatch ? (
-                        <p className="text-[11px] leading-snug" style={{ color: "var(--danger)" }}>
-                          Saved prompt model &quot;{labInPromptModelId}&quot; is missing — falls back to main model.
-                        </p>
-                      ) : null}
-                    </div>
-                    <div className="grid gap-1.5">
-                      <span className="text-[10px] font-medium uppercase tracking-[0.1em] text-ink-500">
-                        Knowledge search agent
-                      </span>
-                      <UiSelect
-                        ariaLabel="LAB-IN knowledge search model"
-                        value={labInSearchSelectValue}
-                        options={modelOptions}
-                        onChange={(next) => updateAiRuntime({ labInSearchModelId: next || "" })}
-                      />
-                      {labInSearchModelId && !labInSearchModelMatch ? (
-                        <p className="text-[11px] leading-snug" style={{ color: "var(--danger)" }}>
-                          Saved search model &quot;{labInSearchModelId}&quot; is missing — falls back to main model.
-                        </p>
-                      ) : null}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="settings-card">
-                  <div className="settings-card-title">Vision</div>
-                  <p className="mb-3 text-[11px] leading-snug text-ink-500">
-                    Model used by the <span style={{ fontFamily: "var(--terminal-font)" }}>vision</span> tool to read screenshots,
-                    reference photos and Blender renders. DeepSeek flash/v4 accept images (PNG/JPEG/WebP/GIF); leave empty to use
-                    the active chat model.
-                  </p>
-                  <div className="grid gap-1.5">
-                    <span className="text-[10px] font-medium uppercase tracking-[0.1em] text-ink-500">
-                      Vision model
-                    </span>
-                    <UiSelect
-                      ariaLabel="Vision model"
-                      value={visionSelectValue}
-                      options={modelOptions}
-                      onChange={(next) => updateAiRuntime({ visionModelId: next || "" })}
-                    />
-                    {visionModelId && !visionModelMatch ? (
-                      <p className="text-[11px] leading-snug" style={{ color: "var(--danger)" }}>
-                        Saved vision model &quot;{visionModelId}&quot; is missing — falls back to the active chat model.
-                      </p>
-                    ) : null}
-                  </div>
-                </div>
-
-                <div className="settings-card">
-                  <div className="settings-card-title">FoRtani model</div>
-                  <div className="grid gap-2">
-                    <p className="text-[11px] leading-snug text-ink-500">
-                      Model that reviews the task and the agent's diff, then sends corrections back. It does not edit files. Empty = active chat model. The main agent still applies the fixes.
-                    </p>
-                    <UiSelect
-                      ariaLabel="FoRtani follow-up model"
-                      value={fortaniSelectValue}
-                      options={modelOptions}
-                      onChange={(next) => updateAiRuntime({ fortaniModelId: next || "" })}
-                    />
-                    {fortaniModelId && !fortaniModelMatch ? (
-                      <p className="text-[11px] leading-snug" style={{ color: "var(--danger)" }}>
-                        Saved FoRtani model &quot;{fortaniModelId}&quot; is missing — falls back to main model.
-                      </p>
-                    ) : null}
-                  </div>
-                </div>
-
-                <div className="settings-card">
-                  <div className="settings-card-title">Composer autocomplete</div>
-                  <p className="mb-2 text-[11px] leading-snug text-ink-500">
-                    While you type a prompt, the model continues it as faint ghost text inside the input.
-                    Tab inserts the suggestion; keep typing and a fresh one appears. It sees the whole input
-                    and the current caret position.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => updateAiRuntime({ inlineHintEnabled: !inlineHintEnabled })}
-                    className="settings-toggle-row"
-                  >
-                    <span
-                      className={`relative h-5 w-9 shrink-0 rounded-full border transition-colors ${
-                        inlineHintEnabled ? "theme-toggle-on" : "border-ink-300 bg-ink-300"
-                      }`}
-                    >
-                      <span
-                        className={`absolute top-[3px] h-3.5 w-3.5 rounded-full theme-toggle-thumb shadow-sm transition-transform ${
-                          inlineHintEnabled ? "translate-x-4" : "translate-x-0.5"
-                        }`}
-                      />
-                    </span>
-                    <span
-                      className="min-w-0 text-[12px] leading-none"
-                      style={{ color: inlineHintEnabled ? "var(--ink-950)" : "var(--ink-700)" }}
-                    >
-                      {inlineHintEnabled ? "Ghost suggestions on · Tab to insert" : "Ghost suggestions off"}
-                    </span>
-                  </button>
-                  <div className="mt-3 grid gap-1.5">
-                    <span className="text-[10px] font-medium uppercase tracking-[0.1em] text-ink-500">
-                      Suggestion model
-                    </span>
-                    <UiSelect
-                      ariaLabel="Composer autocomplete model"
-                      value={inlineHintSelectValue}
-                      options={modelOptions}
-                      onChange={(next) => updateAiRuntime({ inlineHintModelId: next || "" })}
-                    />
-                    {inlineHintModelId && !inlineHintModelMatch ? (
-                      <p className="text-[11px] leading-snug" style={{ color: "var(--danger)" }}>
-                        Saved autocomplete model &quot;{inlineHintModelId}&quot; is missing — falls back to the main model.
-                      </p>
-                    ) : null}
-                  </div>
-                </div>
-
-                <div className="settings-card">
-                  <div className="settings-card-title">Cloudflare image</div>
-                  <p className="mb-3 text-[11px] leading-snug text-ink-500">
-                    Used by generate_image. Flux 2 Dev draws the subject on a flat green screen, then the tool removes only that green.
-                  </p>
-                  <div className="settings-grid-2">
-                    <Field
-                      label="Account ID"
-                      mono
-                      value={typeof aiRuntime.cloudflareAccountId === "string" ? aiRuntime.cloudflareAccountId : ""}
-                      placeholder="account id"
-                      onChange={(next) => updateAiRuntime({ cloudflareAccountId: next.trim() })}
-                    />
-                    <Field
-                      label="API token"
-                      mono
-                      type="password"
-                      value={typeof aiRuntime.cloudflareApiToken === "string" ? aiRuntime.cloudflareApiToken : ""}
-                      placeholder="cfut_…"
-                      onChange={(next) => updateAiRuntime({ cloudflareApiToken: next.trim() })}
-                    />
-                  </div>
-                </div>
-
-                <div className="settings-card">
-                  <div className="settings-card-title">Token counting</div>
-                  <div className="settings-lang-row">
-                    {[
-                      { value: "provider" as const, title: "Provider" },
-                      { value: "auto" as const, title: "Estimate" },
-                    ].map((mode) => {
-                      const active = (draft.tokenCountingMode || "provider") === mode.value;
-                      return (
-                        <button
-                          key={mode.value}
-                          type="button"
-                          onClick={() => commitConfig({ ...draft, tokenCountingMode: mode.value })}
-                          className={`settings-chip ${active ? "is-active" : ""}`}
-                        >
-                          {mode.title}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-              </div>
+              <AiRuntimeTab
+                draft={draft}
+                aiRuntime={aiRuntime}
+                matches={{
+                  labInPrompt: !!labInPromptModelId && !labInPromptModelMatch,
+                  labInSearch: !!labInSearchModelId && !labInSearchModelMatch,
+                  fortani: !!fortaniModelId && !fortaniModelMatch,
+                  inlineHint: !!inlineHintModelId && !inlineHintModelMatch,
+                  vision: !!visionModelId && !visionModelMatch,
+                }}
+                choices={modelChoices}
+                onPatch={updateAiRuntime}
+                onTokenCountingMode={(mode) => commitConfig({ ...draft, tokenCountingMode: mode })}
+              />
             )}
 
             {activeTab === "cfmail" && <CfMailSettings />}

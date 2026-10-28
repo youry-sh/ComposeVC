@@ -68,6 +68,7 @@ const { runtime: sizeworkout } = require("./sizeworkout.cjs");
 const workerPool = require("./workerPool.cjs");
 const terminalManager = require("./terminalManager.cjs");
 const usageStore = require("./usageStore.cjs");
+const setup = require("./setup/index.cjs");
 const screenshot = require("./screenshot.cjs");
 terminalManager.register(ipcMain, app);
 sizeworkout.on("changed", (workspace) => {
@@ -1670,6 +1671,88 @@ ipcMain.handle("usage:getSnapshot", async () => {
         sessions: runtimeSessions + (runtimeQuitSaved ? 0 : 1),
       },
     };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+// ── Setup: runtime/toolchain installer (Setup tab) ─────────────────────────
+// Everything is driven by electron/setup/*; the renderer never touches child_process
+// or the filesystem. Errors are returned as { ok:false, error } so an invoke()
+// rejection never reaches the UI as an unreadable string.
+
+function setupUserData() {
+  return app.getPath("userData");
+}
+
+function setupPlatform() {
+  if (process.platform === "win32") return "win";
+  if (process.platform === "darwin") return "mac";
+  return "linux";
+}
+
+ipcMain.handle("setup:scan", async () => {
+  try {
+    return await setup.scan(setupUserData());
+  } catch (error) {
+    return {
+      ok: false,
+      platform: setupPlatform(),
+      components: [],
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+});
+
+ipcMain.handle("setup:install", async (_event, id) => {
+  try {
+    return await setup.install(setupUserData(), String(id || ""));
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+ipcMain.handle("setup:installAll", async () => {
+  try {
+    return await setup.installAll(setupUserData());
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+ipcMain.handle("setup:cancel", async (_event, id) => {
+  try {
+    return setup.cancel(String(id || ""));
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+ipcMain.handle("setup:state", async () => {
+  try {
+    return setup.state(setupUserData());
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+ipcMain.handle("setup:openManual", async (_event, id) => {
+  try {
+    const url = setup.manualUrl(String(id || ""));
+    if (!url) return { ok: false, error: "Для этого компонента нет страницы загрузки" };
+    await shell.openExternal(url);
+    return { ok: true, url };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+ipcMain.handle("setup:openDownloads", async () => {
+  try {
+    const dir = setup.ensureDownloads(setupUserData());
+    const failure = await shell.openPath(dir);
+    if (failure) return { ok: false, error: failure, path: dir };
+    return { ok: true, path: dir };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : String(error) };
   }

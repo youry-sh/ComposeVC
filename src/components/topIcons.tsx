@@ -142,3 +142,102 @@ export const IcoTasks: React.FC<IconProps> = ({ className }) => (
     <rect x="1.8" y="10.2" width="3.2" height="3.2" rx="0.6" />
   </svg>
 );
+
+/* ── Setup tab: status glyphs + language marks (24×24 stroke style) ───────── */
+
+type SetupIconProps = { className?: string };
+
+const setupBase = {
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 1.6,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+};
+
+/** Download — arrow into a tray */
+export const IcoDownload: React.FC<SetupIconProps> = ({ className }) => (
+  <svg {...setupBase} className={className}>
+    <path d="M12 3.5v10.2" />
+    <path d="M8.2 10.4 12 14.2l3.8-3.8" />
+    <path d="M4.5 16.5v2.2a1.8 1.8 0 0 0 1.8 1.8h11.4a1.8 1.8 0 0 0 1.8-1.8v-2.2" />
+  </svg>
+);
+
+/** Installed — check inside a circle */
+export const IcoCheckCircle: React.FC<SetupIconProps> = ({ className }) => (
+  <svg {...setupBase} className={className}>
+    <circle cx="12" cy="12" r="8.6" />
+    <path d="M8 12.3l2.7 2.7 5.4-6" />
+  </svg>
+);
+
+/** Failure — warning triangle */
+export const IcoAlertTriangle: React.FC<SetupIconProps> = ({ className }) => (
+  <svg {...setupBase} className={className}>
+    <path d="M12 3.6 21 20H3z" />
+    <path d="M12 9.4v4.6" />
+    <circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+/** Python — two interlocking snakes */
+export const IcoPython: React.FC<SetupIconProps> = ({ className }) => (
+  <svg {...setupBase} className={className}>
+    <path d="M8.4 9.2V6.6a2.4 2.4 0 0 1 2.4-2.4h2.8a2.4 2.4 0 0 1 2.4 2.4v2.6" />
+    <path d="M15.6 14.8v2.6a2.4 2.4 0 0 1-2.4 2.4h-2.8a2.4 2.4 0 0 1-2.4-2.4v-2.6" />
+    <path d="M8.4 9.2h5.1a2.1 2.1 0 0 1 2.1 2.1v3.5" />
+    <path d="M15.6 14.8h-5.1a2.1 2.1 0 0 1-2.1-2.1V9.2" />
+    <circle cx="10.4" cy="6.9" r="0.6" fill="currentColor" stroke="none" />
+    <circle cx="13.6" cy="17.1" r="0.6" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+/** Git — commit graph with a branch */
+export const IcoGit: React.FC<SetupIconProps> = ({ className }) => (
+  <svg {...setupBase} className={className}>
+    <circle cx="6.4" cy="5" r="2.2" />
+    <circle cx="6.4" cy="19" r="2.2" />
+    <circle cx="17.6" cy="11.4" r="2.2" />
+    <path d="M6.4 7.2v9.6" />
+    <path d="M6.4 14.2c0-3.1 2.2-2.8 5.4-2.8h3.6" />
+  </svg>
+);
+
+/** Blender — camera lens with an orbit */
+export const IcoBlender: React.FC<SetupIconProps> = ({ className }) => (
+  <svg {...setupBase} className={className}>
+    <circle cx="12" cy="12" r="4.4" />
+    <circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none" />
+    <path d="M3.2 16.4c2.6 3.4 13.2 3.8 17.2-1.4" />
+    <path d="M20.4 8.4l.5-3.6-3.6.6" />
+  </svg>
+);
+
+/** Go — three gopher speed lines plus a G */
+export const IcoGo: React.FC<SetupIconProps> = ({ className }) => (
+  <svg {...setupBase} className={className}>
+    <path d="M2.6 8.6h5.4M1.8 12h6.2M2.6 15.4h5.4" />
+    <path d="M20.8 9.2a6.4 6.4 0 1 0 .1 6.1v-3.2h-3.1" />
+  </svg>
+);
+
+/** Rust — gear around a core */
+export const IcoRust: React.FC<SetupIconProps> = ({ className }) => (
+  <svg {...setupBase} className={className}>
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 3.2v2.5M12 18.3v2.5M3.2 12h2.5M18.3 12h2.5M5.8 5.8l1.8 1.8M16.4 16.4l1.8 1.8M18.2 5.8l-1.8 1.8M7.6 16.4l-1.8 1.8" />
+  </svg>
+);
+
+/** Web search — globe with a magnifier */
+export const IcoWebSearch: React.FC<SetupIconProps> = ({ className }) => (
+  <svg {...setupBase} className={className}>
+    <circle cx="10.4" cy="10.4" r="6.6" />
+    <path d="M3.8 10.4h13.2" />
+    <path d="M10.4 3.8c2.4 3.6 2.4 9.6 0 13.2M10.4 3.8c-2.4 3.6-2.4 9.6 0 13.2" />
+    <circle cx="17.4" cy="17.4" r="3.1" />
+    <path d="M19.8 19.8l1.6 1.6" />
+  </svg>
+);

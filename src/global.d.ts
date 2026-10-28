@@ -184,6 +184,82 @@ declare global {
     releasesUrl?: string;
   }
 
+  // ---- Setup tab (runtime/toolchain installer) ----
+  type SetupComponentId = "python" | "git" | "blender" | "go" | "rust" | "websearch";
+  type SetupPlatform = "win" | "linux" | "mac";
+  type SetupComponentGroup = "runtime" | "tool" | "3d" | "search";
+  type SetupComponentIcon = "python" | "git" | "blender" | "go" | "rust" | "search";
+
+  type SetupComponent = {
+    id: SetupComponentId;
+    name: string;
+    group: SetupComponentGroup;
+    blurb: string;
+    icon: SetupComponentIcon;
+    platformSupport: SetupPlatform[];
+    installed: boolean;
+    version: string | null;
+    path: string | null;
+    method?: string | null;
+    lastError: string | null;
+    lastCheckAt?: number;
+    manualUrl: string | null;
+    dependsOn: SetupComponentId[];
+  };
+
+  type SetupProgressState = "idle" | "checking" | "downloading" | "installing" | "done" | "error" | "already";
+
+  type SetupProgress = {
+    id: SetupComponentId;
+    state: SetupProgressState;
+    step: string;
+    log: string[];
+    percent?: number | null;
+    error?: string | null;
+    version?: string | null;
+    path?: string | null;
+  };
+
+  type SetupScanResult = {
+    ok: boolean;
+    platform: SetupPlatform;
+    components: SetupComponent[];
+    active?: Partial<Record<SetupComponentId, SetupProgress>>;
+    scannedAt?: number;
+    error?: string;
+  };
+
+  type SetupInstallResult = {
+    ok: boolean;
+    alreadyInstalled?: boolean;
+    running?: boolean;
+    version?: string | null;
+    path?: string | null;
+    method?: string | null;
+    error?: string | null;
+    cancelled?: boolean;
+    missing?: string[];
+    log?: string[];
+    manualCommands?: string[];
+    job?: SetupProgress | null;
+  };
+
+  type SetupInstallAllResult = {
+    ok: boolean;
+    results?: Array<SetupInstallResult & { id: SetupComponentId }>;
+    error?: string;
+  };
+
+  type SetupStateResult = {
+    ok: boolean;
+    platform: SetupPlatform;
+    savedPlatform?: string;
+    components: SetupComponent[];
+    ui?: { collapsedGroups?: string[] };
+    updatedAt?: number;
+    error?: string;
+  };
+
   interface Window {
     lopster?: {
       // ---- auto-update (GitHub Releases) ----
@@ -241,6 +317,15 @@ declare global {
       webEngineCopyText: (text: string) => Promise<{ ok: boolean; error?: string }>;
       webEngineCaptureScreenshot: (webContentsId: number) => Promise<{ ok: boolean; error?: string }>;
       webEngineClearCache: () => Promise<{ ok: boolean; error?: string }>;
+      // Setup tab — detect/download/install runtimes and tools in the main process.
+      setupScan: () => Promise<SetupScanResult>;
+      setupInstall: (id: SetupComponentId) => Promise<SetupInstallResult>;
+      setupInstallAll: () => Promise<SetupInstallAllResult>;
+      setupCancel: (id: SetupComponentId) => Promise<{ ok: boolean; error?: string }>;
+      setupState: () => Promise<SetupStateResult>;
+      setupOpenManual: (id: SetupComponentId) => Promise<{ ok: boolean; url?: string; error?: string }>;
+      setupOpenDownloads: () => Promise<{ ok: boolean; path?: string; error?: string }>;
+      onSetupProgress: (callback: (progress: SetupProgress) => void) => () => void;
       // MultiIDE layout (workspaces + their chat panels) — disk-backed JSON store.
       multiIdeLoadState: () => Promise<MultiIdeDiskState>;
       multiIdeSaveState: (patch: {
