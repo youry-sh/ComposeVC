@@ -1185,7 +1185,7 @@ async function performImport(userDataPath, config, sources, project, godot, ctx)
     }
   }
   ctx.stage("import", 55);
-  const result = await runCommand(godot.executable, ["--headless", "--path", project.projectDir, "--import"], {
+  const result = await runCommand(godot.runner || godot.executable, ["--headless", "--path", project.projectDir, "--import"], {
     timeoutSec: config.timeoutSec,
     logPath: ctx.logPath,
     jobId: ctx.jobId,
@@ -1226,7 +1226,7 @@ async function performBuild(config, project, godot, presetId, exportPath, ctx) {
   // Always re-import: a scene written or a GLB copied since the last build must
   // be registered before --export-release can pack it.
   ctx.stage("import project", 35);
-  await runCommand(godot.executable, ["--headless", "--path", project.projectDir, "--import"], {
+  await runCommand(godot.runner || godot.executable, ["--headless", "--path", project.projectDir, "--import"], {
     timeoutSec: Math.min(Number(config.timeoutSec) || 1800, 600),
     logPath: ctx.logPath,
     jobId: ctx.jobId,
@@ -1235,7 +1235,7 @@ async function performBuild(config, project, godot, presetId, exportPath, ctx) {
 
   ctx.stage("export", 60);
   const attempt = async () =>
-    runCommand(godot.executable, ["--headless", "--path", project.projectDir, "--export-release", preset.name, exportPath], {
+    runCommand(godot.runner || godot.executable, ["--headless", "--path", project.projectDir, "--export-release", preset.name, exportPath], {
       timeoutSec: config.timeoutSec,
       logPath: ctx.logPath,
       jobId: ctx.jobId,
@@ -1292,7 +1292,7 @@ async function performRun(config, project, godot, frames, ctx) {
   ctx.stage("run", 85);
   const startedAt = Date.now();
   const result = await runCommand(
-    godot.executable,
+    godot.runner || godot.executable,
     ["--headless", "--path", project.projectDir, "--quit-after", String(quitAfter)],
     {
       timeoutSec: Math.min(Number(config.timeoutSec) || 1800, 180),
