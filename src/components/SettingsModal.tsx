@@ -563,59 +563,61 @@ const ModelSelect: React.FC<{
             />
           </div>
 
-          <div ref={listRef} id={listIdRef.current} className="settings-model-list">
-            <button
-              type="button"
-              role="option"
-              id={`${listIdRef.current}-0`}
-              aria-selected={value === ""}
-              data-hot={hot === 0}
-              onMouseEnter={() => setHot(0)}
-              onClick={() => pick("")}
-              className={`settings-model-option ${value === "" ? "is-selected" : ""} ${hot === 0 ? "is-hot" : ""}`}
-            >
-              <span className="settings-model-option-label">{inheritLabel}</span>
-              {value === "" ? <Check className="h-3.5 w-3.5 shrink-0" /> : null}
-            </button>
+          <ChatMonoScroll className="settings-model-list">
+            <div ref={listRef} id={listIdRef.current} className="settings-model-list-inner">
+              <button
+                type="button"
+                role="option"
+                id={`${listIdRef.current}-0`}
+                aria-selected={value === ""}
+                data-hot={hot === 0}
+                onMouseEnter={() => setHot(0)}
+                onClick={() => pick("")}
+                className={`settings-model-option ${value === "" ? "is-selected" : ""} ${hot === 0 ? "is-hot" : ""}`}
+              >
+                <span className="settings-model-option-label">{inheritLabel}</span>
+                {value === "" ? <Check className="h-3.5 w-3.5 shrink-0" /> : null}
+              </button>
 
-            {groups.map((group) => (
-              <div key={group.name} className="settings-model-group">
-                <div className="settings-model-group-head">
-                  <span
-                    className="settings-model-group-dot"
-                    style={{ background: providerAccent(group.items[0]?.providerId || "") }}
-                  />
-                  <span className="min-w-0 flex-1 truncate">{group.name}</span>
-                  <span className="settings-model-group-count">{group.items.length}</span>
+              {groups.map((group) => (
+                <div key={group.name} className="settings-model-group">
+                  <div className="settings-model-group-head">
+                    <span
+                      className="settings-model-group-dot"
+                      style={{ background: providerAccent(group.items[0]?.providerId || "") }}
+                    />
+                    <span className="min-w-0 flex-1 truncate">{group.name}</span>
+                    <span className="settings-model-group-count">{group.items.length}</span>
+                  </div>
+                  {group.items.map((choice) => {
+                    const index = flat.findIndex((option) => option.value === choice.value);
+                    const isSelected = choice.value === value;
+                    return (
+                      <button
+                        key={choice.value}
+                        type="button"
+                        role="option"
+                        id={`${listIdRef.current}-${index}`}
+                        aria-selected={isSelected}
+                        data-hot={hot === index}
+                        onMouseEnter={() => setHot(index)}
+                        onClick={() => pick(choice.value)}
+                        className={`settings-model-option ${isSelected ? "is-selected" : ""} ${hot === index ? "is-hot" : ""}`}
+                      >
+                        <span className="settings-model-option-label">{choice.modelName}</span>
+                        {choice.contextLabel ? <span className="settings-model-meta">{choice.contextLabel}</span> : null}
+                        {isSelected ? <Check className="h-3.5 w-3.5 shrink-0" /> : null}
+                      </button>
+                    );
+                  })}
                 </div>
-                {group.items.map((choice) => {
-                  const index = flat.findIndex((option) => option.value === choice.value);
-                  const isSelected = choice.value === value;
-                  return (
-                    <button
-                      key={choice.value}
-                      type="button"
-                      role="option"
-                      id={`${listIdRef.current}-${index}`}
-                      aria-selected={isSelected}
-                      data-hot={hot === index}
-                      onMouseEnter={() => setHot(index)}
-                      onClick={() => pick(choice.value)}
-                      className={`settings-model-option ${isSelected ? "is-selected" : ""} ${hot === index ? "is-hot" : ""}`}
-                    >
-                      <span className="settings-model-option-label">{choice.modelName}</span>
-                      {choice.contextLabel ? <span className="settings-model-meta">{choice.contextLabel}</span> : null}
-                      {isSelected ? <Check className="h-3.5 w-3.5 shrink-0" /> : null}
-                    </button>
-                  );
-                })}
-              </div>
-            ))}
+              ))}
 
-            {groups.length === 0 ? (
-              <div className="settings-model-empty">No models match “{query.trim()}”.</div>
-            ) : null}
-          </div>
+              {groups.length === 0 ? (
+                <div className="settings-model-empty">No models match “{query.trim()}”.</div>
+              ) : null}
+            </div>
+          </ChatMonoScroll>
         </div>
       )}
     </div>

@@ -8695,7 +8695,9 @@
 }
 .settings-model-search:focus { border-color: var(--accent); }
 .settings-model-search::placeholder { color: var(--ink-500); }
-.settings-model-list { min-height: 0; overflow-y: auto; scrollbar-width: thin; }
+.settings-model-list { flex: 1 1 auto; min-height: 0; max-height: 264px; }
+.settings-model-list .chat-mono-scroll-viewport { padding: 0; overscroll-behavior: contain; }
+.settings-model-list-inner { display: block; min-height: 0; }
 .settings-model-group { padding-top: 2px; }
 .settings-model-group-head {
   display: flex;
