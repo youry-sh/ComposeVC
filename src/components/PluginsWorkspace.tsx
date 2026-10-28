@@ -485,7 +485,7 @@ const PluginsWorkspace: React.FC = () => {
                   className="flex h-10 w-10 shrink-0 items-center justify-center border border-ink-200"
                   style={{ color: plugin.accent || "var(--accent)" }}
                 >
-                  <Box className="h-5 w-5" />
+                  {plugin.id === "godot" ? <IcoGodot className="h-5 w-5" /> : <Box className="h-5 w-5" />}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
@@ -500,7 +500,7 @@ const PluginsWorkspace: React.FC = () => {
                         color: plugin.status?.found ? "var(--ink-800)" : "var(--ink-500)",
                       }}
                     >
-                      {plugin.status?.found ? "готов" : "нужен Blender"}
+                      {plugin.status?.found ? "готов" : `нужен ${plugin.name}`}
                     </span>
                     <span className="font-mono text-[10px] text-ink-500">
                       инструмент: {plugin.tools.map((tool) => `\`${tool}\``).join(", ")}
