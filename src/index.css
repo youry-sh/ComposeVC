@@ -286,11 +286,10 @@
     --radius-modal: 12px;
   }
 
-  /* ── Чёрный (Graphite) — чёрная база + красно-оранжевый #f0442e ─────────
-     Near-black chrome on a #080808 base: layers still step a few lightness
-     points so panels read as elevation, while exactly one saturated colour —
-     the red-orange accent — marks primary actions, focus, selection, toggles
-     and live state. */
+  /* ── Чёрный (Graphite) — тёплая чёрная база + красно-оранжевый #f0442e ──
+     Black chrome with a faint burnt tint instead of neutral grey, so the one
+     saturated colour — the red-orange accent — runs through the whole shell:
+     structural hairlines, focus, selection, toggles and live state. */
   [data-theme="graphite"] {
     color-scheme: dark;
 
@@ -15959,6 +15958,90 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   .expert-pane.is-running::before,
   .expert-pane.is-running .expert-study-dot,
   .expert-live-spin { animation: none; }
+}
+
+/* ══ Graphite: warm black base + orange chrome ═════════════════════════════
+   The base is black with a faint burnt tint, and the single accent leaks into
+   the structural hairlines — composer edge, rail/stage dividers, panel headers,
+   scrollbars, selected rows — so the window reads as one warm surface instead
+   of a grey UI with one red button. Opacity stays low: chrome, never decoration. */
+
+/* Shell hairlines */
+[data-theme="graphite"] .titlebar-root {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent) 6%, var(--ink-50)) 0%,
+    var(--ink-0) 100%
+  );
+  border-bottom-color: color-mix(in srgb, var(--accent) 24%, var(--border));
+}
+[data-theme="graphite"] .chat-rail {
+  border-right: 1px solid color-mix(in srgb, var(--accent) 14%, var(--border));
+}
+[data-theme="graphite"] .chat-stage-frame {
+  border-left-color: color-mix(in srgb, var(--accent) 18%, var(--border));
+  border-right-color: color-mix(in srgb, var(--accent) 18%, var(--border));
+}
+[data-theme="graphite"] .chat-shell .multi-slot-header,
+[data-theme="graphite"] .chat-shell .chat-header-bar,
+[data-theme="graphite"] .chat-rail-head {
+  border-bottom-color: color-mix(in srgb, var(--accent) 20%, var(--border));
+}
+
+/* Composer dock — the warmest part of the window. */
+[data-theme="graphite"] .chat-input-dock {
+  background: radial-gradient(
+    120% 150% at 50% 120%,
+    rgba(240, 68, 46, 0.07) 0%,
+    transparent 62%
+  );
+}
+[data-theme="graphite"] .chat-composer-shell {
+  border-top-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent) 7%, transparent) 0%,
+    color-mix(in srgb, var(--surface) 72%, transparent) 40%,
+    color-mix(in srgb, var(--surface) 90%, transparent) 100%
+  );
+}
+[data-theme="graphite"] .chat-composer-shell:focus-within {
+  border-top-color: color-mix(in srgb, var(--accent) 74%, var(--border));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--accent) 26%, transparent),
+    0 -14px 30px -22px color-mix(in srgb, var(--accent) 90%, transparent);
+}
+[data-theme="graphite"] .chat-composer-shell textarea::placeholder {
+  color: color-mix(in srgb, var(--accent-soft) 30%, var(--ink-500));
+}
+[data-theme="graphite"] .chat-composer-icon-btn:hover {
+  color: var(--accent-soft);
+}
+[data-theme="graphite"] .chat-send-fab:not(:disabled) {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 190, 172, 0.42),
+    0 0 0 1px rgba(240, 68, 46, 0.34),
+    0 0 20px -6px rgba(240, 68, 46, 0.55);
+}
+[data-theme="graphite"] .chat-send-fab:hover:not(:disabled) {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 214, 200, 0.6),
+    0 0 0 1px rgba(240, 68, 46, 0.5),
+    0 0 26px -4px rgba(240, 68, 46, 0.72);
+}
+
+/* Panels, fields and other workspaces pick up the same warm edge. */
+[data-theme="graphite"] .theme-panel,
+[data-theme="graphite"] .runner-header {
+  border-color: color-mix(in srgb, var(--accent) 14%, var(--border));
+}
+[data-theme="graphite"] .theme-input::placeholder,
+[data-theme="graphite"] .settings-field-input::placeholder,
+[data-theme="graphite"] .settings-field-textarea::placeholder {
+  color: color-mix(in srgb, var(--accent-soft) 24%, var(--ink-500));
+}
+[data-theme="graphite"] .settings-theme-row[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
 }
 
 
