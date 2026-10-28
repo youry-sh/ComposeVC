@@ -388,19 +388,26 @@ async function runCommand(executable, args, options = {}) {
     stderrTail = tailAppend(stderrTail, text);
     consume(text, "err");
   });
+
+  let resolveExit = () => {};
+  const exitPromise = new Promise((resolve) => {
+    resolveExit = resolve;
+  });
+  child.on("close", (exitCode) => resolveExit(exitCode == null ? -1 : exitCode));
   child.on("error", (error) => {
     spawnError = error;
     stderrTail = tailAppend(stderrTail, String(error?.stack || error?.message || error));
+    resolveExit(-1);
   });
 
   const timer = setTimeout(() => {
     timedOut = true;
     killTree(child);
+    const fallback = setTimeout(() => resolveExit(-1), 5000);
+    if (typeof fallback.unref === "function") fallback.unref();
   }, timeoutSec * 1000);
 
-  const code = await new Promise((resolve) => {
-    child.on("close", (exitCode) => resolve(exitCode == null ? -1 : exitCode));
-  });
+  const code = await exitPromise;
   clearTimeout(timer);
   if (jobId) active.delete(jobId);
 
@@ -790,6 +797,11 @@ async function collectGlbSources(userDataPath, config, input) {
   }
   for (const dir of dirs) {
     files.push(...(await findGlbFiles(dir)));
+  }
+  if (!files.length && !raw.length && !String(config?.glbDir || "").trim()) {
+    // Blender keeps exports inside its job folders; fall back to the job store
+    // so the default pipeline (blender export → godot import) works with no args.
+    files.push(...(await findGlbFiles(store.jobsRoot(userDataPath), 60)));
   }
   return Array.from(new Set(files)).slice(0, 200);
 }
@@ -1433,13 +1445,14 @@ async function build(userDataPath, config, options = {}) {
 
   const projectDir = resolveProjectDir(userDataPath, config);
   const exportPath = resolveExportPath(projectDir, presetId, options.exportPath || config.exportPath);
+  const timeoutSec = Math.max(10, Math.min(7200, Number(options.timeoutSec) || Number(config.timeoutSec) || 1800));
 
   return withJob(
     userDataPath,
-    { kind: "build", title: options.title || `Сборка Godot (${presetId})`, config: { ...config, preset: presetId } },
+    { kind: "build", title: options.title || `Сборка Godot (${presetId})`, config: { ...config, preset: presetId, timeoutSec } },
     async ({ job, project, godot, ctx, setStage }) => {
       await setStage("prepare", 15);
-      const result = await performBuild({ ...config, preset: presetId }, project, godot, presetId, exportPath, ctx);
+      const result = await performBuild({ ...config, preset: presetId, timeoutSec }, project, godot, presetId, exportPath, ctx);
       await setStage(result.ok ? "done" : "failed", result.ok ? 100 : 80);
       return {
         ...result,
