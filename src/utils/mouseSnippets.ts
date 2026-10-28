@@ -2,6 +2,13 @@
 
 export const MOUSE_SNIPPETS_KEY = "lopster-mouse-snippets";
 export const INSERT_INPUT_EVENT = "lopster-insert-chat-input";
+/** A chat panel confirms it consumed an insert — queued delivery can be dropped. */
+export const INSERT_APPLIED_EVENT = "lopster-insert-chat-input-applied";
+
+export type InsertChatInputApplied = {
+  requestId?: string;
+  slotId?: string;
+};
 
 /** MouseEvent.button: 3 = Back (side), 4 = Forward (side) */
 export type MouseSideButton = 3 | 4;

@@ -63,7 +63,7 @@ import WorkTimer from "./WorkTimer";
 import BackgroundTasks from "./BackgroundTasks";
 import MarkdownContent from "./markdown/MarkdownContent";
 import { computeLineDiff } from "../utils/diff";
-import { INSERT_INPUT_EVENT, InsertChatInputDetail } from "../utils/mouseSnippets";
+import { INSERT_APPLIED_EVENT, INSERT_INPUT_EVENT, InsertChatInputDetail } from "../utils/mouseSnippets";
 import {
   CHAT_FILE_ACCEPT,
   CHAT_FILE_MAX_BYTES,
@@ -3925,10 +3925,19 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
         return;
       }
       const chunk = detail.text;
+      const ackApplied = () => {
+        if (!detail.requestId) return;
+        window.dispatchEvent(
+          new CustomEvent(INSERT_APPLIED_EVENT, {
+            detail: { requestId: detail.requestId, slotId: telegramSlotId },
+          })
+        );
+      };
       // Expert "В чат" / notification-style delivery: go straight to the model
       // instead of parking the prompt in the composer.
       if (detail.autoSend) {
         autoSendRef.current(chunk);
+        ackApplied();
         return;
       }
       setInput((current) => {
@@ -3936,6 +3945,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
         const sep = current.endsWith("\n") ? "\n" : "\n\n";
         return `${current}${sep}${chunk}`;
       });
+      ackApplied();
       // Focus after React paints
       window.requestAnimationFrame(() => {
         const el = inputRef.current;
