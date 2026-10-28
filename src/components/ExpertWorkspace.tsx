@@ -112,6 +112,7 @@ type ExpertLabels = ModelPickerLabels & {
   contextUsage: string;
   compacting: string;
   clickToCompact: string;
+  scrollToBottom?: string;
 };
 
 type ExpertWorkspaceProps = {
@@ -1216,6 +1217,8 @@ const ExpertWorkspace: React.FC<ExpertWorkspaceProps> = ({ providerConfig, label
 
         <ChatMonoScroll
           className="expert-transcript"
+          showScrollToBottom
+          scrollToBottomLabel={labels.scrollToBottom || "Scroll to bottom"}
           ref={(handle) => {
             scrollRefs.current[slot.id] = handle;
           }}
