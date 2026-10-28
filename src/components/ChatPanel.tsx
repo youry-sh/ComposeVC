@@ -3726,6 +3726,8 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   const dragHideTimer = useRef<number | null>(null);
   /** Root of this chat column — used so mouse/hotkey insert only hits the active panel */
   const panelRootRef = useRef<HTMLDivElement>(null);
+  /** Insert broadcasts already applied here (targeted sends can be retried). */
+  const handledInsertIdsRef = useRef<Set<string>>(new Set());
   const toolsMenuRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesScrollRef = useRef<ChatMonoScrollHandle>(null);
@@ -3897,13 +3899,27 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
     return () => window.removeEventListener("keydown", handleShortcut, true);
   }, [isActiveChatPanel]);
 
-  // Mouse side-button snippets (Settings → Shortcuts) → only the active chat input
+  // Mouse side-button snippets (Settings → Shortcuts) → only the active chat input.
+  // A targeted dispatch (Expert → "В чат") names the exact slot, so it lands in
+  // that column even while the MultiIDE stage is hidden behind another tab.
   useEffect(() => {
     const onInsert = (event: Event) => {
       const detail = (event as CustomEvent<InsertChatInputDetail>).detail;
       if (!detail?.text) return;
-      // MultiIDE: 4 panels listen — apply only to the focused/hovered one
-      if (!isActiveChatPanel()) return;
+      if (detail.targetSlotId) {
+        if (detail.targetSlotId !== telegramSlotId) return;
+        if (detail.requestId) {
+          if (handledInsertIdsRef.current.has(detail.requestId)) return;
+          handledInsertIdsRef.current.add(detail.requestId);
+          if (handledInsertIdsRef.current.size > 40) {
+            const oldest = handledInsertIdsRef.current.values().next().value;
+            if (oldest) handledInsertIdsRef.current.delete(oldest);
+          }
+        }
+      } else if (!isActiveChatPanel()) {
+        // MultiIDE: 4 panels listen — apply only to the focused/hovered one
+        return;
+      }
       const chunk = detail.text;
       setInput((current) => {
         if (!detail.append || !current.trim()) return chunk;
@@ -3922,7 +3938,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
     };
     window.addEventListener(INSERT_INPUT_EVENT, onInsert as EventListener);
     return () => window.removeEventListener(INSERT_INPUT_EVENT, onInsert as EventListener);
-  }, [isActiveChatPanel]);
+  }, [isActiveChatPanel, telegramSlotId]);
 
   useEffect(() => {
     if (!showAgentModeMenu && !showModelMenu) return;

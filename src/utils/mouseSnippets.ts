@@ -68,12 +68,34 @@ export function textForMouseButton(config: MouseSnippetsConfig, button: number):
  * Broadcast insert into chat composers. Each ChatPanel listens and applies
  * only if it is the active MultiIDE column (focus/hover) — never all 4 at once.
  */
-export function dispatchInsertChatInput(text: string, append: boolean) {
+export type InsertChatInputOptions = {
+  /** Deliver only to this MultiIDE slot (bypasses the hover/focus heuristic). */
+  targetSlotId?: string;
+  /** Stable id so a repeated delivery of the same insert is applied once. */
+  requestId?: string;
+};
+
+export function dispatchInsertChatInput(
+  text: string,
+  append: boolean,
+  options?: InsertChatInputOptions
+) {
+  if (typeof window === "undefined") return;
   window.dispatchEvent(
-    new CustomEvent(INSERT_INPUT_EVENT, {
-      detail: { text, append },
+    new CustomEvent<InsertChatInputDetail>(INSERT_INPUT_EVENT, {
+      detail: {
+        text,
+        append,
+        ...(options?.targetSlotId ? { targetSlotId: options.targetSlotId } : {}),
+        ...(options?.requestId ? { requestId: options.requestId } : {}),
+      },
     })
   );
 }
 
-export type InsertChatInputDetail = { text: string; append: boolean };
+export type InsertChatInputDetail = {
+  text: string;
+  append: boolean;
+  targetSlotId?: string;
+  requestId?: string;
+};

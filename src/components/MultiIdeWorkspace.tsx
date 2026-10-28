@@ -33,8 +33,8 @@ export const MULTIIDE_CHATS_PER_WORKSPACE = 6;
 export const MULTIIDE_MAX_SLOTS = MULTIIDE_MAX_WORKSPACES * MULTIIDE_CHATS_PER_WORKSPACE;
 /** Fixed id of the default workspace — pre-workspace chats attach here on migration. */
 export const DEFAULT_WORKSPACE_ID = "ws-default";
-const WORKSPACES_KEY = "lopster-multiide-workspaces";
-const WORKSPACE_ACTIVE_KEY = "lopster-multiide-workspace-active";
+export const WORKSPACES_KEY = "lopster-multiide-workspaces";
+export const WORKSPACE_ACTIVE_KEY = "lopster-multiide-workspace-active";
 /** How many chats can sit stacked in the centre at once. */
 const MAX_ROWS = 3;
 
@@ -594,6 +594,41 @@ const MultiIdeWorkspace: React.FC<MultiIdeWorkspaceProps> = ({
   useEffect(() => {
     saveWorkspaceState(workspaces, activeWorkspaceId);
   }, [workspaces, activeWorkspaceId]);
+
+  // Expert → "В чат": bring the chosen workspace/column to the front so the
+  // insertion is visible the moment the MultiIDE tab is opened.
+  useEffect(() => {
+    const onFocus = (event: Event) => {
+      const detail = (event as CustomEvent<{ target?: { workspaceId?: string; slotId?: string } }>).detail;
+      const workspaceId = detail?.target?.workspaceId;
+      const slotId = detail?.target?.slotId;
+      if (!workspaceId || !slotId) return;
+      if (!slots.some((slot) => slot.id === slotId && slot.workspaceId === workspaceId)) return;
+      setWorkspaceState((prev) => {
+        const target = prev.workspaces.find((workspace) => workspace.id === workspaceId);
+        if (!target) return prev;
+        const openIds = target.openIds.includes(slotId)
+          ? target.openIds
+          : [...target.openIds, slotId].slice(-3);
+        return {
+          workspaces: prev.workspaces.map((workspace) =>
+            workspace.id === workspaceId
+              ? { ...workspace, activeId: slotId, openIds }
+              : workspace
+          ),
+          activeWorkspaceId: workspaceId,
+        };
+      });
+    };
+    window.addEventListener("lopster-send-to-chat", onFocus as EventListener);
+    return () => window.removeEventListener("lopster-send-to-chat", onFocus as EventListener);
+  }, [slots]);
+
+  // MultiIDE can mount AFTER the send (app launched straight into Expert):
+  // replay the pending prompt now that every chat panel is mounted.
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent("lopster-send-to-chat-flush"));
+  }, []);
 
   // A rename must survive even an instant quit / reload: flush synchronously when
   // the window goes away instead of relying on an async IPC round-trip.
