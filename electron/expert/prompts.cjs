@@ -72,23 +72,6 @@ Project conventions to respect, compatibility and what must NOT be changed.
 ## Done when
 3–7 concrete, checkable acceptance criteria (behaviour + persistence + failure states).`;
 
-const SMALL_TALK =
-  /^(привет|приветик|прив|хай|здравствуй(те)?|добрый (день|вечер|утро)|доброе утро|hello|hi|hey|yo)[\s!.,?)]*$/i;
-
-/**
- * Only a bare greeting on the very first turn is small talk. Everything else is
- * a task: a short real prompt ("тест", "fix", "проверка") must never be swallowed
- * by the study-status reply.
- */
-function isSmallTalk(task, options = {}) {
-  const text = String(task || "").trim();
-  if (!text) return true;
-  if (options.hasHistory === true) return false;
-  if (text.length > 32) return false;
-  if (text.includes("\n")) return false;
-  return SMALL_TALK.test(text);
-}
-
 function pickFocus(roundId, scan, readFiles) {
   const files = Array.isArray(scan?.files) ? scan.files : [];
   const read = new Set((readFiles || []).map((item) => String(item).toLowerCase()));
@@ -271,7 +254,6 @@ module.exports = {
   ROUNDS,
   STUDY_SYSTEM,
   COMPOSE_SYSTEM_BASE,
-  isSmallTalk,
   pickFocus,
   buildStudyUserPrompt,
   buildComposeUserPrompt,

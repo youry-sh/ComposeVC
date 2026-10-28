@@ -670,7 +670,6 @@ function createExpertService(deps = {}) {
     const runId = `${slotId}-${Date.now().toString(36)}`;
     runs.set(slotId, { controller, sessionId: session.sessionId, runId });
 
-    const hadMessages = Array.isArray(session.messages) && session.messages.length > 0;
     const userMessage = {
       id: store.newMessageId(),
       role: "user",
@@ -713,18 +712,7 @@ function createExpertService(deps = {}) {
       }
 
       let assistant;
-      if (prompts.isSmallTalk(task, { hasHistory: hadMessages })) {
-        const meta = studyMeta(study);
-        assistant = {
-          id: store.newMessageId(),
-          role: "assistant",
-          content: rootPath
-            ? `Project studied: ${meta.files} files · ${meta.lines} lines · ${meta.modules} modules · ${meta.contracts} contracts · ${meta.readFiles} files read in depth.\n\nThe Expert has the whole project mapped. Write your task and you get one implementation prompt you can copy.`
-            : "No project folder selected. Pick a folder in the Expert header so the whole repository can be studied, then write your task.",
-          createdAt: Date.now(),
-          meta: { kind: "status", study: meta },
-        };
-      } else if (!rootPath) {
+      if (!rootPath) {
         assistant = {
           id: store.newMessageId(),
           role: "assistant",
