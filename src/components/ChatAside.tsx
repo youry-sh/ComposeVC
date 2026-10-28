@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { ChevronsRight } from "lucide-react";
-import AsideRadar from "./AsideRadar";
+import AsideSnake from "./AsideSnake";
 import GitPanel from "./GitPanel";
 import { RunnerJob } from "../types";
 import {
@@ -225,9 +225,9 @@ const ChatAside: React.FC<Props> = ({
         )}
       </section>
 
-      {/* Idle decoration — a monospace radar sweep, no fake metrics. */}
+      {/* Idle decoration — an ouroboros turning in place, no fake metrics. */}
       <section className="aside-block aside-block-signal">
-        <AsideRadar />
+        <AsideSnake />
       </section>
     </aside>
   );
