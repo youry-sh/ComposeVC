@@ -14516,34 +14516,33 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   font-size: 9.5px;
 }
 .tasks-editor {
+  display: block;
   width: 100%;
-  min-height: 150px;
+  min-height: 210px;
   resize: none;
   overflow: hidden;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 2px;
-  background: var(--surface);
+  padding: 13px 14px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: var(--ink-950);
   font-size: 13px;
-  line-height: 1.55;
+  line-height: 1.6;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
-.tasks-editor:focus {
-  border-color: var(--focus-border);
-  box-shadow: 0 0 0 1px var(--focus-ring);
-}
+.tasks-editor:focus { box-shadow: none; }
 .tasks-editor::placeholder { color: var(--ink-500); }
-.tasks-editor-create { min-height: 170px; font-size: 13.5px; }
+.tasks-editor-create { min-height: 230px; font-size: 13.5px; }
 .tasks-meta {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 7px;
+  padding-top: 1px;
   color: var(--ink-500);
   font-family: var(--terminal-font);
   font-size: 9.5px;
+  letter-spacing: 0.02em;
 }
 .tasks-meta-dot {
   width: 2px;
@@ -14605,10 +14604,34 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   font-size: 10.5px;
 }
 .tasks-hint {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
   color: var(--ink-500);
   font-family: var(--terminal-font);
   font-size: 9px;
   letter-spacing: 0.02em;
+}
+.tasks-hint kbd {
+  display: inline-flex;
+  align-items: center;
+  height: 17px;
+  padding: 0 5px;
+  border: 1px solid var(--border);
+  border-bottom-color: var(--border-strong);
+  border-radius: 3px;
+  background: var(--surface-2);
+  color: var(--ink-600);
+  font-family: inherit;
+  font-size: 9px;
+  line-height: 1;
+}
+.tasks-hint-sep {
+  width: 1px;
+  height: 11px;
+  margin: 0 3px;
+  background: var(--border);
 }
 .tasks-detail-empty {
   flex: 1 1 auto;
@@ -14623,20 +14646,37 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   color: var(--ink-500);
 }
 .tasks-detail-scroll .tasks-detail-empty { min-height: 100%; }
-.tasks-detail-empty > svg { width: 26px; height: 26px; opacity: 0.4; }
+.tasks-detail-empty-mark {
+  width: 46px;
+  height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--ink-600);
+}
+.tasks-detail-empty-mark svg { width: 20px; height: 20px; opacity: 0.85; }
 .tasks-detail-empty-title {
   margin-top: 2px;
-  color: var(--ink-900);
-  font-size: 13px;
+  color: var(--ink-950);
+  font-size: 14px;
   font-weight: 600;
+  letter-spacing: -0.01em;
 }
 .tasks-detail-empty-sub {
-  max-width: 260px;
+  max-width: 300px;
   color: var(--ink-500);
   font-size: 11.5px;
-  line-height: 1.5;
+  line-height: 1.55;
 }
-.tasks-detail-empty .tasks-primary { margin-top: 6px; }
+.tasks-detail-empty .tasks-primary { margin-top: 8px; }
+.tasks-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 .tasks-error {
   flex-shrink: 0;
   padding: 6px 14px;
@@ -14646,6 +14686,16 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
   font-size: 10.5px;
 }
 
+@media (max-width: 1040px) {
+  .tasks-modal-stats { display: none; }
+  .tasks-modal-body { grid-template-columns: 296px minmax(0, 1fr); }
+}
+@media (max-width: 860px) {
+  .tasks-modal { width: 96vw; height: 92vh; }
+  .tasks-modal-head { padding: 11px 12px 11px 14px; gap: 10px; }
+  .tasks-modal-sub { display: none; }
+  .tasks-detail-scroll .chat-mono-scroll-viewport { padding: 18px 18px 22px; }
+}
 @media (max-width: 720px) {
   .tasks-modal-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 42%) minmax(0, 1fr); }
   .tasks-rail {
@@ -14653,6 +14703,7 @@ body.is-resizing-ns { cursor: ns-resize; user-select: none; }
     border-bottom: 1px solid var(--border);
   }
   .tasks-detail-scroll .chat-mono-scroll-viewport { padding: 14px 14px 18px; }
+  .tasks-modal-actions .tasks-primary span { display: none; }
 }
 
 /* ══ Expert workspace ══════════════════════════════════════════════════════
