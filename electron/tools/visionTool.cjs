@@ -88,7 +88,15 @@ async function resolveImages(input, userDataPath, options = {}) {
           images.push({ url: entry, mimeType: /^data:image\//i.test(entry) ? entry.slice(5).split(";")[0] : undefined, name: "image" });
         } else {
           const loaded = await imageTools.fileToDataUrl(entry, { maxSize: input.max_size });
-          images.push({ url: loaded.dataUrl, mimeType: loaded.mimeType, name: path.basename(entry) });
+          images.push({
+            url: loaded.dataUrl,
+            mimeType: loaded.mimeType,
+            name: path.basename(entry),
+            path: path.resolve(entry),
+            width: loaded.width,
+            height: loaded.height,
+            bytes: loaded.bytes,
+          });
         }
       } else if (entry && typeof entry === "object") {
         const image = await imageFromInput(entry, userDataPath, "", options);

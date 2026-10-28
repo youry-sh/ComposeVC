@@ -1137,7 +1137,7 @@ async function performImport(userDataPath, config, sources, project, godot, ctx)
     .split(/\r?\n/)
     .filter((line) => /ERROR|Failed|error:/i.test(line))
     .slice(-6);
-  const ok = result.ok && copied.every((entry) => !entry.error) && outputErrors.length === 0;
+  const ok = result.ok && copied.every((entry) => !entry.error);
   return {
     ok,
     imported,
@@ -1157,15 +1157,15 @@ async function performImport(userDataPath, config, sources, project, godot, ctx)
 async function performBuild(config, project, godot, presetId, exportPath, ctx) {
   const preset = await ensureExportPreset(project.projectDir, presetId, { version: godot.version });
 
-  if (!isDir(path.join(project.projectDir, ".godot"))) {
-    ctx.stage("importing project", 35);
-    await runCommand(godot.executable, ["--headless", "--path", project.projectDir, "--import"], {
-      timeoutSec: Math.min(Number(config.timeoutSec) || 1800, 600),
-      logPath: ctx.logPath,
-      jobId: ctx.jobId,
-      cwd: project.projectDir,
-    });
-  }
+  // Always re-import: a scene written or a GLB copied since the last build must
+  // be registered before --export-release can pack it.
+  ctx.stage("import project", 35);
+  await runCommand(godot.executable, ["--headless", "--path", project.projectDir, "--import"], {
+    timeoutSec: Math.min(Number(config.timeoutSec) || 1800, 600),
+    logPath: ctx.logPath,
+    jobId: ctx.jobId,
+    cwd: project.projectDir,
+  });
 
   ctx.stage("export", 60);
   const attempt = async () =>

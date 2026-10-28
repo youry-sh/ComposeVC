@@ -529,6 +529,7 @@ const VisionPreviewCard: React.FC<{ previews: VisionPreviewImage[] }> = ({ previ
 
   useEffect(() => {
     let cancelled = false;
+    setSources([]);
     const resolve = async () => {
       const next = await Promise.all(
         previews.map(async (preview) => {
