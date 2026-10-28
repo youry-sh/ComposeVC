@@ -670,6 +670,7 @@ function createExpertService(deps = {}) {
     const runId = `${slotId}-${Date.now().toString(36)}`;
     runs.set(slotId, { controller, sessionId: session.sessionId, runId });
 
+    const hadMessages = Array.isArray(session.messages) && session.messages.length > 0;
     const userMessage = {
       id: store.newMessageId(),
       role: "user",
@@ -712,7 +713,7 @@ function createExpertService(deps = {}) {
       }
 
       let assistant;
-      if (prompts.isSmallTalk(task)) {
+      if (prompts.isSmallTalk(task, { hasHistory: hadMessages })) {
         const meta = studyMeta(study);
         assistant = {
           id: store.newMessageId(),
