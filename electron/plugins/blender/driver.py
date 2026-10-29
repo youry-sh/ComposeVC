@@ -3172,6 +3172,7 @@ def execute_plan(plan, out_dir):
         "addons": addon_reports,
         "quality": quality,
         "optimized": optimized,
+        "character": character_report,
         "frameRange": {"start": scene().frame_start, "end": scene().frame_end, "fps": scene().render.fps},
     }
 
@@ -3239,6 +3240,11 @@ def probe(out_dir, check_addons=None):
         "userAddons": user_addons,
         "userExtensions": user_extensions,
     }
+    if cv_characters is not None:
+        try:
+            result["character"] = cv_characters.capabilities()
+        except Exception as exc:
+            warn("character capabilities failed: %s" % exc)
     RESULT.update(result)
     RESULT["warningsCount"] = len(WARNINGS)
     return result
