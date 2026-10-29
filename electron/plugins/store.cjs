@@ -52,6 +52,37 @@ const DEFAULT_GODOT_CONFIG = {
   glbDir: "",
 };
 
+const MOTION_FORMATS = ["mp4", "mov", "webm", "gif"];
+const MOTION_PRESETS = [
+  "ultrafast",
+  "superfast",
+  "veryfast",
+  "faster",
+  "fast",
+  "medium",
+  "slow",
+  "slower",
+  "veryslow",
+];
+const MOTION_THEMES = ["clean", "dark", "light", "bold"];
+
+const DEFAULT_MOTION_CONFIG = {
+  ffmpegPath: "",
+  ffprobePath: "",
+  outputDir: "",
+  width: 1920,
+  height: 1080,
+  fps: 30,
+  crf: 20,
+  preset: "medium",
+  audioBitrateKbps: 192,
+  format: "mp4",
+  theme: "clean",
+  fontFamily: "Inter",
+  safeMargins: true,
+  timeoutSec: 3600,
+};
+
 function requireUserDataPath(userDataPath) {
   const value = typeof userDataPath === "string" ? userDataPath.trim() : "";
   if (!value) throw new Error("Plugins require Electron userDataPath");
@@ -134,6 +165,29 @@ function normalizeGodotConfig(input) {
   };
 }
 
+function normalizeMotionConfig(input) {
+  const src = input && typeof input === "object" ? input : {};
+  const format = String(src.format || "").trim().toLowerCase();
+  const preset = String(src.preset || "").trim().toLowerCase();
+  const theme = String(src.theme || "").trim().toLowerCase();
+  return {
+    ffmpegPath: cleanString(src.ffmpegPath),
+    ffprobePath: cleanString(src.ffprobePath),
+    outputDir: cleanString(src.outputDir),
+    width: clampNumber(src.width, DEFAULT_MOTION_CONFIG.width, 240, 7680),
+    height: clampNumber(src.height, DEFAULT_MOTION_CONFIG.height, 240, 7680),
+    fps: clampNumber(src.fps, DEFAULT_MOTION_CONFIG.fps, 12, 120),
+    crf: clampNumber(src.crf, DEFAULT_MOTION_CONFIG.crf, 0, 51),
+    preset: MOTION_PRESETS.includes(preset) ? preset : DEFAULT_MOTION_CONFIG.preset,
+    audioBitrateKbps: clampNumber(src.audioBitrateKbps, DEFAULT_MOTION_CONFIG.audioBitrateKbps, 32, 512),
+    format: MOTION_FORMATS.includes(format) ? format : DEFAULT_MOTION_CONFIG.format,
+    theme: MOTION_THEMES.includes(theme) ? theme : DEFAULT_MOTION_CONFIG.theme,
+    fontFamily: cleanString(src.fontFamily, 120) || DEFAULT_MOTION_CONFIG.fontFamily,
+    safeMargins: src.safeMargins !== false,
+    timeoutSec: clampNumber(src.timeoutSec, DEFAULT_MOTION_CONFIG.timeoutSec, 10, 7200),
+  };
+}
+
 function normalizePlugin(entry, fallbackId) {
   if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
   const id = cleanString(entry.id || fallbackId, 64);
@@ -143,7 +197,9 @@ function normalizePlugin(entry, fallbackId) {
       ? normalizeBlenderConfig(entry.config)
       : id === "godot"
         ? normalizeGodotConfig(entry.config)
-        : {};
+        : id === "motion"
+          ? normalizeMotionConfig(entry.config)
+          : {};
   return {
     id,
     enabled: entry.enabled !== false,
@@ -175,6 +231,13 @@ function emptyStore() {
         id: "godot",
         enabled: true,
         config: { ...DEFAULT_GODOT_CONFIG },
+        stats: { runs: 0, failures: 0, lastRunAt: 0, lastError: "" },
+        updatedAt: Date.now(),
+      },
+      motion: {
+        id: "motion",
+        enabled: true,
+        config: { ...DEFAULT_MOTION_CONFIG },
         stats: { runs: 0, failures: 0, lastRunAt: 0, lastError: "" },
         updatedAt: Date.now(),
       },
