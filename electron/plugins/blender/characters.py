@@ -625,6 +625,11 @@ def build_human(spec, out_dir="", materials=None):
         materials,
         "Tongue",
     )
+    lashes_mat = _material(
+        {"preset": "hair", "name": "Lashes", "base_color": "#1b1210", "roughness": 0.42},
+        materials,
+        "Lashes",
+    )
     for key, obj_name in extracted.items():
         part = bpy.data.objects.get(obj_name)
         if part is None:
