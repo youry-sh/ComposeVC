@@ -856,19 +856,23 @@ def _apply_stroke(obj, entry, symmetry, guard):
     if only_visible:
         view_dir = np.array(_as_vec3(entry.get("view", (0.0, -1.0, 0.0)), (0.0, -1.0, 0.0)))
         allow &= nrm @ _norm(view_dir) < -0.05
+    side = str(entry.get("x_side") or "").upper()
+    if side in ("L", "LEFT"):
+        allow &= co[:, 0] >= 0.0
+    elif side in ("R", "RIGHT"):
+        allow &= co[:, 0] <= 0.0
 
     points = _stroke_points(entry, None)
     if not points:
         return 0
-    total_steps = 0
     mirror_axes = [axis for axis in str(symmetry or "").upper() if axis in ("X", "Y", "Z")]
-    variants = [np.zeros(3)]
+    variants = [np.ones(3)]
     for axis in mirror_axes:
         scale = np.array([1.0, 1.0, 1.0])
         scale["XYZ".index(axis)] = -1.0
         variants = variants + [scale]
     if entry.get("mirror") is False:
-        variants = [np.zeros(3)]
+        variants = [np.ones(3)]
 
     origin = co.copy()
     grab_delta = None
