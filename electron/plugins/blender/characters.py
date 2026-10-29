@@ -328,14 +328,18 @@ def _read_landmarks(obj):
 
 
 def _scalp(obj):
-    """Scalp cap vertices/normals from MPFB helper geometry (best roots)."""
+    """Scalp cap vertices/normals from the extracted MPFB helper geometry."""
+    for candidate in _scene().objects:
+        if candidate.type == "MESH" and str(candidate.get("cv_part", "")) == "scalp":
+            co, nrm, _ = _mesh_arrays(candidate)
+            if len(co) > 32:
+                return co, nrm, "scalp-object"
     found = _group_indices(obj, ["helper-hair"])
     co, nrm, _ = _mesh_arrays(obj)
     indices = found.get("helper-hair")
     if indices is not None and len(indices) > 32:
         return co[indices], nrm[indices], "helper-hair"
     marks = _read_landmarks(obj)
-    center = np.array(marks["head_center"])
     radius = marks["head_radius"]
     # Synthesize a cap above the eye line.
     mask = (co[:, 2] > marks["eye_mid"][2] + radius * 0.05) & (np.abs(co[:, 0]) < radius * 1.2)
@@ -1246,15 +1250,16 @@ def _noise2(u, v, seed=0.0):
 def _garment_mesh(kind, spec):
     segments = max(6, _as_int(spec.get("segments", 64), 64))
     rings = max(2, _as_int(spec.get("rings", 24), 24))
-    folds = max(0, _as_int(spec.get("folds", {}).get("count", 9) if isinstance(spec.get("folds"), dict) else _as_int(spec.get("folds", 9), 9), 9))
-    fold_amp = _as_float(
-        spec.get("folds", {}).get("amplitude", 0.03) if isinstance(spec.get("folds"), dict) else spec.get("fold_amplitude", 0.03),
-        0.03,
-    )
-    twist = _as_float(
-        spec.get("folds", {}).get("twist", 0.35) if isinstance(spec.get("folds"), dict) else spec.get("twist", 0.35),
-        0.35,
-    )
+    folds_spec = spec.get("folds")
+    if isinstance(folds_spec, dict):
+        fold_count = _as_int(folds_spec.get("count", 9), 9)
+        fold_amp = _as_float(folds_spec.get("amplitude", 0.03), 0.03)
+        twist = _as_float(folds_spec.get("twist", 0.35), 0.35)
+    else:
+        fold_count = _as_int(folds_spec if folds_spec is not None else spec.get("fold_count", 9), 9)
+        fold_amp = _as_float(spec.get("fold_amplitude", 0.03), 0.03)
+        twist = _as_float(spec.get("twist", 0.35), 0.35)
+    folds = max(0, fold_count)
     wrinkle = _as_float(spec.get("wrinkle", 0.35), 0.35)
     seed = _as_float(spec.get("seed", 1.0), 1.0)
     height = max(0.02, _as_float(spec.get("height", 0.55), 0.55))
@@ -1909,12 +1914,20 @@ def _make_wire_overlay(obj, entry):
         nodes = mat.node_tree.nodes
         nodes.clear()
         out = nodes.new("ShaderNodeOutputMaterial")
-        emission = nodes.new("ShaderNodeEmission")
-        emission.inputs["Color"].default_value = tuple(
-            list(_hex_to_rgb(str(entry.get("wire_color", "#101010")))) + [1.0]
-        )
-        emission.inputs["Strength"].default_value = 1.0
-        mat.node_tree.links.new(emission.outputs["Emission"], out.inputs["Surface"])
+        bsdf = nodes.new("ShaderNodeBsdfPrincipled")
+        bsdf.location = (300, 0)
+        color = tuple(list(_hex_to_rgb(str(entry.get("wire_color", "#101010")))) + [1.0])
+        for socket, value in (
+            ("Base Color", color),
+            ("Roughness", 0.65),
+            ("Emission Color", color),
+            ("Emission Strength", _as_float(entry.get("wire_glow", 0.35), 0.35)),
+        ):
+            try:
+                bsdf.inputs[socket].default_value = value
+            except Exception:
+                pass
+        mat.node_tree.links.new(bsdf.outputs["BSDF"], out.inputs["Surface"])
         wire.data.materials.clear()
         wire.data.materials.append(mat)
         return wire
