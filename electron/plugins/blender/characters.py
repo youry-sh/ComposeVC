@@ -348,6 +348,9 @@ def _landmarks(obj):
             "chin_z": float(eye_mid[2] - head_radius * 0.85),
         }
     )
+    mouth_center = _group_center(obj, "joint-mouth")
+    if mouth_center is not None:
+        data["mouth"] = [float(v) for v in mouth_center]
     obj["cv_landmarks"] = json.dumps(data)
     return data
 
@@ -663,6 +666,27 @@ def build_human(spec, out_dir="", materials=None):
     if skin is not None:
         body.data.materials.clear()
         body.data.materials.append(skin)
+    if spec.get("lips", True) is not False:
+        lip_spec = spec.get("lip_material") or {
+            "preset": "skin",
+            "name": "Lips",
+            "base_color": "#a85b53",
+            "roughness": 0.3,
+            "subsurface": 0.42,
+        }
+        if isinstance(lip_spec, str):
+            lip_spec = {"preset": lip_spec}
+        lip_mat = _material({**lip_spec, "name": lip_spec.get("name") or "Lips"}, materials, "Lips")
+        lip_center = _group_center(body, "joint-mouth")
+        if lip_center is None:
+            lip_center = np.array([0.0, landmarks.get("eye_mid", [0.0, 0.0, 0.0])[1], landmarks.get("mouth_z", 0.0)])
+        head_radius = float(landmarks.get("head_radius", 0.09))
+        report["lips_faces"] = _assign_region_material(
+            body,
+            lip_center,
+            (head_radius * 0.36, head_radius * 0.34, head_radius * 0.115),
+            lip_mat,
+        )
     eye_spec = spec.get("eye_material")
     eye_mat = build_eye_material("Eye")
     if isinstance(eye_spec, dict):
