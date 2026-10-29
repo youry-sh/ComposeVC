@@ -1317,6 +1317,33 @@ def _hair_cards_object(name, paths, coll, width=0.012, segments=6):
     return obj
 
 
+def _hair_cap(name, coll, materials, color="#3a2418", offset=0.0015):
+    """Solid scalp shell under the strands so the skin never shows through."""
+    scalp = None
+    for candidate in _scene().objects:
+        if candidate.type == "MESH" and str(candidate.get("cv_part", "")) == "scalp":
+            scalp = candidate
+            break
+    if scalp is None:
+        return None
+    cap = bpy.data.objects.new(name + "_Cap", scalp.data.copy())
+    coll.objects.link(cap)
+    cap.location = scalp.location
+    cap.rotation_euler = scalp.rotation_euler
+    cap.scale = scalp.scale
+    me, co, nrm = _mesh_arrays(cap)
+    _write_co(me, co - nrm * max(0.0, offset))
+    try:
+        _active(cap)
+        bpy.ops.object.shade_smooth()
+    except Exception:
+        pass
+    mat = _material({"preset": "hair", "name": name + " Cap", "base_color": color}, materials, name)
+    if mat is not None:
+        cap.data.materials.append(mat)
+    return cap
+
+
 def build_hair(spec, out_dir="", materials=None):
     entries = spec if isinstance(spec, list) else [spec]
     reports = []
@@ -1371,6 +1398,10 @@ def build_hair(spec, out_dir="", materials=None):
             if mat is not None:
                 cards.data.materials.append(mat)
             created.append(cards.name)
+        if entry.get("cap", True) is not False:
+            cap = _hair_cap(name, coll, materials, str(entry.get("color", "#3a2418")))
+            if cap is not None:
+                created.append(cap.name)
         reports.append(
             {
                 "mode": mode,
