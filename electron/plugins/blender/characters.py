@@ -197,6 +197,17 @@ def _write_co(me, co):
     me.update()
 
 
+def _scale_about_center(obj, factor):
+    """Scale a mesh in place around its own bounding-box centre."""
+    if obj is None or obj.type != "MESH" or factor <= 0:
+        return
+    me, co, _ = _mesh_arrays(obj)
+    if not len(co):
+        return
+    center = (co.min(axis=0) + co.max(axis=0)) * 0.5
+    _write_co(me, (co - center) * factor + center)
+
+
 def _norm(vec):
     length = float(np.linalg.norm(vec))
     if length < 1e-9:
@@ -596,6 +607,19 @@ def build_human(spec, out_dir="", materials=None):
         if part is not None:
             extracted[str(key).lower()] = part.name
             part["cv_part"] = str(key).lower()
+            # separate() copies the body modifiers; the MPFB "Hide helpers" MASK
+            # would delete the very geometry we just extracted.
+            for mod in list(part.modifiers):
+                if mod.type != "ARMATURE":
+                    try:
+                        part.modifiers.remove(mod)
+                    except Exception:
+                        pass
+            try:
+                _active(part)
+                bpy.ops.object.shade_smooth()
+            except Exception:
+                pass
             if armature is not None and not any(mod.type == "ARMATURE" for mod in part.modifiers):
                 mod = part.modifiers.new("Armature", "ARMATURE")
                 mod.object = armature
@@ -651,6 +675,8 @@ def build_human(spec, out_dir="", materials=None):
                 part.hide_viewport = True
             except Exception:
                 pass
+        if key.startswith("eye") and _as_float(spec.get("eyes_scale", 1.0), 1.0) != 1.0:
+            _scale_about_center(part, _as_float(spec.get("eyes_scale"), 1.0))
     if spec.get("lashes_material"):
         lashes = bpy.data.objects.get(extracted.get("lashes", ""))
         if lashes is not None:
