@@ -322,7 +322,9 @@ async function updatePlugin(userDataPath, id, patch = {}) {
       ? normalizeBlenderConfig({ ...existing.config, ...(patch.config || {}) })
       : key === "godot"
         ? normalizeGodotConfig({ ...existing.config, ...(patch.config || {}) })
-        : { ...existing.config, ...(patch.config || {}) };
+        : key === "motion"
+          ? normalizeMotionConfig({ ...existing.config, ...(patch.config || {}) })
+          : { ...existing.config, ...(patch.config || {}) };
   const next = {
     ...existing,
     enabled: patch.enabled == null ? existing.enabled : patch.enabled !== false,
@@ -452,6 +454,15 @@ function normalizeJob(entry, fallbackId) {
       version: cleanString(entry.godot?.version, 80),
       preset: cleanString(entry.godot?.preset, 32),
     },
+    motion: {
+      path: cleanString(entry.motion?.path, 4096),
+      version: cleanString(entry.motion?.version, 80),
+      durationSec: clampNumber(entry.motion?.durationSec, 0, 0, 86400),
+      frames: clampNumber(entry.motion?.frames, 0, 0, 1e7),
+      width: clampNumber(entry.motion?.width, 0, 0, 7680),
+      height: clampNumber(entry.motion?.height, 0, 0, 7680),
+      audioPath: cleanString(entry.motion?.audioPath, 4096),
+    },
   };
 }
 
@@ -566,6 +577,9 @@ module.exports = {
   DEFAULT_BLENDER_CONFIG,
   GODOT_EXPORT_PRESETS,
   DEFAULT_GODOT_CONFIG,
+  MOTION_FORMATS,
+  MOTION_PRESETS,
+  DEFAULT_MOTION_CONFIG,
   pluginsRoot,
   jobsRoot,
   defaultOutputDir,
@@ -583,4 +597,5 @@ module.exports = {
   writeJsonAtomic,
   normalizeBlenderConfig,
   normalizeGodotConfig,
+  normalizeMotionConfig,
 };
