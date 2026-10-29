@@ -1,4 +1,4 @@
-"""ComposeVC Blender character toolkit.
+﻿"""ComposeVC Blender character toolkit.
 
 The plan/primitive driver could only assemble boxes and spheres. This module adds
 the missing artist layer and is driven by new top-level plan blocks:
@@ -229,7 +229,7 @@ def _group_center(obj, name, indices=None):
         indices = found.get(name)
     if indices is None or not len(indices):
         return None
-    co, _, _ = _mesh_arrays(obj)
+    _, co, _ = _mesh_arrays(obj)
     return co[indices].mean(axis=0)
 
 
@@ -242,7 +242,7 @@ def measure(obj):
     """Geometry + anatomy report. Used for cheap numeric iteration loops."""
     if obj is None or obj.type != "MESH":
         return {}
-    co, _, _ = _mesh_arrays(obj)
+    _, co, _ = _mesh_arrays(obj)
     lo = co.min(axis=0)
     hi = co.max(axis=0)
     me = obj.data
@@ -274,7 +274,7 @@ def measure(obj):
 
 def _landmarks(obj):
     """Eye / head / hand anchors used by eyes, hair and garments."""
-    co, nrm, _ = _mesh_arrays(obj)
+    _, co, nrm = _mesh_arrays(obj)
     data = {}
     eye_l = _group_center(obj, "joint-l-eye")
     eye_r = _group_center(obj, "joint-r-eye")
@@ -331,11 +331,11 @@ def _scalp(obj):
     """Scalp cap vertices/normals from the extracted MPFB helper geometry."""
     for candidate in _scene().objects:
         if candidate.type == "MESH" and str(candidate.get("cv_part", "")) == "scalp":
-            co, nrm, _ = _mesh_arrays(candidate)
+            _, co, nrm = _mesh_arrays(candidate)
             if len(co) > 32:
                 return co, nrm, "scalp-object"
     found = _group_indices(obj, ["helper-hair"])
-    co, nrm, _ = _mesh_arrays(obj)
+    _, co, nrm = _mesh_arrays(obj)
     indices = found.get("helper-hair")
     if indices is not None and len(indices) > 32:
         return co[indices], nrm[indices], "helper-hair"
@@ -2039,3 +2039,4 @@ def capabilities():
         "view": {"modes": ["clay", "wire", "clay_wire", "matcap"], "keys": ["mode", "color", "wire_thickness", "wire_color", "freestyle", "line_thickness", "restore"]},
         "measure": ["vertices", "polygons", "triangles", "dimensions", "height", "landmarks"],
     }
+
