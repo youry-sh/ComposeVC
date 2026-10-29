@@ -972,6 +972,7 @@ def build_material(spec):
     if isinstance(tex, str):
         tex = {"type": tex}
     factor = None
+    last_bump = None
     if isinstance(tex, dict):
         kind = str(tex.get("type", "noise")).lower()
         if kind in ("image", "file", "texture", "png", "jpg", "photo"):
@@ -1018,6 +1019,31 @@ def build_material(spec):
                 set_input(bump, as_float(tex.get("bump_distance", 0.05), 0.05), "Distance")
                 links.new(factor, bump.inputs["Height"])
                 links.new(bump.outputs["Normal"], bsdf.inputs["Normal"])
+                last_bump = bump
+
+    # Micro-detail stack (skin pores, fabric weave, hair strands): each layer is
+    # chained into the previous bump so the normals add up instead of replacing.
+    bump_layers = spec.get("bump_layers") or spec.get("micro_bump")
+    if isinstance(bump_layers, dict):
+        bump_layers = [bump_layers]
+    for index, layer in enumerate(bump_layers if isinstance(bump_layers, list) else []):
+        if not isinstance(layer, dict):
+            continue
+        layer_spec = dict(layer)
+        layer_spec.setdefault("type", "noise")
+        layer_factor, _layer_color = _procedural_nodes(nodes, links, layer_spec, (-620, -900 - index * 220))
+        if layer_factor is None:
+            continue
+        bump = nodes.new("ShaderNodeBump")
+        bump.location = (-320, -900 - index * 220)
+        set_input(bump, as_float(layer.get("bump", layer.get("strength", 0.25)), 0.25), "Strength")
+        set_input(bump, as_float(layer.get("bump_distance", 0.002), 0.002), "Distance")
+        links.new(layer_factor, bump.inputs["Height"])
+        if last_bump is not None and "Normal" in bump.inputs:
+            links.new(last_bump.outputs["Normal"], bump.inputs["Normal"])
+        last_bump = bump
+    if last_bump is not None:
+        links.new(last_bump.outputs["Normal"], bsdf.inputs["Normal"])
 
     normal_map = spec.get("normal_map") or spec.get("normal_texture")
     if isinstance(normal_map, dict) or (isinstance(normal_map, str) and normal_map):
@@ -2968,6 +2994,30 @@ def execute_plan(plan, out_dir):
         if isinstance(spec, dict) and spec.get("name"):
             collections[str(spec["name"])] = ensure_collection(str(spec["name"]), spec.get("parent"))
 
+    plan["__materials"] = materials
+    character_report = {}
+    if cv_characters is not None:
+        cv_characters.init(
+            {
+                "warn": warn,
+                "log": log,
+                "progress": progress,
+                "as_float": as_float,
+                "as_int": as_int,
+                "as_vec3": as_vec3,
+                "as_color": as_color,
+                "ensure_collection": ensure_collection,
+                "select_only": select_only,
+                "build_material": build_material,
+                "material_for": material_for,
+                "smart_uv": smart_uv,
+                "scene_fn": scene,
+            }
+        )
+        if plan.get("human"):
+            progress("human", 14)
+            character_report["human"] = cv_characters.build_body(plan, out_dir)
+
     append_assets(plan.get("append"))
     import_assets(plan.get("import"))
 
@@ -2989,6 +3039,12 @@ def execute_plan(plan, out_dir):
         for spec in rig_specs:
             if isinstance(spec, dict):
                 create_armature(spec, rig_coll)
+
+    if cv_characters is not None and any(
+        plan.get(key) for key in ("sculpt", "hair", "drape", "ornament", "weights", "retopo", "view")
+    ):
+        progress("character", 52)
+        character_report.update(cv_characters.apply_detail(plan, out_dir))
 
     if plan.get("lighting"):
         center, radius = scene_bounds()
