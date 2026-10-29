@@ -2233,6 +2233,16 @@ LIGHTING_PRESETS = {
             {"type": "AREA", "name": "Rim", "location": (0.6, 3.2, 2.2), "energy": 700.0, "size": 2.4, "color": "#ffffff", "look_at": [0, 0, 0]},
         ],
     },
+    "portrait": {
+        "world": {"color": "#12141a", "strength": 0.22},
+        "absolute": True,
+        "lights": [
+            {"type": "AREA", "name": "Key", "location": (-0.85, -1.05, 1.86), "energy": 110.0, "size": 0.9, "color": "#fff1de"},
+            {"type": "AREA", "name": "Fill", "location": (1.15, -0.85, 1.55), "energy": 38.0, "size": 1.4, "color": "#cfe0ff"},
+            {"type": "AREA", "name": "Rim", "location": (0.35, 0.95, 1.62), "energy": 95.0, "size": 0.7, "color": "#ffffff"},
+            {"type": "AREA", "name": "Bounce", "location": (0.0, -0.55, 1.15), "energy": 16.0, "size": 1.2, "color": "#ffd9c2"},
+        ],
+    },
     "three_point": {
         "world": {"color": "#101216", "strength": 0.2},
         "lights": [
@@ -2271,7 +2281,7 @@ LIGHTING_PRESETS = {
 }
 
 
-def apply_lighting(preset, scale=1.0):
+def apply_lighting(preset, scale=1.0, aim=None):
     if not preset or preset == "none":
         return
     spec = LIGHTING_PRESETS.get(str(preset))
@@ -2281,10 +2291,13 @@ def apply_lighting(preset, scale=1.0):
     setup_world(spec.get("world"))
     if not any(obj.type in ("LIGHT",) for obj in scene().objects):
         coll = ensure_collection("Lighting")
+        absolute = bool(spec.get("absolute"))
         for light_spec in spec.get("lights", []):
             entry = dict(light_spec)
-            if entry.get("location"):
+            if entry.get("location") and not absolute:
                 entry["location"] = [as_float(v) * max(0.6, min(3.0, scale / 2.0 + 0.6)) for v in entry["location"]]
+            if aim is not None and (entry.get("look_at") is None or list(as_vec3(entry.get("look_at"), (0, 0, 0))) == [0.0, 0.0, 0.0]):
+                entry["look_at"] = [as_float(v) for v in aim]
             create_object({**entry, "type": entry.get("type", "AREA")}, coll, {})
 
 
@@ -3097,7 +3110,16 @@ def execute_plan(plan, out_dir):
 
     if plan.get("lighting"):
         center, radius = scene_bounds()
-        apply_lighting(plan.get("lighting"), scale=radius * 2.0)
+        aim = None
+        camera_hint = plan.get("camera")
+        view_hint = str(
+            (camera_hint.get("view") if isinstance(camera_hint, dict) else camera_hint) or ""
+        ).lower()
+        if view_hint in HEAD_VIEW_ZOOM:
+            framed_hint = _character_frame(view_hint, camera_hint if isinstance(camera_hint, dict) else {})
+            if framed_hint is not None:
+                aim = framed_hint[0]
+        apply_lighting(plan.get("lighting"), scale=radius * 2.0, aim=aim)
 
     lighting_coll = ensure_collection("Lighting")
     for spec in extra_lights:
