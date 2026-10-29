@@ -2237,10 +2237,10 @@ LIGHTING_PRESETS = {
         "world": {"color": "#12141a", "strength": 0.22},
         "absolute": True,
         "lights": [
-            {"type": "AREA", "name": "Key", "location": (-0.85, -1.05, 1.86), "energy": 110.0, "size": 0.9, "color": "#fff1de"},
-            {"type": "AREA", "name": "Fill", "location": (1.15, -0.85, 1.55), "energy": 38.0, "size": 1.4, "color": "#cfe0ff"},
-            {"type": "AREA", "name": "Rim", "location": (0.35, 0.95, 1.62), "energy": 95.0, "size": 0.7, "color": "#ffffff"},
-            {"type": "AREA", "name": "Bounce", "location": (0.0, -0.55, 1.15), "energy": 16.0, "size": 1.2, "color": "#ffd9c2"},
+            {"type": "AREA", "name": "Key", "location": (-0.85, -1.05, 1.86), "energy": 55.0, "size": 0.9, "color": "#fff1de"},
+            {"type": "AREA", "name": "Fill", "location": (1.15, -0.85, 1.55), "energy": 14.0, "size": 1.4, "color": "#cfe0ff"},
+            {"type": "AREA", "name": "Rim", "location": (0.35, 0.95, 1.62), "energy": 48.0, "size": 0.7, "color": "#ffffff"},
+            {"type": "AREA", "name": "Bounce", "location": (0.0, -0.55, 1.15), "energy": 6.0, "size": 1.2, "color": "#ffd9c2"},
         ],
     },
     "three_point": {

@@ -208,6 +208,30 @@ def _scale_about_center(obj, factor):
     _write_co(me, (co - center) * factor + center)
 
 
+def _assign_region_material(obj, center, radii, material):
+    """Assign `material` to faces fully inside an ellipsoid (lips, brows, nails)."""
+    if obj is None or material is None or obj.type != "MESH":
+        return 0
+    me, co, _ = _mesh_arrays(obj)
+    if not len(co):
+        return 0
+    slot = len(obj.data.materials)
+    if slot == 0:
+        obj.data.materials.append(material)
+        slot = 0
+    else:
+        obj.data.materials.append(material)
+    radius = np.maximum(np.array(radii, dtype=np.float64), 1e-5)
+    relative = (co - np.array(center, dtype=np.float64)) / radius
+    inside = np.linalg.norm(relative, axis=1) <= 1.0
+    touched = 0
+    for poly in me.polygons:
+        if all(inside[index] for index in poly.vertices):
+            poly.material_index = slot
+            touched += 1
+    return touched
+
+
 def _norm(vec):
     length = float(np.linalg.norm(vec))
     if length < 1e-9:
