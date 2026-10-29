@@ -1209,7 +1209,7 @@ def _strand_paths(spec, scalp_co, scalp_nrm, rng, landmarks=None):
             break
         root = scalp_co[root_index].copy()
         normal = _norm(scalp_nrm[root_index])
-        front = float(normal @ -facing)
+        front = float(normal @ facing)
         if face_skip and front > hairline:
             continue
         side = 1.0 if root[0] >= part else -1.0
@@ -1576,8 +1576,14 @@ def build_drape(spec, out_dir="", materials=None):
         top_z = None
         if entry.get("location") is not None:
             top_z = _as_vec3(entry.get("location"), (0, 0, 0))[2]
-        elif landmarks.get("eye_mid"):
-            top_z = landmarks["eye_mid"][2] - float(landmarks.get("head_radius", 0.09)) * 5.2
+        elif body is not None:
+            _, body_co, _ = _mesh_arrays(body)
+            if len(body_co):
+                z_min = float(body_co[:, 2].min())
+                z_max = float(body_co[:, 2].max())
+                top_z = z_min + (z_max - z_min) * max(
+                    0.35, min(0.9, _as_float(entry.get("waist_ratio", 0.6), 0.6))
+                )
         if body is not None and top_z is not None and entry.get("fit_body", True) is not False:
             verts = _fit_garment(
                 verts, body, top_z, height, _as_float(entry.get("fit_margin", 1.04), 1.04)
