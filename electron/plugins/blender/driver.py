@@ -689,6 +689,101 @@ MATERIAL_PRESETS = {
             "bump": 0.03,
         },
     },
+    "skin_sss": {
+        "base_color": "#c98d72",
+        "roughness": 0.42,
+        "specular": 0.38,
+        "subsurface": 0.45,
+        "subsurface_radius": [1.0, 0.32, 0.18],
+        "subsurface_scale": 0.011,
+        "sheen": 0.25,
+        "sheen_roughness": 0.34,
+        "coat": 0.04,
+        "coat_roughness": 0.28,
+        "texture": {
+            "type": "noise",
+            "scale": 160,
+            "detail": 10,
+            "roughness": 0.55,
+            "color_a": "#b87c60",
+            "color_b": "#e3ae92",
+            "bump": 0.16,
+            "bump_distance": 0.0012,
+            "roughness_map": True,
+            "roughness_min": 0.3,
+            "roughness_max": 0.62,
+        },
+        "bump_layers": [
+            {"type": "voronoi", "scale": 420, "randomness": 0.85, "feature": "F1", "bump": 0.3, "bump_distance": 0.0006},
+            {"type": "noise", "scale": 1400, "detail": 8, "roughness": 0.6, "bump": 0.2, "bump_distance": 0.00018},
+        ],
+    },
+    "clay": {
+        "base_color": "#b9b2a8",
+        "roughness": 0.62,
+        "specular": 0.32,
+        "coat": 0.06,
+        "texture": {
+            "type": "noise",
+            "scale": 120,
+            "detail": 8,
+            "color_a": "#b9b2a8",
+            "color_b": "#b9b2a8",
+            "bump": 0.12,
+            "bump_distance": 0.0015,
+        },
+    },
+    "hair": {
+        "base_color": "#3a2418",
+        "roughness": 0.32,
+        "specular": 0.5,
+        "anisotropic": 0.65,
+        "sheen": 0.45,
+        "sheen_roughness": 0.3,
+        "coat": 0.12,
+        "texture": {
+            "type": "wave",
+            "scale": 90,
+            "distortion": 6,
+            "direction": "Z",
+            "color_a": "#241309",
+            "color_b": "#4b2e1c",
+            "bump": 0.22,
+            "bump_distance": 0.001,
+        },
+    },
+    "silk": {
+        "base_color": "#d8cbe4",
+        "roughness": 0.26,
+        "specular": 0.55,
+        "sheen": 0.6,
+        "sheen_roughness": 0.25,
+        "subsurface": 0.06,
+        "texture": {
+            "type": "noise",
+            "scale": 260,
+            "detail": 8,
+            "color_a": "#c3b4d4",
+            "color_b": "#ece2f4",
+            "bump": 0.06,
+            "bump_distance": 0.0008,
+        },
+    },
+    "lace": {
+        "base_color": "#efe9df",
+        "roughness": 0.48,
+        "specular": 0.4,
+        "sheen": 0.3,
+        "texture": {
+            "type": "voronoi",
+            "scale": 220,
+            "randomness": 0.9,
+            "color_a": "#c9c1b3",
+            "color_b": "#fdfaf4",
+            "bump": 0.25,
+            "bump_distance": 0.001,
+        },
+    },
     "sci_fi_panel": {
         "base_color": "#3b424c",
         "metallic": 0.85,
@@ -836,8 +931,16 @@ def build_material(spec):
     set_input(bsdf, as_float(spec.get("coat", 0.0)), "Coat Weight", "Clearcoat")
     set_input(bsdf, as_float(spec.get("coat_roughness", 0.03), 0.03), "Coat Roughness", "Clearcoat Roughness")
     set_input(bsdf, as_float(spec.get("sheen", 0.0)), "Sheen Weight", "Sheen")
+    set_input(bsdf, as_float(spec.get("sheen_roughness", 0.5), 0.5), "Sheen Roughness")
+    if spec.get("sheen_tint") is not None:
+        set_input(bsdf, as_color(spec.get("sheen_tint"), (1.0, 1.0, 1.0)), "Sheen Tint")
     set_input(bsdf, as_float(spec.get("subsurface", 0.0)), "Subsurface Weight", "Subsurface")
+    if spec.get("subsurface_scale") is not None:
+        set_input(bsdf, as_float(spec.get("subsurface_scale"), 0.05), "Subsurface Scale")
+    if spec.get("subsurface_radius"):
+        set_input(bsdf, as_vec3(spec.get("subsurface_radius"), (1.0, 0.2, 0.1)), "Subsurface Radius")
     set_input(bsdf, as_float(spec.get("anisotropic", 0.0)), "Anisotropic")
+    set_input(bsdf, as_float(spec.get("anisotropic_rotation", 0.0), 0.0), "Anisotropic Rotation")
 
     emission = spec.get("emission")
     if emission is not None:
