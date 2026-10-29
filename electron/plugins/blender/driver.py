@@ -88,8 +88,19 @@ def as_vec3(value, fallback=(0.0, 0.0, 0.0)):
         return tuple(fallback)
 
 
-def as_color(value, fallback=(0.8, 0.8, 0.8), alpha=None):
-    """Accepts [r,g,b(,a)] in 0..1 or 0..255, or '#rrggbb'."""
+def _srgb_to_linear(channel):
+    value = max(0.0, min(1.0, as_float(channel, 0.0)))
+    if value <= 0.04045:
+        return value / 12.92
+    return ((value + 0.055) / 1.055) ** 2.4
+
+
+def as_color(value, fallback=(0.8, 0.8, 0.8), alpha=None, linear=True):
+    """Accepts [r,g,b(,a)] in 0..1 or 0..255, or '#rrggbb'.
+
+    Values are authored as sRGB (hex / 0-255 / picker style) and Blender colour
+    sockets are linear, so the result is converted unless linear=False.
+    """
     result = None
     if isinstance(value, str):
         text = value.strip().lstrip("#")
@@ -113,6 +124,8 @@ def as_color(value, fallback=(0.8, 0.8, 0.8), alpha=None):
         result = (seq[0], seq[1], seq[2], a)
     if result is None:
         result = (fallback[0], fallback[1], fallback[2], fallback[3] if len(fallback) > 3 else 1.0)
+    if linear:
+        result = (_srgb_to_linear(result[0]), _srgb_to_linear(result[1]), _srgb_to_linear(result[2]), result[3])
     if alpha is not None:
         result = (result[0], result[1], result[2], as_float(alpha, 1.0))
     return result
