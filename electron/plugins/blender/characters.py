@@ -209,27 +209,36 @@ def _scale_about_center(obj, factor):
 
 
 def _assign_region_material(obj, center, radii, material):
-    """Assign `material` to faces fully inside an ellipsoid (lips, brows, nails)."""
+    """Assign `material` to faces whose centre falls inside an ellipsoid."""
     if obj is None or material is None or obj.type != "MESH":
         return 0
     me, co, _ = _mesh_arrays(obj)
     if not len(co):
         return 0
     slot = len(obj.data.materials)
-    if slot == 0:
-        obj.data.materials.append(material)
-        slot = 0
-    else:
-        obj.data.materials.append(material)
+    obj.data.materials.append(material)
     radius = np.maximum(np.array(radii, dtype=np.float64), 1e-5)
-    relative = (co - np.array(center, dtype=np.float64)) / radius
-    inside = np.linalg.norm(relative, axis=1) <= 1.0
+    origin = np.array(center, dtype=np.float64)
     touched = 0
     for poly in me.polygons:
-        if all(inside[index] for index in poly.vertices):
+        relative = (np.array(poly.center, dtype=np.float64) - origin) / radius
+        if float(np.dot(relative, relative)) <= 1.0:
             poly.material_index = slot
             touched += 1
+    me.update()
     return touched
+
+
+def _front_point(obj, z, x=0.0, z_window=0.02, x_window=0.035):
+    """Most forward (-Y) surface vertex near a height — lip / brow anchors."""
+    _, co, _ = _mesh_arrays(obj)
+    if not len(co):
+        return None
+    selected = (np.abs(co[:, 0] - x) < x_window) & (np.abs(co[:, 2] - z) < z_window)
+    if not selected.any():
+        return None
+    points = co[selected]
+    return points[int(np.argmin(points[:, 1]))]
 
 
 def _norm(vec):
@@ -677,14 +686,16 @@ def build_human(spec, out_dir="", materials=None):
         if isinstance(lip_spec, str):
             lip_spec = {"preset": lip_spec}
         lip_mat = _material({**lip_spec, "name": lip_spec.get("name") or "Lips"}, materials, "Lips")
-        lip_center = _group_center(body, "joint-mouth")
+        head_radius = float(landmarks.get("head_radius", 0.09))
+        lip_center = _front_point(body, float(landmarks.get("mouth_z", 0.0)))
+        if lip_center is None:
+            lip_center = _group_center(body, "joint-mouth")
         if lip_center is None:
             lip_center = np.array([0.0, landmarks.get("eye_mid", [0.0, 0.0, 0.0])[1], landmarks.get("mouth_z", 0.0)])
-        head_radius = float(landmarks.get("head_radius", 0.09))
         report["lips_faces"] = _assign_region_material(
             body,
             lip_center,
-            (head_radius * 0.36, head_radius * 0.34, head_radius * 0.115),
+            (head_radius * 0.42, 0.02, head_radius * 0.17),
             lip_mat,
         )
     eye_spec = spec.get("eye_material")
