@@ -2283,7 +2283,40 @@ CAMERA_VIEWS = {
     "top": (0.0, -0.05, 2.6),
     "hero": (0.75, -1.9, 0.42),
     "closeup": (0.6, -1.15, 0.35),
+    "portrait": (0.38, -1.0, 0.06),
+    "bust": (0.28, -1.0, 0.03),
+    "face": (0.12, -1.0, 0.01),
+    "head": (0.22, -1.0, 0.04),
 }
+
+# Zoom factor applied to the head radius for the portrait views above.
+HEAD_VIEW_ZOOM = {"portrait": 2.55, "bust": 3.6, "face": 1.85, "head": 2.1}
+
+
+def _character_frame(view, spec):
+    """Frame a portrait from the body landmarks written by the character kit."""
+    if view not in HEAD_VIEW_ZOOM:
+        return None
+    body = None
+    selector = spec.get("frame_object") or spec.get("object")
+    if selector:
+        body = bpy.data.objects.get(str(selector))
+    if body is None or not body.get("cv_landmarks"):
+        for obj in scene().objects:
+            if obj.get("cv_landmarks") and (body is None or "body" in obj.name.lower()):
+                body = obj
+    if body is None or not body.get("cv_landmarks"):
+        return None
+    try:
+        data = json.loads(str(body.get("cv_landmarks")))
+    except Exception:
+        return None
+    eye = data.get("eye_mid")
+    if not eye:
+        return None
+    radius = max(0.02, as_float(data.get("head_radius"), 0.09))
+    center = (as_float(eye[0]), as_float(eye[1]), as_float(eye[2]) + radius * 0.12)
+    return center, radius * HEAD_VIEW_ZOOM[view]
 
 
 def place_camera(spec, coll=r"DEFAULT"):
@@ -2291,8 +2324,11 @@ def place_camera(spec, coll=r"DEFAULT"):
         spec = {"view": spec}
     if not isinstance(spec, dict):
         spec = {}
-    center, radius = scene_bounds()
     view = str(spec.get("view", "three_quarter")).lower()
+    center, radius = scene_bounds()
+    framed = _character_frame(view, spec)
+    if framed is not None:
+        center, radius = framed
     direction = CAMERA_VIEWS.get(view, CAMERA_VIEWS["three_quarter"])
     lens = as_float(spec.get("lens", 50.0), 50.0)
     sensor = as_float(spec.get("sensor_width", 36.0), 36.0)
