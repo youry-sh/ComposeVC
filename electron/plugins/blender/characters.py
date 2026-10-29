@@ -1770,22 +1770,26 @@ def build_weights(spec, out_dir="", materials=None):
                     )
                 _select_only(obj)
                 limit = max(1, _as_int(entry.get("limit", 4), 4))
+                group_mode = "BONE_DEFORM" if entry.get("deform_only") else "ALL"
                 try:
-                    bpy.ops.object.vertex_group_limit_total(group_select_mode="BONE_DEFORM", limit=limit)
-                except Exception:
-                    bpy.ops.object.vertex_group_limit_total(limit=limit)
+                    bpy.ops.object.vertex_group_limit_total(group_select_mode=group_mode, limit=limit)
+                except Exception as exc:
+                    _warn("limit total on %s failed: %s" % (obj.name, exc))
                 try:
-                    bpy.ops.object.vertex_group_normalize_all(group_select_mode="BONE_DEFORM", lock_active=False)
-                except Exception:
-                    bpy.ops.object.vertex_group_normalize_all(lock_active=False)
+                    bpy.ops.object.vertex_group_normalize_all(group_select_mode=group_mode, lock_active=False)
+                except Exception as exc:
+                    _warn("normalize weights on %s failed: %s" % (obj.name, exc))
                 iterations = _as_int(entry.get("smooth", 3 if mode == "cloth" else 1), 1)
                 if iterations > 0:
-                    bpy.ops.object.vertex_group_smooth(
-                        group_select_mode="BONE_DEFORM",
-                        factor=_as_float(entry.get("factor", 0.5), 0.5),
-                        repeat=iterations,
-                        expand=_as_float(entry.get("expand", 0.0), 0.0),
-                    )
+                    try:
+                        bpy.ops.object.vertex_group_smooth(
+                            group_select_mode=group_mode,
+                            factor=_as_float(entry.get("factor", 0.5), 0.5),
+                            repeat=iterations,
+                            expand=_as_float(entry.get("expand", 0.0), 0.0),
+                        )
+                    except Exception as exc:
+                        _warn("smooth weights on %s failed: %s" % (obj.name, exc))
                 reports.append(
                     {
                         "object": obj.name,
