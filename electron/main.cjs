@@ -51,6 +51,7 @@ const promptsStore = require("./promptsStore.cjs");
 const pluginsRegistry = require("./plugins/registry.cjs");
 const blenderPlugin = require("./plugins/blender/index.cjs");
 const godotPlugin = require("./plugins/godot/index.cjs");
+const motionPlugin = require("./plugins/motion/index.cjs");
 const cfMailConfig = require("./cfMailConfig.cjs");
 const { createExpertService } = require("./expert/index.cjs");
 
@@ -4135,6 +4136,7 @@ function broadcastPromptsChanged(payload) {
 
 blenderPlugin.setProgressSink((payload) => broadcastPluginJob(payload));
 godotPlugin.setProgressSink((payload) => broadcastPluginJob(payload));
+motionPlugin.setProgressSink((payload) => broadcastPluginJob(payload));
 
 function broadcastPluginsChanged(payload) {
   for (const win of BrowserWindow.getAllWindows()) {
@@ -4204,6 +4206,7 @@ function publicPluginJob(job) {
     },
     blender: job.blender || { path: "", version: "", engine: "" },
     godot: job.godot || null,
+    motion: job.motion || null,
   };
 }
 
@@ -4343,9 +4346,16 @@ ipcMain.handle("plugins:probe", async (_event, id) => {
         ? await pluginsRegistry.configForBlender(pluginsUserData())
         : pluginId === "godot"
           ? await pluginsRegistry.configForGodot(pluginsUserData())
-          : null;
+          : pluginId === "motion"
+            ? await pluginsRegistry.configForMotion(pluginsUserData())
+            : null;
     if (!config) return { ok: false, error: "Для этого плагина нет опроса возможностей." };
-    const probe = pluginId === "blender" ? await blenderPlugin.probe(pluginsUserData(), config) : await godotPlugin.probe(pluginsUserData(), config);
+    const probe =
+      pluginId === "blender"
+        ? await blenderPlugin.probe(pluginsUserData(), config)
+        : pluginId === "motion"
+          ? await motionPlugin.probe(pluginsUserData(), config)
+          : await godotPlugin.probe(pluginsUserData(), config);
     return { ok: Boolean(probe.ok), probe, error: probe.ok ? "" : probe.error || "" };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : String(error), checked: error?.checked || [] };
@@ -4358,7 +4368,11 @@ ipcMain.handle("plugins:jobs", async (_event, options) => {
       limit: Number(options?.limit) || 40,
       pluginId: options?.pluginId || undefined,
     });
-    return { ok: true, jobs: jobs.map(publicPluginJob), running: [...blenderPlugin.listRunning(), ...godotPlugin.listRunning()] };
+    return {
+      ok: true,
+      jobs: jobs.map(publicPluginJob),
+      running: [...blenderPlugin.listRunning(), ...godotPlugin.listRunning(), ...motionPlugin.listRunning()],
+    };
   } catch (error) {
     return { ok: false, jobs: [], error: error instanceof Error ? error.message : String(error) };
   }
@@ -4419,7 +4433,8 @@ ipcMain.handle("plugins:deleteJob", async (_event, jobId) => {
 ipcMain.handle("plugins:preview", async (_event, jobId, name) => {
   try {
     const record = await pluginsRegistry.job(pluginsUserData(), String(jobId || ""));
-    const reader = record?.pluginId === "godot" ? godotPlugin : blenderPlugin;
+    const reader =
+      record?.pluginId === "godot" ? godotPlugin : record?.pluginId === "motion" ? motionPlugin : blenderPlugin;
     const preview = await reader.readPreviewDataUrl(pluginsUserData(), String(jobId || ""), name || "");
     return { ok: true, ...preview };
   } catch (error) {
@@ -4430,7 +4445,7 @@ ipcMain.handle("plugins:preview", async (_event, jobId, name) => {
 ipcMain.handle("plugins:pickExecutable", async (event, id) => {
   try {
     const pluginId = String(id || "blender");
-    const label = pluginId === "godot" ? "Godot" : "Blender";
+    const label = pluginId === "godot" ? "Godot" : pluginId === "motion" ? "FFmpeg" : "Blender";
     const win = BrowserWindow.fromWebContents(event.sender);
     const options = {
       title: `Путь к ${label}`,
@@ -4438,9 +4453,7 @@ ipcMain.handle("plugins:pickExecutable", async (event, id) => {
       filters:
         process.platform === "win32"
           ? [{ name: label, extensions: ["exe"] }]
-          : pluginId === "godot"
-            ? [{ name: "Все файлы", extensions: ["*"] }]
-            : [{ name: "Все файлы", extensions: ["*"] }],
+          : [{ name: "Все файлы", extensions: ["*"] }],
     };
     if (pluginId === "godot" && process.platform !== "win32") options.properties = ["openFile"];
     const result = win ? await dialog.showOpenDialog(win, options) : await dialog.showOpenDialog(options);
@@ -4512,6 +4525,14 @@ ipcMain.handle("plugins:openInBlender", async (_event, jobId, blendPath) => {
 ipcMain.handle("plugins:runDemo", async (_event, id) => {
   try {
     const pluginId = String(id || "blender");
+    if (pluginId === "motion") {
+      const motionRecord = await pluginsRegistry.getPlugin(pluginsUserData(), "motion");
+      if (!motionRecord.enabled) return { ok: false, error: "Плагин Motion Studio выключен." };
+      const config = await pluginsRegistry.configForMotion(pluginsUserData());
+      const result = await motionPlugin.runDemo(pluginsUserData(), config);
+      broadcastPluginsChanged({ type: "job-finished", jobId: result.job?.id || "", status: result.job?.status || "" });
+      return { ok: Boolean(result.ok), job: publicPluginJob(result.job), error: result.error || "" };
+    }
     if (pluginId !== "blender") return { ok: false, error: "Демо есть только для Blender." };
     const plugin = await pluginsRegistry.getPlugin(pluginsUserData(), "blender");
     if (!plugin.enabled) return { ok: false, error: "Плагин Blender выключен." };
@@ -4583,6 +4604,66 @@ ipcMain.handle("plugins:godotImportGlb", async (_event, payload) => {
     };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : String(error), checked: error?.checked || [] };
+  }
+});
+
+ipcMain.handle("plugins:motionInstall", async () => {
+  try {
+    const config = await pluginsRegistry.configForMotion(pluginsUserData());
+    const result = await motionPlugin.ensureFfmpeg(pluginsUserData(), config, (payload) =>
+      broadcastPluginJob({ pluginId: "motion", ...payload })
+    );
+    if (result.found) {
+      const patch = { ffmpegPath: result.executable || config.ffmpegPath };
+      if (result.probePath) patch.ffprobePath = result.probePath;
+      await pluginsRegistry.updatePlugin(pluginsUserData(), "motion", { config: patch });
+      broadcastPluginsChanged({ type: "updated", pluginId: "motion" });
+    }
+    return {
+      ok: Boolean(result.found),
+      found: Boolean(result.found),
+      version: result.version || "",
+      executable: result.executable || "",
+      source: result.source || "",
+      error: result.error || "",
+    };
+  } catch (error) {
+    return { ok: false, found: false, error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+ipcMain.handle("plugins:motionRender", async (_event, plan) => {
+  try {
+    const plugin = await pluginsRegistry.getPlugin(pluginsUserData(), "motion");
+    if (!plugin.enabled) return { ok: false, error: "Плагин Motion Studio выключен.", job: null };
+    const config = await pluginsRegistry.configForMotion(pluginsUserData());
+    const input = plan && typeof plan === "object" ? plan : {};
+    const result = await motionPlugin.runProject(pluginsUserData(), config, input, {
+      title: String(input.name || input.title || "Ролик"),
+      kind: "render",
+    });
+    broadcastPluginsChanged({ type: "job-finished", jobId: result.job?.id || "", status: result.job?.status || "" });
+    return {
+      ok: Boolean(result.ok),
+      job: publicPluginJob(result.job),
+      error: result.ok ? "" : result.error || "",
+    };
+  } catch (error) {
+    return { ok: false, job: null, error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+ipcMain.handle("plugins:motionProbeFile", async (_event, filePath) => {
+  try {
+    const target = typeof filePath === "string" ? filePath.trim() : "";
+    if (!target) return { ok: false, media: null, error: "Не указан файл." };
+    const stat = await fs.promises.stat(target).catch(() => null);
+    if (!stat || !stat.isFile()) return { ok: false, media: null, error: `Не удалось прочитать файл: ${target}` };
+    const config = await pluginsRegistry.configForMotion(pluginsUserData());
+    const result = await motionPlugin.probeFile(pluginsUserData(), config, target);
+    return { ok: Boolean(result.ok), media: result.media || null, error: result.error || "" };
+  } catch (error) {
+    return { ok: false, media: null, error: error instanceof Error ? error.message : String(error) };
   }
 });
 

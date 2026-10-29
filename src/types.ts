@@ -682,6 +682,15 @@ export interface ComposeVCPluginJob {
   stats: ComposeVCPluginJobStats;
   blender: { path: string; version: string; engine: string };
   godot?: { path: string; version: string; preset: string } | null;
+  motion?: {
+    path: string;
+    version: string;
+    durationSec: number;
+    frames: number;
+    width: number;
+    height: number;
+    audioPath: string;
+  } | null;
 }
 
 export interface ComposeVCPluginStatus {
@@ -693,6 +702,7 @@ export interface ComposeVCPluginStatus {
   note?: string;
   running?: string[];
   checked?: Array<{ path: string; ok: boolean; version?: string; error?: string }>;
+  ffprobe?: { found: boolean; executable: string; version: string; error?: string };
   probe?: {
     ok?: boolean;
     version?: string;
@@ -702,7 +712,77 @@ export interface ComposeVCPluginStatus {
     error?: string;
     warning?: string;
     templates?: { found: boolean; path: string };
+    filters?: string[];
+    encoders?: string[];
   };
+}
+
+export interface ComposeVCMotionConfig {
+  ffmpegPath: string;
+  ffprobePath: string;
+  outputDir: string;
+  width: number;
+  height: number;
+  fps: number;
+  crf: number;
+  preset: string;
+  audioBitrateKbps: number;
+  format: string;
+  theme: string;
+  fontFamily: string;
+  safeMargins: boolean;
+  timeoutSec: number;
+}
+
+export type ComposeVCMotionAnimation = "fade" | "rise" | "slide" | "typewriter";
+export type ComposeVCMotionTransition =
+  | "fade"
+  | "slideleft"
+  | "slideright"
+  | "wipeleft"
+  | "wiperight"
+  | "circleopen"
+  | "dissolve";
+
+export interface ComposeVCMotionTimelineItem {
+  id: string;
+  kind: "title" | "scene" | "transition" | "audio";
+  start: number;
+  end: number;
+  text?: string;
+  animation?: ComposeVCMotionAnimation;
+  transition?: ComposeVCMotionTransition;
+  path?: string;
+  volume?: number;
+}
+
+export interface ComposeVCMotionOutput {
+  width: number;
+  height: number;
+  fps: number;
+  crf: number;
+  preset: string;
+  format: string;
+}
+
+export interface ComposeVCMotionPlan {
+  name?: string;
+  timeline: ComposeVCMotionTimelineItem[];
+  output: ComposeVCMotionOutput;
+  audio: { path: string; gainDb: number };
+}
+
+export interface ComposeVCMotionMedia {
+  durationSec: number;
+  width: number;
+  height: number;
+  fps: number;
+  videoCodec: string;
+  audioCodec: string;
+  bitrateKbps: number;
+  sizeBytes: number;
+  hasAudio: boolean;
+  rotation?: number;
 }
 
 export interface ComposeVCPluginConfig {
@@ -723,6 +803,16 @@ export interface ComposeVCPluginConfig {
   headless?: boolean;
   importGlb?: boolean;
   glbDir?: string;
+  ffmpegPath?: string;
+  ffprobePath?: string;
+  width?: number;
+  height?: number;
+  fps?: number;
+  crf?: number;
+  theme?: string;
+  fontFamily?: string;
+  safeMargins?: boolean;
+  audioBitrateKbps?: number;
 }
 
 export interface ComposeVCPlugin {

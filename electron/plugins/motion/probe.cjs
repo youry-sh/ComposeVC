@@ -183,12 +183,15 @@ async function listDirMedia(dirPath, limit = 200) {
       const ext = path.extname(entry.name).toLowerCase();
       if (!MEDIA_EXTENSIONS.has(ext)) continue;
       let size = 0;
+      let modifiedAt = 0;
       try {
-        size = (await fs.promises.stat(full)).size;
+        const stat = await fs.promises.stat(full);
+        size = stat.size;
+        modifiedAt = Math.round(stat.mtimeMs);
       } catch {
         size = 0;
       }
-      files.push({ name: entry.name, path: full, ext: ext.slice(1), sizeBytes: size, modifiedAt: Date.now() });
+      files.push({ name: entry.name, path: full, ext: ext.slice(1), sizeBytes: size, modifiedAt });
     }
   };
   await walk(root, 2);

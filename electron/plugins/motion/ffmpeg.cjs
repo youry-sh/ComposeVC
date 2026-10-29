@@ -79,8 +79,25 @@ function which(binary) {
   }
 }
 
+const versionCache = new Map();
+
 function readVersion(executable) {
   if (!executable || !isFile(executable)) return { ok: false, version: "", executable, error: "не найден" };
+  let stamp = 0;
+  try {
+    stamp = Math.round(fs.statSync(executable).mtimeMs);
+  } catch {
+    stamp = 0;
+  }
+  const key = `${executable}::${stamp}`;
+  const cached = versionCache.get(key);
+  if (cached && Date.now() - cached.at < 5 * 60 * 1000) return { ...cached.value };
+  const value = probeVersion(executable);
+  versionCache.set(key, { at: Date.now(), value });
+  return { ...value };
+}
+
+function probeVersion(executable) {
   try {
     const result = spawnSync(executable, ["-version"], {
       windowsHide: true,
@@ -156,11 +173,14 @@ function candidateEntries(userDataPath, config, base) {
       const packages = path.join(local, "Microsoft", "WinGet", "Packages");
       if (base === "ffmpeg" && isDir(packages)) add(scanForBinary(packages, base, 4), "scan");
     }
-    for (const root of [process.env.ProgramFiles, process.env["ProgramFiles(x86)"], "C:\\ffmpeg"]) {
+    for (const root of [process.env.ProgramFiles, process.env["ProgramFiles(x86)"]]) {
       if (!root) continue;
+      // Only real FFmpeg installs — never pick up ffmpeg.exe bundled inside
+      // unrelated players (LAVFilters, KMPlayer, …): those builds often have
+      // no ffprobe and no drawtext.
       add(path.join(root, "ffmpeg", "bin", "ffmpeg.exe"), "scan");
-      if (base === "ffmpeg" && isDir(root)) add(scanForBinary(root, base, 2), "scan");
     }
+    add("C:\\ffmpeg\\bin\\ffmpeg.exe", "scan");
   } else {
     if (base === "ffmpeg") {
       for (const dir of ["/usr/bin", "/usr/local/bin", "/opt/homebrew/bin", "/snap/bin", path.join(os.homedir(), ".local", "bin")]) {
@@ -234,7 +254,9 @@ function run(command, args, options = {}) {
     }, timeoutMs);
     const append = (chunk) => {
       output += chunk.toString("utf8");
-      if (output.length > 32000) output = output.slice(output.length - 32000);
+      // `ffmpeg -filters` / `-encoders` print a few hundred KB; the tail is
+      // what matters for errors, so only very large outputs are trimmed.
+      if (output.length > 512000) output = output.slice(output.length - 512000);
     };
     child.stdout?.on("data", append);
     child.stderr?.on("data", append);
@@ -411,6 +433,17 @@ async function ensureFfmpeg(userDataPath, config, onProgress) {
   if (viaWinget) {
     return { found: true, source: "winget", executable: viaWinget.executable, version: viaWinget.version, error: "" };
   }
+  // winget adds its Links folder to PATH for new shells only — rescan it now.
+  const afterWinget = detect(userData, config, "ffmpeg");
+  if (afterWinget.found) {
+    return {
+      found: true,
+      source: afterWinget.source === "path" ? "winget" : afterWinget.source,
+      executable: afterWinget.executable,
+      version: afterWinget.version,
+      error: "",
+    };
+  }
 
   const spec = portableSpec();
   const binDir = bundledBinDir(userData);
@@ -489,11 +522,15 @@ async function ensureFfmpeg(userDataPath, config, onProgress) {
   }
   try {
     await fs.promises.rm(archive, { force: true });
-    await fs.promises.rm(unpackDir, { recursive: true, force: true });
+    const insideUnpack = (candidate) =>
+      candidate && path.resolve(candidate).startsWith(path.resolve(unpackDir) + path.sep);
+    if (!insideUnpack(resolved) && !insideUnpack(probePath)) {
+      await fs.promises.rm(unpackDir, { recursive: true, force: true });
+    }
   } catch {
     /* disk cleanup is best effort */
   }
-  report(onProgress, "done", 100, { error: "" });
+  report(onProgress, "done", 100, { done: true, error: "" });
   return { found: true, source: "bundled", executable: resolved, probePath, version: info.version, error: "" };
 }
 

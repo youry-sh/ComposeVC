@@ -231,6 +231,9 @@ contextBridge.exposeInMainWorld("lopster", {
   pluginsGodotDemo: (options) => ipcRenderer.invoke("plugins:godotDemo", options || {}),
   pluginsGodotBuild: (id, options) => ipcRenderer.invoke("plugins:godotBuild", id || "godot", options || {}),
   pluginsGodotImportGlb: (payload) => ipcRenderer.invoke("plugins:godotImportGlb", payload || {}),
+  pluginsMotionInstall: () => ipcRenderer.invoke("plugins:motionInstall"),
+  pluginsMotionRender: (plan) => ipcRenderer.invoke("plugins:motionRender", plan || {}),
+  pluginsMotionProbeFile: (filePath) => ipcRenderer.invoke("plugins:motionProbeFile", filePath || ""),
   onPluginsChanged: (callback) => {
     const listener = (_event, payload) => callback(payload || { type: "changed" });
     ipcRenderer.on("plugins:changed", listener);

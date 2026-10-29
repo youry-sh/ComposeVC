@@ -25,7 +25,7 @@ type SizeworkoutUpdate = {
   payload?: unknown;
 };
 
-import { AgentToolProgress, CfMailConfig, ChatExecutionRequest, ChatExecutionResponse, ChatMessage, ChatRequestMessage, ChatSession, ChatSessionPage, ChatSessionSummary, CompactChatRequest, CompactChatResponse, ComposeVCPlugin, ComposeVCPluginConfig, ComposeVCPluginJob, ComposeVCPluginStatus, ComposeVCPluginsState, FileNode, KnowledgeChunk, KnowledgeChunkSummary, KnowledgeExportResult, KnowledgeImportCanceled, KnowledgeImportResult, KnowledgeListResponse, ProblemItem, ProjectSearchResult, ProviderConfig, TaskItem, RunnerJob, RunnerReport, RunnerReportSummary } from "./types";
+import { AgentToolProgress, CfMailConfig, ChatExecutionRequest, ChatExecutionResponse, ChatMessage, ChatRequestMessage, ChatSession, ChatSessionPage, ChatSessionSummary, CompactChatRequest, CompactChatResponse, ComposeVCMotionMedia, ComposeVCMotionPlan, ComposeVCPlugin, ComposeVCPluginConfig, ComposeVCPluginJob, ComposeVCPluginStatus, ComposeVCPluginsState, FileNode, KnowledgeChunk, KnowledgeChunkSummary, KnowledgeExportResult, KnowledgeImportCanceled, KnowledgeImportResult, KnowledgeListResponse, ProblemItem, ProjectSearchResult, ProviderConfig, TaskItem, RunnerJob, RunnerReport, RunnerReportSummary } from "./types";
 
 /** Snapshot of a chat folder's repository — see electron/gitService.cjs */
 export type GitStatus =
@@ -895,6 +895,22 @@ declare global {
         imported?: Array<{ source: string; target: string; importFile?: string; ok?: boolean; bytes?: number }>;
         error?: string;
       }>;
+      pluginsMotionInstall: () => Promise<{
+        ok: boolean;
+        found: boolean;
+        version?: string;
+        executable?: string;
+        source?: string;
+        error?: string;
+      }>;
+      pluginsMotionRender: (plan: ComposeVCMotionPlan) => Promise<{
+        ok: boolean;
+        job?: ComposeVCPluginJob | null;
+        error?: string;
+      }>;
+      pluginsMotionProbeFile: (
+        filePath: string
+      ) => Promise<{ ok: boolean; media?: ComposeVCMotionMedia | null; error?: string }>;
       onPluginsChanged: (
         callback: (payload: { type?: string; pluginId?: string; jobId?: string; status?: string }) => void
       ) => () => void;

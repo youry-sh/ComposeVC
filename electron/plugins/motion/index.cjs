@@ -236,6 +236,7 @@ function runCommand(executable, args, options = {}) {
       killTree(child);
     }, timeoutSec * 1000);
     const consume = (text, stream) => {
+      if (options.logPath) void appendLog(options.logPath, text);
       if (stream === "out") {
         stdout += text;
         stdoutTail = (stdoutTail + text).slice(-24000);
@@ -359,7 +360,11 @@ function normalizeTimeline(plan) {
       volume: Number.isFinite(Number(raw.volume)) ? Math.max(0, Math.min(2, Number(raw.volume))) : 1,
     };
     if (kind === "audio" && !item.path) return;
-    if (kind !== "audio" && !item.text && !item.path) return;
+    if (kind === "transition") {
+      items.push(item);
+      return;
+    }
+    if (!item.text && !item.path) return;
     items.push(item);
   });
   items.sort((a, b) => a.start - b.start || (a.kind === "transition" ? -1 : 1));
@@ -437,7 +442,7 @@ function escapeExpr(expression) {
 }
 
 function fontOption(fontFile, family) {
-  if (fontFile) return `fontfile=${fontFile.replace(/\\/g, "/").replace(/:/g, "\\:")}`;
+  if (fontFile) return `fontfile=${fontFile.replace(/\\/g, "/").replace(/:/g, "\\:").replace(/ /g, "\\ ")}`;
   const safe = String(family || "sans-serif").replace(/[^A-Za-z0-9 _-]/g, "").trim() || "sans-serif";
   return `font=${escapeText(safe)}`;
 }
@@ -491,8 +496,8 @@ function drawTextFilters(options) {
       ? escapeExpr(`min(1,t/${Math.min(0.4, duration / 3)})`)
       : escapeExpr(`if(lt(t,${fade}),t/${fade},if(gt(t,${Math.max(0, duration - fade)}),max(0,((${duration})-t)/${fade}),1))`);
   chosen.forEach((line, index) => {
-    const offset = (index - (chosen.length - 1) / 2) * fontSize * 1.24;
-    const baseY = `h*0.5+${Math.round(offset)}`;
+    const offset = Math.round((index - (chosen.length - 1) / 2) * fontSize * 1.24);
+    const baseY = offset < 0 ? `h*0.5-${Math.abs(offset)}` : `h*0.5+${offset}`;
     let x = "(w-text_w)/2";
     let y = baseY;
     if (animation === "rise") y = `${baseY}+${Math.round(fontSize * 0.9)}*(1-min(t/${fade},1))`;
@@ -567,13 +572,16 @@ function buildRenderCommand(plan, config, outputPath, durationSec, jobInfo) {
       parts.push(
         `[${filterInput}:v]scale=${width}:${height}:force_original_aspect_ratio=decrease,` +
           `pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:color=${theme.background},setsar=1,fps=${fps},` +
-          `trim=duration=${dur.toFixed(3)},setpts=PTS-STARTPTS[s${index}]`
+          `tpad=stop_mode=clone:stop_duration=${dur.toFixed(3)},trim=duration=${dur.toFixed(3)},` +
+          `setpts=PTS-STARTPTS,format=yuv420p[s${index}]`
       );
     } else {
       args.push("-f", "lavfi", "-t", dur.toFixed(3), "-i", `color=c=${theme.background}:s=${width}x${height}:r=${fps}`);
       const filterInput = inputCount;
       inputCount += 1;
-      parts.push(`[${filterInput}:v]fps=${fps},trim=duration=${dur.toFixed(3)},setpts=PTS-STARTPTS[s${index}]`);
+      parts.push(
+        `[${filterInput}:v]fps=${fps},trim=duration=${dur.toFixed(3)},setpts=PTS-STARTPTS,format=yuv420p[s${index}]`
+      );
     }
     const isTitle = segment.kind === "title" || Boolean(segment.text);
     const lastLabel = `s${index}`;
@@ -641,7 +649,8 @@ function buildRenderCommand(plan, config, outputPath, durationSec, jobInfo) {
     audioSources.push({ path: clean(plan.audio.path), gainDb: Number(plan.audio.gainDb) || 0, volume: 1 });
   }
   for (const item of audioItems) {
-    const gainDb = item.volume && item.volume !== 1 ? 20 * Math.log10(item.volume) : 0;
+    const volume = Number(item.volume);
+    const gainDb = Number.isFinite(volume) && volume !== 1 ? (volume <= 0 ? -40 : 20 * Math.log10(volume)) : 0;
     audioSources.push({ path: item.path, gainDb, volume: item.volume });
   }
   const usableAudio = audioSources.filter((entry) => isFile(entry.path));
@@ -683,7 +692,7 @@ function buildRenderCommand(plan, config, outputPath, durationSec, jobInfo) {
   const filterGraph = parts.join(";");
   args.push("-filter_complex", filterGraph);
   args.push("-map", `[${finalVideo}]`);
-  if (audioLabel) args.push("-map", `[${audioLabel}]`);
+  if (audioLabel && output.format !== "gif") args.push("-map", `[${audioLabel}]`);
 
   if (output.format === "webm") {
     args.push("-c:v", "libvpx-vp9", "-crf", String(output.crf), "-b:v", "0", "-row-mt", "1");
@@ -695,7 +704,7 @@ function buildRenderCommand(plan, config, outputPath, durationSec, jobInfo) {
     if (output.format === "mp4") args.push("-movflags", "+faststart");
     if (audioLabel) args.push("-c:a", "aac", "-b:a", `${clamp(config?.audioBitrateKbps, 192, 32, 512)}k`);
   }
-  args.push("-t", total.toFixed(3), "-shortest", outputPath);
+  args.push("-t", total.toFixed(3), outputPath);
 
   return {
     ok: true,
@@ -865,6 +874,9 @@ async function runProject(userDataPath, config, plan, options = {}) {
   if (!detected.found) {
     return { ok: false, error: detected.error || "FFmpeg не найден. Нажмите «Установить FFmpeg».", job: null };
   }
+  if (active.size > 0) {
+    return { ok: false, error: "Уже выполняется рендер. Дождитесь завершения или отмените задачу.", job: null };
+  }
   const normalized = normalizeTimeline(plan);
   if (!normalized.some((item) => item.kind === "title" || item.kind === "scene")) {
     return { ok: false, error: "В таймлайне нет ни одного титра или сцены.", job: null };
@@ -903,6 +915,7 @@ async function runProject(userDataPath, config, plan, options = {}) {
     const result = await runCommand(detected.executable, built.args, {
       timeoutSec: clamp(config?.timeoutSec, 3600, 10, 7200),
       jobId: job.id,
+      logPath: job.logPath,
       onLine: (line) => {
         const seconds = parseTimeMarker(line);
         if (!seconds || !built.total) return;
@@ -981,11 +994,10 @@ async function runDemo(userDataPath, config) {
   const plan = {
     name: "Демо: Motion Studio",
     timeline: [
-      { id: "d1", kind: "title", text: "Motion Studio", animation: "fade", start: 0, end: 2 },
-      { id: "d2", kind: "transition", transition: "dissolve", start: 2, end: 2.6 },
-      { id: "d3", kind: "title", text: "Титры, переходы, звук", animation: "rise", start: 2, end: 4 },
-      { id: "d4", kind: "transition", transition: "slideleft", start: 4, end: 4.5 },
-      { id: "d5", kind: "title", text: "ComposeVC", animation: "slide", start: 4, end: 6 },
+      { id: "d1", kind: "title", text: "Motion Studio", animation: "fade", start: 0, end: 2.2 },
+      { id: "d2", kind: "transition", transition: "dissolve", start: 2.2, end: 2.8 },
+      { id: "d3", kind: "title", text: "Титры, переходы, звук", animation: "rise", start: 2.2, end: 4.4 },
+      { id: "d4", kind: "title", text: "ComposeVC", animation: "slide", start: 4.4, end: 6.6 },
     ],
     output: { width: config?.width, height: config?.height, fps: config?.fps, format: config?.format, crf: config?.crf, preset: config?.preset },
     audio: { path: "", gainDb: 0 },
@@ -1059,6 +1071,7 @@ module.exports = {
   setProgressSink,
   detect,
   probe: probePlugin,
+  ensureFfmpeg: ffmpeg.ensureFfmpeg,
   runProject,
   runDemo,
   probeFile,

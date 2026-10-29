@@ -4,6 +4,7 @@ const path = require("path");
 const store = require("./store.cjs");
 const blender = require("./blender/index.cjs");
 const godot = require("./godot/index.cjs");
+const motion = require("./motion/index.cjs");
 
 /**
  * ComposeVC plugin host.
@@ -89,6 +90,39 @@ const PLUGINS = [
     ],
     accent: "#478cbf",
   },
+  {
+    id: "motion",
+    name: "Motion Studio",
+    kind: "builtin",
+    version: "FFmpeg 6.x+",
+    tagline: "Монтаж моушн-роликов: анимация текста, переходы, звук, рендер",
+    description:
+      "Собирает моушн-ролики через установленный FFmpeg: таймлайн из титров и сцен, анимация текста (fade/rise/slide), " +
+      "переходы xfade, наложение звуковой дорожки и рендер в MP4/MOV/WebM/GIF одним вызовом filter_complex. " +
+      "Читает метаданные медиа через ffprobe, сам ставит portable FFmpeg при первом запуске и пишет каждую задачу " +
+      "с прогрессом, логом команды и кадром-превью в общий журнал плагинов.",
+    icon: "clapperboard",
+    homepage: "https://ffmpeg.org/download.html",
+    tools: ["motion"],
+    capabilities: [
+      "Движок: автоопределение FFmpeg/FFprobe, установка portable-сборки или winget, проверка версии",
+      "Таймлайн: титры, сцены с медиафайлами, переходы и аудиодорожки с точными временами",
+      "Текст: drawtext с fade/rise/slide, переносом строк, safe margins и системным шрифтом fontFamily",
+      "Переходы: xfade fade/slideleft/slideright/wipeleft/wiperight/circleopen/dissolve",
+      "Звук: наложение дорожки, громкость в dB, amix нескольких источников, AAC/Opus",
+      "Вывод: MP4/MOV (H.264), WebM (VP9), GIF с палитрой, настройки width/height/fps/crf/preset",
+      "Метаданные: ffprobe — длительность, разрешение, fps, кодеки, битрейт, размер",
+      "Журнал: задачи с живым прогрессом, log.txt с реальной командой ffmpeg и кадром-превью",
+    ],
+    examples: [
+      "Собери 15-секундный ролик: титр «ComposeVC», переход dissolve, титр «Motion Studio», фоновая музыка.",
+      "Сделай рекламный тизер из title-сцен с fade/rise, переходом slideleft и выводом 1080p MP4.",
+      "Прочитай метаданные intro.mp4 (длительность, fps, кодеки) и подгони таймлайн под него.",
+      "Смонтируй вертикальный ролик 1080x1920 для соцсетей с тремя титрами и дорожкой audio.mp3.",
+      "Пересобери ролик в GIF с частотой 24 fps и палитрой, затем покажи превью из журнала задач.",
+    ],
+    accent: "#8b5cf6",
+  },
 ];
 
 const META_BY_ID = new Map(PLUGINS.map((plugin) => [plugin.id, plugin]));
@@ -129,6 +163,23 @@ async function statusFor(userDataPath, plugin, { deep = false } = {}) {
     const probed = await godot.probe(userDataPath, plugin.config);
     return { ...base, probe: probed };
   }
+  if (plugin.id === "motion") {
+    const detected = motion.detect(plugin.config, userDataPath);
+    const base = {
+      found: detected.found,
+      executable: detected.executable,
+      version: detected.version,
+      source: detected.source,
+      error: detected.error,
+      note: detected.note || "",
+      ffprobe: detected.ffprobe,
+      running: motion.listRunning(),
+      checked: (detected.checked || []).slice(0, 12),
+    };
+    if (!detected.found || !deep) return base;
+    const probed = await motion.probe(userDataPath, plugin.config);
+    return { ...base, probe: probed };
+  }
   return { found: false, error: "Для этого плагина ещё нет исполнителя.", executable: "", version: "" };
 }
 
@@ -157,7 +208,7 @@ async function listPlugins(userDataPath, options = {}) {
     version: state.version,
     plugins: list,
     jobsRoot: store.jobsRoot(userDataPath),
-    running: [...blender.listRunning(), ...godot.listRunning()],
+    running: [...blender.listRunning(), ...godot.listRunning(), ...motion.listRunning()],
   };
 }
 
@@ -202,6 +253,11 @@ async function configForGodot(userDataPath) {
   return record?.config || { ...store.DEFAULT_GODOT_CONFIG };
 }
 
+async function configForMotion(userDataPath) {
+  const record = await store.getPlugin(userDataPath, "motion");
+  return record?.config || { ...store.DEFAULT_MOTION_CONFIG };
+}
+
 async function jobs(userDataPath, options = {}) {
   return store.listJobs(userDataPath, options);
 }
@@ -213,12 +269,15 @@ async function job(userDataPath, jobId) {
 function cancel(jobId) {
   const cancelled = blender.cancelJob(jobId);
   if (cancelled?.canceled) return cancelled;
-  return godot.cancelJob(jobId);
+  const godotCancelled = godot.cancelJob(jobId);
+  if (godotCancelled?.canceled) return godotCancelled;
+  return motion.cancelJob(jobId);
 }
 
 async function deleteJob(userDataPath, jobId) {
   const record = await store.getJob(userDataPath, jobId);
   if (record?.pluginId === "godot") return godot.deleteJob(userDataPath, jobId);
+  if (record?.pluginId === "motion") return motion.deleteJob(userDataPath, jobId);
   return blender.deleteJob(userDataPath, jobId);
 }
 
@@ -266,6 +325,7 @@ module.exports = {
   statusFor,
   configForBlender,
   configForGodot,
+  configForMotion,
   jobs,
   job,
   cancel,
