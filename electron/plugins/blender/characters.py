@@ -1191,7 +1191,7 @@ def _strand_paths(spec, scalp_co, scalp_nrm, rng, landmarks=None):
     lift = _as_float(spec.get("lift", 0.25), 0.25)
     outward = _as_float(spec.get("outward", 0.45), 0.45)
     face_skip = spec.get("face_skip", True) is not False
-    hairline = _as_float(spec.get("hairline", 0.15), 0.15)
+    hairline = _as_float(spec.get("hairline", 0.3), 0.3)
     flow = np.array(_as_vec3(spec.get("flow", (0.0, 0.0, -1.0)), (0.0, 0.0, -1.0)), dtype=float)
     facing = _norm(np.array(_as_vec3(spec.get("facing", (0.0, -1.0, 0.0)), (0.0, -1.0, 0.0)), dtype=float))
     down = _norm(flow)
@@ -1235,7 +1235,7 @@ def _strand_paths(spec, scalp_co, scalp_nrm, rng, landmarks=None):
                 ]
             )
             gravity_now = min(1.0, (0.2 + v * 0.9) * gravity)
-            target = _norm(down * gravity_now + lateral * (1.0 - v) * 0.5 + tangent * (1.0 - v) * 0.8)
+            target = _norm(down * gravity_now + lateral * (0.45 - 0.2 * v) + tangent * (0.7 - 0.5 * v))
             current = _norm(current * (1.0 - bend) + target * bend + wobble * 0.18)
             cursor = cursor + current * step
             if head_center is not None:
