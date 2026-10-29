@@ -21,6 +21,13 @@ import traceback
 import bpy
 from mathutils import Matrix, Vector
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+try:
+    import characters as cv_characters
+except Exception as _cv_char_err:  # pragma: no cover - keeps the driver usable alone
+    cv_characters = None
+    print("[cv:warn] character toolkit unavailable: %s" % _cv_char_err, flush=True)
+
 WARNINGS = []
 STARTED = time.time()
 OUT_DIR = ""
