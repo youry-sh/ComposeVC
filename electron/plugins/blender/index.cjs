@@ -835,6 +835,7 @@ async function probe(userDataPath, config) {
       addonChecks: Array.isArray(parsed?.addonChecks) ? parsed.addonChecks : [],
       userAddons: parsed?.userAddons || "",
       userExtensions: parsed?.userExtensions || "",
+      character: parsed?.character || null,
     };
     probeCache.set(cacheKey, { at: Date.now(), value });
     return value;
