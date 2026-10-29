@@ -1,5 +1,4 @@
 const fs = require("fs");
-const os = require("os");
 const path = require("path");
 const { spawn, execFileSync } = require("child_process");
 
@@ -1054,8 +1053,6 @@ async function deleteJob(userDataPath, jobId) {
   if (active.has(String(jobId || ""))) throw new Error("Нельзя удалить выполняющуюся задачу.");
   return store.deleteJob(userDataPath, jobId);
 }
-
-void os;
 
 module.exports = {
   PLUGIN_ID,
