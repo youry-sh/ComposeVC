@@ -946,7 +946,7 @@ def _apply_stroke(obj, entry, symmetry, guard):
     return dabs
 
 
-def build_sculpt(spec, materials=None):
+def build_sculpt(spec, out_dir="", materials=None):
     """Run brush strokes as data on the selected meshes."""
     entries = spec
     if isinstance(entries, dict):
@@ -1587,7 +1587,7 @@ def build_ornament(spec, out_dir="", materials=None):
 # ---------------------------------------------------------------------------
 
 
-def build_retopo(spec, materials=None):
+def build_retopo(spec, out_dir="", materials=None):
     entries = spec if isinstance(spec, list) else [spec]
     reports = []
     for entry in entries or []:
@@ -1712,7 +1712,7 @@ def _mark_geometry_by_angle(obj, angle_degrees, entry):
 # ---------------------------------------------------------------------------
 
 
-def build_weights(spec, materials=None):
+def build_weights(spec, out_dir="", materials=None):
     entries = spec if isinstance(spec, list) else [spec]
     reports = []
     for entry in entries or []:
@@ -1799,7 +1799,7 @@ def build_weights(spec, materials=None):
 # ---------------------------------------------------------------------------
 
 
-def apply_view(spec, materials=None):
+def apply_view(spec, out_dir="", materials=None):
     entries = spec if isinstance(spec, list) else [spec]
     reports = []
     for entry in entries or []:
