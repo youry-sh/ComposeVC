@@ -8,6 +8,7 @@ const imageTools = require("../vision/image.cjs");
 const registry = require("../plugins/registry.cjs");
 const store = require("../plugins/store.cjs");
 
+const CHARACTER_BLOCKS = ["human", "sculpt", "hair", "drape", "ornament", "weights", "retopo", "view"];
 const ACTIONS = [
   "status",
   "probe",
@@ -95,7 +96,7 @@ PLAN (declarative scene, action=scene) — everything optional except objects/so
   "source": "C:/path/existing.blend", // open an existing file instead of resetting
   "unit": "METRIC", "unit_scale": 1.0,
   "materials": [{
-    "name": "Steel", "preset": "steel|brushed_metal|gold|copper|wood|oak|stone|concrete|brick|fabric|leather|rubber|plastic|ceramic|glass|emissive|hologram|skin|sci_fi_panel|rust|marble|dirt",
+    "name": "Steel", "preset": "steel|brushed_metal|gold|copper|wood|oak|stone|concrete|brick|fabric|leather|rubber|plastic|ceramic|glass|emissive|hologram|skin|skin_sss|clay|hair|silk|lace|sci_fi_panel|rust|marble|dirt",
     "base_color": "#b8bcc4" | [r,g,b(,a)], "metallic": 1, "roughness": 0.28,
     "ior": 1.45, "alpha": 1, "transmission": 0, "emission": "#ff6a00", "emission_strength": 4,
     "coat": 0.2, "sheen": 0, "subsurface": 0, "anisotropic": 0, "backface_culling": false,
