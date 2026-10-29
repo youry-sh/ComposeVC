@@ -572,11 +572,13 @@ def build_human(spec, out_dir="", materials=None):
     # ---- extract anatomically separate parts before helpers are masked away ----
     landmarks = _landmarks(body)
     report["landmarks"] = {k: v for k, v in landmarks.items() if k in ("eye_mid", "head_top", "head_radius")}
-    want = spec.get("parts") or ["eyes", "teeth", "tongue", "lashes", "scalp"]
+    want = spec.get("parts") or ["eyes_l", "eyes_r", "teeth", "tongue", "lashes", "scalp"]
     if isinstance(want, dict):
         want = [k for k, v in want.items() if v]
     part_groups = {
         "eyes": (["helper-l-eye", "helper-r-eye"], "Eyes"),
+        "eyes_l": (["helper-l-eye"], "Eye_L"),
+        "eyes_r": (["helper-r-eye"], "Eye_R"),
         "teeth": (["helper-upper-teeth", "helper-lower-teeth"], "Teeth"),
         "tongue": (["helper-tongue"], "Tongue"),
         "lashes": (["helper-l-eyelashes-1", "helper-l-eyelashes-2", "helper-r-eyelashes-1", "helper-r-eyelashes-2"], "Lashes"),
@@ -627,7 +629,14 @@ def build_human(spec, out_dir="", materials=None):
         part = bpy.data.objects.get(obj_name)
         if part is None:
             continue
-        material = {"eyes": eye_mat, "teeth": teeth_mat, "tongue": tongue_mat}.get(key)
+        material = {
+            "eyes": eye_mat,
+            "eyes_l": eye_mat,
+            "eyes_r": eye_mat,
+            "teeth": teeth_mat,
+            "tongue": tongue_mat,
+            "lashes": lashes_mat,
+        }.get(key)
         if material is not None:
             part.data.materials.clear()
             part.data.materials.append(material)
