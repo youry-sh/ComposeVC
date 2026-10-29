@@ -262,7 +262,7 @@ def measure(obj):
         "materials": [slot.material.name for slot in obj.material_slots if slot.material],
     }
     marks = {}
-    for name in ("joint-l-eye", "joint-r-eye", "joint-mouth", "joint-nose" if False else "joint-jaw",
+    for name in ("joint-l-eye", "joint-r-eye", "joint-mouth", "joint-jaw",
                  "joint-l-hand", "joint-r-hand", "joint-head"):
         center = _group_center(obj, name)
         if center is not None:
@@ -542,17 +542,9 @@ def build_human(spec, out_dir="", materials=None):
                 _warn("face preset target '%s' failed: %s" % (name, exc))
 
     if spec.get("keep_shape_keys"):
-        try:
-            TargetService.reapply_all_details(body)
-        except Exception:
-            pass
+        pass
     else:
         report["baked_shape_keys"] = _bake_shape_keys(body)
-        if report["baked_shape_keys"]:
-            try:
-                TargetService.reapply_macro_details(body)
-            except Exception:
-                pass
 
     try:
         _active(body)
