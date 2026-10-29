@@ -759,6 +759,8 @@ FACE_PRESETS = {
         ("r-eye-bag-incr", 0.12),
         ("l-eye-eyefold-convex", 0.12),
         ("r-eye-eyefold-convex", 0.12),
+        ("l-eye-scale-decr", 0.15),
+        ("r-eye-scale-decr", 0.15),
     ],
     "heroic": [
         ("head-rectangular", 0.35),
