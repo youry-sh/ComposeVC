@@ -1,7 +1,7 @@
 {
   "name": "composevc",
   "private": true,
-  "version": "1.0.12",
+  "version": "1.0.13",
   "description": "ComposeVC — AI IDE with ANTI fingerprint browser",
   "author": "ComposeVC",
   "type": "module",
