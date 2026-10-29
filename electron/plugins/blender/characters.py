@@ -1972,7 +1972,7 @@ def apply_detail(plan, out_dir=""):
         if not spec:
             continue
         try:
-            results[key] = builder(spec, out_dir, cache) if builder in (build_drape, build_hair, build_ornament, build_sculpt, build_weights, build_retopo, apply_view) else builder(spec)
+            results[key] = builder(spec, out_dir, cache)
         except Exception as exc:
             _warn("%s block failed: %s" % (key, exc))
             traceback.print_exc()
@@ -1987,7 +1987,7 @@ def capabilities():
             "keys": [
                 "gender", "age", "muscle", "weight", "proportions", "height", "cupsize", "firmness",
                 "race", "face (portrait|heroic|soft)", "targets[{name,value}]", "rig",
-                "parts[eyes,teeth,tongue,lashes]", "material", "keep_shape_keys", "hide_helpers",
+                "parts[eyes,teeth,tongue,lashes,scalp]", "material", "eye_material", "keep_shape_keys", "hide_helpers",
             ],
         },
         "sculpt": {
