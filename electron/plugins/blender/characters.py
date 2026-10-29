@@ -1179,7 +1179,7 @@ def _hair_alpha_image(path, width=256, height=512, strands=48, seed=7):
     return path
 
 
-def _strand_paths(spec, scalp_co, scalp_nrm, rng):
+def _strand_paths(spec, scalp_co, scalp_nrm, rng, landmarks=None):
     count = max(1, _as_int(spec.get("count", 700), 700))
     segments = max(2, _as_int(spec.get("segments", 7), 7))
     length = max(0.01, _as_float(spec.get("length", 0.16), 0.16))
@@ -1191,27 +1191,42 @@ def _strand_paths(spec, scalp_co, scalp_nrm, rng):
     lift = _as_float(spec.get("lift", 0.25), 0.25)
     outward = _as_float(spec.get("outward", 0.45), 0.45)
     face_skip = spec.get("face_skip", True) is not False
+    hairline = _as_float(spec.get("hairline", 0.15), 0.15)
     flow = np.array(_as_vec3(spec.get("flow", (0.0, 0.0, -1.0)), (0.0, 0.0, -1.0)), dtype=float)
     facing = _norm(np.array(_as_vec3(spec.get("facing", (0.0, -1.0, 0.0)), (0.0, -1.0, 0.0)), dtype=float))
+    down = _norm(flow)
 
-    roots = rng.integers(0, len(scalp_co), size=count * 2)
+    head_center = None
+    head_radius = 0.0
+    if isinstance(landmarks, dict) and landmarks.get("head_center"):
+        head_center = np.array(landmarks["head_center"], dtype=float)
+        head_radius = max(0.03, _as_float(landmarks.get("head_radius"), 0.09)) * 1.02
+
+    roots = rng.integers(0, len(scalp_co), size=count * 3)
     paths = []
     for root_index in roots:
         if len(paths) >= count:
             break
-        root = scalp_co[root_index]
+        root = scalp_co[root_index].copy()
         normal = _norm(scalp_nrm[root_index])
-        if face_skip and float(normal @ -facing) > 0.55 and root[2] < scalp_co[:, 2].max() - length * 0.5:
+        front = float(normal @ -facing)
+        if face_skip and front > hairline:
             continue
         side = 1.0 if root[0] >= part else -1.0
         lateral = np.array([side * outward, 0.0, 0.0])
-        direction = _norm(normal * lift + flow * gravity + lateral)
+        # Comb along the skull first (surface tangent), then let gravity take over.
+        tangent = down - normal * float(down @ normal)
+        if float(np.linalg.norm(tangent)) < 1e-4:
+            tangent = down.copy()
+        tangent = _norm(tangent)
+        root = root + normal * 0.0015
         strand_length = length * (1.0 + rng.uniform(-length_var, length_var))
         step = strand_length / segments
         points = [root.copy()]
         cursor = root.copy()
-        current = direction.copy()
+        current = _norm(tangent * 0.7 + normal * (lift * 0.5) + lateral * 0.25)
         for seg in range(segments):
+            v = (seg + 1) / float(segments)
             wobble = np.array(
                 [
                     math.sin(seg * 0.9 + root_index * 0.31) * curl * 0.5,
@@ -1219,11 +1234,21 @@ def _strand_paths(spec, scalp_co, scalp_nrm, rng):
                     math.sin(seg * 0.7 + root_index * 0.53) * curl * 0.25,
                 ]
             )
-            current = _norm(current * (1.0 - bend) + _norm(flow + lateral * 0.6) * bend + wobble * 0.2)
+            gravity_now = min(1.0, (0.2 + v * 0.9) * gravity)
+            target = _norm(down * gravity_now + lateral * (1.0 - v) * 0.5 + tangent * (1.0 - v) * 0.8)
+            current = _norm(current * (1.0 - bend) + target * bend + wobble * 0.18)
             cursor = cursor + current * step
+            if head_center is not None:
+                offset = cursor - head_center
+                offset[2] *= 0.78  # ellipsoid: hair slides around the skull
+                distance = float(np.linalg.norm(offset))
+                if 1e-6 < distance < head_radius:
+                    offset = offset / distance * head_radius
+                    offset[2] /= 0.78
+                    cursor = head_center + offset
             points.append(cursor.copy())
         radii = []
-        base_radius = _as_float(spec.get("strand_radius", 0.0016), 0.0016)
+        base_radius = _as_float(spec.get("strand_radius", 0.0016), 0.0016) * rng.uniform(0.75, 1.25)
         tip = max(0.01, _as_float(spec.get("tip", 0.12), 0.12))
         for seg in range(segments + 1):
             t = seg / float(segments)
