@@ -1462,18 +1462,20 @@ def _garment_mesh(kind, spec):
     for ring in range(rings + 1):
         v = ring / float(rings)
         z = -v * height
-        base_radius = radius_top + (radius_bottom - radius_top) * v
+        profile = _as_float(spec.get("profile", 1.45), 1.45)
+        base_radius = radius_top + (radius_bottom - radius_top) * (v ** max(0.2, profile))
         for column in range(columns):
             u = column / float(segments)
             theta = math.radians(-span * 0.5 + span * u)
             fold_phase = theta * folds + v * twist * 6.283
             fold_wave = math.sin(fold_phase)
-            amplitude = fold_amp * (0.25 + 0.75 * v)
+            amplitude = fold_amp * (0.18 + 1.05 * v)
             r = base_radius * (1.0 + amplitude * fold_wave * 6.0)
             r += base_radius * wrinkle * 0.12 * _noise2(u * 1.6, v * 2.4, seed)
             if kind == "cape":
                 r *= 1.0 + 0.06 * math.sin(theta * 2.0)
             zz = z + amplitude * 0.35 * math.cos(fold_phase) * (0.3 + v)
+            zz += math.sin(theta * folds * 0.5) * 0.012 * v
             x = math.cos(theta) * r
             y = math.sin(theta) * r * squash
             verts.append((x, y, zz))
