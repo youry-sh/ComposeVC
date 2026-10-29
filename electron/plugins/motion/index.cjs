@@ -246,16 +246,17 @@ function runCommand(executable, args, options = {}) {
       }
       if (!onLine) return;
       lineBuffer += text;
-      let index = lineBuffer.indexOf("\n");
-      while (index >= 0) {
-        const line = lineBuffer.slice(0, index).replace(/\r$/, "");
-        lineBuffer = lineBuffer.slice(index + 1);
+      // ffmpeg writes progress with "\r" only, so every line terminator counts.
+      let match = lineBuffer.match(/\r\n|\r|\n/);
+      while (match && match.index != null) {
+        const line = lineBuffer.slice(0, match.index);
+        lineBuffer = lineBuffer.slice(match.index + match[0].length);
         try {
           onLine(line, stream);
         } catch {
           /* ignore marker parsing errors */
         }
-        index = lineBuffer.indexOf("\n");
+        match = lineBuffer.match(/\r\n|\r|\n/);
       }
     };
     child.stdout?.on("data", (chunk) => consume(chunk.toString("utf8"), "out"));
@@ -562,7 +563,6 @@ function buildRenderCommand(plan, config, outputPath, durationSec, jobInfo) {
       } else {
         args.push("-t", dur.toFixed(3), "-i", segment.path);
       }
-      args.push;
       const filterInput = inputCount;
       inputCount += 1;
       parts.push(
@@ -791,7 +791,7 @@ async function withJob(userDataPath, options, work) {
       status,
       progress: failed ? clamp(outcome?.progress, 5, 0, 99) : status === "succeeded" ? 100 : clamp(outcome?.progress, 5, 0, 99),
       stage: status === "succeeded" ? "done" : status,
-      error: cancel("\u0000") ? "" : outcome?.error || "",
+      error: canceled ? "" : outcome?.error || "",
       warnings: Array.isArray(outcome?.warnings) ? outcome.warnings : [],
       summary: outcome?.summary || "",
       previewPath: outcome?.previewPath || "",
@@ -828,11 +828,6 @@ async function withJob(userDataPath, options, work) {
   } finally {
     await store.pruneJobs(userDataPath, store.MAX_JOBS).catch(() => {});
   }
-}
-
-// Small helper so the error patch never receives a bogus sentinel.
-function cancel() {
-  return false;
 }
 
 function safeOutputPath(userDataPath, config, fileName) {
