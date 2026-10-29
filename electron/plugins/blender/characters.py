@@ -719,20 +719,29 @@ def build_eye_material(name="Eye"):
     sub.location = (-640, 0)
     sub.inputs[1].default_value = (0.5, 0.5, 0.5)
     links.new(tex.outputs["Generated"], sub.inputs[0])
+    # Generated coords are normalised per object, so a radial distance in the XZ
+    # plane gives a forward-facing iris disc on each eyeball (no UVs needed).
+    separate = nodes.new("ShaderNodeSeparateXYZ")
+    separate.location = (-560, -120)
+    links.new(sub.outputs["Vector"], separate.inputs[0])
+    combine = nodes.new("ShaderNodeCombineXYZ")
+    combine.location = (-420, -120)
+    links.new(separate.outputs["X"], combine.inputs["X"])
+    links.new(separate.outputs["Z"], combine.inputs["Z"])
     length = nodes.new("ShaderNodeVectorMath")
     length.operation = "LENGTH"
     length.location = (-460, 0)
-    links.new(sub.outputs["Vector"], length.inputs[0])
+    links.new(combine.outputs["Vector"], length.inputs[0])
     ramp = nodes.new("ShaderNodeValToRGB")
     ramp.location = (-260, 0)
     ramp.color_ramp.interpolation = "EASE"
     elements = ramp.color_ramp.elements
     elements[0].position = 0.0
-    elements[0].color = (0.06, 0.035, 0.02, 1.0)
-    elements[1].position = 0.24
-    elements[1].color = (0.9, 0.88, 0.86, 1.0)
-    mid = elements.new(0.13)
-    mid.color = (0.28, 0.16, 0.07, 1.0)
+    elements[0].color = (0.01, 0.008, 0.006, 1.0)
+    elements[1].position = 0.215
+    elements[1].color = (0.62, 0.58, 0.55, 1.0)
+    mid = elements.new(0.115)
+    mid.color = (0.09, 0.042, 0.016, 1.0)
     pupil = elements.new(0.055)
     pupil.color = (0.01, 0.01, 0.01, 1.0)
     links.new(length.outputs["Value"], ramp.inputs["Fac"])
