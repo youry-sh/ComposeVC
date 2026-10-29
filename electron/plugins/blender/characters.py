@@ -791,6 +791,27 @@ def _stroke_points(entry, rng):
     return []
 
 
+def _stroke_samples(points, radius, spacing, pressures, default_pressure):
+    """Interpolate a guide path into dab centres while keeping per-dab pressure."""
+    if len(points) == 1:
+        return [(points[0], pressures[0] if pressures else default_pressure)]
+    samples = []
+    step_length = max(radius * spacing, 1e-6)
+    for index in range(len(points) - 1):
+        a = points[index]
+        b = points[index + 1]
+        steps = max(1, int(float(np.linalg.norm(b - a)) / step_length))
+        for step in range(steps):
+            t = step / float(steps)
+            press = default_pressure
+            if pressures:
+                count = len(pressures)
+                press = pressures[min(count - 1, int(t * (count - 1) + 0.5))] if count > 1 else pressures[0]
+            samples.append((a + (b - a) * t, press))
+    samples.append((points[-1], pressures[-1] if pressures else default_pressure))
+    return samples
+
+
 def _apply_stroke(obj, entry, symmetry, guard):
     brush = str(entry.get("brush", "draw")).lower()
     if brush not in BRUSHES:
