@@ -1331,7 +1331,7 @@ def build_hair(spec, out_dir="", materials=None):
             continue
         scalp_co, scalp_nrm, source = _scalp(body)
         rng = np.random.default_rng(_as_int(entry.get("seed", 3), 3))
-        paths = _strand_paths(entry, scalp_co, scalp_nrm, rng)
+        paths = _strand_paths(entry, scalp_co, scalp_nrm, rng, _read_landmarks(body))
         coll = _collection(str(entry.get("collection") or "Hair"))
         name = str(entry.get("name") or "Hair")
         mode = str(entry.get("mode", "strands")).lower()
@@ -1394,6 +1394,45 @@ def _noise2(u, v, seed=0.0):
     value += 0.5 * math.sin(u * 17.113 + v * 9.31 + seed * 1.3)
     value += 0.35 * math.sin(v * 21.7 - u * 5.9 + seed * 2.1)
     return value / 1.85
+
+
+def _body_radius_at(body, z, tolerance=0.03, percentile=72.0):
+    """Torso radius of the body at a height (percentile ignores the A-pose arms)."""
+    if body is None or body.type != "MESH":
+        return 0.0
+    _, co, _ = _mesh_arrays(body)
+    if not len(co):
+        return 0.0
+    band = co[np.abs(co[:, 2] - z) < tolerance]
+    if len(band) < 6:
+        return 0.0
+    radii = np.hypot(band[:, 0], band[:, 1])
+    return float(np.percentile(radii, percentile))
+
+
+def _fit_garment(verts, body, top_z, height, margin=1.04, band=0.45):
+    """Push the waist/hip band of a garment out to the body surface."""
+    if body is None or not verts or height <= 0:
+        return verts
+    fitted = []
+    cache = {}
+    for point in verts:
+        x, y, z = point
+        drop = max(0.0, min(1.0, (top_z - z) / height))
+        if drop <= band:
+            key = round(z, 3)
+            body_radius = cache.get(key)
+            if body_radius is None:
+                body_radius = _body_radius_at(body, top_z - drop * height)
+                cache[key] = body_radius
+            need = body_radius * margin
+            radial = math.hypot(x, y)
+            if need > 0 and radial < need and radial > 1e-5:
+                scale = need / radial
+                fitted.append((x * scale, y * scale, z))
+                continue
+        fitted.append((x, y, z))
+    return fitted
 
 
 def _garment_mesh(kind, spec):
