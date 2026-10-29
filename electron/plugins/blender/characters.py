@@ -870,148 +870,75 @@ def _apply_stroke(obj, entry, symmetry, guard):
     if entry.get("mirror") is False:
         variants = [np.zeros(3)]
 
-    deltas = np.zeros_like(co)
-    for variant in variants:
-        for index in range(len(points) - 1):
-            a = points[index] * (variant if variant.any() else 1.0)
-            b = points[index + 1] * (variant if variant.any() else 1.0)
-            distance = float(np.linalg.norm(b - a))
-            steps = max(1, int(distance / max(1e-5, radius * spacing)))
-            for step in range(steps + 1):
-                t = step / float(steps)
-                center = a + (b - a) * t
-                if pressures is not None:
-                    plen = len(pressures)
-                    pindex = min(plen - 1, int(t * (plen - 1) + 0.5)) if plen > 1 else 0
-                    press = pressures[pindex]
-                else:
-                    press = _as_float(pressure, 1.0)
-                local = _norm(np.array(_as_vec3(entry.get("direction", (0, 0, 0)), (0, 0, 0)), dtype=float)) if entry.get("direction") else None
-                dist = np.linalg.norm(co - center, axis=1)
-                mask = _falloff(dist, radius, hardness) * press * allow
-                if not mask.any():
-                    continue
-                idx = np.where(mask > 1e-5)[0]
-                m = mask[idx]
-                total_steps += 1
-                amp = amplitude * press
-                if brush in ("draw", "inflate", "clay", "crease", "scrape"):
-                    direction = nrm[idx] if local is None else np.repeat(local[None, :], len(idx), axis=0)
-                    amount = amp
-                    if brush == "clay":
-                        amount = amp * 0.85
-                    if brush == "scrape":
-                        amount = -abs(amp) * 0.7
-                    if brush == "crease":
-                        amount = amp * 1.15
-                    deltas[idx] += direction * (m * amount)[:, None]
-                    if brush in ("crease", "clay"):
-                        pinch = float(entry.get("pinch", 0.4 if brush == "crease" else 0.18))
-                        to_center = center[None, :] - co[idx]
-                        normals = nrm[idx]
-                        tangential = to_center - (np.sum(to_center * normals, axis=1)[:, None] * normals)
-                        deltas[idx] += tangential * (m * pinch * 0.35)[:, None]
-            if len(points) == 1:
-                break
-        if len(points) == 1:
-            # single dab: run the loop once for the lone point
-            pass
-
-    # Single-point brushes (center= or one point path) still need one dab.
-    if len(points) == 1:
-        for variant in variants:
-            center = points[0] * (variant if variant.any() else 1.0)
-            press = _as_float(pressure, 1.0) if pressures is None else pressures[0]
+    origin = co.copy()
+    grab_delta = None
+    if brush == "grab":
+        grab_delta = np.array(_as_vec3(entry.get("offset", entry.get("delta", (0, 0, 0)))), dtype=np.float64)
+        if not grab_delta.any() and len(points) > 1:
+            grab_delta = points[-1] - points[0]
+    pinch = abs(_as_float(entry.get("pinch", 0.45 if brush == "crease" else 0.2), 0.2))
+    override = None
+    if normal_override is not None:
+        override = _norm(np.array(_as_vec3(normal_override), dtype=np.float64))
+    default_pressure = _as_float(pressure, 1.0)
+    dabs = 0
+    for scale in variants:
+        mirrored = [np.array([p[0] * scale[0], p[1] * scale[1], p[2] * scale[2]]) for p in points]
+        for center, press in _stroke_samples(mirrored, radius, spacing, pressures, default_pressure):
             dist = np.linalg.norm(co - center, axis=1)
             mask = _falloff(dist, radius, hardness) * press * allow
             idx = np.where(mask > 1e-5)[0]
             if not len(idx):
                 continue
-            m = mask[idx]
-            amp = amplitude * press
+            weight = mask[idx]
+            amplitude_now = amplitude * press
             if brush == "smooth":
-                avg = _neighbour_average(co, edges, idx)
-                co[idx] = co[idx] * (1.0 - (m * strength)[:, None]) + avg * (m * strength)[:, None]
+                average = _neighbour_average(co, edges, idx)
+                blend = np.clip(weight * max(strength, 0.05), 0.0, 1.0)[:, None]
+                co[idx] = co[idx] * (1.0 - blend) + average * blend
             elif brush == "grab":
-                delta = np.array(_as_vec3(entry.get("offset", entry.get("delta", (0, 0, 0)))), dtype=float)
-                co[idx] += delta[None, :] * m[:, None]
-            else:
-                direction = nrm[idx] if normal_override is None else np.repeat(
-                    _norm(np.array(_as_vec3(normal_override)))[None, :], len(idx), axis=0
-                )
-                amount = amp
-                if brush == "scrape":
-                    amount = -abs(amp) * 0.7
-                co[idx] += direction * (m * amount)[:, None]
-                if brush in ("crease", "clay"):
-                    pinch = float(entry.get("pinch", 0.4 if brush == "crease" else 0.18))
-                    to_center = center[None, :] - co[idx]
-                    normals = nrm[idx]
-                    tangential = to_center - (np.sum(to_center * normals, axis=1)[:, None] * normals)
-                    co[idx] += tangential * (m * pinch * 0.35)[:, None]
-
-    co += deltas
-    if brush == "flatten":
-        for variant in variants:
-            for center in points:
-                center = center * (variant if variant.any() else 1.0)
-                dist = np.linalg.norm(co - center, axis=1)
-                mask = _falloff(dist, radius, hardness) * _as_float(pressure if pressures is None else pressures[0], 1.0) * allow
-                idx = np.where(mask > 1e-5)[0]
-                if not len(idx):
-                    continue
-                plane_normal = _norm(nrm[idx].mean(axis=0)) if normal_override is None else _norm(
-                    np.array(_as_vec3(normal_override))
-                )
-                offset = (co[idx] - center) @ plane_normal
-                target = -offset * mask[idx] * strength
-                co[idx] += plane_normal[None, :] * target[:, None]
-                total_steps += 1
-    elif brush == "pinch":
-        for variant in variants:
-            for center in points:
-                center = center * (variant if variant.any() else 1.0)
-                dist = np.linalg.norm(co - center, axis=1)
-                mask = _falloff(dist, radius, hardness) * _as_float(pressure if pressures is None else pressures[0], 1.0) * allow
-                idx = np.where(mask > 1e-5)[0]
-                if not len(idx):
-                    continue
-                to_center = center[None, :] - co[idx]
+                co[idx] += grab_delta[None, :] * weight[:, None]
+            elif brush == "flatten":
+                nearest = idx[int(np.argmin(dist[idx]))]
+                plane_normal = _norm(nrm[nearest]) if override is None else override
+                offset = np.sum((co[idx] - center) * plane_normal, axis=1)
+                co[idx] -= plane_normal[None, :] * (offset * weight * strength)[:, None]
+            elif brush == "pinch":
                 normals = nrm[idx]
-                tangential = to_center - (np.sum(to_center * normals, axis=1)[:, None] * normals)
-                co[idx] += tangential * (mask[idx] * strength * 0.5)[:, None]
-                total_steps += 1
-    elif brush == "smooth" and len(points) > 1:
-        idx = np.where(allow)[0]
-        if len(idx):
-            avg = _neighbour_average(co, edges, idx)
-            co[idx] = co[idx] * (1.0 - _as_float(entry.get("factor", 0.5), 0.5)) + avg * _as_float(
-                entry.get("factor", 0.5), 0.5
-            )
-    elif brush == "grab" and len(points) > 1:
-        delta = np.array(_as_vec3(entry.get("offset", entry.get("delta", (0, 0, 0)))), dtype=float)
-        if not delta.any():
-            delta = points[-1] - points[0]
-        for variant in variants:
-            start = points[0] * (variant if variant.any() else 1.0)
-            dist = np.linalg.norm(co - start, axis=1)
-            mask = _falloff(dist, radius, hardness) * allow
-            co += delta[None, :] * mask[:, None]
-            total_steps += 1
+                to_center = center[None, :] - co[idx]
+                tangential = to_center - np.sum(to_center * normals, axis=1)[:, None] * normals
+                co[idx] += tangential * (weight * strength * 0.45)[:, None]
+            else:
+                if override is None:
+                    direction = nrm[idx]
+                else:
+                    direction = np.repeat(override[None, :], len(idx), axis=0)
+                amount = amplitude_now
+                if brush == "scrape":
+                    amount = -abs(amount) * 0.7
+                elif brush == "crease":
+                    amount *= 1.15
+                elif brush == "clay":
+                    amount *= 0.85
+                co[idx] += direction * (weight * amount)[:, None]
+                if brush in ("crease", "clay"):
+                    normals = nrm[idx]
+                    to_center = center[None, :] - co[idx]
+                    tangential = to_center - np.sum(to_center * normals, axis=1)[:, None] * normals
+                    co[idx] += tangential * (weight * pinch * 0.3)[:, None]
+            dabs += 1
 
     if guard:
-        # Keep a stroke from exploding the mesh: clamp displacement per vertex.
-        delta_total = co - _mesh_arrays(obj)[1]
-        limit = guard
-        lengths = np.linalg.norm(delta_total, axis=1)
-        overshoot = lengths > limit
+        delta = co - origin
+        lengths = np.linalg.norm(delta, axis=1)
+        overshoot = lengths > guard
         if overshoot.any():
-            scale = np.ones_like(lengths)
-            scale[overshoot] = limit / lengths[overshoot]
-            co = _mesh_arrays(obj)[1] + delta_total * scale[:, None]
+            factor = np.ones_like(lengths)
+            factor[overshoot] = guard / lengths[overshoot]
+            co = origin + delta * factor[:, None]
 
     _write_co(me, co)
-    return total_steps
+    return dabs
 
 
 def build_sculpt(spec, materials=None):
