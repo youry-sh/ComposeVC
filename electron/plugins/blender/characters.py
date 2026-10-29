@@ -556,6 +556,19 @@ def build_human(spec, out_dir="", materials=None):
     except Exception:
         pass
 
+    # ---- rig with real weights (BEFORE part extraction: the MPFB weight file is
+    # bound to the untouched base mesh vertex order) ----
+    rig_name = spec.get("rig")
+    armature = None
+    if rig_name:
+        try:
+            rig_name = "default" if rig_name is True else str(rig_name)
+            armature = HumanService.add_builtin_rig(body, rig_name, import_weights=True)
+            if armature is not None:
+                report["rig"] = armature.name
+        except Exception as exc:
+            _warn("rig '%s' failed: %s" % (rig_name, exc))
+
     # ---- extract anatomically separate parts before helpers are masked away ----
     landmarks = _landmarks(body)
     report["landmarks"] = {k: v for k, v in landmarks.items() if k in ("eye_mid", "head_top", "head_radius")}
@@ -581,6 +594,9 @@ def build_human(spec, out_dir="", materials=None):
         if part is not None:
             extracted[str(key).lower()] = part.name
             part["cv_part"] = str(key).lower()
+            if armature is not None and not any(mod.type == "ARMATURE" for mod in part.modifiers):
+                mod = part.modifiers.new("Armature", "ARMATURE")
+                mod.object = armature
     report["parts"] = extracted
 
     # ---- drop the remaining hidden helper geometry ----
@@ -628,24 +644,6 @@ def build_human(spec, out_dir="", materials=None):
             if mat is not None:
                 lashes.data.materials.clear()
                 lashes.data.materials.append(mat)
-
-    # ---- rig with real weights ----
-    rig_name = spec.get("rig")
-    if rig_name:
-        try:
-            rig_name = "default" if rig_name is True else str(rig_name)
-            armature = HumanService.add_builtin_rig(body, rig_name, import_weights=True)
-            if armature is not None:
-                report["rig"] = armature.name
-                for key, obj_name in extracted.items():
-                    part = bpy.data.objects.get(obj_name)
-                    if part is None:
-                        continue
-                    if not any(mod.type == "ARMATURE" for mod in part.modifiers):
-                        mod = part.modifiers.new("Armature", "ARMATURE")
-                        mod.object = armature
-        except Exception as exc:
-            _warn("rig '%s' failed: %s" % (rig_name, exc))
 
     report["measure"] = measure(body)
     return report
