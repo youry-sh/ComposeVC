@@ -356,6 +356,10 @@ def _scalp(obj):
 
 def _mpfb_services():
     last = None
+    try:
+        bpy.ops.preferences.addon_enable(module="bl_ext.user_default.mpfb")
+    except Exception:
+        pass
     for module_name in ("bl_ext.user_default.mpfb", "mpfb"):
         try:
             import importlib

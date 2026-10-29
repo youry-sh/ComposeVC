@@ -3301,7 +3301,7 @@ def main():
         write_result()
         sys.exit(3)
     try:
-        with open(plan_path, "r", encoding="utf-8") as handle:
+        with open(plan_path, "r", encoding="utf-8-sig") as handle:
             plan = json.load(handle)
     except Exception as exc:
         RESULT["error"] = "cannot read plan: %s" % exc
