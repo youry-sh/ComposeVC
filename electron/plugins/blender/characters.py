@@ -555,7 +555,7 @@ def build_human(spec, out_dir="", materials=None):
     # ---- extract anatomically separate parts before helpers are masked away ----
     landmarks = _landmarks(body)
     report["landmarks"] = {k: v for k, v in landmarks.items() if k in ("eye_mid", "head_top", "head_radius")}
-    want = spec.get("parts") or ["eyes", "teeth", "tongue", "lashes"]
+    want = spec.get("parts") or ["eyes", "teeth", "tongue", "lashes", "scalp"]
     if isinstance(want, dict):
         want = [k for k, v in want.items() if v]
     part_groups = {
@@ -563,6 +563,7 @@ def build_human(spec, out_dir="", materials=None):
         "teeth": (["helper-upper-teeth", "helper-lower-teeth"], "Teeth"),
         "tongue": (["helper-tongue"], "Tongue"),
         "lashes": (["helper-l-eyelashes-1", "helper-l-eyelashes-2", "helper-r-eyelashes-1", "helper-r-eyelashes-2"], "Lashes"),
+        "scalp": (["helper-hair"], "Scalp"),
     }
     extracted = {}
     for key in want:
@@ -592,22 +593,30 @@ def build_human(spec, out_dir="", materials=None):
     if skin is not None:
         body.data.materials.clear()
         body.data.materials.append(skin)
-    eye_mat = _material({"name": "Eye", "shader": "eye"}, materials, "Eye")
-    if eye_mat is None:
-        eye_mat = build_eye_material("Eye")
+    eye_spec = spec.get("eye_material")
+    eye_mat = build_eye_material("Eye")
+    if isinstance(eye_spec, dict):
+        eye_mat = _material(eye_spec, materials, "Eye") or eye_mat
     teeth_mat = _material({"preset": "ceramic", "name": "Teeth", "base_color": "#e8e2d8", "roughness": 0.32}, materials, "Teeth")
+    tongue_mat = _material(
+        {"preset": "skin", "name": "Tongue", "base_color": "#8e3f45", "roughness": 0.32, "subsurface": 0.5},
+        materials,
+        "Tongue",
+    )
     for key, obj_name in extracted.items():
         part = bpy.data.objects.get(obj_name)
         if part is None:
             continue
-        material = {"eyes": eye_mat, "teeth": teeth_mat, "tongue": None}.get(key)
+        material = {"eyes": eye_mat, "teeth": teeth_mat, "tongue": tongue_mat}.get(key)
         if material is not None:
             part.data.materials.clear()
             part.data.materials.append(material)
-        try:
-            part.data.materials.append(part.data.materials[0])
-        except Exception:
-            pass
+        if key == "scalp":
+            part.hide_render = True
+            try:
+                part.hide_viewport = True
+            except Exception:
+                pass
     if spec.get("lashes_material"):
         lashes = bpy.data.objects.get(extracted.get("lashes", ""))
         if lashes is not None:
