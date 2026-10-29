@@ -1568,6 +1568,20 @@ def build_drape(spec, out_dir="", materials=None):
             _warn("drape: unknown garment '%s'" % kind)
             continue
         name = str(entry.get("name") or ("Drape_" + kind.title()))
+        body = bpy.data.objects.get(str(entry.get("body") or "Body"))
+        if body is not None and body.type != "MESH":
+            body = None
+        landmarks = _read_landmarks(body) if body is not None else {}
+        height = max(0.02, _as_float(entry.get("height", 0.55), 0.55))
+        top_z = None
+        if entry.get("location") is not None:
+            top_z = _as_vec3(entry.get("location"), (0, 0, 0))[2]
+        elif landmarks.get("eye_mid"):
+            top_z = landmarks["eye_mid"][2] - float(landmarks.get("head_radius", 0.09)) * 5.2
+        if body is not None and top_z is not None and entry.get("fit_body", True) is not False:
+            verts = _fit_garment(
+                verts, body, top_z, height, _as_float(entry.get("fit_margin", 1.04), 1.04)
+            )
         mesh = bpy.data.meshes.new(name + "_mesh")
         mesh.from_pydata(verts, [], faces)
         mesh.validate()
@@ -1575,7 +1589,12 @@ def build_drape(spec, out_dir="", materials=None):
         obj = bpy.data.objects.new(name, mesh)
         coll = _collection(str(entry.get("collection") or "Cloth"))
         coll.objects.link(obj)
-        obj.location = _as_vec3(entry.get("location", (0, 0, 0)))
+        if entry.get("location") is not None:
+            obj.location = _as_vec3(entry.get("location", (0, 0, 0)))
+        elif top_z is not None:
+            obj.location = (0.0, 0.0, top_z)
+        else:
+            obj.location = _as_vec3(entry.get("location", (0, 0, 0)))
         rotation = _as_vec3(entry.get("rotation", (0, 0, 0)))
         try:
             obj.rotation_euler = tuple(math.radians(v) for v in rotation)
