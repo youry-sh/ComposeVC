@@ -39,7 +39,56 @@ const ACTIONS = [
 ];
 
 const PLAN_REFERENCE = `
-PLAN (declarative scene, action=scene) — everything optional except objects/source/import/python:
+CHARACTER KIT — top-level blocks (the layer primitives cannot give you). All optional,
+runnable in ONE plan; hair/drape/ornament/sculpt read the real body that "human" produced:
+{
+  "human":    {"gender":0..1, "age":0..1, "muscle":0..1, "weight":0..1, "proportions":0..1,
+               "height":0..1, "cupsize":0..1, "firmness":0..1,
+               "race":{"caucasian":0.6,"asian":0.2,"african":0.2} | "asian|caucasian|african",
+               "face":"portrait|heroic|soft",                       // MPFB target pack
+               "targets":[{"name":"nose-nose-flaring-incr","value":0.4}],  // any MPFB target
+               "parts":["eyes","teeth","tongue","lashes","scalp"],  // extracted helper geometry
+               "rig":"default|game_engine|mixamo|rigify.default|cmu_mb",   // real weights
+               "material":{"preset":"skin_sss"} | "skin_sss",
+               "keep_shape_keys":false, "hide_helpers":true},
+  "sculpt":   {"object":"Body", "subdivide":2,                       // SUBSURF into sculpt density
+               "symmetry":"X", "smooth_after":1, "final_subdiv":1, "max_displace":0.05,
+               "strokes":[
+                 {"brush":"crease","points":[[0.03,0.10,1.63],[0.035,0.09,1.61]],"radius":0.012,
+                  "strength":0.8,"height":0.004,"hardness":0.75,"pressure":[1.0,0.4],"spacing":0.3},
+                 {"brush":"clay","center":[0.06,0.075,1.55],"radius":0.03,"strength":0.5},
+                 {"brush":"flatten","center":[0.05,0.06,1.58],"radius":0.025,"strength":0.6},
+                 {"brush":"draw","center":[0,0.06,1.60],"radius":0.02,"strength":0.4,
+                  "region":{"center":[0,0.05,1.6],"radius":0.06},"front_only":true},
+                 {"brush":"smooth","center":[0,0,1.6],"radius":0.08,"strength":0.3}]},
+  "hair":     {"head":"Body", "mode":"strands|cards|both", "count":900, "length":0.16,
+               "length_variation":0.25, "segments":7, "part":0.0,   // x offset of the parting
+               "gravity":0.8, "bend":0.35, "curl":0.3, "lift":0.25, "outward":0.5,
+               "flow":[0,0,-1], "facing":[0,-1,0], "strand_radius":0.0016, "tip":0.1,
+               "color":"#3a2418", "seed":3, "card_width":0.012},
+  "drape":    {"type":"skirt|dress|sleeve|ruffle|cape|veil", "segments":64, "rings":24,
+               "height":0.55, "radius_top":0.14, "radius_bottom":0.32, "squash":0.82,
+               "folds":{"count":9,"amplitude":0.03,"twist":0.35},   // fold field, not just modifiers
+               "wrinkle":0.4, "puff":0.35, "thickness":0.004, "subdivisions":1,
+               "location":[0,0,1.05], "material":{"preset":"silk"}},
+  "ornament": {"motif":"scroll|leaf|braid|rope|diamond|band|petal", "scale":0.12, "turns":2.4,
+               "bevel":0.003, "count":6, "spacing":[0,0,0.05], "mirror":"Y",
+               "location":[0,0,1.45], "rotation":[0,0,0], "material":{"preset":"gold"}},
+  "retopo":   {"object":"*", "quadriflow":{"faces":4000,"symmetry":true,"preserve_sharp":true},
+               "voxel":0.006, "weighted_normal":true, "sharp_angle":35,
+               "seams":true, "bevel_weight":true, "uv":true},
+  "weights":  {"object":"Skirt", "source":"Body", "mode":"transfer|cloth|autoweight",
+               "armature":"Body.rig", "limit":4, "smooth":3, "factor":0.5},
+  "view":     {"mode":"clay|wire|clay_wire|matcap", "color":"#b9b2a8",
+               "wire_thickness":0.0016, "wire_color":"#101010",
+               "freestyle":true, "line_thickness":1.4, "restore":false}
+}
+Iteration loop: run "human" once, save the .blend, then re-open it with "source" for
+sculpt/hair passes (cheap) instead of rebuilding the whole body every time.
+Result JSON reports result.character with per-Body landmarks (eye_mid, head_top, head_radius)
+and vertex/poly counts — use those numbers to place strokes instead of guessing.
+
+PLAN (declarative scene, action=scene) — everything optional except objects/source/import/python/human:
 {
   "name": "job title",
   "reset": true,                      // wipe the scene first (default true)
@@ -387,10 +436,11 @@ async function run(action, input, context) {
         (Array.isArray(plan.import) && plan.import.length > 0) ||
         (Array.isArray(plan.append) && plan.append.length > 0) ||
         Boolean(plan.python) ||
-        Boolean(plan.source);
+        Boolean(plan.source) ||
+        CHARACTER_BLOCKS.some((key) => Boolean(plan[key]));
       if (!hasWork) {
         throw new Error(
-          "Пустой план: передайте objects[] (или import/append/python/source). " + PLAN_REFERENCE
+          "Пустой план: передайте objects[]/human (или import/append/python/source). " + PLAN_REFERENCE
         );
       }
       const job = await blender.runPlan(userDataPath, config, plan, {
@@ -876,6 +926,38 @@ module.exports = {
       quality: { type: "object", description: "scene shorthand: quality audit config (require_textures, require_uv, max_polygons)" },
       optimize: { type: "object", description: "scene shorthand: apply scale / weld / triangulate / origin" },
       armatures: { type: "array", items: { type: "object" }, description: "scene shorthand: armatures with bones and auto-weights" },
+      human: {
+        type: "object",
+        description:
+          "MPFB2/MakeHuman base human: gender/age/muscle/weight/proportions/height 0..1, race{asian,caucasian,african}, face=portrait|heroic|soft, targets[{name,value}], parts[eyes,teeth,tongue,lashes,scalp], rig=default|game_engine|mixamo|rigify.default, material",
+      },
+      sculpt: {
+        description:
+          "Brush driver (headless, numpy, symmetry): {object, subdivide, symmetry, smooth_after, strokes[{brush=draw|clay|crease|flatten|pinch|grab|smooth|scrape|inflate, points|center, radius, strength, height, hardness, pressure, spacing, region, z_range, front_only, pinch}]}",
+      },
+      hair: {
+        description:
+          "Hair from the real scalp cap: {head, mode=strands|cards|both, count, length, part, gravity, bend, curl, segments, color, seed}",
+      },
+      drape: {
+        description:
+          "Parameteric garment with fold field: {type=skirt|dress|sleeve|ruffle|cape|veil, folds{count,amplitude,twist}, wrinkle, height, radius_top, radius_bottom, thickness, subdivisions}",
+      },
+      ornament: {
+        description:
+          "Motif library as bevel/taper curves: {motif=scroll|leaf|braid|rope|diamond|band|petal, scale, turns, bevel, count, spacing, mirror, material}",
+      },
+      retopo: {
+        description:
+          "QuadriFlow/voxel remesh + weighted normals + angle seams/sharps/bevel weights: {object, quadriflow{faces,ratio,symmetry}, voxel, weighted_normal, sharp_angle, seams, bevel_weight, uv}",
+      },
+      weights: {
+        description:
+          "Weight transfer / cloth-safe smoothing / autoweight: {object, source, mode=transfer|cloth|autoweight, armature, limit, smooth, factor}",
+      },
+      view: {
+        description: "Form-check override: {mode=clay|wire|clay_wire|matcap, color, wire_thickness, freestyle, line_thickness, restore}",
+      },
       animation: { type: "object", description: "scene shorthand: frame_start/frame_end/fps" },
       addons: { type: "array", items: { type: "string" }, description: "modules to enable before building" },
       install_addons: { type: "array", items: { type: "object" }, description: "scene: install add-on zips before building" },
